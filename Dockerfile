@@ -31,10 +31,17 @@ RUN pnpm ui:build
 
 ENV NODE_ENV=production
 
+# Copy entrypoint script and make it executable
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Security hardening: Run as non-root user
 # The node:22-bookworm image includes a 'node' user (uid 1000)
 # This reduces the attack surface by preventing container escape via root privileges
 USER node
+
+# Use entrypoint for config generation (SaaS mode support)
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Default command runs the gateway on port 18789
 # --allow-unconfigured lets it start without pre-existing config
