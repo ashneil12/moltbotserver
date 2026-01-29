@@ -37,5 +37,5 @@ ENV NODE_ENV=production
 USER node
 
 # Default command runs the gateway on port 18789
-# Can be overridden at runtime if needed
-CMD ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+# --allow-unconfigured lets it start without pre-existing config
+CMD ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
