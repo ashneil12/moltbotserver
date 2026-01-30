@@ -20,6 +20,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY ui/package.json ./ui/package.json
 COPY patches ./patches
 COPY scripts ./scripts
+COPY SOUL.md ./SOUL.md
 
 RUN pnpm install --frozen-lockfile
 
@@ -45,4 +46,4 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Default command runs the gateway on port 18789
 # --allow-unconfigured lets it start without pre-existing config
-CMD ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
+CMD ["node", "dist/index.js", "gateway", "--bind", "loopback", "--port", "18789", "--allow-unconfigured"]
