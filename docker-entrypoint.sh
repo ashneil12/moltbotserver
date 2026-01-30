@@ -13,6 +13,9 @@ GATEWAY_PORT="${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}"
 # SaaS mode: disable device auth for Control UI (use token-only auth)
 DISABLE_DEVICE_AUTH="${MOLTBOT_DISABLE_DEVICE_AUTH:-false}"
 
+# Model configuration (set via dashboard setup wizard)
+DEFAULT_MODEL="${MOLTBOT_DEFAULT_MODEL:-}"
+
 # Create config directory if it doesn't exist
 mkdir -p "$CONFIG_DIR"
 
@@ -21,7 +24,35 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
   echo "[entrypoint] Generating moltbot.json configuration..."
   
   # Build the configuration JSON
-  cat > "$CONFIG_FILE" << EOF
+  # Note: We build this dynamically to only include model if set
+  if [ -n "$DEFAULT_MODEL" ]; then
+    cat > "$CONFIG_FILE" << EOF
+{
+  "gateway": {
+    "mode": "local",
+    "port": ${GATEWAY_PORT},
+    "bind": "${GATEWAY_BIND}",
+    "controlUi": {
+      "enabled": true,
+      "dangerouslyDisableDeviceAuth": true
+    },
+    "auth": {
+      "mode": "token",
+      "token": "${GATEWAY_TOKEN}"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "${DEFAULT_MODEL}"
+      }
+    }
+  }
+}
+EOF
+    echo "[entrypoint] Default model: ${DEFAULT_MODEL}"
+  else
+    cat > "$CONFIG_FILE" << EOF
 {
   "gateway": {
     "mode": "local",
@@ -38,6 +69,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
   }
 }
 EOF
+  fi
   
   echo "[entrypoint] Configuration generated at $CONFIG_FILE"
   echo "[entrypoint] dangerouslyDisableDeviceAuth: true (SaaS mode)"
