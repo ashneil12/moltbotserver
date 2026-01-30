@@ -44,7 +44,7 @@ async function main() {
   }
 
   const [
-    { loadConfig },
+    { loadConfig, setConfigOverride },
     { startGatewayServer },
     { setGatewayWsLogStyle },
     { setVerbose },
@@ -67,7 +67,35 @@ async function main() {
   setConsoleTimestampPrefix(true);
   setVerbose(hasFlag(args, "--verbose"));
 
-  const wsLogRaw = hasFlag(args, "--compact") ? "compact" : argValue(args, "--ws-log");
+  // Apply trusted proxies from env var (supports CIDR notation or comma-separated IPs)
+  // This is essential for running behind reverse proxies (e.g., Coolify, nginx, Traefik)
+  const trustedProxiesRaw =
+    process.env.OPENCLAW_TRUSTED_PROXIES?.trim() || process.env.CLAWDBOT_TRUSTED_PROXIES?.trim();
+  if (trustedProxiesRaw) {
+    // Parse as JSON array or comma-separated list
+    let proxies: string[] = [];
+    if (trustedProxiesRaw.startsWith("[")) {
+      try {
+        proxies = JSON.parse(trustedProxiesRaw) as string[];
+      } catch {
+        // Fall back to treating as single value
+        proxies = [trustedProxiesRaw];
+      }
+    } else {
+      proxies = trustedProxiesRaw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    if (proxies.length > 0) {
+      setConfigOverride("gateway.trustedProxies", proxies);
+      defaultRuntime.log(`gateway: trusting proxies from env: ${proxies.join(", ")}`);
+    }
+  }
+
+  const wsLogRaw = (hasFlag(args, "--compact") ? "compact" : argValue(args, "--ws-log")) as
+    | string
+    | undefined;
   const wsLogStyle: GatewayWsLogStyle =
     wsLogRaw === "compact" ? "compact" : wsLogRaw === "full" ? "full" : "auto";
   setGatewayWsLogStyle(wsLogStyle);
@@ -93,10 +121,10 @@ async function main() {
     "loopback";
   const bind =
     bindRaw === "loopback" ||
-    bindRaw === "lan" ||
-    bindRaw === "auto" ||
-    bindRaw === "custom" ||
-    bindRaw === "tailnet"
+      bindRaw === "lan" ||
+      bindRaw === "auto" ||
+      bindRaw === "custom" ||
+      bindRaw === "tailnet"
       ? bindRaw
       : null;
   if (!bind) {
