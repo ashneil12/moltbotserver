@@ -49,4 +49,4 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Default command runs the gateway on port 18789
 # --allow-unconfigured lets it start without pre-existing config
-CMD ["node", "dist/index.js", "gateway", "--bind", "loopback", "--port", "18789", "--allow-unconfigured"]
+CMD ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
