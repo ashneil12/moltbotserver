@@ -43,6 +43,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "--no-install-daemon"
     "--skip-skills"
     "--auth-choice" "skip"
+    "--accept-risk"
   )
 
   # Run the onboarding wizard
