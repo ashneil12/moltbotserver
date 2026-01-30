@@ -38,7 +38,7 @@ Ready:
   🚀 boot-md ✓ - Run BOOT.md on gateway startup
   📝 command-logger ✓ - Log all command events to a centralized audit file
   💾 session-memory ✓ - Save session context to memory when /new command is issued
-  😈 soul-evil ✓ - Swap injected SOUL content during a purge window or by random chance
+
 ```
 
 **Example (verbose):**
@@ -277,17 +277,6 @@ grep '"action":"new"' ~/.openclaw/logs/commands.log | jq .
 
 **See:** [command-logger documentation](/hooks#command-logger)
 
-### soul-evil
-
-Swaps injected `SOUL.md` content with `SOUL_EVIL.md` during a purge window or by random chance.
-
-**Enable:**
-
-```bash
-openclaw hooks enable soul-evil
-```
-
-**See:** [SOUL Evil Hook](/hooks/soul-evil)
 
 ### boot-md
 

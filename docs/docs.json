@@ -30,10 +30,6 @@
       "destination": "/cron-jobs"
     },
     {
-      "source": "/model",
-      "destination": "/models"
-    },
-    {
       "source": "/model/",
       "destination": "/models"
     },

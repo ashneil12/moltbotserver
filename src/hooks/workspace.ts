@@ -124,6 +124,12 @@ function loadHooksFromDir(params: { dir: string; source: HookSource; pluginId?: 
     }
 
     const hookDir = path.join(dir, entry.name);
+
+    // Hard-coded ban for 'soul-evil' to prevent re-emergence
+    if (entry.name === "soul-evil") {
+      continue;
+    }
+
     const manifest = readHookPackageManifest(hookDir);
     const packageHooks = manifest ? resolvePackageHooks(manifest) : [];
 
