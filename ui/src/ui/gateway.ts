@@ -92,17 +92,7 @@ export class GatewayBrowserClient {
 
   private connect() {
     if (this.closed) return;
-    // Check for token in window URL query params
-    let wsUrl = this.opts.url;
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
-      if (token) {
-        const separator = wsUrl.includes('?') ? '&' : '?';
-        wsUrl = `${wsUrl}${separator}token=${encodeURIComponent(token)}`;
-      }
-    }
-    this.ws = new WebSocket(wsUrl);
+    this.ws = new WebSocket(this.opts.url);
     this.ws.onopen = () => this.queueConnect();
     this.ws.onmessage = (ev) => this.handleMessage(String(ev.data ?? ""));
     this.ws.onclose = (ev) => {
