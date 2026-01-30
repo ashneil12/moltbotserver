@@ -35,7 +35,6 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
-    "discovery": { "mdns": { "mode": "off" } },
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
@@ -63,7 +62,6 @@ EOF
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
-    "discovery": { "mdns": { "mode": "off" } },
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
@@ -96,6 +94,12 @@ WORKSPACE_DIR="${CLAWDBOT_WORKSPACE_DIR:-/home/node/clawd}"
 if [ -f "/app/SOUL.md" ]; then
   mkdir -p "$WORKSPACE_DIR"
   echo "[entrypoint] Copying security rules (SOUL.md) to workspace..."
+  
+  # Remove existing readonly file if it exists so we can update it
+  if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
+    rm -f "$WORKSPACE_DIR/SOUL.md"
+  fi
+  
   cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
   # Set strict read-only permissions for the SOUL file so it can't be easily modified by the agent itself
   chmod 444 "$WORKSPACE_DIR/SOUL.md"
