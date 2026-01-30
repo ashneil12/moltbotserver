@@ -10,6 +10,9 @@ GATEWAY_TOKEN="${CLAWDBOT_GATEWAY_TOKEN:-}"
 GATEWAY_BIND="${CLAWDBOT_BIND:-lan}"
 GATEWAY_PORT="${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}"
 
+# Security: Disable mDNS/Bonjour broadcasting (prevents information disclosure)
+export OPENCLAW_DISABLE_BONJOUR=1
+
 # SaaS mode: disable device auth for Control UI (use token-only auth)
 DISABLE_DEVICE_AUTH="${MOLTBOT_DISABLE_DEVICE_AUTH:-false}"
 
@@ -32,6 +35,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
+    "discovery": { "mdns": { "mode": "off" } },
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
@@ -41,6 +45,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
       "token": "${GATEWAY_TOKEN}"
     }
   },
+  "logging": { "redactSensitive": "tools" },
   "agents": {
     "defaults": {
       "model": {
@@ -58,6 +63,7 @@ EOF
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
+    "discovery": { "mdns": { "mode": "off" } },
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
@@ -66,7 +72,8 @@ EOF
       "mode": "token",
       "token": "${GATEWAY_TOKEN}"
     }
-  }
+  },
+  "logging": { "redactSensitive": "tools" }
 }
 EOF
   fi
