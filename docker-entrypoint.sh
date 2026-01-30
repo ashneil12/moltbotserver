@@ -10,6 +10,10 @@ GATEWAY_TOKEN="${CLAWDBOT_GATEWAY_TOKEN:-}"
 GATEWAY_BIND="${CLAWDBOT_BIND:-lan}"
 GATEWAY_PORT="${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}"
 
+# Explicitly set the config path so both the wizard and the gateway use the same file
+export OPENCLAW_CONFIG_PATH="$CONFIG_FILE"
+echo "[entrypoint] OPENCLAW_CONFIG_PATH set to $OPENCLAW_CONFIG_PATH"
+
 # Security: Disable mDNS/Bonjour broadcasting (prevents information disclosure)
 export OPENCLAW_DISABLE_BONJOUR=1
 
