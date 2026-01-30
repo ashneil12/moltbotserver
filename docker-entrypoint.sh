@@ -80,8 +80,25 @@ EOF
   
   echo "[entrypoint] Configuration generated at $CONFIG_FILE"
   echo "[entrypoint] dangerouslyDisableDeviceAuth: true (SaaS mode)"
+  
+  # Security: Enforce strict permissions on the config directory and file
+  echo "[entrypoint] Enforcing security permissions..."
+  chmod 700 "$CONFIG_DIR"
+  chmod 600 "$CONFIG_FILE"
+
 else
   echo "[entrypoint] Using existing configuration at $CONFIG_FILE"
+fi
+
+# Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
+# This file is copied into the image at build time (/app/SOUL.md)
+WORKSPACE_DIR="${CLAWDBOT_WORKSPACE_DIR:-/home/node/clawd}"
+if [ -f "/app/SOUL.md" ]; then
+  mkdir -p "$WORKSPACE_DIR"
+  echo "[entrypoint] Copying security rules (SOUL.md) to workspace..."
+  cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
+  # Set strict read-only permissions for the SOUL file so it can't be easily modified by the agent itself
+  chmod 444 "$WORKSPACE_DIR/SOUL.md"
 fi
 
 # Execute the main command
