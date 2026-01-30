@@ -22,6 +22,8 @@ COPY patches ./patches
 COPY scripts ./scripts
 COPY SOUL.md ./SOUL.md
 
+# Ensure devDependencies are installed during build (ignore any NODE_ENV=production from build args)
+ENV NODE_ENV=development
 RUN pnpm install --frozen-lockfile
 
 COPY . .
@@ -30,6 +32,7 @@ RUN OPENCLAW_A2UI_SKIP_MISSING=1 pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
+# Set production mode for runtime
 ENV NODE_ENV=production
 
 # Copy entrypoint script and make it executable
