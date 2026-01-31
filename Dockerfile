@@ -48,6 +48,11 @@ RUN apt-get update && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
+# Declare persistent volumes for data and workspace
+# Docker will create anonymous volumes that survive container recreation
+VOLUME /home/node/data
+VOLUME /home/node/workspace
+
 # Security note: Run as non-root user with sudo access
 # The node user (uid 1000) can escalate to root via sudo when needed
 # This is a trade-off: more agent capability vs. increased attack surface within the container
