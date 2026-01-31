@@ -180,7 +180,14 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
       echo "[entrypoint] Auto-onboard completed successfully"
       touch "$ONBOARD_MARKER"
     else
-      echo "[entrypoint] Auto-onboard failed, continuing with manual setup required"
+      echo "[entrypoint] Auto-onboard command returned error code"
+      # Check if config was generated anyway (likely failed on connection test)
+      if [ -s "$CONFIG_FILE" ]; then
+         echo "[entrypoint] Config file generated successfully ($CONFIG_FILE). Ignoring connection error."
+         touch "$ONBOARD_MARKER"
+      else
+         echo "[entrypoint] Auto-onboard failed and no config generated. Manual setup required."
+      fi
     fi
   else
     echo "[entrypoint] Auto-onboard already completed (marker exists)"
