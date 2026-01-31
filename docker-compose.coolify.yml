@@ -3,15 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: openclaw-gateway
+    # No fixed container_name - let Coolify/Docker generate unique names
     labels:
       - "traefik.enable=true"
-      # Coolify auto-generates SERVICE_FQDN_OPENCLAWGATEWAY when domains are assigned
-      - "traefik.http.routers.openclaw-gateway.rule=Host(`${SERVICE_FQDN_OPENCLAWGATEWAY:-localhost}`)"
-      - "traefik.http.routers.openclaw-gateway.entrypoints=https"
-      - "traefik.http.routers.openclaw-gateway.tls=true"
-      - "traefik.http.routers.openclaw-gateway.tls.certresolver=letsencrypt"
-      - "traefik.http.services.openclaw-gateway.loadbalancer.server.port=18789"
+      # Use COOLIFY_RESOURCE_UUID for unique router/service names per instance
+      # Use COOLIFY_FQDN which contains just the domain (no https://)
+      - "traefik.http.routers.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.rule=Host(`${COOLIFY_FQDN:-localhost}`)"
+      - "traefik.http.routers.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.entrypoints=websecure"
+      - "traefik.http.routers.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.loadbalancer.server.port=18789"
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
