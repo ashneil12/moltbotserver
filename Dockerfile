@@ -48,6 +48,11 @@ RUN apt-get update && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
+# Create persistent data directories with correct ownership BEFORE declaring VOLUMEs
+# This ensures the volume mount inherits the node user ownership
+RUN mkdir -p /home/node/data /home/node/workspace && \
+  chown -R node:node /home/node/data /home/node/workspace
+
 # Declare persistent volumes for data and workspace
 # Docker will create anonymous volumes that survive container recreation
 VOLUME /home/node/data
