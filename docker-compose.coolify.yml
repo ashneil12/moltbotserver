@@ -1,0 +1,27 @@
+services:
+  openclaw-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openclaw-gateway
+    environment:
+      - HOME=/home/node
+      - TERM=xterm-256color
+      - OPENCLAW_STATE_DIR=/home/node/data
+      - OPENCLAW_WORKSPACE_DIR=/home/node/workspace
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_DISABLE_DEVICE_AUTH=true
+      - OPENCLAW_DEFAULT_MODEL=${OPENCLAW_DEFAULT_MODEL:-}
+      # Set NODE_ENV to production for runtime
+      - NODE_ENV=production
+    volumes:
+      - openclaw-data:/home/node/data
+      - openclaw-workspace:/home/node/workspace
+    ports:
+      - "${PORT:-18789}:18789"
+    init: true
+    restart: unless-stopped
+
+volumes:
+  openclaw-data:
+  openclaw-workspace:
