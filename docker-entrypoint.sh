@@ -2,29 +2,29 @@
 set -e
 
 # Configuration directory
-CONFIG_DIR="${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}"
-CONFIG_FILE="$CONFIG_DIR/moltbot.json"
+CONFIG_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
+CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 
 # Get values from environment
-GATEWAY_TOKEN="${CLAWDBOT_GATEWAY_TOKEN:-}"
-GATEWAY_BIND="${CLAWDBOT_BIND:-lan}"
-GATEWAY_PORT="${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}"
+GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-${CLAWDBOT_GATEWAY_TOKEN:-}}"
+GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-lan}}"
+GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}}"
 
 # Security: Disable mDNS/Bonjour broadcasting (prevents information disclosure)
 export OPENCLAW_DISABLE_BONJOUR=1
 
 # SaaS mode: disable device auth for Control UI (use token-only auth)
-DISABLE_DEVICE_AUTH="${MOLTBOT_DISABLE_DEVICE_AUTH:-false}"
+DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AUTH:-false}}"
 
 # Model configuration (set via dashboard setup wizard)
-DEFAULT_MODEL="${MOLTBOT_DEFAULT_MODEL:-}"
+DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}"
 
 # Create config directory if it doesn't exist
 mkdir -p "$CONFIG_DIR"
 
 # Only generate config if it doesn't exist OR if we're in SaaS mode
 if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE_DEVICE_AUTH" = "1" ]; then
-  echo "[entrypoint] Generating moltbot.json configuration..."
+  echo "[entrypoint] Generating openclaw.json configuration..."
   
   # Build the configuration JSON
   # Note: We build this dynamically to only include model if set
@@ -90,7 +90,7 @@ fi
 
 # Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
 # This file is copied into the image at build time (/app/SOUL.md)
-WORKSPACE_DIR="${CLAWDBOT_WORKSPACE_DIR:-/home/node/clawd}"
+WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/clawd}}"
 if [ -f "/app/SOUL.md" ]; then
   mkdir -p "$WORKSPACE_DIR"
   echo "[entrypoint] Copying security rules (SOUL.md) to workspace..."

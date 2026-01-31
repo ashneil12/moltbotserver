@@ -22,6 +22,7 @@ import {
   scheduleRestartSentinelWake,
   shouldWakeFromRestartSentinel,
 } from "./server-restart-sentinel.js";
+import { startSecurityAuditScheduler } from "../security/scheduler.js";
 
 export async function startGatewaySidecars(params: {
   cfg: ReturnType<typeof loadConfig>;
@@ -155,6 +156,9 @@ export async function startGatewaySidecars(params: {
       void scheduleRestartSentinelWake({ deps: params.deps });
     }, 750);
   }
+
+  // Start daily security audit scheduler.
+  startSecurityAuditScheduler({ cfg: params.cfg, deps: params.deps });
 
   return { browserControl, pluginServices };
 }
