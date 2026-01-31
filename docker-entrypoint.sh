@@ -1,6 +1,28 @@
 #!/bin/bash
 set -e
 
+# =============================================================================
+# DEBUG: Print environment info for troubleshooting
+# =============================================================================
+echo "[entrypoint] === DEBUG INFO ==="
+echo "[entrypoint] PATH=$PATH"
+echo "[entrypoint] PWD=$(pwd)"
+echo "[entrypoint] USER=$(whoami)"
+echo "[entrypoint] HOME=$HOME"
+if [ -d /app/node_modules/.bin ]; then
+  echo "[entrypoint] /app/node_modules/.bin exists"
+  echo "[entrypoint] Contents: $(ls /app/node_modules/.bin | head -10)..."
+  if [ -f /app/node_modules/.bin/openclaw ]; then
+    echo "[entrypoint] openclaw binary found at /app/node_modules/.bin/openclaw"
+  else
+    echo "[entrypoint] WARNING: openclaw NOT found in /app/node_modules/.bin"
+  fi
+else
+  echo "[entrypoint] WARNING: /app/node_modules/.bin does NOT exist"
+fi
+echo "[entrypoint] which openclaw: $(which openclaw 2>/dev/null || echo 'not in PATH')"
+echo "[entrypoint] === END DEBUG ==="
+
 # Runtime sudo toggle - allows disabling sudo without rebuilding
 # When OPENCLAW_DISABLE_SUDO=true, remove node from sudoers
 DISABLE_SUDO="${OPENCLAW_DISABLE_SUDO:-false}"
@@ -117,7 +139,19 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     echo "[entrypoint] Auto-onboard enabled, running non-interactive setup..."
     
     # Build the onboard command as an array to safely handle arguments
-    ONBOARD_CMD=("openclaw" "onboard" "--non-interactive" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
+    # Use full path since Docker Compose environment may not inherit Dockerfile PATH
+    OPENCLAW_BIN="/app/node_modules/.bin/openclaw"
+    if [ ! -f "$OPENCLAW_BIN" ]; then
+      echo "[entrypoint] ERROR: openclaw binary not found at $OPENCLAW_BIN"
+      echo "[entrypoint] Trying to find it..."
+      OPENCLAW_BIN=$(which openclaw 2>/dev/null || find /app -name openclaw -type f 2>/dev/null | head -1 || echo "")
+      if [ -z "$OPENCLAW_BIN" ]; then
+        echo "[entrypoint] FATAL: Cannot find openclaw binary anywhere"
+      else
+        echo "[entrypoint] Found openclaw at: $OPENCLAW_BIN"
+      fi
+    fi
+    ONBOARD_CMD=("$OPENCLAW_BIN" "onboard" "--non-interactive" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
     
     # Add auth choice if specified
     AUTH_CHOICE="${OPENCLAW_ONBOARD_AUTH_CHOICE:-}"
