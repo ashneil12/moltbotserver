@@ -48,6 +48,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
+    "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12"],
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
@@ -75,6 +76,7 @@ EOF
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
+    "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12"],
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
@@ -99,6 +101,57 @@ EOF
 
 else
   echo "[entrypoint] Using existing configuration at $CONFIG_FILE"
+fi
+
+# =============================================================================
+# AUTO-ONBOARD: Run non-interactive onboard when OPENCLAW_AUTO_ONBOARD=true
+# This allows the dashboard to pre-configure instances during deployment
+# =============================================================================
+AUTO_ONBOARD="${OPENCLAW_AUTO_ONBOARD:-false}"
+ONBOARD_MARKER="$CONFIG_DIR/.onboard-complete"
+
+if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
+  # Only run onboard once (check for marker file)
+  if [ ! -f "$ONBOARD_MARKER" ]; then
+    echo "[entrypoint] Auto-onboard enabled, running non-interactive setup..."
+    
+    # Build the onboard command as an array to safely handle arguments
+    ONBOARD_CMD=("openclaw" "onboard" "--non-interactive" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
+    
+    # Add auth choice if specified
+    AUTH_CHOICE="${OPENCLAW_ONBOARD_AUTH_CHOICE:-}"
+    if [ -n "$AUTH_CHOICE" ]; then
+      ONBOARD_CMD+=("--auth-choice" "$AUTH_CHOICE")
+    fi
+    
+    # Add API keys based on auth choice - DO NOT LOG THESE VALUES
+    if [ "$AUTH_CHOICE" = "ai-gateway-api-key" ] && [ -n "${AI_GATEWAY_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--ai-gateway-api-key" "$AI_GATEWAY_API_KEY")
+    elif [ "$AUTH_CHOICE" = "apiKey" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--anthropic-api-key" "$ANTHROPIC_API_KEY")
+    elif [ "$AUTH_CHOICE" = "openai-api-key" ] && [ -n "${OPENAI_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--openai-api-key" "$OPENAI_API_KEY")
+    elif [ "$AUTH_CHOICE" = "gemini-api-key" ] && [ -n "${GEMINI_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--gemini-api-key" "$GEMINI_API_KEY")
+    elif [ "$AUTH_CHOICE" = "xai-api-key" ] && [ -n "${XAI_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--xai-api-key" "$XAI_API_KEY")
+    elif [ "$AUTH_CHOICE" = "moonshot-api-key" ] && [ -n "${MOONSHOT_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--moonshot-api-key" "$MOONSHOT_API_KEY")
+    fi
+    
+    # Run the onboard command
+    # Print a safe version of the command for logging
+    echo "[entrypoint] Running: openclaw onboard --non-interactive ... [auth-choice: ${AUTH_CHOICE}]"
+    
+    if "${ONBOARD_CMD[@]}"; then
+      echo "[entrypoint] Auto-onboard completed successfully"
+      touch "$ONBOARD_MARKER"
+    else
+      echo "[entrypoint] Auto-onboard failed, continuing with manual setup required"
+    fi
+  else
+    echo "[entrypoint] Auto-onboard already completed (marker exists)"
+  fi
 fi
 
 # Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
