@@ -4,6 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: openclaw-gateway
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openclaw-gateway.rule=Host(`${COOLIFY_FQDN}`)"
+      - "traefik.http.routers.openclaw-gateway.entrypoints=https"
+      - "traefik.http.routers.openclaw-gateway.tls=true"
+      - "traefik.http.routers.openclaw-gateway.tls.certresolver=letsencrypt"
+      - "traefik.http.services.openclaw-gateway.loadbalancer.server.port=18789"
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
