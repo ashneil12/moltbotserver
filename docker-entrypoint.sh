@@ -30,7 +30,8 @@ export OPENCLAW_DISABLE_BONJOUR=1
 DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AUTH:-false}}"
 
 # Model configuration (set via dashboard setup wizard)
-DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}"
+# Check OPENCLAW_ONBOARD_MODEL as fallback (set by onboarding flow)
+DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${OPENCLAW_ONBOARD_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}}"
 
 # Create config directory if it doesn't exist
 mkdir -p "$CONFIG_DIR"
