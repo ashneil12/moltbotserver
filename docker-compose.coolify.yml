@@ -13,6 +13,8 @@ services:
       - "traefik.http.routers.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.tls.certresolver=letsencrypt"
       - "traefik.http.services.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.loadbalancer.server.port=18789"
     environment:
+      # Ensure PATH includes node_modules/.bin for openclaw command
+      - PATH=/app/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - HOME=/home/node
       - TERM=xterm-256color
       - OPENCLAW_STATE_DIR=/home/node/data
