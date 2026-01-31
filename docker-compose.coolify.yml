@@ -6,7 +6,8 @@ services:
     container_name: openclaw-gateway
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.openclaw-gateway.rule=Host(`${COOLIFY_FQDN}`)"
+      # Coolify auto-generates SERVICE_FQDN_OPENCLAWGATEWAY when domains are assigned
+      - "traefik.http.routers.openclaw-gateway.rule=Host(`${SERVICE_FQDN_OPENCLAWGATEWAY:-localhost}`)"
       - "traefik.http.routers.openclaw-gateway.entrypoints=https"
       - "traefik.http.routers.openclaw-gateway.tls=true"
       - "traefik.http.routers.openclaw-gateway.tls.certresolver=letsencrypt"
