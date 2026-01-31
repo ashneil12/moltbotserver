@@ -149,7 +149,7 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     else
       echo "[entrypoint] Using openclaw script: $OPENCLAW_SCRIPT"
     fi
-    ONBOARD_CMD=("node" "$OPENCLAW_SCRIPT" "onboard" "--non-interactive" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
+    ONBOARD_CMD=("node" "$OPENCLAW_SCRIPT" "onboard" "--non-interactive" "--accept-risk" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
     
     # Add auth choice if specified
     AUTH_CHOICE="${OPENCLAW_ONBOARD_AUTH_CHOICE:-}"
