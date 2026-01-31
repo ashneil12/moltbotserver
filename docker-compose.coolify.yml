@@ -38,8 +38,9 @@ services:
     volumes:
       - openclaw-data:/home/node/data
       - openclaw-workspace:/home/node/workspace
-    ports:
-      - "${PORT:-18789}:18789"
+    # Note: No host port mapping needed - Traefik routes traffic via labels
+    expose:
+      - "18789"
     networks:
       - coolify
     init: true
