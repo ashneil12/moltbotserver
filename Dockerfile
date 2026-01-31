@@ -58,6 +58,10 @@ RUN mkdir -p /home/node/data /home/node/workspace && \
 VOLUME /home/node/data
 VOLUME /home/node/workspace
 
+# Add the pnpm bin directory to PATH so 'openclaw' command is available
+# This allows the entrypoint script to run 'openclaw onboard' for auto-setup
+ENV PATH="/app/node_modules/.bin:${PATH}"
+
 # Security note: Run as non-root user with sudo access
 # The node user (uid 1000) can escalate to root via sudo when needed
 # This is a trade-off: more agent capability vs. increased attack surface within the container
