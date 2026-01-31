@@ -2,26 +2,8 @@
 set -e
 
 # =============================================================================
-# DEBUG: Print environment info for troubleshooting
+# OpenClaw Entrypoint
 # =============================================================================
-echo "[entrypoint] === DEBUG INFO ==="
-echo "[entrypoint] PATH=$PATH"
-echo "[entrypoint] PWD=$(pwd)"
-echo "[entrypoint] USER=$(whoami)"
-echo "[entrypoint] HOME=$HOME"
-if [ -d /app/node_modules/.bin ]; then
-  echo "[entrypoint] /app/node_modules/.bin exists"
-  echo "[entrypoint] Contents: $(ls /app/node_modules/.bin | head -10)..."
-  if [ -f /app/node_modules/.bin/openclaw ]; then
-    echo "[entrypoint] openclaw binary found at /app/node_modules/.bin/openclaw"
-  else
-    echo "[entrypoint] WARNING: openclaw NOT found in /app/node_modules/.bin"
-  fi
-else
-  echo "[entrypoint] WARNING: /app/node_modules/.bin does NOT exist"
-fi
-echo "[entrypoint] which openclaw: $(which openclaw 2>/dev/null || echo 'not in PATH')"
-echo "[entrypoint] === END DEBUG ==="
 
 # Runtime sudo toggle - allows disabling sudo without rebuilding
 # When OPENCLAW_DISABLE_SUDO=true, remove node from sudoers
