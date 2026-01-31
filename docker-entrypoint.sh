@@ -197,13 +197,14 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
       fi
     fi
 
-    # Explicitly set the model if specified (since onboard defaults to provider's preference)
-    if [ -n "$ONBOARD_MODEL" ] && [ -s "$CONFIG_FILE" ]; then
-      echo "[entrypoint] Setting default model to: $ONBOARD_MODEL"
-      node "$OPENCLAW_SCRIPT" models set "$ONBOARD_MODEL" || echo "[entrypoint] WARNING: Failed to set default model"
-    fi
   else
     echo "[entrypoint] Auto-onboard already completed (marker exists)"
+  fi
+
+  # Enforce model compliance on every boot (fresh or restart) if env var is set
+  if [ -n "$ONBOARD_MODEL" ] && [ -s "$CONFIG_FILE" ]; then
+    echo "[entrypoint] Enforcing model from env: $ONBOARD_MODEL"
+    node "$OPENCLAW_SCRIPT" models set "$ONBOARD_MODEL" || echo "[entrypoint] WARNING: Failed to set default model"
   fi
 fi
 
