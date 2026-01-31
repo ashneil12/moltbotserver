@@ -19,6 +19,19 @@ services:
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
       - OPENCLAW_DISABLE_DEVICE_AUTH=true
       - OPENCLAW_DEFAULT_MODEL=${OPENCLAW_DEFAULT_MODEL:-}
+      # Auto-onboard configuration (set via dashboard)
+      - OPENCLAW_AUTO_ONBOARD=${OPENCLAW_AUTO_ONBOARD:-}
+      - OPENCLAW_ONBOARD_AUTH_CHOICE=${OPENCLAW_ONBOARD_AUTH_CHOICE:-}
+      - OPENCLAW_ONBOARD_MODEL=${OPENCLAW_ONBOARD_MODEL:-}
+      - OPENCLAW_ONBOARD_PROVIDER=${OPENCLAW_ONBOARD_PROVIDER:-}
+      # Provider API keys (passed through from dashboard env vars)
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
+      - ZAI_API_KEY=${ZAI_API_KEY:-}
+      - AI_GATEWAY_API_KEY=${AI_GATEWAY_API_KEY:-}
       # Set NODE_ENV to production for runtime
       - NODE_ENV=production
     volumes:
