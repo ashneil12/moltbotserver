@@ -48,16 +48,6 @@ RUN apt-get update && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
-# Install Linuxbrew (Homebrew for Linux) for the node user
-# This provides a user-space package manager that doesn't require root for most operations
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
-  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/node/.bashrc && \
-  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/node/.profile
-
-# Add Homebrew to PATH for all subsequent commands and runtime
-ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
-ENV HOMEBREW_NO_AUTO_UPDATE=1
-
 # Security note: Run as non-root user with sudo access
 # The node user (uid 1000) can escalate to root via sudo when needed
 # This is a trade-off: more agent capability vs. increased attack surface within the container
@@ -69,3 +59,4 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # Default command runs the gateway on port 18789
 # --allow-unconfigured lets it start without pre-existing config
 CMD ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
+
