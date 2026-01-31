@@ -139,19 +139,17 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     echo "[entrypoint] Auto-onboard enabled, running non-interactive setup..."
     
     # Build the onboard command as an array to safely handle arguments
-    # Use full path since Docker Compose environment may not inherit Dockerfile PATH
-    OPENCLAW_BIN="/app/node_modules/.bin/openclaw"
-    if [ ! -f "$OPENCLAW_BIN" ]; then
-      echo "[entrypoint] ERROR: openclaw binary not found at $OPENCLAW_BIN"
-      echo "[entrypoint] Trying to find it..."
-      OPENCLAW_BIN=$(which openclaw 2>/dev/null || find /app -name openclaw -type f 2>/dev/null | head -1 || echo "")
-      if [ -z "$OPENCLAW_BIN" ]; then
-        echo "[entrypoint] FATAL: Cannot find openclaw binary anywhere"
-      else
-        echo "[entrypoint] Found openclaw at: $OPENCLAW_BIN"
-      fi
+    # NOTE: openclaw.mjs is the CLI entry point - run it directly with node
+    # (bin symlinks in node_modules/.bin only work for dependencies, not root package)
+    OPENCLAW_SCRIPT="/app/openclaw.mjs"
+    if [ ! -f "$OPENCLAW_SCRIPT" ]; then
+      echo "[entrypoint] FATAL: openclaw.mjs not found at $OPENCLAW_SCRIPT"
+      echo "[entrypoint] Listing /app contents:"
+      ls -la /app/ | head -20
+    else
+      echo "[entrypoint] Using openclaw script: $OPENCLAW_SCRIPT"
     fi
-    ONBOARD_CMD=("$OPENCLAW_BIN" "onboard" "--non-interactive" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
+    ONBOARD_CMD=("node" "$OPENCLAW_SCRIPT" "onboard" "--non-interactive" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
     
     # Add auth choice if specified
     AUTH_CHOICE="${OPENCLAW_ONBOARD_AUTH_CHOICE:-}"
