@@ -176,9 +176,8 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
 
     # Add model if specified (dashboard passes OPENCLAW_ONBOARD_MODEL, fallback to default)
     ONBOARD_MODEL="${OPENCLAW_ONBOARD_MODEL:-${OPENCLAW_DEFAULT_MODEL:-}}"
-    if [ -n "$ONBOARD_MODEL" ]; then
-      ONBOARD_CMD+=("--llm-model" "$ONBOARD_MODEL")
-    fi
+    # NOTE: "onboard" command doesn't support --model flag, so we set it AFTER onboarding
+
     
     # Run the onboard command
     # Print a safe version of the command for logging
@@ -196,6 +195,12 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
       else
          echo "[entrypoint] Auto-onboard failed and no config generated. Manual setup required."
       fi
+    fi
+
+    # Explicitly set the model if specified (since onboard defaults to provider's preference)
+    if [ -n "$ONBOARD_MODEL" ] && [ -s "$CONFIG_FILE" ]; then
+      echo "[entrypoint] Setting default model to: $ONBOARD_MODEL"
+      node "$OPENCLAW_SCRIPT" models set "$ONBOARD_MODEL" || echo "[entrypoint] WARNING: Failed to set default model"
     fi
   else
     echo "[entrypoint] Auto-onboard already completed (marker exists)"
