@@ -188,6 +188,28 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     echo "[entrypoint] Enforcing model from env: $ONBOARD_MODEL"
     node "$OPENCLAW_SCRIPT" models set "$ONBOARD_MODEL" || echo "[entrypoint] WARNING: Failed to set default model"
   fi
+
+  # CRITICAL: Re-apply gateway token AFTER onboard (onboard may overwrite it)
+  # This ensures the token in the config matches what the dashboard expects
+  if [ -n "$GATEWAY_TOKEN" ] && [ -s "$CONFIG_FILE" ]; then
+    echo "[entrypoint] Enforcing gateway token from env..."
+    # Use jq if available, otherwise use node for JSON manipulation
+    if command -v jq &> /dev/null; then
+      jq --arg token "$GATEWAY_TOKEN" '.gateway.auth.token = $token | .gateway.auth.mode = "token"' "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    else
+      # Fallback: use node to patch the config
+      node -e "
+        const fs = require('fs');
+        const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+        config.gateway = config.gateway || {};
+        config.gateway.auth = config.gateway.auth || {};
+        config.gateway.auth.mode = 'token';
+        config.gateway.auth.token = '$GATEWAY_TOKEN';
+        fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+      "
+    fi
+    echo "[entrypoint] Gateway token enforced"
+  fi
 fi
 
 # Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
