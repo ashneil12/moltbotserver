@@ -48,6 +48,28 @@ services:
     init: true
     restart: unless-stopped
 
+  backup-worker:
+    image: offen/docker-volume-backup:v2
+    restart: always
+    environment:
+      # Job configuration
+      BACKUP_CRON_EXPRESSION: "${BACKUP_CRON_EXPRESSION:-0 2 * * *}"
+      BACKUP_FILENAME: "moltbot-backup-${COOLIFY_RESOURCE_UUID}-%Y-%m-%dT%H-%M-%S.tar.gz"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-7}"
+      # S3 / Object Storage config
+      AWS_S3_BUCKET_NAME: "${AWS_S3_BUCKET_NAME}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_ENDPOINT: "${AWS_ENDPOINT}"
+      # GPG Encryption (Optional - disabled by default)
+      # GPG_PASSPHRASE: "${GPG_PASSPHRASE:-}"
+    volumes:
+      # Mount the data volumes as read-only for backup
+      - openclaw-data:/backup/openclaw-data:ro
+      - openclaw-workspace:/backup/openclaw-workspace:ro
+    networks:
+      - coolify
+
 volumes:
   openclaw-data:
   openclaw-workspace:
