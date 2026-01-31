@@ -170,6 +170,14 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
       ONBOARD_CMD+=("--xai-api-key" "$XAI_API_KEY")
     elif [ "$AUTH_CHOICE" = "moonshot-api-key" ] && [ -n "${MOONSHOT_API_KEY:-}" ]; then
       ONBOARD_CMD+=("--moonshot-api-key" "$MOONSHOT_API_KEY")
+    elif [ "$AUTH_CHOICE" = "zai-api-key" ] && [ -n "${ZAI_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--zai-api-key" "$ZAI_API_KEY")
+    fi
+
+    # Add model if specified (dashboard passes OPENCLAW_ONBOARD_MODEL, fallback to default)
+    ONBOARD_MODEL="${OPENCLAW_ONBOARD_MODEL:-${OPENCLAW_DEFAULT_MODEL:-}}"
+    if [ -n "$ONBOARD_MODEL" ]; then
+      ONBOARD_CMD+=("--llm-model" "$ONBOARD_MODEL")
     fi
     
     # Run the onboard command
