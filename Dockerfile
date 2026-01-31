@@ -39,9 +39,28 @@ ENV NODE_ENV=production
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Security hardening: Run as non-root user
-# The node:22-bookworm image includes a 'node' user (uid 1000)
-# This reduces the attack surface by preventing container escape via root privileges
+# Install sudo and grant passwordless sudo to node user
+# This allows the agent to install packages at runtime while still running as non-root
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo && \
+  echo "node ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/node && \
+  chmod 0440 /etc/sudoers.d/node && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+# Install Linuxbrew (Homebrew for Linux) for the node user
+# This provides a user-space package manager that doesn't require root for most operations
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
+  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/node/.bashrc && \
+  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/node/.profile
+
+# Add Homebrew to PATH for all subsequent commands and runtime
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+ENV HOMEBREW_NO_AUTO_UPDATE=1
+
+# Security note: Run as non-root user with sudo access
+# The node user (uid 1000) can escalate to root via sudo when needed
+# This is a trade-off: more agent capability vs. increased attack surface within the container
 USER node
 
 # Use entrypoint for config generation (SaaS mode support)

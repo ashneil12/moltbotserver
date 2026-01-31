@@ -1,6 +1,19 @@
 #!/bin/bash
 set -e
 
+# Runtime sudo toggle - allows disabling sudo without rebuilding
+# When OPENCLAW_DISABLE_SUDO=true, remove node from sudoers
+DISABLE_SUDO="${OPENCLAW_DISABLE_SUDO:-false}"
+if [ "$DISABLE_SUDO" = "true" ] || [ "$DISABLE_SUDO" = "1" ]; then
+  if [ -f /etc/sudoers.d/node ]; then
+    echo "[entrypoint] Sudo access DISABLED (OPENCLAW_DISABLE_SUDO=true)"
+    # This requires sudo to work once to remove itself - that's fine since we still have it at startup
+    sudo rm -f /etc/sudoers.d/node 2>/dev/null || true
+  fi
+else
+  echo "[entrypoint] Sudo access ENABLED"
+fi
+
 # Configuration directory
 CONFIG_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"

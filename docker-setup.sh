@@ -212,3 +212,24 @@ echo ""
 echo "Commands:"
 echo "  ${COMPOSE_HINT} logs -f openclaw-gateway"
 echo "  ${COMPOSE_HINT} exec openclaw-gateway node dist/index.js health --token \"$OPENCLAW_GATEWAY_TOKEN\""
+
+
+# --- Host Hardening Prompt ---
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  echo ""
+  echo "==> Security Hardening (Optional)"
+  echo "Do you want to run the host hardening script?"
+  echo "This will configure UFW (Firewall) and schedule daily security audits."
+  echo "NOTE: This requires sudo access."
+  read -p "Run hardening? [y/N] " -n 1 -r
+  echo ""
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ -f "$ROOT_DIR/scripts/host-hardening.sh" ]]; then
+       sudo "$ROOT_DIR/scripts/host-hardening.sh"
+     else
+       echo "Hardening script not found at $ROOT_DIR/scripts/host-hardening.sh"
+    fi
+  fi
+fi
+
+
