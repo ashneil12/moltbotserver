@@ -19,9 +19,16 @@ services:
       - openclaw-workspace:/home/node/workspace
     ports:
       - "${PORT:-18789}:18789"
+    networks:
+      - coolify
     init: true
     restart: unless-stopped
 
 volumes:
   openclaw-data:
   openclaw-workspace:
+
+
+networks:
+  coolify:
+    external: true
