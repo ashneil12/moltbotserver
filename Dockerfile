@@ -42,7 +42,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Install sudo and grant passwordless sudo to node user
 # This allows the agent to install packages at runtime while still running as non-root
 RUN apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo jq && \
   echo "node ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/node && \
   chmod 0440 /etc/sudoers.d/node && \
   apt-get clean && \

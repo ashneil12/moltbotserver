@@ -26,7 +26,7 @@ CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-${CLAWDBOT_GATEWAY_TOKEN:-}}"
 GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-lan}}"
 GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}}"
-TRUSTED_PROXIES="${OPENCLAW_TRUSTED_PROXIES:-${CLAWDBOT_TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}}"
+
 
 # Security: Disable mDNS/Bonjour broadcasting (prevents information disclosure)
 export OPENCLAW_DISABLE_BONJOUR=1
@@ -54,7 +54,6 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
-    "trustedProxies": $([[ -n "$TRUSTED_PROXIES" ]] && echo "$TRUSTED_PROXIES" | jq -R 'split(",") | map(select(length > 0))' 2>/dev/null || node -e 'console.log(JSON.stringify(process.env.TRUSTED_PROXIES.split(",").filter(Boolean)))'),
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
@@ -82,7 +81,6 @@ EOF
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
-    "trustedProxies": $([[ -n "$TRUSTED_PROXIES" ]] && echo "$TRUSTED_PROXIES" | jq -R 'split(",") | map(select(length > 0))' 2>/dev/null || node -e 'console.log(JSON.stringify(process.env.TRUSTED_PROXIES.split(",").filter(Boolean)))'),
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
