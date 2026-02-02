@@ -153,6 +153,8 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
       ONBOARD_CMD+=("--moonshot-api-key" "$MOONSHOT_API_KEY")
     elif [ "$AUTH_CHOICE" = "zai-api-key" ] && [ -n "${ZAI_API_KEY:-}" ]; then
       ONBOARD_CMD+=("--zai-api-key" "$ZAI_API_KEY")
+    elif [ "$AUTH_CHOICE" = "venice-api-key" ] && [ -n "${VENICE_API_KEY:-}" ]; then
+      ONBOARD_CMD+=("--venice-api-key" "$VENICE_API_KEY")
     fi
 
     # Add model if specified (dashboard passes OPENCLAW_ONBOARD_MODEL, fallback to default)
@@ -214,16 +216,34 @@ fi
 # Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
 # This file is copied into the image at build time (/app/SOUL.md)
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/clawd}}"
+
+# Check if ACIP (Advanced Cognitive Inoculation Prompt) is enabled
+# Defaults to true for security
+ACIP_ENABLED="${OPENCLAW_ACIP_ENABLED:-true}"
+
 if [ -f "/app/SOUL.md" ]; then
   mkdir -p "$WORKSPACE_DIR"
-  echo "[entrypoint] Copying security rules (SOUL.md) to workspace..."
+  echo "[entrypoint] Setting up security rules (SOUL.md)..."
   
   # Remove existing readonly file if it exists so we can update it
   if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
     rm -f "$WORKSPACE_DIR/SOUL.md"
   fi
+
+  if [ "$ACIP_ENABLED" = "true" ] || [ "$ACIP_ENABLED" = "1" ]; then
+      echo "[entrypoint] ACIP Security enabled. Fetching latest rules..."
+      # Try to fetch from GitHub
+      if curl -sSL --fail --connect-timeout 5 "https://raw.githubusercontent.com/Dicklesworthstone/acip/main/SECURITY.md" -o "$WORKSPACE_DIR/SOUL.md"; then
+          echo "[entrypoint] Successfully fetched latest ACIP security rules from GitHub."
+      else 
+          echo "[entrypoint] WARNING: Failed to fetch ACIP rules. Falling back to built-in SOUL.md."
+          cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
+      fi
+  else
+      echo "[entrypoint] ACIP Security disabled (OPENCLAW_ACIP_ENABLED=$ACIP_ENABLED). Using default rules."
+      cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
+  fi
   
-  cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
   # Set strict read-only permissions for the SOUL file so it can't be easily modified by the agent itself
   chmod 444 "$WORKSPACE_DIR/SOUL.md"
 fi
