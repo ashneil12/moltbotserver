@@ -93,9 +93,7 @@ async function main() {
     }
   }
 
-  const wsLogRaw = (hasFlag(args, "--compact") ? "compact" : argValue(args, "--ws-log")) as
-    | string
-    | undefined;
+  const wsLogRaw = hasFlag(args, "--compact") ? "compact" : argValue(args, "--ws-log");
   const wsLogStyle: GatewayWsLogStyle =
     wsLogRaw === "compact" ? "compact" : wsLogRaw === "full" ? "full" : "auto";
   setGatewayWsLogStyle(wsLogStyle);
@@ -121,10 +119,10 @@ async function main() {
     "loopback";
   const bind =
     bindRaw === "loopback" ||
-      bindRaw === "lan" ||
-      bindRaw === "auto" ||
-      bindRaw === "custom" ||
-      bindRaw === "tailnet"
+    bindRaw === "lan" ||
+    bindRaw === "auto" ||
+    bindRaw === "custom" ||
+    bindRaw === "tailnet"
       ? bindRaw
       : null;
   if (!bind) {

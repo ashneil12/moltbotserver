@@ -1,7 +1,7 @@
 import { Cron } from "croner";
 import type { CliDeps } from "../cli/deps.js";
-import { formatCliCommand } from "../cli/command-format.js";
 import type { OpenClawConfig } from "../config/config.js";
+import { formatCliCommand } from "../cli/command-format.js";
 import { requestHeartbeatNow } from "../infra/heartbeat-wake.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
 import { getChildLogger } from "../logging.js";
@@ -12,8 +12,6 @@ const log = getChildLogger({ module: "security-scheduler" });
 function formatSecurityReport(report: SecurityAuditReport): string {
   const date = new Date(report.ts).toLocaleDateString();
   const summary = report.summary;
-  const critical = summary.critical > 0 ? "🔴" : "✅";
-  const warn = summary.warn > 0 ? "🟡" : "✅";
 
   // Basic status summary for the table logic
   // We can't easily reproduce the exact table from the gist without re-running specific checks mapping
