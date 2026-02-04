@@ -81,31 +81,8 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
         "experimental": { "sessionMemory": true },
         "sources": ["memory", "sessions"]
       },
-      "routing": {
-        "rules": [
-          {
-            "match": { "taskType": "coding" },
-            "model": "codex/codex-1.5"
-          },
-          {
-            "match": { "taskType": "search" },
-            "model": "google/gemini-2.5-flash"
-          },
-          {
-            "match": { "taskType": "analysis" },
-            "model": "deepseek/deepseek-v3"
-          },
-          {
-            "match": { "taskType": "default" },
-            "model": "kimi/k2.5"
-          }
-        ]
-      },
-      "subagent": {
-        "useRouting": true,
-        "defaultModel": "kimi/k2.5",
-        "logToFile": true,
-        "logPath": "subagent-logs/"
+      "subagents": {
+        "model": "kimi/k2.5"
       }
     }
   }
@@ -143,31 +120,8 @@ EOF
         "experimental": { "sessionMemory": true },
         "sources": ["memory", "sessions"]
       },
-      "routing": {
-        "rules": [
-          {
-            "match": { "taskType": "coding" },
-            "model": "codex/codex-1.5"
-          },
-          {
-            "match": { "taskType": "search" },
-            "model": "google/gemini-2.5-flash"
-          },
-          {
-            "match": { "taskType": "analysis" },
-            "model": "deepseek/deepseek-v3"
-          },
-          {
-            "match": { "taskType": "default" },
-            "model": "kimi/k2.5"
-          }
-        ]
-      },
-      "subagent": {
-        "useRouting": true,
-        "defaultModel": "kimi/k2.5",
-        "logToFile": true,
-        "logPath": "subagent-logs/"
+      "subagents": {
+        "model": "kimi/k2.5"
       }
     }
   }
