@@ -6,32 +6,8 @@ import process from "node:process";
 
 const args = process.argv.slice(2);
 const env = { ...process.env };
-
-// Ensure common system paths are in PATH
-const pathKey = Object.keys(env).find((k) => k.toLowerCase() === "path") || "PATH";
-const currentPath = env[pathKey] || "";
-const standardPaths = [
-  "/opt/homebrew/bin",
-  "/opt/homebrew/sbin",
-  "/usr/local/bin",
-  "/usr/bin",
-  "/bin",
-  "/usr/sbin",
-  "/sbin",
-];
-
-const newPath = standardPaths.reduce((acc, p) => {
-  if (!acc.includes(p) && fs.existsSync(p)) {
-    return `${p}${path.delimiter}${acc}`;
-  }
-  return acc;
-}, currentPath);
-
-env[pathKey] = newPath;
 const cwd = process.cwd();
-const compilerOverride = env.OPENCLAW_TS_COMPILER ?? env.CLAWDBOT_TS_COMPILER;
-const compiler = compilerOverride === "tsc" ? "tsc" : "tsgo";
-const projectArgs = ["--project", "tsconfig.json"];
+const compiler = "tsdown";
 
 const distRoot = path.join(cwd, "dist");
 const distEntry = path.join(distRoot, "/entry.js");
@@ -159,12 +135,10 @@ if (!shouldBuild()) {
   runNode();
 } else {
   logRunner("Building TypeScript (dist is stale).");
-  const pnpmArgs = ["exec", compiler, ...projectArgs];
-  const buildCmd = process.platform === "win32" ? "cmd.exe" : "npx";
+  const pnpmArgs = ["exec", compiler];
+  const buildCmd = process.platform === "win32" ? "cmd.exe" : "pnpm";
   const buildArgs =
-    process.platform === "win32"
-      ? ["/d", "/s", "/c", "pnpm", ...pnpmArgs]
-      : ["--yes", "pnpm", ...pnpmArgs];
+    process.platform === "win32" ? ["/d", "/s", "/c", "pnpm", ...pnpmArgs] : pnpmArgs;
   const build = spawn(buildCmd, buildArgs, {
     cwd,
     env,
