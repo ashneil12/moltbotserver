@@ -467,3 +467,17 @@ export function applyCompactionDefaults(cfg: OpenClawConfig): OpenClawConfig {
 export function resetSessionDefaultsWarningForTests() {
   defaultWarnState = { warned: false };
 }
+
+export function applyMemoryDefaults(cfg: OpenClawConfig): OpenClawConfig {
+  const memory = cfg.memory;
+  if (memory?.backend) {
+    return cfg;
+  }
+  return {
+    ...cfg,
+    memory: {
+      ...memory,
+      backend: "qmd",
+    },
+  };
+}
