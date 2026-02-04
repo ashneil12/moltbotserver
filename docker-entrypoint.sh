@@ -68,6 +68,44 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "defaults": {
       "model": {
         "primary": "${DEFAULT_MODEL}"
+      },
+      "compaction": {
+        "memoryFlush": {
+          "enabled": true,
+          "softThresholdTokens": 4000,
+          "systemPrompt": "Session nearing compaction. Write any important context to WORKING.md and memory files now.",
+          "prompt": "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store."
+        }
+      },
+      "memorySearch": {
+        "experimental": { "sessionMemory": true },
+        "sources": ["memory", "sessions"]
+      },
+      "routing": {
+        "rules": [
+          {
+            "match": { "taskType": "coding" },
+            "model": "codex/codex-1.5"
+          },
+          {
+            "match": { "taskType": "search" },
+            "model": "google/gemini-2.5-flash"
+          },
+          {
+            "match": { "taskType": "analysis" },
+            "model": "deepseek/deepseek-v3"
+          },
+          {
+            "match": { "taskType": "default" },
+            "model": "kimi/k2.5"
+          }
+        ]
+      },
+      "subagent": {
+        "useRouting": true,
+        "defaultModel": "kimi/k2.5",
+        "logToFile": true,
+        "logPath": "subagent-logs/"
       }
     }
   }
@@ -90,7 +128,49 @@ EOF
       "token": "${GATEWAY_TOKEN}"
     }
   },
-  "logging": { "redactSensitive": "tools" }
+  "logging": { "redactSensitive": "tools" },
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "memoryFlush": {
+          "enabled": true,
+          "softThresholdTokens": 4000,
+          "systemPrompt": "Session nearing compaction. Write any important context to WORKING.md and memory files now.",
+          "prompt": "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store."
+        }
+      },
+      "memorySearch": {
+        "experimental": { "sessionMemory": true },
+        "sources": ["memory", "sessions"]
+      },
+      "routing": {
+        "rules": [
+          {
+            "match": { "taskType": "coding" },
+            "model": "codex/codex-1.5"
+          },
+          {
+            "match": { "taskType": "search" },
+            "model": "google/gemini-2.5-flash"
+          },
+          {
+            "match": { "taskType": "analysis" },
+            "model": "deepseek/deepseek-v3"
+          },
+          {
+            "match": { "taskType": "default" },
+            "model": "kimi/k2.5"
+          }
+        ]
+      },
+      "subagent": {
+        "useRouting": true,
+        "defaultModel": "kimi/k2.5",
+        "logToFile": true,
+        "logPath": "subagent-logs/"
+      }
+    }
+  }
 }
 EOF
   fi
@@ -246,6 +326,27 @@ if [ -f "/app/SOUL.md" ]; then
   
   # Set strict read-only permissions for the SOUL file so it can't be easily modified by the agent itself
   chmod 444 "$WORKSPACE_DIR/SOUL.md"
+fi
+
+# [MOLTBOT CUSTOMIZATION START] - Memory & task persistence
+# Deploy WORKING.md template if it doesn't exist
+if [ -f "/app/WORKING.md" ]; then
+  # Only create if it doesn't exist (don't overwrite user's work)
+  if [ ! -f "$WORKSPACE_DIR/WORKING.md" ]; then
+    echo "[entrypoint] Creating WORKING.md template..."
+    cp /app/WORKING.md "$WORKSPACE_DIR/WORKING.md"
+    # WORKING.md should be writable (agent needs to update it)
+    chmod 644 "$WORKSPACE_DIR/WORKING.md"
+  fi
+fi
+# [MOLTBOT CUSTOMIZATION END]
+
+# Create subagent log directory
+SUBAGENT_LOG_DIR="$WORKSPACE_DIR/subagent-logs"
+if [ ! -d "$SUBAGENT_LOG_DIR" ]; then
+  mkdir -p "$SUBAGENT_LOG_DIR"
+  chmod 755 "$SUBAGENT_LOG_DIR"
+  echo "[entrypoint] Created subagent log directory"
 fi
 
 # Execute the main command

@@ -67,8 +67,26 @@ type ControlUiAvatarMeta = {
 };
 
 function applyControlUiSecurityHeaders(res: ServerResponse) {
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
+  // [MOLTBOT CUSTOMIZATION] Allow iframe embedding for SaaS dashboard mode
+  // OPENCLAW_ALLOW_IFRAME_ORIGINS can be set to restrict to specific origins (comma-separated)
+  // If not set but OPENCLAW_DISABLE_DEVICE_AUTH is true, allow all origins (SaaS mode)
+  const allowedOrigins = process.env.OPENCLAW_ALLOW_IFRAME_ORIGINS;
+  const isSaaSMode = process.env.OPENCLAW_DISABLE_DEVICE_AUTH === "true";
+
+  if (allowedOrigins) {
+    // Specific origins provided - use them
+    const origins = allowedOrigins.split(",").map(o => o.trim()).join(" ");
+    res.setHeader("Content-Security-Policy", `frame-ancestors ${origins}`);
+    // X-Frame-Options doesn't support multiple origins, so we skip it when using CSP
+  } else if (isSaaSMode) {
+    // SaaS mode - allow embedding from any origin (dashboard will embed this)
+    res.setHeader("Content-Security-Policy", "frame-ancestors *");
+    // Don't set X-Frame-Options as it would conflict
+  } else {
+    // Default: deny framing for security
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
+  }
   res.setHeader("X-Content-Type-Options", "nosniff");
 }
 
@@ -301,10 +319,10 @@ export function handleControlUiHttpRequest(
     rootState?.kind === "resolved"
       ? rootState.path
       : resolveControlUiRootSync({
-          moduleUrl: import.meta.url,
-          argv1: process.argv[1],
-          cwd: process.cwd(),
-        });
+        moduleUrl: import.meta.url,
+        argv1: process.argv[1],
+        cwd: process.cwd(),
+      });
   if (!root) {
     res.statusCode = 503;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");

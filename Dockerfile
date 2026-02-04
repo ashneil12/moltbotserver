@@ -39,6 +39,10 @@ ENV NODE_ENV=production
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Install memory plugins (disabled by default, enabled via dashboard)
+RUN pnpm exec openclaw plugins install @supermemory/openclaw-supermemory || echo "Supermemory plugin install skipped"
+RUN pnpm exec openclaw plugins install @honcho-ai/openclaw-honcho || echo "Honcho plugin install skipped"
+
 # Install sudo and grant passwordless sudo to node user
 # This allows the agent to install packages at runtime while still running as non-root
 RUN apt-get update && \
