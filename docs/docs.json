@@ -2,35 +2,44 @@
   "$schema": "https://mintlify.com/docs.json",
   "name": "OpenClaw",
   "theme": "mint",
+  "icons": {
+    "library": "lucide"
+  },
   "logo": {
     "light": "/assets/pixel-lobster.svg",
     "dark": "/assets/pixel-lobster.svg"
   },
+  "fonts": {
+    "body": {
+      "family": "Fragment Mono"
+    },
+    "heading": {
+      "family": "DM Sans"
+    }
+  },
   "favicon": "/assets/pixel-lobster.svg",
   "colors": {
-    "primary": "#FF5A36"
+    "primary": "#FF5A36",
+    "dark": "#FF5A36",
+    "light": "#FF8A6B"
   },
-  "topbarLinks": [
-    {
-      "name": "中文",
-      "url": "/zh-CN"
-    },
-    {
-      "name": "GitHub",
-      "url": "https://github.com/openclaw/openclaw"
-    },
-    {
-      "name": "Releases",
-      "url": "https://github.com/openclaw/openclaw/releases"
-    }
-  ],
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/openclaw/openclaw",
+        "icon": "github"
+      },
+      {
+        "label": "Releases",
+        "href": "https://github.com/openclaw/openclaw/releases",
+        "icon": "package"
+      }
+    ]
+  },
   "redirects": [
     {
       "source": "/cron",
-      "destination": "/cron-jobs"
-    },
-    {
-      "source": "/cron/",
       "destination": "/cron-jobs"
     },
     {
@@ -720,11 +729,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": [
-                  "index",
-                  "start/showcase",
-                  "start/lore"
-                ]
+                "pages": ["index", "concepts/features", "start/showcase", "start/lore"]
               },
               {
                 "group": "Installation",
@@ -744,12 +749,14 @@
                 "group": "Setup",
                 "pages": [
                   "start/getting-started",
+                  "start/quickstart",
                   "start/wizard",
                   "start/setup",
                   "start/onboarding",
                   "start/pairing",
                   "start/openclaw",
-                  "start/hubs"
+                  "start/hubs",
+                  "start/docs-directory"
                 ]
               },
               {
@@ -770,9 +777,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": [
-                  "channels/index"
-                ]
+                "pages": ["channels/index"]
               },
               {
                 "group": "Messaging platforms",
@@ -835,10 +840,7 @@
               },
               {
                 "group": "Multi-agent",
-                "pages": [
-                  "concepts/multi-agent",
-                  "concepts/presence"
-                ]
+                "pages": ["concepts/multi-agent", "concepts/presence"]
               },
               {
                 "group": "Messages and delivery",
@@ -856,9 +858,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": [
-                  "tools/index"
-                ]
+                "pages": ["tools/index"]
               },
               {
                 "group": "Built-in tools",
@@ -884,11 +884,7 @@
               },
               {
                 "group": "Agent coordination",
-                "pages": [
-                  "tools/agent-send",
-                  "tools/subagents",
-                  "multi-agent-sandbox-tools"
-                ]
+                "pages": ["tools/agent-send", "tools/subagents", "multi-agent-sandbox-tools"]
               },
               {
                 "group": "Skills and extensions",
@@ -906,7 +902,6 @@
                 "group": "Automation",
                 "pages": [
                   "hooks",
-                  "hooks/soul-evil",
                   "automation/cron-jobs",
                   "automation/cron-vs-heartbeat",
                   "automation/webhook",
@@ -934,18 +929,11 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": [
-                  "providers/index",
-                  "providers/models",
-                  "concepts/models"
-                ]
+                "pages": ["providers/index", "providers/models", "concepts/models"]
               },
               {
                 "group": "Configuration",
-                "pages": [
-                  "concepts/model-providers",
-                  "concepts/model-failover"
-                ]
+                "pages": ["concepts/model-providers", "concepts/model-failover"]
               },
               {
                 "group": "Providers",
@@ -1010,6 +998,7 @@
                   {
                     "group": "Networking and discovery",
                     "pages": [
+                      "gateway/network-model",
                       "gateway/pairing",
                       "gateway/discovery",
                       "gateway/bonjour"
@@ -1035,19 +1024,11 @@
               },
               {
                 "group": "Security",
-                "pages": [
-                  "security/formal-verification"
-                ]
+                "pages": ["security/formal-verification"]
               },
               {
                 "group": "Web interfaces",
-                "pages": [
-                  "web/index",
-                  "web/control-ui",
-                  "web/dashboard",
-                  "web/webchat",
-                  "tui"
-                ]
+                "pages": ["web/index", "web/control-ui", "web/dashboard", "web/webchat", "tui"]
               },
               {
                 "group": "macOS companion app",
@@ -1120,10 +1101,7 @@
               },
               {
                 "group": "RPC and API",
-                "pages": [
-                  "reference/rpc",
-                  "reference/device-models"
-                ]
+                "pages": ["reference/rpc", "reference/device-models"]
               },
               {
                 "group": "Templates",
@@ -1151,11 +1129,12 @@
                 ]
               },
               {
+                "group": "Project",
+                "pages": ["reference/credits"]
+              },
+              {
                 "group": "Release notes",
-                "pages": [
-                  "reference/RELEASING",
-                  "reference/test"
-                ]
+                "pages": ["reference/RELEASING", "reference/test"]
               }
             ]
           },
@@ -1164,11 +1143,7 @@
             "groups": [
               {
                 "group": "Help",
-                "pages": [
-                  "help/index",
-                  "help/troubleshooting",
-                  "help/faq"
-                ]
+                "pages": ["help/index", "help/troubleshooting", "help/faq"]
               },
               {
                 "group": "Environment and debugging",
@@ -1192,11 +1167,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": [
-                  "zh-CN/index",
-                  "zh-CN/start/showcase",
-                  "zh-CN/start/lore"
-                ]
+                "pages": ["zh-CN/index", "zh-CN/start/showcase", "zh-CN/start/lore"]
               },
               {
                 "group": "Installation",
@@ -1242,9 +1213,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": [
-                  "zh-CN/channels/index"
-                ]
+                "pages": ["zh-CN/channels/index"]
               },
               {
                 "group": "Messaging platforms",
@@ -1307,10 +1276,7 @@
               },
               {
                 "group": "Multi-agent",
-                "pages": [
-                  "zh-CN/concepts/multi-agent",
-                  "zh-CN/concepts/presence"
-                ]
+                "pages": ["zh-CN/concepts/multi-agent", "zh-CN/concepts/presence"]
               },
               {
                 "group": "Messages and delivery",
@@ -1328,9 +1294,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": [
-                  "zh-CN/tools/index"
-                ]
+                "pages": ["zh-CN/tools/index"]
               },
               {
                 "group": "Built-in tools",
@@ -1378,7 +1342,6 @@
                 "group": "Automation",
                 "pages": [
                   "zh-CN/hooks",
-                  "zh-CN/hooks/soul-evil",
                   "zh-CN/automation/cron-jobs",
                   "zh-CN/automation/cron-vs-heartbeat",
                   "zh-CN/automation/webhook",
@@ -1414,10 +1377,7 @@
               },
               {
                 "group": "Configuration",
-                "pages": [
-                  "zh-CN/concepts/model-providers",
-                  "zh-CN/concepts/model-failover"
-                ]
+                "pages": ["zh-CN/concepts/model-providers", "zh-CN/concepts/model-failover"]
               },
               {
                 "group": "Providers",
@@ -1507,9 +1467,7 @@
               },
               {
                 "group": "Security",
-                "pages": [
-                  "zh-CN/security/formal-verification"
-                ]
+                "pages": ["zh-CN/security/formal-verification"]
               },
               {
                 "group": "Web interfaces",
@@ -1592,10 +1550,7 @@
               },
               {
                 "group": "RPC and API",
-                "pages": [
-                  "zh-CN/reference/rpc",
-                  "zh-CN/reference/device-models"
-                ]
+                "pages": ["zh-CN/reference/rpc", "zh-CN/reference/device-models"]
               },
               {
                 "group": "Templates",
@@ -1624,10 +1579,7 @@
               },
               {
                 "group": "Release notes",
-                "pages": [
-                  "zh-CN/reference/RELEASING",
-                  "zh-CN/reference/test"
-                ]
+                "pages": ["zh-CN/reference/RELEASING", "zh-CN/reference/test"]
               }
             ]
           },
@@ -1636,11 +1588,7 @@
             "groups": [
               {
                 "group": "Help",
-                "pages": [
-                  "zh-CN/help/index",
-                  "zh-CN/help/troubleshooting",
-                  "zh-CN/help/faq"
-                ]
+                "pages": ["zh-CN/help/index", "zh-CN/help/troubleshooting", "zh-CN/help/faq"]
               },
               {
                 "group": "Environment and debugging",
