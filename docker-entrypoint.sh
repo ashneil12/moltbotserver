@@ -83,6 +83,11 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
       },
       "subagents": {
         "model": "kimi/k2.5"
+      },
+      "heartbeat": {
+        "every": "15m",
+        "prompt": "Read HEARTBEAT.md and follow it. Check memory/self-review.md for recent patterns. If nothing needs attention, reply HEARTBEAT_OK.",
+        "model": "${HEARTBEAT_MODEL:-auto}"
       }
     }
   }
@@ -122,6 +127,11 @@ EOF
       },
       "subagents": {
         "model": "kimi/k2.5"
+      },
+      "heartbeat": {
+        "every": "15m",
+        "prompt": "Read HEARTBEAT.md and follow it. Check memory/self-review.md for recent patterns. If nothing needs attention, reply HEARTBEAT_OK.",
+        "model": "${HEARTBEAT_MODEL:-auto}"
       }
     }
   }
@@ -265,12 +275,13 @@ if [ -f "/app/SOUL.md" ]; then
   fi
 
   if [ "$ACIP_ENABLED" = "true" ] || [ "$ACIP_ENABLED" = "1" ]; then
-      echo "[entrypoint] ACIP Security enabled. Fetching latest rules..."
-      # Try to fetch from GitHub
-      if curl -sSL --fail --connect-timeout 5 "https://raw.githubusercontent.com/Dicklesworthstone/acip/main/SECURITY.md" -o "$WORKSPACE_DIR/SOUL.md"; then
-          echo "[entrypoint] Successfully fetched latest ACIP security rules from GitHub."
-      else 
-          echo "[entrypoint] WARNING: Failed to fetch ACIP rules. Falling back to built-in SOUL.md."
+      echo "[entrypoint] ACIP Security enabled. Using bundled ACIP v1.3 rules..."
+      # Use bundled ACIP security rules (no network fetch required)
+      if [ -f "/app/ACIP_SECURITY.md" ]; then
+          cp /app/ACIP_SECURITY.md "$WORKSPACE_DIR/SOUL.md"
+          echo "[entrypoint] Successfully deployed ACIP v1.3 security rules."
+      else
+          echo "[entrypoint] WARNING: ACIP_SECURITY.md not found. Falling back to built-in SOUL.md."
           cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
       fi
   else
@@ -293,6 +304,41 @@ if [ -f "/app/WORKING.md" ]; then
     chmod 644 "$WORKSPACE_DIR/WORKING.md"
   fi
 fi
+
+# Create memory directory structure
+MEMORY_DIR="$WORKSPACE_DIR/memory"
+if [ ! -d "$MEMORY_DIR" ]; then
+  echo "[entrypoint] Creating memory directory..."
+  mkdir -p "$MEMORY_DIR"
+fi
+
+# Deploy self-review template if it doesn't exist
+if [ -f "/app/templates/memory/self-review.md" ]; then
+  if [ ! -f "$MEMORY_DIR/self-review.md" ]; then
+    echo "[entrypoint] Creating memory/self-review.md template..."
+    cp /app/templates/memory/self-review.md "$MEMORY_DIR/self-review.md"
+    chmod 644 "$MEMORY_DIR/self-review.md"
+  fi
+fi
+
+# Deploy open-loops template if it doesn't exist
+if [ -f "/app/templates/memory/open-loops.md" ]; then
+  if [ ! -f "$MEMORY_DIR/open-loops.md" ]; then
+    echo "[entrypoint] Creating memory/open-loops.md template..."
+    cp /app/templates/memory/open-loops.md "$MEMORY_DIR/open-loops.md"
+    chmod 644 "$MEMORY_DIR/open-loops.md"
+  fi
+fi
+
+# Deploy HEARTBEAT.md template if it doesn't exist
+if [ -f "/app/HEARTBEAT.md" ]; then
+  if [ ! -f "$WORKSPACE_DIR/HEARTBEAT.md" ]; then
+    echo "[entrypoint] Creating HEARTBEAT.md template..."
+    cp /app/HEARTBEAT.md "$WORKSPACE_DIR/HEARTBEAT.md"
+    chmod 644 "$WORKSPACE_DIR/HEARTBEAT.md"
+  fi
+fi
+
 # [MOLTBOT CUSTOMIZATION END]
 
 # Create subagent log directory
