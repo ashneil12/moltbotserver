@@ -131,32 +131,74 @@ export function renderOverview(props: OverviewProps) {
             <input
               .value=${props.settings.gatewayUrl}
               @input=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                props.onSettingsChange({ ...props.settings, gatewayUrl: v });
-              }}
+      const v = (e.target as HTMLInputElement).value;
+      props.onSettingsChange({ ...props.settings, gatewayUrl: v });
+    }}
               placeholder="ws://100.x.y.z:18789"
             />
           </label>
-          <label class="field">
+          <div class="field token-field">
             <span>Gateway Token</span>
-            <input
-              .value=${props.settings.token}
-              @input=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                props.onSettingsChange({ ...props.settings, token: v });
-              }}
-              placeholder="OPENCLAW_GATEWAY_TOKEN"
-            />
-          </label>
+            <div class="token-container" id="token-container">
+              <!-- Hidden state: Security warning + reveal button -->
+              <div class="token-hidden" id="token-hidden">
+                <div class="token-warning">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  <div class="token-warning-text">
+                    <strong>Sensitive Credential</strong>
+                    <span class="muted">This is the master password to your bot. Anyone with this token has full access.</span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-reveal" @click=${() => {
+      const hidden = document.getElementById('token-hidden');
+      const revealed = document.getElementById('token-revealed');
+      if (hidden) hidden.style.display = 'none';
+      if (revealed) revealed.style.display = 'block';
+    }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  Reveal Token
+                </button>
+              </div>
+              <!-- Revealed state: Input field with toggle -->
+              <div class="token-revealed" id="token-revealed" style="display: none;">
+                <div class="token-input-row">
+                  <input
+                    type="password"
+                    id="token-input"
+                    .value=${props.settings.token}
+                    @input=${(e: Event) => {
+      const v = (e.target as HTMLInputElement).value;
+      props.onSettingsChange({ ...props.settings, token: v });
+    }}
+                    placeholder="OPENCLAW_GATEWAY_TOKEN"
+                  />
+                  <button type="button" class="btn-icon" title="Toggle visibility" @click=${() => {
+      const input = document.getElementById('token-input') as HTMLInputElement;
+      if (input) input.type = input.type === 'password' ? 'text' : 'password';
+    }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  </button>
+                </div>
+                <button type="button" class="btn-link" @click=${() => {
+      const hidden = document.getElementById('token-hidden');
+      const revealed = document.getElementById('token-revealed');
+      const input = document.getElementById('token-input') as HTMLInputElement;
+      if (input) input.type = 'password';
+      if (hidden) hidden.style.display = 'block';
+      if (revealed) revealed.style.display = 'none';
+    }}>Hide token field</button>
+              </div>
+            </div>
+          </div>
           <label class="field">
             <span>Password (not stored)</span>
             <input
               type="password"
               .value=${props.password}
               @input=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                props.onPasswordChange(v);
-              }}
+      const v = (e.target as HTMLInputElement).value;
+      props.onPasswordChange(v);
+    }}
               placeholder="system or shared password"
             />
           </label>
@@ -165,9 +207,9 @@ export function renderOverview(props: OverviewProps) {
             <input
               .value=${props.settings.sessionKey}
               @input=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                props.onSessionKeyChange(v);
-              }}
+      const v = (e.target as HTMLInputElement).value;
+      props.onSessionKeyChange(v);
+    }}
             />
           </label>
         </div>
@@ -203,19 +245,18 @@ export function renderOverview(props: OverviewProps) {
             </div>
           </div>
         </div>
-        ${
-          props.lastError
-            ? html`<div class="callout danger" style="margin-top: 14px;">
+        ${props.lastError
+      ? html`<div class="callout danger" style="margin-top: 14px;">
               <div>${props.lastError}</div>
               ${authHint ?? ""}
               ${insecureContextHint ?? ""}
             </div>`
-            : html`
+      : html`
                 <div class="callout" style="margin-top: 14px">
                   Use Channels to link WhatsApp, Telegram, Discord, Signal, or iMessage.
                 </div>
               `
-        }
+    }
       </div>
     </section>
 
