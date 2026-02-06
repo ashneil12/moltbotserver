@@ -89,6 +89,8 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
   MODELS_SECTION=""
   if [ -n "$AI_GATEWAY_URL" ]; then
     echo "[entrypoint] Credits mode detected - configuring vercel-ai-gateway provider via: $AI_GATEWAY_URL"
+    # Note: apiKey is sent as Authorization: Bearer header by OpenClaw
+    # The models array is required - we define a catch-all pattern
     MODELS_SECTION=",
   \"models\": {
     \"mode\": \"merge\",
@@ -96,8 +98,10 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
       \"vercel-ai-gateway\": {
         \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
         \"apiKey\": \"${GATEWAY_TOKEN}\",
-        \"apiKeyHeader\": \"x-gateway-token\",
-        \"api\": \"openai-completions\"
+        \"api\": \"openai-completions\",
+        \"models\": [
+          { \"id\": \"*\", \"name\": \"All Models (via Gateway)\" }
+        ]
       }
     }
   }"
