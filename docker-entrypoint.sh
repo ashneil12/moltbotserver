@@ -37,6 +37,46 @@ DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AU
 # Model configuration (set via dashboard setup wizard)
 # Check OPENCLAW_ONBOARD_MODEL as fallback (set by onboarding flow)
 DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${OPENCLAW_ONBOARD_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}}"
+SUBAGENT_MODEL="${OPENCLAW_SUBAGENT_MODEL:-deepseek/deepseek-reasoner}"
+HEARTBEAT_MODEL="${OPENCLAW_HEARTBEAT_MODEL:-${HEARTBEAT_MODEL:-}}"
+HEARTBEAT_INTERVAL="${OPENCLAW_HEARTBEAT_INTERVAL:-15m}"
+FALLBACK_MODELS_RAW="${OPENCLAW_FALLBACK_MODELS:-}"
+
+# AI Gateway URL (for credits mode - routes through Dashboard's gateway)
+# When set, configures vercel-ai-gateway provider to use Dashboard as proxy
+AI_GATEWAY_URL="${OPENCLAW_AI_GATEWAY_URL:-}"
+
+# Build fallback model JSON array from comma-separated list
+FALLBACK_JSON="[]"
+if [ -n "$FALLBACK_MODELS_RAW" ]; then
+  IFS=',' read -ra FALLBACK_LIST <<< "$FALLBACK_MODELS_RAW"
+  FALLBACK_JSON="["
+  first=1
+  for item in "${FALLBACK_LIST[@]}"; do
+    trimmed=$(echo "$item" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    if [ -n "$trimmed" ]; then
+      if [ $first -eq 0 ]; then
+        FALLBACK_JSON+=", "
+      fi
+      FALLBACK_JSON+="\"$trimmed\""
+      first=0
+    fi
+  done
+  FALLBACK_JSON+="]"
+  if [ $first -eq 1 ]; then
+    FALLBACK_JSON="[]"
+  fi
+fi
+
+# Heartbeat model must be explicit; fall back to DEFAULT_MODEL if missing
+if [ -z "$HEARTBEAT_MODEL" ]; then
+  if [ -n "$DEFAULT_MODEL" ]; then
+    echo "[entrypoint] WARNING: HEARTBEAT_MODEL not set; falling back to DEFAULT_MODEL"
+    HEARTBEAT_MODEL="$DEFAULT_MODEL"
+  else
+    echo "[entrypoint] WARNING: HEARTBEAT_MODEL not set and DEFAULT_MODEL is empty"
+  fi
+fi
 
 # Create config directory if it doesn't exist
 mkdir -p "$CONFIG_DIR"
@@ -45,10 +85,26 @@ mkdir -p "$CONFIG_DIR"
 if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE_DEVICE_AUTH" = "1" ]; then
   echo "[entrypoint] Generating openclaw.json configuration..."
   
+  # Build optional models.providers section for credits mode (vercel-ai-gateway routing)
+  MODELS_SECTION=""
+  if [ -n "$AI_GATEWAY_URL" ]; then
+    echo "[entrypoint] Credits mode detected - configuring vercel-ai-gateway provider via: $AI_GATEWAY_URL"
+    MODELS_SECTION=",
+  \"models\": {
+    \"mode\": \"merge\",
+    \"providers\": {
+      \"vercel-ai-gateway\": {
+        \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
+        \"apiKey\": \"${GATEWAY_TOKEN}\",
+        \"apiKeyHeader\": \"x-gateway-token\",
+        \"api\": \"openai-completions\"
+      }
+    }
+  }"
+  fi
+  
   # Build the configuration JSON
-  # Note: We build this dynamically to only include model if set
-  if [ -n "$DEFAULT_MODEL" ]; then
-    cat > "$CONFIG_FILE" << EOF
+  cat > "$CONFIG_FILE" << EOF
 {
   "gateway": {
     "mode": "local",
@@ -63,11 +119,12 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
       "token": "${GATEWAY_TOKEN}"
     }
   },
-  "logging": { "redactSensitive": "tools" },
+  "logging": { "redactSensitive": "tools" }${MODELS_SECTION},
   "agents": {
     "defaults": {
       "model": {
-        "primary": "${DEFAULT_MODEL}"
+        "primary": "${DEFAULT_MODEL}",
+        "fallbacks": ${FALLBACK_JSON}
       },
       "compaction": {
         "memoryFlush": {
@@ -82,61 +139,21 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
         "sources": ["memory", "sessions"]
       },
       "subagents": {
-        "model": "kimi/k2.5"
+        "model": "${SUBAGENT_MODEL}"
       },
       "heartbeat": {
-        "every": "15m",
+        "every": "${HEARTBEAT_INTERVAL}",
         "prompt": "Read HEARTBEAT.md and follow it. Check memory/self-review.md for recent patterns. If nothing needs attention, reply HEARTBEAT_OK.",
-        "model": "${HEARTBEAT_MODEL:-auto}"
+        "model": "${HEARTBEAT_MODEL}"
       }
     }
   }
 }
 EOF
+  if [ -n "$DEFAULT_MODEL" ]; then
     echo "[entrypoint] Default model: ${DEFAULT_MODEL}"
   else
-    cat > "$CONFIG_FILE" << EOF
-{
-  "gateway": {
-    "mode": "local",
-    "port": ${GATEWAY_PORT},
-    "bind": "${GATEWAY_BIND}",
-    "controlUi": {
-      "enabled": true,
-      "dangerouslyDisableDeviceAuth": true
-    },
-    "auth": {
-      "mode": "token",
-      "token": "${GATEWAY_TOKEN}"
-    }
-  },
-  "logging": { "redactSensitive": "tools" },
-  "agents": {
-    "defaults": {
-      "compaction": {
-        "memoryFlush": {
-          "enabled": true,
-          "softThresholdTokens": 4000,
-          "systemPrompt": "Session nearing compaction. Write any important context to WORKING.md and memory files now.",
-          "prompt": "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store."
-        }
-      },
-      "memorySearch": {
-        "experimental": { "sessionMemory": true },
-        "sources": ["memory", "sessions"]
-      },
-      "subagents": {
-        "model": "kimi/k2.5"
-      },
-      "heartbeat": {
-        "every": "15m",
-        "prompt": "Read HEARTBEAT.md and follow it. Check memory/self-review.md for recent patterns. If nothing needs attention, reply HEARTBEAT_OK.",
-        "model": "${HEARTBEAT_MODEL:-auto}"
-      }
-    }
-  }
-}
-EOF
+    echo "[entrypoint] WARNING: OPENCLAW_DEFAULT_MODEL is empty"
   fi
   
   echo "[entrypoint] Configuration generated at $CONFIG_FILE"
@@ -183,7 +200,11 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     fi
     
     # Add API keys based on auth choice - DO NOT LOG THESE VALUES
-    if [ "$AUTH_CHOICE" = "ai-gateway-api-key" ] && [ -n "${AI_GATEWAY_API_KEY:-}" ]; then
+    if [ "$AUTH_CHOICE" = "gateway-token" ]; then
+        # Gateway mode uses standard OpenAI client pointing to dashboard gateway
+        # No specific provider key needed here as it uses the gateway token
+        echo "[entrypoint] Using Gateway Token auth mode"
+    elif [ "$AUTH_CHOICE" = "ai-gateway-api-key" ] && [ -n "${AI_GATEWAY_API_KEY:-}" ]; then
       ONBOARD_CMD+=("--ai-gateway-api-key" "$AI_GATEWAY_API_KEY")
     elif [ "$AUTH_CHOICE" = "apiKey" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
       ONBOARD_CMD+=("--anthropic-api-key" "$ANTHROPIC_API_KEY")
