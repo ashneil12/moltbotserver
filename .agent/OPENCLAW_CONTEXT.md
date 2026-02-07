@@ -26,12 +26,10 @@ This document tracks customizations made to this fork compared to upstream `open
 - `docker-entrypoint.sh`
   - **Config Generation**: Modified `openclaw.json` generation blocks (lines ~67-85 and ~93-110) to enable `memoryFlush` and `sessionMemory` search by default.
   - **Deployment**: Added logic (lines ~248+) to deploy `WORKING.md` template to workspace if missing.
-- `Dockerfile`
-  - **Plugins**: Added `RUN` commands (around line 42) to install `@supermemory/openclaw-supermemory` and `@honcho-ai/openclaw-honcho`.
-  - Added `|| echo` fallback to prevent build failure if plugins are missing.
 
 ### New Files
 - `WORKING.md`: Template for persistent task state across compactions. Located in root, copied to `/app/` in Docker.
+
 
 ---
 
