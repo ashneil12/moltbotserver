@@ -337,6 +337,19 @@ if [ -f "/app/SOUL.md" ]; then
   chmod 444 "$WORKSPACE_DIR/SOUL.md"
 fi
 
+# Deploy IDENTITY.md (writable self-evolution file) if it doesn't exist
+# Unlike SOUL.md which is read-only for security, IDENTITY.md is meant to evolve
+if [ -f "/app/IDENTITY.md" ]; then
+  if [ ! -f "$WORKSPACE_DIR/IDENTITY.md" ]; then
+    echo "[entrypoint] Creating IDENTITY.md template (writable self-evolution file)..."
+    cp "/app/IDENTITY.md" "$WORKSPACE_DIR/IDENTITY.md"
+    # IDENTITY.md should be writable (agent needs to update it for self-improvement)
+    chmod 644 "$WORKSPACE_DIR/IDENTITY.md"
+  else
+    echo "[entrypoint] IDENTITY.md exists, skipping template copy to preserve evolved identity."
+  fi
+fi
+
 # [MOLTBOT CUSTOMIZATION START] - Memory & task persistence
 # Deploy WORKING.md template if it doesn't exist
 if [ -f "/app/WORKING.md" ]; then

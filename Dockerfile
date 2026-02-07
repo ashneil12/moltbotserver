@@ -23,6 +23,7 @@ COPY scripts ./scripts
 COPY SOUL.md ./SOUL.md
 COPY ACIP_SECURITY.md ./ACIP_SECURITY.md
 COPY HEARTBEAT.md ./HEARTBEAT.md
+COPY IDENTITY.md ./IDENTITY.md
 COPY templates/ ./templates/
 
 # Ensure devDependencies are installed during build (ignore any NODE_ENV=production from build args)
