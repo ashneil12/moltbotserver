@@ -29,6 +29,12 @@ This document tracks customizations made to this fork compared to upstream `open
 
 ### New Files
 - `WORKING.md`: Template for persistent task state across compactions. Located in root, copied to `/app/` in Docker.
+- `IDENTITY.md`: Writable self-evolution file for personality, promoted patterns, and learned preferences. SOUL.md is read-only for security; IDENTITY.md is the agent's editable identity. Also contains the metacognition lens injection point (`<!-- LIVE_STATE_START/END -->` markers).
+
+### Scripts
+- `scripts/metacognition.py`: Self-evolving metacognitive engine (perceptions, curiosities, feedback loops). Injects into IDENTITY.md.
+- `scripts/live_state.py`: Environment bindings for recording experiences.
+- `scripts/check-open-loops.py`: Checks for unchecked tasks in markdown files.
 
 
 ---
