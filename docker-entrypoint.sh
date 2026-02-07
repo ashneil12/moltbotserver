@@ -281,6 +281,24 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     fi
     echo "[entrypoint] Gateway token enforced"
   fi
+
+  # CRITICAL: Enforce trustedProxies for Coolify/Traefik reverse proxy compatibility
+  # This allows WebSocket connections from behind the proxy to work properly
+  if [ -s "$CONFIG_FILE" ]; then
+    echo "[entrypoint] Enforcing trustedProxies for reverse proxy compatibility..."
+    if command -v jq &> /dev/null; then
+      jq '.gateway.trustedProxies = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"]' "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    else
+      node -e "
+        const fs = require('fs');
+        const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+        config.gateway = config.gateway || {};
+        config.gateway.trustedProxies = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8'];
+        fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+      "
+    fi
+    echo "[entrypoint] trustedProxies enforced"
+  fi
 fi
 
 # Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
