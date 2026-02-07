@@ -27,6 +27,8 @@ COPY templates/ ./templates/
 
 # Ensure devDependencies are installed during build (ignore any NODE_ENV=production from build args)
 ENV NODE_ENV=development
+# Cache-buster to force rebuild when source changes (update this date to bust cache)
+ARG CACHE_BUST=2026-02-07-v1
 RUN pnpm install --frozen-lockfile
 
 COPY . .
