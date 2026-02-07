@@ -114,6 +114,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
+    "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"],
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true
