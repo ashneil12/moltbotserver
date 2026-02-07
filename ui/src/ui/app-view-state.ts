@@ -1,4 +1,5 @@
 import type { EventLogEntry } from "./app-events.ts";
+import type { CompactionStatus } from "./app-tool-stream.ts";
 import type { DevicePairingList } from "./controllers/devices.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
@@ -14,6 +15,7 @@ import type {
   AgentIdentityResult,
   ChannelsStatusSnapshot,
   ConfigSnapshot,
+  ConfigUiHints,
   CronJob,
   CronRunLogEntry,
   CronStatus,
@@ -22,12 +24,16 @@ import type {
   LogLevel,
   NostrProfile,
   PresenceEntry,
+  SessionsUsageResult,
+  CostUsageSummary,
+  SessionUsageTimeSeries,
   SessionsListResult,
   SkillStatusReport,
   StatusSummary,
 } from "./types.ts";
 import type { ChatAttachment, ChatQueueItem, CronFormState } from "./ui-types.ts";
 import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
+import type { SessionLogEntry } from "./views/usage.ts";
 
 export type AppViewState = {
   settings: UiSettings;
@@ -53,14 +59,18 @@ export type AppViewState = {
   chatToolMessages: unknown[];
   chatStream: string | null;
   chatStreamStartedAt: number | null;
-  compactionStatus: import("./app-tool-stream").CompactionStatus | null;
   chatRunId: string | null;
+  compactionStatus: CompactionStatus | null;
   chatAvatarUrl: string | null;
   chatThinkingLevel: string | null;
   chatQueue: ChatQueueItem[];
   nodesLoading: boolean;
   nodes: Array<Record<string, unknown>>;
   chatNewMessagesBelow: boolean;
+  sidebarOpen: boolean;
+  sidebarContent: string | null;
+  sidebarError: string | null;
+  splitRatio: number;
   scrollToBottom: () => void;
   devicesLoading: boolean;
   devicesError: string | null;
@@ -85,14 +95,18 @@ export type AppViewState = {
   configSaving: boolean;
   configApplying: boolean;
   updateRunning: boolean;
+  applySessionKey: string;
   configSnapshot: ConfigSnapshot | null;
   configSchema: unknown;
   configSchemaVersion: string | null;
   configSchemaLoading: boolean;
-  configUiHints: Record<string, unknown>;
+  configUiHints: ConfigUiHints;
   configForm: Record<string, unknown> | null;
   configFormOriginal: Record<string, unknown> | null;
   configFormMode: "form" | "raw";
+  configSearchQuery: string;
+  configActiveSection: string | null;
+  configActiveSubsection: string | null;
   channelsLoading: boolean;
   channelsSnapshot: ChannelsStatusSnapshot | null;
   channelsError: string | null;
@@ -134,6 +148,39 @@ export type AppViewState = {
   sessionsFilterLimit: string;
   sessionsIncludeGlobal: boolean;
   sessionsIncludeUnknown: boolean;
+  usageLoading: boolean;
+  usageResult: SessionsUsageResult | null;
+  usageCostSummary: CostUsageSummary | null;
+  usageError: string | null;
+  usageStartDate: string;
+  usageEndDate: string;
+  usageSelectedSessions: string[];
+  usageSelectedDays: string[];
+  usageSelectedHours: number[];
+  usageChartMode: "tokens" | "cost";
+  usageDailyChartMode: "total" | "by-type";
+  usageTimeSeriesMode: "cumulative" | "per-turn";
+  usageTimeSeriesBreakdownMode: "total" | "by-type";
+  usageTimeSeries: SessionUsageTimeSeries | null;
+  usageTimeSeriesLoading: boolean;
+  usageSessionLogs: SessionLogEntry[] | null;
+  usageSessionLogsLoading: boolean;
+  usageSessionLogsExpanded: boolean;
+  usageQuery: string;
+  usageQueryDraft: string;
+  usageQueryDebounceTimer: number | null;
+  usageSessionSort: "tokens" | "cost" | "recent" | "messages" | "errors";
+  usageSessionSortDir: "asc" | "desc";
+  usageRecentSessions: string[];
+  usageTimeZone: "local" | "utc";
+  usageContextExpanded: boolean;
+  usageHeaderPinned: boolean;
+  usageSessionsTab: "all" | "recent";
+  usageVisibleColumns: string[];
+  usageLogFilterRoles: import("./views/usage.js").SessionLogRole[];
+  usageLogFilterTools: string[];
+  usageLogFilterHasTools: boolean;
+  usageLogFilterQuery: string;
   cronLoading: boolean;
   cronJobs: CronJob[];
   cronStatus: CronStatus | null;
@@ -170,24 +217,10 @@ export type AppViewState = {
   logsLastFetchAt: number | null;
   logsLimit: number;
   logsMaxBytes: number;
-  sidebarOpen: boolean;
-  sidebarContent: string | null;
-  sidebarError: string | null;
-  splitRatio: number;
-  applySessionKey: string | null;
-  configSearchQuery: string;
-  configActiveSection: string | null;
-  configActiveSubsection: string | null;
+  logsAtBottom: boolean;
   client: GatewayBrowserClient | null;
+  refreshSessionsAfterChat: Set<string>;
   connect: () => void;
-  resetToolStream: () => void;
-  resetChatScroll: () => void;
-  handleChatScroll: (event: Event) => void;
-  handleLogsScroll: (event: Event) => void;
-  exportLogs: (lines: string[], label: string) => void;
-  handleOpenSidebar: (content: string) => void;
-  handleCloseSidebar: () => void;
-  handleSplitRatioChange: (ratio: number) => void;
   setTab: (tab: Tab) => void;
   setTheme: (theme: ThemeMode, context?: ThemeTransitionContext) => void;
   applySettings: (next: UiSettings) => void;
@@ -239,11 +272,13 @@ export type AppViewState = {
   setChatMessage: (next: string) => void;
   handleSendChat: (messageOverride?: string, opts?: { restoreDraft?: boolean }) => Promise<void>;
   handleAbortChat: () => Promise<void>;
-  handleChatSelectQueueItem: (id: string) => void;
   removeQueuedMessage: (id: string) => void;
-  handleChatClearQueue: () => void;
-  handleLogsFilterChange: (next: string) => void;
-  handleLogsLevelFilterToggle: (level: LogLevel) => void;
-  handleLogsAutoFollowToggle: (next: boolean) => void;
-  handleCallDebugMethod: (method: string, params: string) => Promise<void>;
+  handleChatScroll: (event: Event) => void;
+  resetToolStream: () => void;
+  resetChatScroll: () => void;
+  exportLogs: (lines: string[], label: string) => void;
+  handleLogsScroll: (event: Event) => void;
+  handleOpenSidebar: (content: string) => void;
+  handleCloseSidebar: () => void;
+  handleSplitRatioChange: (ratio: number) => void;
 };

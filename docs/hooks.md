@@ -444,7 +444,7 @@ openclaw hooks enable session-memory
 openclaw hooks disable command-logger
 ```
 
-## Bundled Hooks
+## Bundled hook reference
 
 ### session-memory
 
@@ -752,6 +752,7 @@ Session reset
    ```
 
 3. List all discovered hooks:
+
    ```bash
    openclaw hooks list
    ```
@@ -783,6 +784,7 @@ Look for missing:
 2. Restart your gateway process so hooks reload.
 
 3. Check gateway logs for errors:
+
    ```bash
    ./scripts/clawlog.sh | grep hook
    ```
@@ -857,6 +859,7 @@ node -e "import('./path/to/handler.ts').then(console.log)"
    ```
 
 4. Verify and restart your gateway process:
+
    ```bash
    openclaw hooks list
    # Should show: 🎯 my-hook ✓
