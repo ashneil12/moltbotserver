@@ -8,6 +8,7 @@ import {
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
 } from "../agents/model-selection.js";
+import { initContextRotation } from "../context/rotation-service.js";
 import { startGmailWatcher } from "../hooks/gmail-watcher.js";
 import {
   clearInternalHooks,
@@ -23,6 +24,7 @@ import {
   shouldWakeFromRestartSentinel,
 } from "./server-restart-sentinel.js";
 import { startSecurityAuditScheduler } from "../security/scheduler.js";
+
 
 export async function startGatewaySidecars(params: {
   cfg: ReturnType<typeof loadConfig>;
@@ -160,5 +162,15 @@ export async function startGatewaySidecars(params: {
   // Start daily security audit scheduler.
   startSecurityAuditScheduler({ cfg: params.cfg, deps: params.deps });
 
-  return { browserControl, pluginServices };
+  // Initialize context rotation service for tiered message storage (active/history/archive).
+  // Reads config from session.context if present.
+  const contextRotationCleanup = initContextRotation({
+    enabled: params.cfg.session?.context?.enabled ?? true,
+    windowSize: params.cfg.session?.context?.windowSize ?? 20,
+    historySize: params.cfg.session?.context?.historySize ?? 80,
+    archiveEnabled: params.cfg.session?.context?.archiveEnabled ?? true,
+    debounceMs: params.cfg.session?.context?.debounceMs ?? 1000,
+  });
+
+  return { browserControl, pluginServices, contextRotationCleanup };
 }

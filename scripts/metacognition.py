@@ -13,6 +13,8 @@ import time
 import argparse
 import random
 import tempfile
+import subprocess
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -277,6 +279,135 @@ def cmd_inject(args: argparse.Namespace) -> None:
     except Exception as e:
         print(f"Error injecting into IDENTITY.md: {e}", file=sys.stderr)
 
+def parse_qmd_output(output: str) -> List[str]:
+    """Parse QMD output into a list of relevant lines."""
+    results = []
+    for line in output.strip().split('\n'):
+        line = line.strip()
+        if not line or line.startswith('Searching') or line.startswith('Found'):
+            continue
+        # Remove common prefixes
+        if line.startswith('- '):
+            line = line[2:]
+        if line:
+            results.append(line)
+    return results
+
+def find_common_theme(items: List[str]) -> Optional[str]:
+    """Find common keywords/themes across items."""
+    if not items:
+        return None
+    
+    # Extract words from all items
+    word_counts: Dict[str, int] = {}
+    stop_words = {'the', 'a', 'an', 'is', 'was', 'were', 'be', 'been', 'to', 'of', 'and', 'or', 'in', 'on', 'at', 'for', 'with', 'i', 'my', 'that', 'this'}
+    
+    for item in items:
+        words = re.findall(r'\b\w+\b', item.lower())
+        seen_in_item = set()
+        for word in words:
+            if word not in stop_words and len(word) > 2 and word not in seen_in_item:
+                word_counts[word] = word_counts.get(word, 0) + 1
+                seen_in_item.add(word)
+    
+    # Find words appearing in multiple items
+    common = [(word, count) for word, count in word_counts.items() if count >= 2]
+    common.sort(key=lambda x: x[1], reverse=True)
+    
+    if common:
+        return common[0][0]
+    return None
+
+def cmd_analyze(args: argparse.Namespace) -> None:
+    """Analyze memories for patterns using QMD."""
+    print("=== Memory Pattern Analysis ===")
+    print()
+    
+    # Search for MISS patterns
+    misses = []
+    try:
+        result = subprocess.run(
+            ['qmd', 'query', 'MISS mistake error wrong assumption', '--limit', '10'],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=WORKSPACE_DIR
+        )
+        if result.returncode == 0:
+            misses = parse_qmd_output(result.stdout)
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        print(f"Note: QMD query for misses failed: {e}", file=sys.stderr)
+    
+    # Search for HIT/positive patterns
+    hits = []
+    try:
+        result = subprocess.run(
+            ['qmd', 'query', 'HIT good great helpful correct success', '--limit', '10'],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=WORKSPACE_DIR
+        )
+        if result.returncode == 0:
+            hits = parse_qmd_output(result.stdout)
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        print(f"Note: QMD query for hits failed: {e}", file=sys.stderr)
+    
+    # Also check self-review.md directly
+    self_review_path = os.path.join(MEMORY_DIR, "self-review.md")
+    if os.path.exists(self_review_path):
+        try:
+            with open(self_review_path, 'r') as f:
+                content = f.read()
+            
+            # Extract MISS entries
+            miss_matches = re.findall(r'MISS:\s*(.+?)(?:\n|$)', content, re.IGNORECASE)
+            misses.extend(miss_matches[:5])
+            
+            # Extract HIT entries
+            hit_matches = re.findall(r'HIT:\s*(.+?)(?:\n|$)', content, re.IGNORECASE)
+            hits.extend(hit_matches[:5])
+        except Exception as e:
+            print(f"Note: Could not read self-review.md: {e}", file=sys.stderr)
+    
+    # Output analysis
+    print("Recent Misses (areas to improve):")
+    if misses:
+        for m in misses[:5]:
+            print(f"  - {m[:80]}{'...' if len(m) > 80 else ''}")
+    else:
+        print("  (No misses found)")
+    
+    print()
+    print("Recent Hits (what's working):")
+    if hits:
+        for h in hits[:5]:
+            print(f"  - {h[:80]}{'...' if len(h) > 80 else ''}")
+    else:
+        print("  (No hits found)")
+    
+    print()
+    print("=== Suggested Actions ===")
+    
+    if len(misses) >= 3:
+        common = find_common_theme(misses)
+        if common:
+            print(f"Pattern detected in misses: '{common}'")
+            print(f"Consider adding CRITICAL rule: Always verify {common} before proceeding")
+    
+    if len(hits) >= 3:
+        common = find_common_theme(hits)
+        if common:
+            print(f"Pattern detected in hits: '{common}'")
+            print(f"Keep doing: {common} - it's working well")
+    
+    if not misses and not hits:
+        print("No patterns found yet. Keep logging MISS/HIT entries to memory/self-review.md")
+    elif len(misses) < 3 and len(hits) < 3:
+        print("Not enough data for pattern detection. Continue logging.")
+    
+    print()
+
 def cmd_status(args: argparse.Namespace) -> None:
     memory = load_memory()
     print(f"Cycles: {memory['stats'].get('cycles', 0)}")
@@ -314,6 +445,9 @@ def main() -> None:
     # Inject
     subs.add_parser("inject")
     
+    # Analyze
+    subs.add_parser("analyze", help="Analyze memories for MISS/HIT patterns")
+    
     args = parser.parse_args()
     
     if args.command == "status":
@@ -326,9 +460,10 @@ def main() -> None:
         cmd_curiosity_add(args)
     elif args.command == "inject":
         cmd_inject(args)
+    elif args.command == "analyze":
+        cmd_analyze(args)
     else:
         parser.print_help()
 
 if __name__ == "__main__":
     main()
-

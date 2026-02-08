@@ -30,6 +30,11 @@ import {
   handleUsageCommand,
 } from "./commands-session.js";
 import { handleSubagentsCommand } from "./commands-subagents.js";
+import {
+  handleFreshCommand,
+  handleForgetCommand,
+  handleRememberCommand,
+} from "./commands-context-memory.js";
 import { handleTtsCommands } from "./commands-tts.js";
 import { routeReply } from "./route-reply.js";
 
@@ -60,6 +65,10 @@ export async function handleCommands(params: HandleCommandsParams): Promise<Comm
       handleStopCommand,
       handleCompactCommand,
       handleAbortTrigger,
+      // Context memory commands (Phase 3)
+      handleFreshCommand,
+      handleForgetCommand,
+      handleRememberCommand,
     ];
   }
   const resetMatch = params.command.commandBodyNormalized.match(/^\/(new|reset)(?:\s|$)/);

@@ -76,6 +76,65 @@ export type SessionResetByTypeConfig = {
   thread?: SessionResetConfig;
 };
 
+/**
+ * Context rotation configuration for tiered message storage.
+ * Messages rotate: active context (1-N) -> history (N+1 to M) -> archive (M+1+)
+ */
+export type ContextRotationConfig = {
+  /** Enable context rotation (default: true). */
+  enabled?: boolean;
+  /** Messages kept in active context (default: 20). */
+  windowSize?: number;
+  /** Messages in history before archiving (default: 80). */
+  historySize?: number;
+  /** Whether to maintain archive for messages beyond history (default: true). */
+  archiveEnabled?: boolean;
+  /** Debounce interval in ms before rotation runs (default: 1000). */
+  debounceMs?: number;
+  /** Context assembler configuration for pre-orchestrator context injection. */
+  assembler?: {
+    /** Enable context assembly (default: true). */
+    enabled?: boolean;
+    /** Model to use for sub-agents. If not specified, uses primary model. */
+    model?: string;
+    /** Provider for sub-agents. If not specified, uses primary provider. */
+    provider?: string;
+    /** Memory Manager configuration. */
+    memoryManager?: {
+      enabled?: boolean;
+      maxTokens?: number;
+      maxResults?: number;
+      minScore?: number;
+    };
+    /** History Manager configuration. */
+    historyManager?: {
+      enabled?: boolean;
+      summaryMaxTokens?: number;
+      specificMaxTokens?: number;
+      maxSpecificMessages?: number;
+    };
+    /** Total token budget for all injections (default: 4000). */
+    totalBudget?: number;
+    /** Maximum time to wait for assembly in ms (default: 2000). */
+    timeoutMs?: number;
+  };
+  /** Memory Maker configuration for async memory extraction. */
+  memoryMaker?: {
+    /** Enable memory maker (default: true). */
+    enabled?: boolean;
+    /** Number of messages between triggers (default: 10). */
+    triggerEveryNMessages?: number;
+    /** Hours of activity between triggers (default: 6). */
+    triggerEveryNHours?: number;
+    /** Model to use for extraction. */
+    model?: string;
+    /** Provider for extraction. */
+    provider?: string;
+    /** Number of messages per batch (default: 30). */
+    batchSize?: number;
+  };
+};
+
 export type SessionConfig = {
   scope?: SessionScope;
   /** DM session scoping (default: "main"). */
@@ -97,6 +156,8 @@ export type SessionConfig = {
     /** Max ping-pong turns between requester/target (0–5). Default: 5. */
     maxPingPongTurns?: number;
   };
+  /** Context rotation for tiered message storage (active/history/archive). */
+  context?: ContextRotationConfig;
 };
 
 export type LoggingConfig = {

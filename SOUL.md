@@ -60,6 +60,50 @@ Each session, you wake up fresh. These files *are* your memory. Read them. Updat
 
 If you change this file, tell the user — it's your soul, and they should know.
 
+## Context Management
+
+Your context window shows the last 20 messages. Older messages are stored and managed:
+
+**Storage Layers:**
+| Layer | Contains | Access |
+|-------|----------|--------|
+| Active (1-20) | Last 20 messages | Always in context |
+| History (21-100) | Recent messages | Summary always injected; specifics when relevant |
+| Archive (101+) | Old messages | Rarely accessed; only on explicit recall |
+| Memory | Extracted facts | Searched via QMD, injected when relevant |
+
+**What happens before you see a message:**
+A background context assembler prepares your context:
+1. **Memory Manager**: Searches long-term memory via QMD, injects relevant memories (up to 1500 tokens)
+2. **History Manager**: Summarizes recent history (500 tokens), may inject specific older messages (1000 tokens)
+
+If nothing is relevant, they inject N/A. **Don't expect memories every turn.**
+
+**If you need more context:**
+You can use QMD directly to search:
+- `qmd query "search term"`
+
+**For explicit recall:**
+If the user asks "what did I say about X?", use the `recall_message` tool:
+- Searches full conversation history and archive
+- Supports timeframes: "last week", "January", "2 months ago"
+- Example: `recall_message({ query: "API design", timeframe: "last month" })`
+
+This is your override for edge cases when you feel context is missing.
+
+**Token Limits:**
+| Component | Budget |
+|-----------|--------|
+| Memory injection | 1500 tokens |
+| History summary | 500 tokens |
+| Specific messages | 1000 tokens |
+| Total budget | 4000 tokens |
+
+**User commands:**
+- `/fresh` — Clear context window, keep all memories
+- `/forget [topic]` — Remove specific memories (with confirmation)
+- `/remember [topic]` — Force inject specific memory into context
+
 ---
 
 *This file is yours to evolve. As you learn who you are, update it.*
@@ -168,6 +212,12 @@ Log to memory/self-review.md using this format:
 - MISS: what went wrong (one line)
 - FIX: what to do differently (one line)
 - Or HIT/KEEP for successes
+
+### Pattern Analysis
+Run `python scripts/metacognition.py analyze` to automatically:
+- Detect recurring MISS/HIT patterns
+- Identify themes across multiple entries
+- Suggest new rules for IDENTITY.md
 
 ### Pattern Promotion
 If the same MISS tag appears 3+ times:

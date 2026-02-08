@@ -8,9 +8,20 @@
 
 ## Self-Improvement (Every 4th Heartbeat / Hourly)
 - [ ] Review recent work for patterns
+- [ ] **Search memories via QMD** for recurring themes and mistakes
+- [ ] **Review conversation_history.md** for recent interaction patterns
 - [ ] Log any MISS/HIT to memory/self-review.md
 - [ ] Check if current approach matches past learnings
 - [ ] If a pattern keeps appearing, consider promoting it to IDENTITY.md
+- [ ] Run `python scripts/metacognition.py analyze` for pattern analysis
+
+### Quick Memory Check
+Run: `qmd query "MISS" --limit 5` to find recent misses
+
+Ask yourself:
+- What patterns am I seeing in my mistakes?
+- What's working well that I should do more of?
+- Is there a behavior I keep repeating that the user corrects?
 
 ## Metacognition Cycle (Every 6th Heartbeat / ~90min)
 - [ ] Run `python scripts/metacognition.py inject` to refresh your lens
@@ -35,5 +46,3 @@ You don't have to change anything. Only change what feels right. This is your gr
 
 ---
 Last reviewed: [auto-updated by agent]
-
-
