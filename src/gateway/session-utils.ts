@@ -624,10 +624,20 @@ export function getSessionDefaults(cfg: OpenClawConfig): GatewaySessionsDefaults
     defaultProvider: DEFAULT_PROVIDER,
     defaultModel: DEFAULT_MODEL,
   });
-  const contextTokens =
+  // Resolve base context tokens (explicit config > model lookup > default)
+  const baseContextTokens =
     cfg.agents?.defaults?.contextTokens ??
     lookupContextTokens(resolved.model) ??
     DEFAULT_CONTEXT_TOKENS;
+
+  // Apply OPENCLAW_CONTEXT_PERCENT if set (e.g. "25" = 25% of model's window).
+  // Only applies when config doesn't explicitly set contextTokens.
+  let contextTokens = baseContextTokens;
+  const envPercent = parseInt(process.env.OPENCLAW_CONTEXT_PERCENT || "", 10);
+  if (envPercent > 0 && envPercent <= 100 && !cfg.agents?.defaults?.contextTokens) {
+    contextTokens = Math.max(20_000, Math.floor((baseContextTokens ?? DEFAULT_CONTEXT_TOKENS) * envPercent / 100));
+  }
+
   return {
     modelProvider: resolved.provider ?? null,
     model: resolved.model ?? null,

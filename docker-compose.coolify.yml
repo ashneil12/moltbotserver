@@ -1,0 +1,80 @@
+services:
+  openclaw-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # No fixed container_name - let Coolify/Docker generate unique names
+    labels:
+      - "traefik.enable=true"
+      # Use COOLIFY_RESOURCE_UUID for unique router/service names per instance
+      # Use COOLIFY_FQDN which contains just the domain (no https://)
+      - "traefik.http.routers.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.rule=Host(`${COOLIFY_FQDN:-localhost}`)"
+      - "traefik.http.routers.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.entrypoints=websecure"
+      - "traefik.http.routers.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.openclaw-${COOLIFY_RESOURCE_UUID:-gateway}.loadbalancer.server.port=18789"
+    environment:
+      # Ensure PATH includes node_modules/.bin for openclaw command
+      - PATH=/app/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - HOME=/home/node
+      - TERM=xterm-256color
+      - OPENCLAW_STATE_DIR=/home/node/data
+      - OPENCLAW_WORKSPACE_DIR=/home/node/workspace
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_DISABLE_DEVICE_AUTH=true
+      - OPENCLAW_DEFAULT_MODEL=${OPENCLAW_DEFAULT_MODEL:-}
+      # Auto-onboard configuration (set via dashboard)
+      - OPENCLAW_AUTO_ONBOARD=${OPENCLAW_AUTO_ONBOARD:-}
+      - OPENCLAW_ONBOARD_AUTH_CHOICE=${OPENCLAW_ONBOARD_AUTH_CHOICE:-}
+      - OPENCLAW_ONBOARD_MODEL=${OPENCLAW_ONBOARD_MODEL:-}
+      - OPENCLAW_ONBOARD_PROVIDER=${OPENCLAW_ONBOARD_PROVIDER:-}
+      # Provider API keys (passed through from dashboard env vars)
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
+      - ZAI_API_KEY=${ZAI_API_KEY:-}
+      - AI_GATEWAY_API_KEY=${AI_GATEWAY_API_KEY:-}
+      # Set NODE_ENV to production for runtime
+      - NODE_ENV=production
+    volumes:
+      - openclaw-data:/home/node/data
+      - openclaw-workspace:/home/node/workspace
+    # Note: No host port mapping needed - Traefik routes traffic via labels
+    expose:
+      - "18789"
+    networks:
+      - coolify
+    init: true
+    restart: unless-stopped
+
+  backup-worker:
+    image: offen/docker-volume-backup:v2
+    restart: always
+    environment:
+      # Job configuration
+      BACKUP_CRON_EXPRESSION: "${BACKUP_CRON_EXPRESSION:-0 2 * * *}"
+      BACKUP_FILENAME: "moltbot-backup-${COOLIFY_RESOURCE_UUID}-%Y-%m-%dT%H-%M-%S.tar.gz"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-7}"
+      # S3 / Object Storage config
+      AWS_S3_BUCKET_NAME: "${AWS_S3_BUCKET_NAME}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_ENDPOINT: "${AWS_ENDPOINT}"
+      # GPG Encryption (Optional - disabled by default)
+      # GPG_PASSPHRASE: "${GPG_PASSPHRASE:-}"
+    volumes:
+      # Mount the data volumes as read-only for backup
+      - openclaw-data:/backup/openclaw-data:ro
+      - openclaw-workspace:/backup/openclaw-workspace:ro
+    networks:
+      - coolify
+
+volumes:
+  openclaw-data:
+  openclaw-workspace:
+
+
+networks:
+  coolify:
+    external: true

@@ -244,6 +244,8 @@ export async function resolveGatewayBindHost(
   }
 
   if (mode === "lan") {
+    // SECURITY: Binding to 0.0.0.0 allows access from the Docker network/proxy.
+    // Ensure this port is not exposed to the public internet without a secure proxy (like Traefik) in front.
     return "0.0.0.0";
   }
 
