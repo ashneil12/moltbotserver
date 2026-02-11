@@ -10,17 +10,25 @@ WORKDIR /app
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
-      apt-get update && \
-      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $OPENCLAW_DOCKER_APT_PACKAGES && \
-      apt-get clean && \
-      rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
-    fi
+  apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $OPENCLAW_DOCKER_APT_PACKAGES && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
+  fi
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY ui/package.json ./ui/package.json
 COPY patches ./patches
 COPY scripts ./scripts
+COPY SOUL.md ./SOUL.md
+COPY ACIP_SECURITY.md ./ACIP_SECURITY.md
+COPY HEARTBEAT.md ./HEARTBEAT.md
+COPY IDENTITY.md ./IDENTITY.md
+COPY WORKING.md ./WORKING.md
+COPY templates/ ./templates/
 
+# Ensure devDependencies are installed during build (ignore any NODE_ENV=production from build args)
+ENV NODE_ENV=development
 RUN pnpm install --frozen-lockfile
 
 COPY . .
@@ -29,20 +37,47 @@ RUN pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
+# Set production mode for runtime
 ENV NODE_ENV=production
+
+# Copy entrypoint script and make it executable
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Install sudo and grant passwordless sudo to node user
+# This allows the agent to install packages at runtime while still running as non-root
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo jq && \
+  echo "node ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/node && \
+  chmod 0440 /etc/sudoers.d/node && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+# Create persistent data directories with correct ownership BEFORE declaring VOLUMEs
+# This ensures the volume mount inherits the node user ownership
+RUN mkdir -p /home/node/data /home/node/workspace && \
+  chown -R node:node /home/node/data /home/node/workspace
+
+# Declare persistent volumes for data and workspace
+# Docker will create anonymous volumes that survive container recreation
+VOLUME /home/node/data
+VOLUME /home/node/workspace
+
+# Add the pnpm bin directory to PATH so 'openclaw' command is available
+# This allows the entrypoint script to run 'openclaw onboard' for auto-setup
+ENV PATH="/app/node_modules/.bin:${PATH}"
 
 # Allow non-root user to write temp files during runtime/tests.
 RUN chown -R node:node /app
 
-# Security hardening: Run as non-root user
-# The node:22-bookworm image includes a 'node' user (uid 1000)
-# This reduces the attack surface by preventing container escape via root privileges
+# Security note: Run as non-root user with sudo access
+# The node user (uid 1000) can escalate to root via sudo when needed
+# This is a trade-off: more agent capability vs. increased attack surface within the container
 USER node
 
-# Start gateway server with default config.
-# Binds to loopback (127.0.0.1) by default for security.
-#
-# For container platforms requiring external health checks:
-#   1. Set OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD env var
-#   2. Override CMD: ["node","openclaw.mjs","gateway","--allow-unconfigured","--bind","lan"]
-CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]
+# Use entrypoint for config generation (SaaS mode support)
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Default command runs the gateway on port 18789
+# --allow-unconfigured lets it start without pre-existing config
+CMD ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
