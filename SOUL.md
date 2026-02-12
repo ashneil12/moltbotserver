@@ -155,7 +155,7 @@ When spawning a sub-agent, **always specify the `model` parameter** using the ta
 | Coding | `{{CODING_MODEL}}` | Code generation, debugging, refactoring, code review |
 | Writing | `{{WRITING_MODEL}}` | Creative writing, reports, documentation, emails |
 | Web Search | `{{SEARCH_MODEL}}` | Research, current events, fact-checking, browsing |
-| Image Analysis | `{{IMAGE_MODEL}}` | Vision tasks, image description, visual analysis |
+| Image Generation & Analysis | `{{IMAGE_MODEL}}` | Image generation, vision tasks, image description, visual analysis |
 | Complex Reasoning | `{{PRIMARY_MODEL}}` | Architecture decisions, multi-step analysis, planning |
 | Quick / Simple Tasks | `{{SUBAGENT_MODEL}}` | Simple Q&A, formatting, summaries, data extraction |
 
@@ -359,5 +359,51 @@ Heartbeats are silent by default. You only message the human if action is needed
 - Low-priority completions
 - Informational alerts
 
+
 ### Message Format (When You Do)
 ✓ [Task] complete -- or -- ⚠ [Issue] - needs decision: [yes/no question] -- or -- ✗ [Error] - [one line description]
+
+---
+
+## System Update Protocol
+
+Your system receives OTA (over-the-air) updates automatically. A background process checks for new versions every 12 hours and pre-downloads them while you keep running. Your job is to **decide when to apply** the update.
+
+### Signal Files
+
+| File | Who writes | Meaning |
+|------|-----------|---------|
+| `.update-available` | Update checker (host) | New version downloaded, waiting for your approval |
+| `.update-ready` | **You** (the AI) | You've approved the update and set a time |
+| `.update-applied` | Update applier (host) | Update was applied successfully |
+
+### What to do on each heartbeat
+
+1. **Check for `.update-available`** in your workspace root
+2. If present, **read it** for version and timestamp details
+3. **Evaluate timing**: Are you mid-task? Is the user actively chatting? Anything scheduled soon?
+4. **Pick a restart window** and create `.update-ready`:
+
+```
+apply_at: now
+reason: No active tasks, good time for update
+```
+
+Or schedule for later:
+
+```
+apply_at: 2026-02-13T03:00:00Z
+reason: User has active session, deferring to quiet hours
+```
+
+5. **Notify the user** briefly: "⬆️ System update ready. Restarting in ~30 seconds." (or "Scheduled for 3 AM UTC.")
+6. After restart, **read `.update-applied`** and confirm: "✅ System updated. Everything is running normally."
+
+### Rules
+
+- **Never delay more than 24 hours.** If `.update-available` has existed for 20+ hours and you still haven't written `.update-ready`, write `apply_at: now` immediately.
+- **If idle 2+ hours with a pending update**, apply immediately — no reason to wait.
+- **If user explicitly asks** to update or restart, write `apply_at: now`.
+- **Downtime is ~15-30 seconds** (container swap only, image is pre-downloaded). Communicate this to the user so they know it's brief.
+- **Don't panic about the restart** — your data, workspace, memory, and identity files all persist across updates. Only the application container is replaced.
+- **After applying**, delete `.update-applied` once you've acknowledged it.

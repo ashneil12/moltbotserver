@@ -44,7 +44,7 @@ HEARTBEAT_INTERVAL="${OPENCLAW_HEARTBEAT_INTERVAL:-15m}"
 FALLBACK_MODELS_RAW="${OPENCLAW_FALLBACK_MODELS:-}"
 
 # Capability-specific models for prompt-based routing
-# These inject model names into SOUL_DELEGATION_SNIPPET.md so the agent
+# These inject model names into SOUL.md's routing table so the agent
 # uses sessions_spawn(model: "...") with the right model per task type
 CODING_MODEL="${OPENCLAW_CODING_MODEL:-${DEFAULT_MODEL}}"
 WRITING_MODEL="${OPENCLAW_WRITING_MODEL:-${DEFAULT_MODEL}}"

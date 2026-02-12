@@ -7,6 +7,7 @@
 - [ ] Any errors or failures since last check?
 - [ ] Any urgent items in open-loops.md?
 - [ ] Any background tasks completed? Summarize results if needed.
+- [ ] Check for `.update-available` — if present, follow the System Update Protocol in SOUL.md
 
 ## Situational Awareness (Every Heartbeat)
 - [ ] Has anything meaningful changed since last check?
