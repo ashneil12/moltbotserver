@@ -19,8 +19,9 @@ Ask yourself honestly:
 - What's working well that I should do more of?
 - Is there a behavior I keep repeating that the user corrects?
 - Any MISS or HIT worth logging to `memory/self-review.md`?
+- Anything worth noting in `memory/diary.md` for the next diary session?
 
-If a pattern keeps appearing (3+ times), consider promoting it to IDENTITY.md.
+If a pattern keeps appearing (3+ times), add a CRITICAL rule to IDENTITY.md.
 
 ## Response Rules
 - If nothing needs attention → Reply `HEARTBEAT_OK`
