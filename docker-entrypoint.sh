@@ -135,6 +135,23 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     }
   },
   "logging": { "redactSensitive": "tools" }${MODELS_SECTION},
+  "memory": {
+    "backend": "qmd",
+    "citations": "auto",
+    "qmd": {
+      "includeDefaultMemory": true,
+      "update": {
+        "interval": "5m",
+        "onBoot": true,
+        "waitForBootSync": false
+      },
+      "limits": {
+        "maxResults": 8,
+        "maxSnippetChars": 700,
+        "timeoutMs": 5000
+      }
+    }
+  },
   "agents": {
     "defaults": {
       "workspace": "${WORKSPACE_DIR}",

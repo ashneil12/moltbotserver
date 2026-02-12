@@ -1,8 +1,12 @@
 FROM node:22-bookworm
 
-# Install Bun (required for build scripts)
+# Install Bun (required for build scripts and QMD)
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
+
+# Install QMD (local hybrid search: BM25 + vector + reranking for memory)
+# GGUF models (~2GB) are auto-downloaded at runtime on first query, not at build time
+RUN bun install -g github:tobi/qmd
 
 RUN corepack enable
 
@@ -63,9 +67,9 @@ RUN mkdir -p /home/node/data /home/node/workspace && \
 VOLUME /home/node/data
 VOLUME /home/node/workspace
 
-# Add the pnpm bin directory to PATH so 'openclaw' command is available
-# This allows the entrypoint script to run 'openclaw onboard' for auto-setup
-ENV PATH="/app/node_modules/.bin:${PATH}"
+# Add pnpm bin + bun global bin to PATH so 'openclaw' and 'qmd' commands are available
+# /root/.bun/bin contains the qmd binary installed during build
+ENV PATH="/app/node_modules/.bin:/root/.bun/bin:${PATH}"
 
 # Allow non-root user to write temp files during runtime/tests.
 RUN chown -R node:node /app
