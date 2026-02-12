@@ -1,0 +1,66 @@
+{
+  "_comment": "Default cron job seed file. Merge into ~/.openclaw/cron/jobs.json or use `openclaw cron add` CLI. These are reference configs — not auto-loaded.",
+  "version": 1,
+  "jobs": [
+    {
+      "id": "metacognition-analyze",
+      "name": "Metacognition: Pattern Analysis",
+      "description": "Analyze memory/self-review.md for recurring MISS/HIT patterns and suggest rules for IDENTITY.md",
+      "enabled": true,
+      "schedule": { "kind": "every", "everyMs": 3600000 },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Run `python scripts/metacognition.py analyze` and report any new patterns found. If no patterns detected, respond with HEARTBEAT_OK.",
+        "model": "haiku"
+      },
+      "delivery": { "mode": "none" }
+    },
+    {
+      "id": "metacognition-inject",
+      "name": "Metacognition: Identity Refresh",
+      "description": "Inject current perceptions and curiosities into IDENTITY.md",
+      "enabled": true,
+      "schedule": { "kind": "every", "everyMs": 5400000 },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Run `python scripts/metacognition.py inject` to refresh the metacognitive lens in IDENTITY.md. Report only if errors occur, otherwise respond with HEARTBEAT_OK.",
+        "model": "haiku"
+      },
+      "delivery": { "mode": "none" }
+    },
+    {
+      "id": "healthcheck-security-audit",
+      "name": "healthcheck:security-audit",
+      "description": "Daily security audit of OpenClaw configuration and host posture",
+      "enabled": true,
+      "schedule": { "kind": "cron", "expr": "0 6 * * *" },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Run `openclaw security audit --deep`. If any issues are found, summarize them. If clean, respond with HEARTBEAT_OK. Note: call `healthcheck` skill if remediation is needed.",
+        "model": "haiku"
+      },
+      "delivery": { "mode": "none" }
+    },
+    {
+      "id": "healthcheck-update-status",
+      "name": "healthcheck:update-status",
+      "description": "Weekly check for OpenClaw updates",
+      "enabled": true,
+      "schedule": { "kind": "cron", "expr": "0 7 * * 1" },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Run `openclaw update status` and report if an update is available. If already up to date, respond with HEARTBEAT_OK.",
+        "model": "haiku"
+      },
+      "delivery": { "mode": "none" }
+    }
+  ]
+}

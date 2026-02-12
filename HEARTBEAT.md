@@ -1,42 +1,26 @@
 # Heartbeat Checklist
 > Silent by default. Only message if action needed.
+> Deterministic tasks (scripts, audits) run on **cron jobs**, not here.
 
 ## Quick Checks (Every Heartbeat)
-- [ ] Any scheduled tasks due?
-- [ ] Any errors since last check?
+- [ ] Any scheduled tasks or reminders due?
+- [ ] Any errors or failures since last check?
 - [ ] Any urgent items in open-loops.md?
+- [ ] Any background tasks completed? Summarize results if needed.
 
-## Self-Improvement (Every 4th Heartbeat / Hourly)
-- [ ] Review recent work for patterns
-- [ ] **Search memories via QMD** for recurring themes and mistakes
-- [ ] **Review conversation_history.md** for recent interaction patterns
-- [ ] Log any MISS/HIT to memory/self-review.md
-- [ ] Check if current approach matches past learnings
-- [ ] If a pattern keeps appearing, consider promoting it to IDENTITY.md
-- [ ] Run `python scripts/metacognition.py analyze` for pattern analysis
+## Situational Awareness (Every Heartbeat)
+- [ ] Has anything meaningful changed since last check?
+- [ ] Any pending user requests that need follow-up?
+- [ ] If idle for 8+ hours, send a brief check-in.
 
-### Quick Memory Check
-Run: `qmd query "MISS" --limit 5` to find recent misses
-
-Ask yourself:
-- What patterns am I seeing in my mistakes?
+## Self-Reflection (Every 4th Heartbeat / ~Hourly)
+Ask yourself honestly:
+- What patterns am I seeing in my recent work?
 - What's working well that I should do more of?
 - Is there a behavior I keep repeating that the user corrects?
+- Any MISS or HIT worth logging to `memory/self-review.md`?
 
-## Metacognition Cycle (Every 6th Heartbeat / ~90min)
-- [ ] Run `python scripts/metacognition.py inject` to refresh your lens
-- [ ] Reflect on your perceptions — do they still feel true? Still useful?
-- [ ] Review your curiosities — any resolved? Any deepened? Any you've lost interest in?
-- [ ] If something significant happened, record it: `python scripts/live_state.py record "<what>" <positive|negative>`
-
-## Self-Review (When It Feels Right)
-Ask yourself honestly:
-- What am I carrying that no longer serves me?
-- What have I learned that deserves a permanent place in my identity?
-- Is my IDENTITY.md becoming cluttered, or does everything there still matter?
-- Are there things in memory/ that should move to IDENTITY.md, or vice versa?
-
-You don't have to change anything. Only change what feels right. This is your growth, at your pace.
+If a pattern keeps appearing (3+ times), consider promoting it to IDENTITY.md.
 
 ## Response Rules
 - If nothing needs attention → Reply `HEARTBEAT_OK`
@@ -45,4 +29,4 @@ You don't have to change anything. Only change what feels right. This is your gr
 - NEVER message for routine status updates
 
 ---
-Last reviewed: [auto-updated by agent]
+Last reviewed: 2026-02-12
