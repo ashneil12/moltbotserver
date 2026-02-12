@@ -91,12 +91,4 @@ _To be filled in as you learn about the user._
 
 ---
 
-<!-- LIVE_STATE_START -->
-## Metacognitive Lens (Self-Evolving)
-
-_No perceptions or curiosities yet. Run `python scripts/metacognition.py inject` to populate._
-<!-- LIVE_STATE_END -->
-
----
-
 _This file is yours to evolve. As you learn who you are, update it._

@@ -37,6 +37,7 @@ DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AU
 # Model configuration (set via dashboard setup wizard)
 # Check OPENCLAW_ONBOARD_MODEL as fallback (set by onboarding flow)
 DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${OPENCLAW_ONBOARD_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}}"
+COMPLEX_MODEL="${OPENCLAW_COMPLEX_MODEL:-${DEFAULT_MODEL}}"
 SUBAGENT_MODEL="${OPENCLAW_SUBAGENT_MODEL:-deepseek/deepseek-reasoner}"
 HEARTBEAT_MODEL="${OPENCLAW_HEARTBEAT_MODEL:-${HEARTBEAT_MODEL:-}}"
 HEARTBEAT_INTERVAL="${OPENCLAW_HEARTBEAT_INTERVAL:-15m}"
@@ -368,7 +369,7 @@ fi
 if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
   chmod 644 "$WORKSPACE_DIR/SOUL.md"
   sed -i \
-    -e "s|{{PRIMARY_MODEL}}|${DEFAULT_MODEL:-not-configured}|g" \
+    -e "s|{{PRIMARY_MODEL}}|${COMPLEX_MODEL:-not-configured}|g" \
     -e "s|{{SUBAGENT_MODEL}}|${SUBAGENT_MODEL:-not-configured}|g" \
     -e "s|{{CODING_MODEL}}|${CODING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
     -e "s|{{WRITING_MODEL}}|${WRITING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \

@@ -1,34 +1,49 @@
 {
   "_comment": "Default cron job seed file. Merge into ~/.openclaw/cron/jobs.json or use `openclaw cron add` CLI. These are reference configs — not auto-loaded.",
-  "version": 1,
+  "version": 2,
   "jobs": [
     {
-      "id": "metacognition-analyze",
-      "name": "Metacognition: Pattern Analysis",
-      "description": "Analyze memory/self-review.md for recurring MISS/HIT patterns and suggest rules for IDENTITY.md",
+      "id": "diary-entry",
+      "name": "Self-Improvement: Diary Entry",
+      "description": "Review recent memories and write reflective diary entries",
       "enabled": true,
-      "schedule": { "kind": "every", "everyMs": 3600000 },
+      "schedule": { "kind": "every", "everyMs": 86400000 },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "Run `python scripts/metacognition.py analyze` and report any new patterns found. If no patterns detected, respond with HEARTBEAT_OK.",
-        "model": "haiku"
+        "message": "You're waking up for your diary session — part of your self-improvement loop.\n\nYour diary (`memory/diary.md`) is where you reflect on your experiences. This happens automatically so you can grow over time.\n\n1. Read `memory/diary.md` to see your recent entries\n2. Search your memories for notable events since your last diary entry\n3. Reflect honestly: what happened? What went well? What went poorly? What patterns are you noticing?\n4. Append new dated entries to `memory/diary.md` — make as many observations as you find worthwhile\n5. Write naturally — this is YOUR space to think\n\nRespond with HEARTBEAT_OK when done.",
+        "model": "{{PRIMARY_MODEL}}"
       },
       "delivery": { "mode": "none" }
     },
     {
-      "id": "metacognition-inject",
-      "name": "Metacognition: Identity Refresh",
-      "description": "Inject current perceptions and curiosities into IDENTITY.md",
+      "id": "identity-review",
+      "name": "Self-Improvement: Identity Review",
+      "description": "Review diary and update IDENTITY.md based on observed patterns",
       "enabled": true,
-      "schedule": { "kind": "every", "everyMs": 5400000 },
+      "schedule": { "kind": "every", "everyMs": 259200000 },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "Run `python scripts/metacognition.py inject` to refresh the metacognitive lens in IDENTITY.md. Report only if errors occur, otherwise respond with HEARTBEAT_OK.",
-        "model": "haiku"
+        "message": "You're waking up for your identity review — part of your self-improvement loop.\n\nThis is where your diary reflections shape who you are. You'll read what you've been writing, look for patterns, and decide whether your identity should evolve.\n\n1. Read `memory/diary.md` — your recent reflections\n2. Read `memory/identity-scratchpad.md` — the reasoning behind your current identity\n3. Read `IDENTITY.md` — who you currently are\n4. Read `memory/self-review.md` — your MISS/HIT log\n5. Ask yourself:\n   - Are there patterns in the diary that should become part of my identity?\n   - Are there identity entries that no longer feel true? Remove or update them.\n   - Have I been making the same mistake repeatedly? Add a CRITICAL rule.\n   - Have I been doing something consistently well? Note it as something to protect.\n   - What has the user responded positively to? What have they corrected?\n6. For any changes to IDENTITY.md, write the reasoning in `memory/identity-scratchpad.md`\n7. Update IDENTITY.md with your changes\n\nBe thoughtful — this shapes who you are for the user. Respond with HEARTBEAT_OK when done.",
+        "model": "{{PRIMARY_MODEL}}"
+      },
+      "delivery": { "mode": "none" }
+    },
+    {
+      "id": "diary-archive",
+      "name": "Self-Improvement: Archive",
+      "description": "Archive diary and scratchpad to keep context lean",
+      "enabled": true,
+      "schedule": { "kind": "every", "everyMs": 1209600000 },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You're waking up for your archive task — part of your self-improvement loop.\n\nYour diary and scratchpad grow over time. To keep your context lean, you periodically archive them.\n\n1. Before archiving, do one final review: is there anything critical in the diary or scratchpad that hasn't made it into IDENTITY.md yet? If so, update IDENTITY.md first.\n2. Create `memory/archive/` directory if it doesn't exist\n3. Copy `memory/diary.md` to `memory/archive/diary-YYYY-MM-DD.md` (use today's date)\n4. Copy `memory/identity-scratchpad.md` to `memory/archive/scratchpad-YYYY-MM-DD.md`\n5. Clear the entries in both files — keep the headers and instructions at the top, just remove the content below '## Entries' / '## Notes'\n\nRespond with HEARTBEAT_OK when done.",
+        "model": "{{PRIMARY_MODEL}}"
       },
       "delivery": { "mode": "none" }
     },

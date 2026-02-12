@@ -120,3 +120,11 @@ dist/protocol.schema.json
 
 # Synthing
 **/.stfolder/
+
+# Temp/junk files (macOS copy artifacts, logs, scratch docs)
+CLAUDE.md
+CLAUDE*.md
+tmp-*
+server.log
+*.log
+.git 2/
