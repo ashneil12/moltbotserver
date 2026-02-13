@@ -51,6 +51,15 @@ WRITING_MODEL="${OPENCLAW_WRITING_MODEL:-${DEFAULT_MODEL}}"
 SEARCH_MODEL="${OPENCLAW_SEARCH_MODEL:-${DEFAULT_MODEL}}"
 IMAGE_MODEL="${OPENCLAW_IMAGE_MODEL:-${DEFAULT_MODEL}}"
 
+# Concurrency settings (configurable via dashboard)
+MAX_CONCURRENT="${OPENCLAW_MAX_CONCURRENT:-4}"
+SUBAGENT_MAX_CONCURRENT="${OPENCLAW_SUBAGENT_MAX_CONCURRENT:-8}"
+
+# Human delay settings (natural response timing for messaging channels)
+HUMAN_DELAY_ENABLED="${OPENCLAW_HUMAN_DELAY_ENABLED:-false}"
+HUMAN_DELAY_MIN="${OPENCLAW_HUMAN_DELAY_MIN:-800}"
+HUMAN_DELAY_MAX="${OPENCLAW_HUMAN_DELAY_MAX:-2500}"
+
 # Agent workspace directory (where SOUL.md, WORKING.md, memory/ etc live)
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/workspace}}"
 
@@ -168,19 +177,35 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
           "prompt": "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store."
         }
       },
+      "contextPruning": {
+        "mode": "cache-ttl",
+        "ttl": "30m",
+        "keepLastAssistants": 3
+      },
       "memorySearch": {
         "experimental": { "sessionMemory": true },
         "sources": ["memory", "sessions"]
       },
       "subagents": {
-        "model": "${SUBAGENT_MODEL}"
+        "model": "${SUBAGENT_MODEL}",
+        "maxConcurrent": ${SUBAGENT_MAX_CONCURRENT}
       },
       "heartbeat": {
         "every": "${HEARTBEAT_INTERVAL}",
         "prompt": "Read HEARTBEAT.md and follow it. Check memory/self-review.md for recent patterns. If nothing needs attention, reply HEARTBEAT_OK.",
         "model": "${HEARTBEAT_MODEL}"
-      }
+      },
+      "maxConcurrent": ${MAX_CONCURRENT}
     }
+  },
+  "messages": {
+    "queue": {
+      "mode": "collect"
+    }$(if [ "$HUMAN_DELAY_ENABLED" = "true" ] || [ "$HUMAN_DELAY_ENABLED" = "1" ]; then echo ",
+    \"humanDelay\": {
+      \"min\": ${HUMAN_DELAY_MIN},
+      \"max\": ${HUMAN_DELAY_MAX}
+    }"; fi)
   }
 }
 EOF
@@ -447,6 +472,19 @@ if [ ! -d "$SUBAGENT_LOG_DIR" ]; then
   mkdir -p "$SUBAGENT_LOG_DIR"
   chmod 755 "$SUBAGENT_LOG_DIR"
   echo "[entrypoint] Created subagent log directory"
+fi
+
+# =============================================================================
+# RUN OPENCLAW DOCTOR: Auto-repair common issues before gateway start
+# =============================================================================
+OPENCLAW_DOCTOR_SCRIPT="/app/openclaw.mjs"
+if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
+  echo "[entrypoint] Running openclaw doctor --fix..."
+  if node "$OPENCLAW_DOCTOR_SCRIPT" doctor --fix 2>&1 | head -20; then
+    echo "[entrypoint] openclaw doctor completed successfully"
+  else
+    echo "[entrypoint] WARNING: openclaw doctor returned errors (non-fatal, continuing)"
+  fi
 fi
 
 # Execute the main command
