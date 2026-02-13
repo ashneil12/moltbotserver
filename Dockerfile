@@ -41,6 +41,12 @@ RUN pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
+# ── Pre-install camofox-browser plugin (anti-detection browser) ──────────
+# Baked into image so all instances get it on OTA updates (~300MB).
+# The plugin downloads the Camoufox binary during install.
+RUN node openclaw.mjs plugins install @askjo/camofox-browser || \
+  echo "[docker-build] camofox-browser install failed (non-fatal)"
+
 # Set production mode for runtime
 ENV NODE_ENV=production
 

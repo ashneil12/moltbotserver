@@ -5,37 +5,35 @@ set -e
 # OpenClaw Entrypoint
 # =============================================================================
 
-# Runtime sudo toggle - allows disabling sudo without rebuilding
-# When OPENCLAW_DISABLE_SUDO=true, remove node from sudoers
-DISABLE_SUDO="${OPENCLAW_DISABLE_SUDO:-false}"
-if [ "$DISABLE_SUDO" = "true" ] || [ "$DISABLE_SUDO" = "1" ]; then
-  if [ -f /etc/sudoers.d/node ]; then
-    echo "[entrypoint] Sudo access DISABLED (OPENCLAW_DISABLE_SUDO=true)"
-    # This requires sudo to work once to remove itself - that's fine since we still have it at startup
-    sudo rm -f /etc/sudoers.d/node 2>/dev/null || true
-  fi
-else
-  echo "[entrypoint] Sudo access ENABLED"
-fi
+# -----------------------------------------------------------------------------
+# Logging Helpers
+# -----------------------------------------------------------------------------
+log_info() { echo "[entrypoint] INFO: $*"; }
+log_warn() { echo "[entrypoint] WARN: $*"; }
+log_error() { echo "[entrypoint] ERROR: $*"; }
 
-# Configuration directory
+# -----------------------------------------------------------------------------
+# Configuration & Environment
+# -----------------------------------------------------------------------------
+DISABLE_SUDO="${OPENCLAW_DISABLE_SUDO:-false}"
 CONFIG_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
+WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/workspace}}"
+MEMORY_DIR="$WORKSPACE_DIR/memory"
+SUBAGENT_LOG_DIR="$WORKSPACE_DIR/subagent-logs"
 
-# Get values from environment
+# Gateway & Network
 GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-${CLAWDBOT_GATEWAY_TOKEN:-}}"
 GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-lan}}"
 GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}}"
+AI_GATEWAY_URL="${OPENCLAW_AI_GATEWAY_URL:-}"
 
-
-# Security: Disable mDNS/Bonjour broadcasting (prevents information disclosure)
+# Auth & Security
+DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AUTH:-false}}"
+ACIP_ENABLED="${OPENCLAW_ACIP_ENABLED:-true}"
 export OPENCLAW_DISABLE_BONJOUR=1
 
-# SaaS mode: disable device auth for Control UI (use token-only auth)
-DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AUTH:-false}}"
-
-# Model configuration (set via dashboard setup wizard)
-# Check OPENCLAW_ONBOARD_MODEL as fallback (set by onboarding flow)
+# Models
 DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${OPENCLAW_ONBOARD_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}}"
 COMPLEX_MODEL="${OPENCLAW_COMPLEX_MODEL:-${DEFAULT_MODEL}}"
 SUBAGENT_MODEL="${OPENCLAW_SUBAGENT_MODEL:-deepseek/deepseek-reasoner}"
@@ -43,92 +41,95 @@ HEARTBEAT_MODEL="${OPENCLAW_HEARTBEAT_MODEL:-${HEARTBEAT_MODEL:-}}"
 HEARTBEAT_INTERVAL="${OPENCLAW_HEARTBEAT_INTERVAL:-15m}"
 FALLBACK_MODELS_RAW="${OPENCLAW_FALLBACK_MODELS:-}"
 
-# Capability-specific models for prompt-based routing
-# These inject model names into SOUL.md's routing table so the agent
-# uses sessions_spawn(model: "...") with the right model per task type
 CODING_MODEL="${OPENCLAW_CODING_MODEL:-${DEFAULT_MODEL}}"
 WRITING_MODEL="${OPENCLAW_WRITING_MODEL:-${DEFAULT_MODEL}}"
 SEARCH_MODEL="${OPENCLAW_SEARCH_MODEL:-${DEFAULT_MODEL}}"
 IMAGE_MODEL="${OPENCLAW_IMAGE_MODEL:-${DEFAULT_MODEL}}"
 
-# Concurrency settings (configurable via dashboard)
+# Concurrency & Delays
 MAX_CONCURRENT="${OPENCLAW_MAX_CONCURRENT:-4}"
 SUBAGENT_MAX_CONCURRENT="${OPENCLAW_SUBAGENT_MAX_CONCURRENT:-8}"
-
-# Human delay settings (natural response timing for messaging channels)
 HUMAN_DELAY_ENABLED="${OPENCLAW_HUMAN_DELAY_ENABLED:-false}"
 HUMAN_DELAY_MIN="${OPENCLAW_HUMAN_DELAY_MIN:-800}"
 HUMAN_DELAY_MAX="${OPENCLAW_HUMAN_DELAY_MAX:-2500}"
 
-# Agent workspace directory (where SOUL.md, WORKING.md, memory/ etc live)
-WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/workspace}}"
+# -----------------------------------------------------------------------------
+# Functions
+# -----------------------------------------------------------------------------
 
-# AI Gateway URL (for credits mode - routes through Dashboard's gateway)
-# When set, configures vercel-ai-gateway provider to use Dashboard as proxy
-AI_GATEWAY_URL="${OPENCLAW_AI_GATEWAY_URL:-}"
-
-# Build fallback model JSON array from comma-separated list
-FALLBACK_JSON="[]"
-if [ -n "$FALLBACK_MODELS_RAW" ]; then
-  IFS=',' read -ra FALLBACK_LIST <<< "$FALLBACK_MODELS_RAW"
-  FALLBACK_JSON="["
-  first=1
-  for item in "${FALLBACK_LIST[@]}"; do
-    trimmed=$(echo "$item" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-    if [ -n "$trimmed" ]; then
-      if [ $first -eq 0 ]; then
-        FALLBACK_JSON+=", "
-      fi
-      FALLBACK_JSON+="\"$trimmed\""
-      first=0
+check_sudo() {
+  if [ "$DISABLE_SUDO" = "true" ] || [ "$DISABLE_SUDO" = "1" ]; then
+    if [ -f /etc/sudoers.d/node ]; then
+      log_info "Sudo access DISABLED (OPENCLAW_DISABLE_SUDO=true)"
+      sudo rm -f /etc/sudoers.d/node 2>/dev/null || true
     fi
-  done
-  FALLBACK_JSON+="]"
-  if [ $first -eq 1 ]; then
-    FALLBACK_JSON="[]"
-  fi
-fi
-
-# Heartbeat model must be explicit; fall back to DEFAULT_MODEL if missing
-if [ -z "$HEARTBEAT_MODEL" ]; then
-  if [ -n "$DEFAULT_MODEL" ]; then
-    echo "[entrypoint] WARNING: HEARTBEAT_MODEL not set; falling back to DEFAULT_MODEL"
-    HEARTBEAT_MODEL="$DEFAULT_MODEL"
   else
-    echo "[entrypoint] WARNING: HEARTBEAT_MODEL not set and DEFAULT_MODEL is empty"
+    log_info "Sudo access ENABLED"
   fi
-fi
+}
 
-# Create config directory if it doesn't exist
-mkdir -p "$CONFIG_DIR"
-
-# Only generate config if it doesn't exist OR if we're in SaaS mode
-if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE_DEVICE_AUTH" = "1" ]; then
-  echo "[entrypoint] Generating openclaw.json configuration..."
-  
-  # Build optional models.providers section for credits mode (vercel-ai-gateway routing)
-  MODELS_SECTION=""
-  if [ -n "$AI_GATEWAY_URL" ]; then
-    echo "[entrypoint] Credits mode detected - configuring vercel-ai-gateway provider via: $AI_GATEWAY_URL"
-    # Override baseUrl so requests route through the Dashboard's billing proxy
-    # instead of directly to https://ai-gateway.vercel.sh.
-    # The apiKey (gateway_token) is sent as x-api-key by the Anthropic SDK.
-    # We keep the native anthropic-messages format — the proxy handles it transparently.
-    MODELS_SECTION=",
-  \"models\": {
-    \"mode\": \"merge\",
-    \"providers\": {
-      \"vercel-ai-gateway\": {
-        \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
-        \"apiKey\": \"${GATEWAY_TOKEN}\",
-        \"models\": []
-      }
-    }
-  }"
+prepare_fallback_json() {
+  FALLBACK_JSON="[]"
+  if [ -n "$FALLBACK_MODELS_RAW" ]; then
+    IFS=',' read -ra FALLBACK_LIST <<< "$FALLBACK_MODELS_RAW"
+    FALLBACK_JSON="["
+    first=1
+    for item in "${FALLBACK_LIST[@]}"; do
+      trimmed=$(echo "$item" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+      if [ -n "$trimmed" ]; then
+        if [ $first -eq 0 ]; then FALLBACK_JSON+=", "; fi
+        FALLBACK_JSON+="\"$trimmed\""
+        first=0
+      fi
+    done
+    FALLBACK_JSON+="]"
+    if [ $first -eq 1 ]; then FALLBACK_JSON="[]"; fi
   fi
-  
-  # Build the configuration JSON
-  cat > "$CONFIG_FILE" << EOF
+}
+
+check_heartbeat_model() {
+  if [ -z "$HEARTBEAT_MODEL" ]; then
+    if [ -n "$DEFAULT_MODEL" ]; then
+      log_warn "HEARTBEAT_MODEL not set; falling back to DEFAULT_MODEL"
+      HEARTBEAT_MODEL="$DEFAULT_MODEL"
+    else
+      log_warn "HEARTBEAT_MODEL not set and DEFAULT_MODEL is empty"
+    fi
+  fi
+}
+
+generate_config() {
+  mkdir -p "$CONFIG_DIR"
+
+  if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE_DEVICE_AUTH" = "1" ]; then
+    log_info "Generating openclaw.json configuration..."
+    
+    MODELS_SECTION=""
+    if [ -n "$AI_GATEWAY_URL" ]; then
+      log_info "Credits mode detected - configuring vercel-ai-gateway via: $AI_GATEWAY_URL"
+      MODELS_SECTION=",
+      \"models\": {
+        \"mode\": \"merge\",
+        \"providers\": {
+          \"vercel-ai-gateway\": {
+            \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
+            \"apiKey\": \"${GATEWAY_TOKEN}\",
+            \"models\": []
+          }
+        }
+      }"
+    fi
+
+    HUMAN_DELAY_SECTION=""
+    if [ "$HUMAN_DELAY_ENABLED" = "true" ] || [ "$HUMAN_DELAY_ENABLED" = "1" ]; then
+      HUMAN_DELAY_SECTION=",
+      \"humanDelay\": {
+        \"min\": ${HUMAN_DELAY_MIN},
+        \"max\": ${HUMAN_DELAY_MAX}
+      }"
+    fi
+
+    cat > "$CONFIG_FILE" << EOF
 {
   "gateway": {
     "mode": "local",
@@ -201,330 +202,241 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
   "messages": {
     "queue": {
       "mode": "collect"
-    }$(if [ "$HUMAN_DELAY_ENABLED" = "true" ] || [ "$HUMAN_DELAY_ENABLED" = "1" ]; then echo ",
-    \"humanDelay\": {
-      \"min\": ${HUMAN_DELAY_MIN},
-      \"max\": ${HUMAN_DELAY_MAX}
-    }"; fi)
+    }${HUMAN_DELAY_SECTION}
   }
 }
 EOF
-  if [ -n "$DEFAULT_MODEL" ]; then
-    echo "[entrypoint] Default model: ${DEFAULT_MODEL}"
+    log_info "Configuration generated at $CONFIG_FILE"
+    
+    log_info "Enforcing security permissions..."
+    chmod 700 "$CONFIG_DIR"
+    chmod 600 "$CONFIG_FILE"
   else
-    echo "[entrypoint] WARNING: OPENCLAW_DEFAULT_MODEL is empty"
+    log_info "Using existing configuration at $CONFIG_FILE"
   fi
+}
+
+run_auto_onboard() {
+  AUTO_ONBOARD="${OPENCLAW_AUTO_ONBOARD:-false}"
+  ONBOARD_MARKER="$CONFIG_DIR/.onboard-complete"
+
+  if [ "$AUTO_ONBOARD" != "true" ] && [ "$AUTO_ONBOARD" != "1" ]; then return 0; fi
+  if [ -f "$ONBOARD_MARKER" ]; then
+    log_info "Auto-onboard already completed (marker exists)"
+    return 0
+  fi
+
+  log_info "Auto-onboard enabled, running non-interactive setup..."
+  OPENCLAW_SCRIPT="/app/openclaw.mjs"
   
-  echo "[entrypoint] Configuration generated at $CONFIG_FILE"
-  echo "[entrypoint] dangerouslyDisableDeviceAuth: true (SaaS mode)"
+  if [ ! -f "$OPENCLAW_SCRIPT" ]; then
+    log_error "FATAL: openclaw.mjs not found at $OPENCLAW_SCRIPT"
+    ls -la /app/ | head -20
+    return 1
+  fi
+
+  ONBOARD_CMD=("node" "$OPENCLAW_SCRIPT" "onboard" "--non-interactive" "--accept-risk" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
   
-  # Security: Enforce strict permissions on the config directory and file
-  echo "[entrypoint] Enforcing security permissions..."
-  chmod 700 "$CONFIG_DIR"
-  chmod 600 "$CONFIG_FILE"
-
-else
-  echo "[entrypoint] Using existing configuration at $CONFIG_FILE"
-fi
-
-# =============================================================================
-# AUTO-ONBOARD: Run non-interactive onboard when OPENCLAW_AUTO_ONBOARD=true
-# This allows the dashboard to pre-configure instances during deployment
-# =============================================================================
-AUTO_ONBOARD="${OPENCLAW_AUTO_ONBOARD:-false}"
-ONBOARD_MARKER="$CONFIG_DIR/.onboard-complete"
-
-if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
-  # Only run onboard once (check for marker file)
-  if [ ! -f "$ONBOARD_MARKER" ]; then
-    echo "[entrypoint] Auto-onboard enabled, running non-interactive setup..."
+  AUTH_CHOICE="${OPENCLAW_ONBOARD_AUTH_CHOICE:-}"
+  if [ -n "$AUTH_CHOICE" ]; then
+    ONBOARD_CMD+=("--auth-choice" "$AUTH_CHOICE")
     
-    # Build the onboard command as an array to safely handle arguments
-    # NOTE: openclaw.mjs is the CLI entry point - run it directly with node
-    # (bin symlinks in node_modules/.bin only work for dependencies, not root package)
-    OPENCLAW_SCRIPT="/app/openclaw.mjs"
-    if [ ! -f "$OPENCLAW_SCRIPT" ]; then
-      echo "[entrypoint] FATAL: openclaw.mjs not found at $OPENCLAW_SCRIPT"
-      echo "[entrypoint] Listing /app contents:"
-      ls -la /app/ | head -20
-    else
-      echo "[entrypoint] Using openclaw script: $OPENCLAW_SCRIPT"
-    fi
-    ONBOARD_CMD=("node" "$OPENCLAW_SCRIPT" "onboard" "--non-interactive" "--accept-risk" "--mode" "local" "--gateway-port" "${GATEWAY_PORT}" "--gateway-bind" "lan" "--skip-skills")
-    
-    # Add auth choice if specified
-    AUTH_CHOICE="${OPENCLAW_ONBOARD_AUTH_CHOICE:-}"
-    if [ -n "$AUTH_CHOICE" ]; then
-      ONBOARD_CMD+=("--auth-choice" "$AUTH_CHOICE")
-    fi
-    
-    # Add API keys based on auth choice - DO NOT LOG THESE VALUES
-    if [ "$AUTH_CHOICE" = "ai-gateway-api-key" ] && [ -n "${AI_GATEWAY_API_KEY:-}" ]; then
-      ONBOARD_CMD+=("--ai-gateway-api-key" "$AI_GATEWAY_API_KEY")
-    elif [ "$AUTH_CHOICE" = "apiKey" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-      ONBOARD_CMD+=("--anthropic-api-key" "$ANTHROPIC_API_KEY")
-    elif [ "$AUTH_CHOICE" = "openai-api-key" ] && [ -n "${OPENAI_API_KEY:-}" ]; then
-      ONBOARD_CMD+=("--openai-api-key" "$OPENAI_API_KEY")
-    elif [ "$AUTH_CHOICE" = "gemini-api-key" ] && [ -n "${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}" ]; then
-      ONBOARD_CMD+=("--gemini-api-key" "${GEMINI_API_KEY:-${GOOGLE_API_KEY}}")
-    elif [ "$AUTH_CHOICE" = "xai-api-key" ] && [ -n "${XAI_API_KEY:-}" ]; then
-      ONBOARD_CMD+=("--xai-api-key" "$XAI_API_KEY")
-    elif [ "$AUTH_CHOICE" = "moonshot-api-key" ] && [ -n "${MOONSHOT_API_KEY:-}" ]; then
-      ONBOARD_CMD+=("--moonshot-api-key" "$MOONSHOT_API_KEY")
-    elif [ "$AUTH_CHOICE" = "zai-api-key" ] && [ -n "${ZAI_API_KEY:-}" ]; then
-      ONBOARD_CMD+=("--zai-api-key" "$ZAI_API_KEY")
-    elif [ "$AUTH_CHOICE" = "venice-api-key" ] && [ -n "${VENICE_API_KEY:-}" ]; then
-      ONBOARD_CMD+=("--venice-api-key" "$VENICE_API_KEY")
-    fi
+    # Add API keys
+    case "$AUTH_CHOICE" in
+      ai-gateway-api-key) [ -n "${AI_GATEWAY_API_KEY}" ] && ONBOARD_CMD+=("--ai-gateway-api-key" "$AI_GATEWAY_API_KEY") ;;
+      apiKey) [ -n "${ANTHROPIC_API_KEY}" ] && ONBOARD_CMD+=("--anthropic-api-key" "$ANTHROPIC_API_KEY") ;;
+      openai-api-key) [ -n "${OPENAI_API_KEY}" ] && ONBOARD_CMD+=("--openai-api-key" "$OPENAI_API_KEY") ;;
+      gemini-api-key) [ -n "${GEMINI_API_KEY:-${GOOGLE_API_KEY}}" ] && ONBOARD_CMD+=("--gemini-api-key" "${GEMINI_API_KEY:-${GOOGLE_API_KEY}}") ;;
+      xai-api-key) [ -n "${XAI_API_KEY}" ] && ONBOARD_CMD+=("--xai-api-key" "$XAI_API_KEY") ;;
+      moonshot-api-key) [ -n "${MOONSHOT_API_KEY}" ] && ONBOARD_CMD+=("--moonshot-api-key" "$MOONSHOT_API_KEY") ;;
+      zai-api-key) [ -n "${ZAI_API_KEY}" ] && ONBOARD_CMD+=("--zai-api-key" "$ZAI_API_KEY") ;;
+      venice-api-key) [ -n "${VENICE_API_KEY}" ] && ONBOARD_CMD+=("--venice-api-key" "$VENICE_API_KEY") ;;
+    esac
+  fi
 
-    # Add model if specified (dashboard passes OPENCLAW_ONBOARD_MODEL, fallback to default)
-    ONBOARD_MODEL="${OPENCLAW_ONBOARD_MODEL:-${OPENCLAW_DEFAULT_MODEL:-}}"
-    # NOTE: "onboard" command doesn't support --model flag, so we set it AFTER onboarding
-
-    
-    # Run the onboard command
-    # Print a safe version of the command for logging
-    echo "[entrypoint] Running: openclaw onboard --non-interactive ... [auth-choice: ${AUTH_CHOICE}]"
-    
-    if "${ONBOARD_CMD[@]}"; then
-      echo "[entrypoint] Auto-onboard completed successfully"
-      touch "$ONBOARD_MARKER"
-    else
-      echo "[entrypoint] Auto-onboard command returned error code"
-      # Check if config was generated anyway (likely failed on connection test)
-      if [ -s "$CONFIG_FILE" ]; then
-         echo "[entrypoint] Config file generated successfully ($CONFIG_FILE). Ignoring connection error."
-         touch "$ONBOARD_MARKER"
-      else
-         echo "[entrypoint] Auto-onboard failed and no config generated. Manual setup required."
-      fi
-    fi
-
+  log_info "Running onboard command... [auth-choice: ${AUTH_CHOICE}]"
+  
+  if "${ONBOARD_CMD[@]}"; then
+    log_info "Auto-onboard completed successfully"
+    touch "$ONBOARD_MARKER"
   else
-    echo "[entrypoint] Auto-onboard already completed (marker exists)"
-  fi
-
-  # CRITICAL: Re-enforce ALL model settings from env vars after onboard.
-  # The onboard process overwrites agents.defaults.model.primary with its own
-  # default (anthropic/claude-opus-4.6). We must patch the config to restore
-  # the preset models that the entrypoint originally set.
-  if [ -s "$CONFIG_FILE" ]; then
-    echo "[entrypoint] Re-enforcing preset model settings after onboard..."
-    if command -v jq &> /dev/null; then
-      JQ_FILTER='.'
-      if [ -n "$DEFAULT_MODEL" ]; then
-        JQ_FILTER="$JQ_FILTER | .agents.defaults.model.primary = \"$DEFAULT_MODEL\""
-      fi
-      if [ -n "$HEARTBEAT_MODEL" ]; then
-        JQ_FILTER="$JQ_FILTER | .agents.defaults.heartbeat.model = \"$HEARTBEAT_MODEL\""
-      fi
-      if [ -n "$SUBAGENT_MODEL" ]; then
-        JQ_FILTER="$JQ_FILTER | .agents.defaults.subagents.model = \"$SUBAGENT_MODEL\""
-      fi
-      if [ "$FALLBACK_JSON" != "[]" ]; then
-        JQ_FILTER="$JQ_FILTER | .agents.defaults.model.fallbacks = $FALLBACK_JSON"
-      fi
-      jq "$JQ_FILTER" "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    log_info "Auto-onboard command returned error code"
+    if [ -s "$CONFIG_FILE" ]; then
+       log_info "Config file generated successfully despite error. Ignoring."
+       touch "$ONBOARD_MARKER"
     else
-      node -e "
-        const fs = require('fs');
-        const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-        config.agents = config.agents || {};
-        config.agents.defaults = config.agents.defaults || {};
-        config.agents.defaults.model = config.agents.defaults.model || {};
-        if ('$DEFAULT_MODEL') config.agents.defaults.model.primary = '$DEFAULT_MODEL';
-        if ('$HEARTBEAT_MODEL') {
-          config.agents.defaults.heartbeat = config.agents.defaults.heartbeat || {};
-          config.agents.defaults.heartbeat.model = '$HEARTBEAT_MODEL';
-        }
-        if ('$SUBAGENT_MODEL') {
-          config.agents.defaults.subagents = config.agents.defaults.subagents || {};
-          config.agents.defaults.subagents.model = '$SUBAGENT_MODEL';
-        }
-        const fallbacks = $FALLBACK_JSON;
-        if (fallbacks.length > 0) config.agents.defaults.model.fallbacks = fallbacks;
-        fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
-      "
+       log_error "Auto-onboard failed and no config generated."
     fi
-    echo "[entrypoint] Preset models enforced: primary=${DEFAULT_MODEL:-<unset>} heartbeat=${HEARTBEAT_MODEL:-<unset>} subagent=${SUBAGENT_MODEL:-<unset>}"
   fi
+}
 
-  # CRITICAL: Re-apply gateway token AFTER onboard (onboard may overwrite it)
-  # This ensures the token in the config matches what the dashboard expects
-  if [ -n "$GATEWAY_TOKEN" ] && [ -s "$CONFIG_FILE" ]; then
-    echo "[entrypoint] Enforcing gateway token from env..."
-    # Use jq if available, otherwise use node for JSON manipulation
-    if command -v jq &> /dev/null; then
-      jq --arg token "$GATEWAY_TOKEN" '.gateway.auth.token = $token | .gateway.auth.mode = "token"' "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-    else
-      # Fallback: use node to patch the config
-      node -e "
-        const fs = require('fs');
-        const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-        config.gateway = config.gateway || {};
-        config.gateway.auth = config.gateway.auth || {};
-        config.gateway.auth.mode = 'token';
-        config.gateway.auth.token = '$GATEWAY_TOKEN';
-        fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
-      "
-    fi
-    echo "[entrypoint] Gateway token enforced"
-  fi
-
-  # CRITICAL: Enforce trustedProxies for Coolify/Traefik reverse proxy compatibility
-  # This allows WebSocket connections from behind the proxy to work properly
-  if [ -s "$CONFIG_FILE" ]; then
-    echo "[entrypoint] Enforcing trustedProxies for reverse proxy compatibility..."
-    if command -v jq &> /dev/null; then
-      jq '.gateway.trustedProxies = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"]' "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-    else
-      node -e "
-        const fs = require('fs');
-        const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-        config.gateway = config.gateway || {};
-        config.gateway.trustedProxies = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8'];
-        fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
-      "
-    fi
-    echo "[entrypoint] trustedProxies enforced"
-  fi
-fi
-
-# Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
-# This file is copied into the image at build time (/app/SOUL.md)
-# WORKSPACE_DIR already set above (used in config generation and here for file deployment)
-
-# Check if ACIP (Advanced Cognitive Inoculation Prompt) is enabled
-# Defaults to true for security
-ACIP_ENABLED="${OPENCLAW_ACIP_ENABLED:-true}"
-
-if [ -f "/app/SOUL.md" ]; then
-  mkdir -p "$WORKSPACE_DIR"
-  echo "[entrypoint] Setting up security rules (SOUL.md)..."
+patch_config_json() {
+  local filter="$1"
+  local node_script="$2"
   
-  # Remove existing readonly file if it exists so we can update it
-  if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
+  if command -v jq &> /dev/null; then
+    jq "$filter" "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+  else
+    node -e "$node_script"
+  fi
+}
+
+enforce_model_settings() {
+  if [ ! -s "$CONFIG_FILE" ]; then return; fi
+  
+  log_info "Re-enforcing model settings..."
+  
+  local jq_filter='.'
+  [ -n "$DEFAULT_MODEL" ] && jq_filter="$jq_filter | .agents.defaults.model.primary = \"$DEFAULT_MODEL\""
+  [ -n "$HEARTBEAT_MODEL" ] && jq_filter="$jq_filter | .agents.defaults.heartbeat.model = \"$HEARTBEAT_MODEL\""
+  [ -n "$SUBAGENT_MODEL" ] && jq_filter="$jq_filter | .agents.defaults.subagents.model = \"$SUBAGENT_MODEL\""
+  [ "$FALLBACK_JSON" != "[]" ] && jq_filter="$jq_filter | .agents.defaults.model.fallbacks = $FALLBACK_JSON"
+  
+  local node_script="
+    const fs = require('fs');
+    const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+    config.agents = config.agents || {};
+    config.agents.defaults = config.agents.defaults || {};
+    config.agents.defaults.model = config.agents.defaults.model || {};
+    if ('$DEFAULT_MODEL') config.agents.defaults.model.primary = '$DEFAULT_MODEL';
+    if ('$HEARTBEAT_MODEL') {
+      config.agents.defaults.heartbeat = config.agents.defaults.heartbeat || {};
+      config.agents.defaults.heartbeat.model = '$HEARTBEAT_MODEL';
+    }
+    if ('$SUBAGENT_MODEL') {
+      config.agents.defaults.subagents = config.agents.defaults.subagents || {};
+      config.agents.defaults.subagents.model = '$SUBAGENT_MODEL';
+    }
+    const fallbacks = $FALLBACK_JSON;
+    if (fallbacks.length > 0) config.agents.defaults.model.fallbacks = fallbacks;
+    fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+  "
+  
+  patch_config_json "$jq_filter" "$node_script"
+}
+
+enforce_gateway_token() {
+  if [ -z "$GATEWAY_TOKEN" ] || [ ! -s "$CONFIG_FILE" ]; then return; fi
+  
+  log_info "Enforcing gateway token..."
+  local jq_filter=".gateway.auth.token = \"$GATEWAY_TOKEN\" | .gateway.auth.mode = \"token\""
+  local node_script="
+    const fs = require('fs');
+    const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+    config.gateway = config.gateway || {};
+    config.gateway.auth = config.gateway.auth || {};
+    config.gateway.auth.mode = 'token';
+    config.gateway.auth.token = '$GATEWAY_TOKEN';
+    fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+  "
+  patch_config_json "$jq_filter" "$node_script"
+}
+
+enforce_trusted_proxies() {
+  if [ ! -s "$CONFIG_FILE" ]; then return; fi
+  
+  log_info "Enforcing trustedProxies..."
+  local jq_filter='.gateway.trustedProxies = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"]'
+  local node_script="
+    const fs = require('fs');
+    const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+    config.gateway = config.gateway || {};
+    config.gateway.trustedProxies = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8'];
+    fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+  "
+  patch_config_json "$jq_filter" "$node_script"
+}
+
+setup_security_files() {
+  # SOUL.md
+  if [ -f "/app/SOUL.md" ]; then
+    mkdir -p "$WORKSPACE_DIR"
+    log_info "Setting up security rules (SOUL.md)..."
     rm -f "$WORKSPACE_DIR/SOUL.md"
+    cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
+    
+    # Template replacement
+    sed -i \
+      -e "s|{{PRIMARY_MODEL}}|${COMPLEX_MODEL:-not-configured}|g" \
+      -e "s|{{SUBAGENT_MODEL}}|${SUBAGENT_MODEL:-not-configured}|g" \
+      -e "s|{{CODING_MODEL}}|${CODING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{WRITING_MODEL}}|${WRITING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{SEARCH_MODEL}}|${SEARCH_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{IMAGE_MODEL}}|${IMAGE_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      "$WORKSPACE_DIR/SOUL.md"
+      
+    chmod 444 "$WORKSPACE_DIR/SOUL.md"
+    log_info "Model routing configured in SOUL.md"
   fi
 
-  # Always start with SOUL.md as the base (operational instructions, delegation, routing, etc.)
-  cp /app/SOUL.md "$WORKSPACE_DIR/SOUL.md"
-
-  # Set strict read-only permissions for the SOUL file so it can't be easily modified by the agent itself
-  chmod 444 "$WORKSPACE_DIR/SOUL.md"
-
-  # Deploy ACIP_SECURITY.md as a standalone readable workspace reference file
-  # The orchestrator's SOUL.md instructs it to inject ACIP into sub-agent tasks for external-facing work
+  # ACIP
   if [ "$ACIP_ENABLED" = "true" ] || [ "$ACIP_ENABLED" = "1" ]; then
-      if [ -f "/app/ACIP_SECURITY.md" ]; then
-          cp /app/ACIP_SECURITY.md "$WORKSPACE_DIR/ACIP_SECURITY.md"
-          chmod 444 "$WORKSPACE_DIR/ACIP_SECURITY.md"
-          echo "[entrypoint] Deployed ACIP_SECURITY.md as workspace reference (context-based injection)."
-      else
-          echo "[entrypoint] WARNING: ACIP_SECURITY.md not found in image. External sub-agents will lack security hardening."
-      fi
-  else
-      echo "[entrypoint] ACIP Security disabled (OPENCLAW_ACIP_ENABLED=$ACIP_ENABLED). Skipping ACIP_SECURITY.md deployment."
+    if [ -f "/app/ACIP_SECURITY.md" ]; then
+      rm -f "$WORKSPACE_DIR/ACIP_SECURITY.md"
+      cp /app/ACIP_SECURITY.md "$WORKSPACE_DIR/ACIP_SECURITY.md"
+      chmod 444 "$WORKSPACE_DIR/ACIP_SECURITY.md"
+      log_info "Deployed ACIP_SECURITY.md"
+    else
+      log_warn "ACIP_SECURITY.md not found in image."
+    fi
   fi
-fi
 
-# Template-render model routing in SOUL.md
-# SOUL.md contains {{TOKEN}} placeholders in the routing table — replace with actual model names
-if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
-  chmod 644 "$WORKSPACE_DIR/SOUL.md"
-  sed -i \
-    -e "s|{{PRIMARY_MODEL}}|${COMPLEX_MODEL:-not-configured}|g" \
-    -e "s|{{SUBAGENT_MODEL}}|${SUBAGENT_MODEL:-not-configured}|g" \
-    -e "s|{{CODING_MODEL}}|${CODING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-    -e "s|{{WRITING_MODEL}}|${WRITING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-    -e "s|{{SEARCH_MODEL}}|${SEARCH_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-    -e "s|{{IMAGE_MODEL}}|${IMAGE_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-    "$WORKSPACE_DIR/SOUL.md"
-  chmod 444 "$WORKSPACE_DIR/SOUL.md"
-  echo "[entrypoint] Model routing configured: coding=${CODING_MODEL:-default} writing=${WRITING_MODEL:-default} search=${SEARCH_MODEL:-default} image=${IMAGE_MODEL:-default}"
-fi
-
-# Deploy IDENTITY.md (writable self-evolution file) if it doesn't exist
-# Unlike SOUL.md which is read-only for security, IDENTITY.md is meant to evolve
-if [ -f "/app/IDENTITY.md" ]; then
-  if [ ! -f "$WORKSPACE_DIR/IDENTITY.md" ]; then
-    echo "[entrypoint] Creating IDENTITY.md template (writable self-evolution file)..."
-    cp "/app/IDENTITY.md" "$WORKSPACE_DIR/IDENTITY.md"
-    # IDENTITY.md should be writable (agent needs to update it for self-improvement)
-    chmod 644 "$WORKSPACE_DIR/IDENTITY.md"
-  else
-    echo "[entrypoint] IDENTITY.md exists, skipping template copy to preserve evolved identity."
-  fi
-fi
-
-# [MOLTBOT CUSTOMIZATION START] - Memory & task persistence
-# Deploy WORKING.md template if it doesn't exist
-if [ -f "/app/WORKING.md" ]; then
-  # Only create if it doesn't exist (don't overwrite user's work)
-  if [ ! -f "$WORKSPACE_DIR/WORKING.md" ]; then
-    echo "[entrypoint] Creating WORKING.md template..."
-    cp /app/WORKING.md "$WORKSPACE_DIR/WORKING.md"
-    # WORKING.md should be writable (agent needs to update it)
-    chmod 644 "$WORKSPACE_DIR/WORKING.md"
-  fi
-fi
-
-# Create memory directory structure
-MEMORY_DIR="$WORKSPACE_DIR/memory"
-if [ ! -d "$MEMORY_DIR" ]; then
-  echo "[entrypoint] Creating memory directory..."
+  # Writable files
+  for file in IDENTITY.md WORKING.md HEARTBEAT.md; do
+    if [ -f "/app/$file" ] && [ ! -f "$WORKSPACE_DIR/$file" ]; then
+      log_info "Creating $file template..."
+      cp "/app/$file" "$WORKSPACE_DIR/$file"
+      chmod 644 "$WORKSPACE_DIR/$file"
+    fi
+  done
+  
+  # Memory templates
   mkdir -p "$MEMORY_DIR"
-fi
-
-# Deploy self-review template if it doesn't exist
-if [ -f "/app/templates/memory/self-review.md" ]; then
-  if [ ! -f "$MEMORY_DIR/self-review.md" ]; then
-    echo "[entrypoint] Creating memory/self-review.md template..."
-    cp /app/templates/memory/self-review.md "$MEMORY_DIR/self-review.md"
-    chmod 644 "$MEMORY_DIR/self-review.md"
+  for file in self-review.md open-loops.md; do
+    if [ -f "/app/templates/memory/$file" ] && [ ! -f "$MEMORY_DIR/$file" ]; then
+      log_info "Creating memory/$file template..."
+      cp "/app/templates/memory/$file" "$MEMORY_DIR/$file"
+      chmod 644 "$MEMORY_DIR/$file"
+    fi
+  done
+  
+  # Subagent logs
+  if [ ! -d "$SUBAGENT_LOG_DIR" ]; then
+    mkdir -p "$SUBAGENT_LOG_DIR"
+    chmod 755 "$SUBAGENT_LOG_DIR"
   fi
-fi
+}
 
-# Deploy open-loops template if it doesn't exist
-if [ -f "/app/templates/memory/open-loops.md" ]; then
-  if [ ! -f "$MEMORY_DIR/open-loops.md" ]; then
-    echo "[entrypoint] Creating memory/open-loops.md template..."
-    cp /app/templates/memory/open-loops.md "$MEMORY_DIR/open-loops.md"
-    chmod 644 "$MEMORY_DIR/open-loops.md"
+run_doctor() {
+  local script="/app/openclaw.mjs"
+  if [ -f "$script" ]; then
+    log_info "Running openclaw doctor --fix..."
+    if node "$script" doctor --fix 2>&1 | head -20; then
+      log_info "openclaw doctor completed successfully"
+    else
+      log_warn "openclaw doctor returned errors (non-fatal)"
+    fi
   fi
-fi
+}
 
-# Deploy HEARTBEAT.md template if it doesn't exist
-if [ -f "/app/HEARTBEAT.md" ]; then
-  if [ ! -f "$WORKSPACE_DIR/HEARTBEAT.md" ]; then
-    echo "[entrypoint] Creating HEARTBEAT.md template..."
-    cp /app/HEARTBEAT.md "$WORKSPACE_DIR/HEARTBEAT.md"
-    chmod 644 "$WORKSPACE_DIR/HEARTBEAT.md"
-  fi
-fi
+# -----------------------------------------------------------------------------
+# Main Execution
+# -----------------------------------------------------------------------------
 
-# [MOLTBOT CUSTOMIZATION END]
+check_sudo
+prepare_fallback_json
+check_heartbeat_model
+generate_config
+run_auto_onboard
 
-# Create subagent log directory
-SUBAGENT_LOG_DIR="$WORKSPACE_DIR/subagent-logs"
-if [ ! -d "$SUBAGENT_LOG_DIR" ]; then
-  mkdir -p "$SUBAGENT_LOG_DIR"
-  chmod 755 "$SUBAGENT_LOG_DIR"
-  echo "[entrypoint] Created subagent log directory"
-fi
+# Post-onboard enforcements (critical if onboard overwrites config)
+enforce_model_settings
+enforce_gateway_token
+enforce_trusted_proxies
 
-# =============================================================================
-# RUN OPENCLAW DOCTOR: Auto-repair common issues before gateway start
-# =============================================================================
-OPENCLAW_DOCTOR_SCRIPT="/app/openclaw.mjs"
-if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
-  echo "[entrypoint] Running openclaw doctor --fix..."
-  if node "$OPENCLAW_DOCTOR_SCRIPT" doctor --fix 2>&1 | head -20; then
-    echo "[entrypoint] openclaw doctor completed successfully"
-  else
-    echo "[entrypoint] WARNING: openclaw doctor returned errors (non-fatal, continuing)"
-  fi
-fi
+setup_security_files
+run_doctor
 
-# Execute the main command
+# Execute Command
 exec "$@"
+
