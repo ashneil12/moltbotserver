@@ -10,32 +10,41 @@ This document tracks customizations made to this fork compared to upstream `open
 ## Security Hardening
 
 ### Removed Features
+
 - **SoulEvil persona**: Removed for safety/security reasons
 
 ### Modified Files
+
 <!-- Add files you've modified for security here -->
+
 - `docker-entrypoint.sh` - Custom security configurations
 - `Dockerfile` - Hardened container setup
 
 ### Added Security Measures
-<!-- Document any security additions -->
-- TBD - Add your security measures here
+
+- **ACIP_SECURITY.md** — Full security rules, deployed as read-only to workspace
+- **SOUL.md custom sections** — Secrets management, content quarantine, destructive action circuit breakers, privacy rules
+- **Plugin Safety Protocol** (SOUL.md) — Mandatory backup of `$OPENCLAW_STATE_DIR/openclaw.json` before any plugin/skill install, staged rollback procedure
+- **Config path**: `$OPENCLAW_STATE_DIR/openclaw.json` (resolves to `/home/node/data/openclaw.json` inside container) — NOT `~/.openclaw/openclaw.json`
 
 ## Memory & Intelligence Features
+
 ### Modified Files
+
 - `docker-entrypoint.sh`
   - **Config Generation**: Modified `openclaw.json` generation blocks (lines ~67-85 and ~93-110) to enable `memoryFlush` and `sessionMemory` search by default.
   - **Deployment**: Added logic (lines ~248+) to deploy `WORKING.md` template to workspace if missing.
 
 ### New Files
+
 - `WORKING.md`: Template for persistent task state across compactions. Located in root, copied to `/app/` in Docker.
 - `IDENTITY.md`: Writable self-evolution file for personality, promoted patterns, and learned preferences. SOUL.md is read-only for security; IDENTITY.md is the agent's editable identity. Also contains the metacognition lens injection point (`<!-- LIVE_STATE_START/END -->` markers).
 
 ### Scripts
+
 - `scripts/metacognition.py`: Self-evolving metacognitive engine (perceptions, curiosities, feedback loops). Injects into IDENTITY.md.
 - `scripts/live_state.py`: Environment bindings for recording experiences.
 - `scripts/check-open-loops.py`: Checks for unchecked tasks in markdown files.
-
 
 ---
 
@@ -43,11 +52,20 @@ This document tracks customizations made to this fork compared to upstream `open
 
 Files that should always keep local version during updates:
 
-| File | Reason |
-|------|--------|
-| `docker-compose.coolify.yml` | Coolify deployment configuration |
-| `docker-entrypoint.sh` | Custom initialization logic |
-| `.env.example` | Local environment template |
+| File                          | Reason                                                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `docker-compose.coolify.yml`  | Coolify deployment configuration                                                                               |
+| `docker-entrypoint.sh`        | Custom initialization logic                                                                                    |
+| `SOUL.md`                     | MoltBot custom additions (security, delegation, update protocol, plugin safety protocol, model routing tokens) |
+| `ACIP_SECURITY.md`            | Full ACIP security rules                                                                                       |
+| `IDENTITY.md`                 | Writable self-evolution file (token economy, critical rules, preferences)                                      |
+| `WORKING.md`                  | Persistent task state template                                                                                 |
+| `HEARTBEAT.md`                | Lean heartbeat instructions with OTA check                                                                     |
+| `templates/`                  | Memory templates (self-review, open-loops, diary, identity-scratchpad, progress)                               |
+| `scripts/metacognition.py`    | Self-evolving metacognition engine                                                                             |
+| `scripts/live_state.py`       | Environment bindings for live state                                                                            |
+| `scripts/check-open-loops.py` | Open loops checker                                                                                             |
+| `.env.example`                | Local environment template                                                                                     |
 
 ---
 
@@ -64,10 +82,14 @@ Files that can generally take upstream version:
 
 ## Update History
 
-| Date | Upstream Commit | Notes |
-|------|-----------------|-------|
-| 2026-02-04 | — | Token Economy dashboard implementation |
-| TBD  | TBD | Initial fork |
+| Date       | Upstream Commit | Notes                                                                                                        |
+| ---------- | --------------- | ------------------------------------------------------------------------------------------------------------ |
+| 2026-02-13 | —               | Plugin Safety Protocol added to SOUL.md; config path corrected to `$OPENCLAW_STATE_DIR/openclaw.json`        |
+| 2026-02-13 | —               | Context rebuild: concurrency, human delay, context pruning, OTA protocol, Ralph Loops, self-improvement loop |
+| 2026-02-12 | —               | OTA update system, SOUL.md update protocol                                                                   |
+| 2026-02-12 | —               | Clean-slate context rebuild. Soul-evil scorched earth.                                                       |
+| 2026-02-11 | —               | Persistent storage fix, ACIP, QMD memory, model routing                                                      |
+| 2026-02-04 | —               | Token Economy dashboard implementation                                                                       |
 
 ---
 
@@ -77,14 +99,15 @@ Files that can generally take upstream version:
 > **Status:** Config-only (no source code changes)
 
 ### Purpose
+
 Enable the main agent to act as an orchestrator that delegates tasks to sub-agents using task-type-based model routing.
 
 ### Modified Files
 
-| File | What Changed | Why |
-|------|--------------|-----|
+| File                   | What Changed                                                                                                      | Why                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `docker-entrypoint.sh` | Added `routing.rules` and `subagent` config blocks to `openclaw.json` generation (~lines 80-110 in both branches) | Inject routing configuration for task-type-based model selection |
-| `docker-entrypoint.sh` | Added log directory creation logic at end of file (~lines 289-296) | Create `subagent-logs/` directory on container startup |
+| `docker-entrypoint.sh` | Added log directory creation logic at end of file (~lines 289-296)                                                | Create `subagent-logs/` directory on container startup           |
 
 ### Config Injected into `openclaw.json`
 
@@ -107,8 +130,8 @@ Enable the main agent to act as an orchestrator that delegates tasks to sub-agen
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
+| File                         | Purpose                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------ |
 | `SOUL_DELEGATION_SNIPPET.md` | Guidance snippet for SOUL.md on when/how to delegate tasks to sub-agents |
 
 ### ⚠️ Important Notes
@@ -121,6 +144,7 @@ Enable the main agent to act as an orchestrator that delegates tasks to sub-agen
 ### To Fully Enable (Future Work)
 
 If automatic task-type routing and file logging are desired, these files would need modification:
+
 - `src/agents/tools/sessions-spawn-tool.ts` — Add `taskType` param and routing logic
 - `src/agents/subagent-registry.ts` — Store `taskType` in run records
 - `src/agents/subagent-announce.ts` — Write markdown logs to `subagent-logs/`
@@ -135,32 +159,32 @@ These changes are in the **dashboard** repo, not the OpenClaw source. Document h
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
+| File                           | Purpose                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------- |
 | `src/lib/constants/presets.ts` | Token Economy preset definitions (Cost-Saving, Power modes) with model mappings |
 
 ### Modified Files
 
-| File | What Changed | Why |
-|------|--------------|-----|
-| `src/lib/types/instance.ts` | Added `image` to `ModelRoutingConfig`; added `HeartbeatInterval` type | Support Image capability and configurable heartbeat |
-| `src/components/instances/CreateInstanceWizard.tsx` | Preset selector UI (Step 2), routing visualization with 6 capabilities, `tokenEconomyPreset` in deploy payload | One-click model optimization for new instances |
-| `src/app/dashboard/instances/[id]/components/InstanceSettings.tsx` | Token Economy preset card in settings tab | Switch presets on existing instances without redeploy |
-| `src/app/api/instances/[id]/settings/route.ts` | Zod schema for `tokenEconomyPreset`, `heartbeatInterval`, `routing`; Coolify env var injection | Backend persistence and hot-reload support |
+| File                                                               | What Changed                                                                                                   | Why                                                   |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `src/lib/types/instance.ts`                                        | Added `image` to `ModelRoutingConfig`; added `HeartbeatInterval` type                                          | Support Image capability and configurable heartbeat   |
+| `src/components/instances/CreateInstanceWizard.tsx`                | Preset selector UI (Step 2), routing visualization with 6 capabilities, `tokenEconomyPreset` in deploy payload | One-click model optimization for new instances        |
+| `src/app/dashboard/instances/[id]/components/InstanceSettings.tsx` | Token Economy preset card in settings tab                                                                      | Switch presets on existing instances without redeploy |
+| `src/app/api/instances/[id]/settings/route.ts`                     | Zod schema for `tokenEconomyPreset`, `heartbeatInterval`, `routing`; Coolify env var injection                 | Backend persistence and hot-reload support            |
 
 ### Environment Variables Injected
 
-| Variable | Description |
-|----------|-------------|
-| `OPENCLAW_ROUTING_CONFIG` | JSON-serialized routing config |
+| Variable                      | Description                             |
+| ----------------------------- | --------------------------------------- |
+| `OPENCLAW_ROUTING_CONFIG`     | JSON-serialized routing config          |
 | `OPENCLAW_HEARTBEAT_INTERVAL` | Heartbeat frequency (e.g., `1h`, `10m`) |
 
 ### Preset Definitions
 
-| Preset | Models | Cost Est |
-|--------|--------|----------|
-| Cost-Saving | Kimi K2.5, Minimax 2.1, DeepSeek V3, Gemini Flash, Haiku | ~$25-80/mo |
-| Power | Claude Opus 4.5, Codex GPT 5.2, Haiku | ~$500-1000/mo |
+| Preset      | Models                                                   | Cost Est      |
+| ----------- | -------------------------------------------------------- | ------------- |
+| Cost-Saving | Kimi K2.5, Minimax 2.1, DeepSeek V3, Gemini Flash, Haiku | ~$25-80/mo    |
+| Power       | Claude Opus 4.5, Codex GPT 5.2, Haiku                    | ~$500-1000/mo |
 
 ---
 
