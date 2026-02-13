@@ -25,6 +25,7 @@ export function rewriteUpdateFlagArgv(argv: string[]): string[] {
 }
 
 export async function runCli(argv: string[] = process.argv) {
+  console.log("DEBUG: runCli entered");
   const normalizedArgv = stripWindowsNodeExec(argv);
   loadDotEnv({ quiet: true });
   normalizeEnv();
@@ -33,13 +34,17 @@ export async function runCli(argv: string[] = process.argv) {
   // Enforce the minimum supported runtime before doing any work.
   assertSupportedRuntime();
 
+  console.log("DEBUG: checking tryRouteCli");
   if (await tryRouteCli(normalizedArgv)) {
+    console.log("DEBUG: routed via tryRouteCli");
     return;
   }
 
   // Capture all console output into structured logs while keeping stdout/stderr behavior.
+  console.log("DEBUG: enabling console capture");
   enableConsoleCapture();
 
+  console.log("DEBUG: building program");
   const { buildProgram } = await import("./program.js");
   const program = buildProgram();
 
@@ -56,19 +61,23 @@ export async function runCli(argv: string[] = process.argv) {
   // Register the primary subcommand if one exists (for lazy-loading)
   const primary = getPrimaryCommand(parseArgv);
   if (primary) {
+    console.log(`DEBUG: registering primary command: ${primary}`);
     const { registerSubCliByName } = await import("./program/register.subclis.js");
     await registerSubCliByName(program, primary);
   }
 
   const shouldSkipPluginRegistration = !primary && hasHelpOrVersion(parseArgv);
   if (!shouldSkipPluginRegistration) {
+    console.log("DEBUG: registering plugins");
     // Register plugin CLI commands before parsing
     const { registerPluginCliCommands } = await import("../plugins/cli.js");
     const { loadConfig } = await import("../config/config.js");
     registerPluginCliCommands(program, loadConfig());
   }
 
+  console.log("DEBUG: parsing argv");
   await program.parseAsync(parseArgv);
+  console.log("DEBUG: parseAsync completed");
 }
 
 function stripWindowsNodeExec(argv: string[]): string[] {
