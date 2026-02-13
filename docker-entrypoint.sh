@@ -304,10 +304,49 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     echo "[entrypoint] Auto-onboard already completed (marker exists)"
   fi
 
-  # Enforce model compliance on every boot (fresh or restart) if env var is set
-  if [ -n "$ONBOARD_MODEL" ] && [ -s "$CONFIG_FILE" ]; then
-    echo "[entrypoint] Enforcing model from env: $ONBOARD_MODEL"
-    node "$OPENCLAW_SCRIPT" models set "$ONBOARD_MODEL" || echo "[entrypoint] WARNING: Failed to set default model"
+  # CRITICAL: Re-enforce ALL model settings from env vars after onboard.
+  # The onboard process overwrites agents.defaults.model.primary with its own
+  # default (anthropic/claude-opus-4.6). We must patch the config to restore
+  # the preset models that the entrypoint originally set.
+  if [ -s "$CONFIG_FILE" ]; then
+    echo "[entrypoint] Re-enforcing preset model settings after onboard..."
+    if command -v jq &> /dev/null; then
+      JQ_FILTER='.'
+      if [ -n "$DEFAULT_MODEL" ]; then
+        JQ_FILTER="$JQ_FILTER | .agents.defaults.model.primary = \"$DEFAULT_MODEL\""
+      fi
+      if [ -n "$HEARTBEAT_MODEL" ]; then
+        JQ_FILTER="$JQ_FILTER | .agents.defaults.heartbeat.model = \"$HEARTBEAT_MODEL\""
+      fi
+      if [ -n "$SUBAGENT_MODEL" ]; then
+        JQ_FILTER="$JQ_FILTER | .agents.defaults.subagents.model = \"$SUBAGENT_MODEL\""
+      fi
+      if [ "$FALLBACK_JSON" != "[]" ]; then
+        JQ_FILTER="$JQ_FILTER | .agents.defaults.model.fallbacks = $FALLBACK_JSON"
+      fi
+      jq "$JQ_FILTER" "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    else
+      node -e "
+        const fs = require('fs');
+        const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+        config.agents = config.agents || {};
+        config.agents.defaults = config.agents.defaults || {};
+        config.agents.defaults.model = config.agents.defaults.model || {};
+        if ('$DEFAULT_MODEL') config.agents.defaults.model.primary = '$DEFAULT_MODEL';
+        if ('$HEARTBEAT_MODEL') {
+          config.agents.defaults.heartbeat = config.agents.defaults.heartbeat || {};
+          config.agents.defaults.heartbeat.model = '$HEARTBEAT_MODEL';
+        }
+        if ('$SUBAGENT_MODEL') {
+          config.agents.defaults.subagents = config.agents.defaults.subagents || {};
+          config.agents.defaults.subagents.model = '$SUBAGENT_MODEL';
+        }
+        const fallbacks = $FALLBACK_JSON;
+        if (fallbacks.length > 0) config.agents.defaults.model.fallbacks = fallbacks;
+        fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+      "
+    fi
+    echo "[entrypoint] Preset models enforced: primary=${DEFAULT_MODEL:-<unset>} heartbeat=${HEARTBEAT_MODEL:-<unset>} subagent=${SUBAGENT_MODEL:-<unset>}"
   fi
 
   # CRITICAL: Re-apply gateway token AFTER onboard (onboard may overwrite it)
