@@ -60,7 +60,7 @@ import {
 import { buildSystemPromptParams } from "../../system-prompt-params.js";
 import { buildSystemPromptReport } from "../../system-prompt-report.js";
 import { resolveTranscriptPolicy } from "../../transcript-policy.js";
-import { DEFAULT_BOOTSTRAP_FILENAME } from "../../workspace.js";
+import { DEFAULT_BOOTSTRAP_FILENAME, resolveHumanModeEnabled } from "../../workspace.js";
 import { isRunnerAbortError } from "../abort.js";
 import { appendCacheTtlTimestamp, isCacheTtlEligibleProvider } from "../cache-ttl.js";
 import { buildEmbeddedExtensionPaths } from "../extensions.js";
@@ -196,6 +196,7 @@ export async function runEmbeddedAttempt(
         config: params.config,
         sessionKey: params.sessionKey,
         sessionId: params.sessionId,
+        humanModeEnabled: resolveHumanModeEnabled(),
         warn: makeBootstrapWarn({ sessionLabel, warn: (message) => log.warn(message) }),
       });
     const workspaceNotes = hookAdjustedBootstrapFiles.some(

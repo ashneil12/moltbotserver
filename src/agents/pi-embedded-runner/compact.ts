@@ -55,6 +55,7 @@ import {
   type SkillSnapshot,
 } from "../skills.js";
 import { resolveTranscriptPolicy } from "../transcript-policy.js";
+import { resolveHumanModeEnabled } from "../workspace.js";
 import { buildEmbeddedExtensionPaths } from "./extensions.js";
 import {
   logToolSchemasForGoogle,
@@ -215,6 +216,7 @@ export async function compactEmbeddedPiSessionDirect(
       config: params.config,
       sessionKey: params.sessionKey,
       sessionId: params.sessionId,
+      humanModeEnabled: resolveHumanModeEnabled(),
       warn: makeBootstrapWarn({ sessionLabel, warn: (message) => log.warn(message) }),
     });
     const runAbortController = new AbortController();

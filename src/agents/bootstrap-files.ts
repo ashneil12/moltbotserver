@@ -4,6 +4,7 @@ import { applyBootstrapHookOverrides } from "./bootstrap-hooks.js";
 import { buildBootstrapContextFiles, resolveBootstrapMaxChars } from "./pi-embedded-helpers.js";
 import {
   filterBootstrapFilesForSession,
+  HUMAN_MODE_FILENAMES,
   loadWorkspaceBootstrapFiles,
   type WorkspaceBootstrapFile,
 } from "./workspace.js";
@@ -24,12 +25,20 @@ export async function resolveBootstrapFilesForRun(params: {
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
+  /** When false, human mode context files are excluded. Defaults to true. */
+  humanModeEnabled?: boolean;
 }): Promise<WorkspaceBootstrapFile[]> {
   const sessionKey = params.sessionKey ?? params.sessionId;
-  const bootstrapFiles = filterBootstrapFilesForSession(
+  let bootstrapFiles = filterBootstrapFilesForSession(
     await loadWorkspaceBootstrapFiles(params.workspaceDir),
     sessionKey,
   );
+
+  // Filter out human mode files when the feature is disabled
+  if (params.humanModeEnabled === false) {
+    bootstrapFiles = bootstrapFiles.filter((f) => !HUMAN_MODE_FILENAMES.has(f.name));
+  }
+
   return applyBootstrapHookOverrides({
     files: bootstrapFiles,
     workspaceDir: params.workspaceDir,
@@ -47,6 +56,8 @@ export async function resolveBootstrapContextForRun(params: {
   sessionId?: string;
   agentId?: string;
   warn?: (message: string) => void;
+  /** When false, human mode context files are excluded. Defaults to true. */
+  humanModeEnabled?: boolean;
 }): Promise<{
   bootstrapFiles: WorkspaceBootstrapFile[];
   contextFiles: EmbeddedContextFile[];

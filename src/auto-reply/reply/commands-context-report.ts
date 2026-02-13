@@ -13,6 +13,7 @@ import { buildSystemPromptParams } from "../../agents/system-prompt-params.js";
 import { buildSystemPromptReport } from "../../agents/system-prompt-report.js";
 import { buildAgentSystemPrompt } from "../../agents/system-prompt.js";
 import { buildToolSummaryMap } from "../../agents/tool-summaries.js";
+import { resolveHumanModeEnabled } from "../../agents/workspace.js";
 import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
 
@@ -64,6 +65,7 @@ async function resolveContextReport(
     config: params.cfg,
     sessionKey: params.sessionKey,
     sessionId: params.sessionEntry?.sessionId,
+    humanModeEnabled: resolveHumanModeEnabled(),
   });
   const skillsSnapshot = (() => {
     try {

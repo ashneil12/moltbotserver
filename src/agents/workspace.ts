@@ -2,10 +2,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
+import { parseBooleanValue } from "../utils/boolean.js";
 import { resolveWorkspaceTemplateDir } from "./workspace-templates.js";
+
+const log = createSubsystemLogger("workspace");
 
 export function resolveDefaultAgentWorkspaceDir(
   env: NodeJS.ProcessEnv = process.env,
@@ -29,6 +33,33 @@ export const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
+export const DEFAULT_HOWTOBEHUMAN_FILENAME = "howtobehuman.md";
+export const DEFAULT_WRITELIKEAHUMAN_FILENAME = "writelikeahuman.md";
+
+/** Filenames that are only loaded when human mode is enabled. */
+export const HUMAN_MODE_FILENAMES: ReadonlySet<string> = new Set([
+  DEFAULT_HOWTOBEHUMAN_FILENAME,
+  DEFAULT_WRITELIKEAHUMAN_FILENAME,
+]);
+
+/** Markers used to identify the Human Mode section in SOUL.md for programmatic removal. */
+const HUMAN_MODE_SOUL_START = "<!-- HUMAN_MODE_START -->";
+const HUMAN_MODE_SOUL_END = "<!-- HUMAN_MODE_END -->";
+
+/**
+ * Resolves whether human mode is enabled from the environment.
+ * Returns `true` unless `OPENCLAW_HUMAN_MODE_ENABLED` is explicitly set to a falsy value
+ * ("false", "0", "no", "off"). Unset or unrecognized values default to enabled.
+ */
+export function resolveHumanModeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const raw = env.OPENCLAW_HUMAN_MODE_ENABLED;
+  if (raw == null || raw.trim() === "") {
+    return true;
+  } // default on
+  const parsed = parseBooleanValue(raw);
+  // Explicitly false → disabled. Everything else (true, undefined/unrecognized) → enabled.
+  return parsed !== false;
+}
 
 function stripFrontMatter(content: string): string {
   if (!content.startsWith("---")) {
@@ -66,7 +97,9 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_HEARTBEAT_FILENAME
   | typeof DEFAULT_BOOTSTRAP_FILENAME
   | typeof DEFAULT_MEMORY_FILENAME
-  | typeof DEFAULT_MEMORY_ALT_FILENAME;
+  | typeof DEFAULT_MEMORY_ALT_FILENAME
+  | typeof DEFAULT_HOWTOBEHUMAN_FILENAME
+  | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME;
 
 export type WorkspaceBootstrapFile = {
   name: WorkspaceBootstrapFileName;
@@ -87,6 +120,44 @@ async function writeFileIfMissing(filePath: string, content: string) {
       throw err;
     }
   }
+}
+
+/** Silently delete a file if it exists. */
+async function deleteIfExists(filePath: string): Promise<void> {
+  try {
+    await fs.unlink(filePath);
+    log.info(`human-mode: deleted ${path.basename(filePath)}`);
+  } catch (err) {
+    const anyErr = err as { code?: string };
+    if (anyErr.code !== "ENOENT") {
+      log.warn(`human-mode: failed to delete ${path.basename(filePath)}: ${String(err)}`);
+    }
+  }
+}
+
+/**
+ * Remove the Human Mode section from SOUL.md by stripping everything between
+ * the `<!-- HUMAN_MODE_START -->` and `<!-- HUMAN_MODE_END -->` markers (inclusive).
+ * If markers aren't found, the file is left unchanged.
+ */
+async function removeHumanModeSectionFromSoul(soulPath: string): Promise<void> {
+  let content: string;
+  try {
+    content = await fs.readFile(soulPath, "utf-8");
+  } catch {
+    return; // File doesn't exist yet — nothing to clean
+  }
+  const startIdx = content.indexOf(HUMAN_MODE_SOUL_START);
+  const endIdx = content.indexOf(HUMAN_MODE_SOUL_END);
+  if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) {
+    return; // Markers not found or malformed — leave unchanged
+  }
+  const before = content.slice(0, startIdx);
+  const after = content.slice(endIdx + HUMAN_MODE_SOUL_END.length);
+  // Clean up: collapse any resulting double-blank-lines into one
+  const cleaned = (before + after).replace(/\n{3,}/g, "\n\n");
+  await fs.writeFile(soulPath, cleaned, "utf-8");
+  log.info("human-mode: removed Human Mode section from SOUL.md");
 }
 
 async function hasGitRepo(dir: string): Promise<boolean> {
@@ -152,6 +223,8 @@ export async function ensureAgentWorkspace(params?: {
   const userPath = path.join(dir, DEFAULT_USER_FILENAME);
   const heartbeatPath = path.join(dir, DEFAULT_HEARTBEAT_FILENAME);
   const bootstrapPath = path.join(dir, DEFAULT_BOOTSTRAP_FILENAME);
+  const howtobehumanPath = path.join(dir, DEFAULT_HOWTOBEHUMAN_FILENAME);
+  const writelikeahumanPath = path.join(dir, DEFAULT_WRITELIKEAHUMAN_FILENAME);
 
   const isBrandNewWorkspace = await (async () => {
     const paths = [agentsPath, soulPath, toolsPath, identityPath, userPath, heartbeatPath];
@@ -182,6 +255,24 @@ export async function ensureAgentWorkspace(params?: {
   await writeFileIfMissing(identityPath, identityTemplate);
   await writeFileIfMissing(userPath, userTemplate);
   await writeFileIfMissing(heartbeatPath, heartbeatTemplate);
+
+  // Human mode files: conditionally create or destroy based on env var
+  const humanModeOn = resolveHumanModeEnabled();
+
+  // Only load human-mode templates when needed to avoid wasted disk I/O
+  if (humanModeOn) {
+    const howtobehumanTemplate = await loadTemplate(DEFAULT_HOWTOBEHUMAN_FILENAME);
+    const writelikeahumanTemplate = await loadTemplate(DEFAULT_WRITELIKEAHUMAN_FILENAME);
+    await writeFileIfMissing(howtobehumanPath, howtobehumanTemplate);
+    await writeFileIfMissing(writelikeahumanPath, writelikeahumanTemplate);
+  } else {
+    // Delete guide files when human mode is disabled
+    await deleteIfExists(howtobehumanPath);
+    await deleteIfExists(writelikeahumanPath);
+    // Remove the Human Mode section from SOUL.md
+    await removeHumanModeSectionFromSoul(soulPath);
+  }
+
   if (isBrandNewWorkspace) {
     await writeFileIfMissing(bootstrapPath, bootstrapTemplate);
   }
@@ -270,6 +361,14 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     {
       name: DEFAULT_BOOTSTRAP_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_BOOTSTRAP_FILENAME),
+    },
+    {
+      name: DEFAULT_HOWTOBEHUMAN_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_HOWTOBEHUMAN_FILENAME),
+    },
+    {
+      name: DEFAULT_WRITELIKEAHUMAN_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_WRITELIKEAHUMAN_FILENAME),
     },
   ];
 
