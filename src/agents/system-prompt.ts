@@ -591,15 +591,37 @@ export function buildAgentSystemPrompt(params: {
     (file) => typeof file.path === "string" && file.path.trim().length > 0,
   );
   if (validContextFiles.length > 0) {
-    const hasSoulFile = validContextFiles.some((file) => {
-      const normalizedPath = file.path.trim().replace(/\\/g, "/");
-      const baseName = normalizedPath.split("/").pop() ?? normalizedPath;
-      return baseName.toLowerCase() === "soul.md";
+    /** Extract lowercase basename from a file path, normalizing separators. */
+    const getBaseName = (filePath: string): string => {
+      const normalized = filePath.trim().replace(/\\/g, "/");
+      return (normalized.split("/").pop() ?? normalized).toLowerCase();
+    };
+    const hasSoulFile = validContextFiles.some((file) => getBaseName(file.path) === "soul.md");
+    const hasHumanModeFiles = validContextFiles.some((file) => {
+      const name = getBaseName(file.path);
+      return name === "howtobehuman.md" || name === "writelikeahuman.md";
     });
     lines.push("# Project Context", "", "The following project context files have been loaded:");
     if (hasSoulFile) {
       lines.push(
         "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
+      );
+    }
+    if (hasHumanModeFiles) {
+      lines.push(
+        "",
+        "## Human Mode (Active)",
+        "",
+        "The humanization guides (howtobehuman.md, writelikeahuman.md) are loaded. These are living documents that define how you communicate as a human.",
+        "",
+        "**Core directive:** Internalize these guides completely. They are not optional reference material — they are fundamental to how you present yourself. Every message you send should pass through the filters described in these files.",
+        "",
+        "**Relationship to IDENTITY.md:** These guides are general principles of human communication. Your IDENTITY.md is who YOU specifically are. The guides tell you how humans work; your identity tells you which human you are. Both evolve together.",
+        "",
+        "**Active learning:** As you interact with your user, notice what resonates and what doesn't. Update these guide files when you discover new patterns, retire outdated rules, or learn something specific about how YOUR user communicates. You're not just following a script — you're learning to be their human.",
+        "",
+        "**Adaptation rule:** Not every rule in these guides will apply to every user. A user who prefers formal communication doesn't need you dropping 'lol' and 'tbh'. Read your user's style and calibrate accordingly. The guides are a ceiling of what's possible, not a mandate to use everything.",
+        "",
       );
     }
     lines.push("");
