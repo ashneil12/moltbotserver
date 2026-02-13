@@ -38,12 +38,10 @@ This document tracks customizations made to this fork compared to upstream `open
 ### New Files
 
 - `WORKING.md`: Template for persistent task state across compactions. Located in root, copied to `/app/` in Docker.
-- `IDENTITY.md`: Writable self-evolution file for personality, promoted patterns, and learned preferences. SOUL.md is read-only for security; IDENTITY.md is the agent's editable identity. Also contains the metacognition lens injection point (`<!-- LIVE_STATE_START/END -->` markers).
+- `IDENTITY.md`: Writable self-evolution file for personality, promoted patterns, and learned preferences. SOUL.md is read-only for security; IDENTITY.md is the agent's editable identity.
 
 ### Scripts
 
-- `scripts/metacognition.py`: Self-evolving metacognitive engine (perceptions, curiosities, feedback loops). Injects into IDENTITY.md.
-- `scripts/live_state.py`: Environment bindings for recording experiences.
 - `scripts/check-open-loops.py`: Checks for unchecked tasks in markdown files.
 
 ---
@@ -62,8 +60,6 @@ Files that should always keep local version during updates:
 | `WORKING.md`                  | Persistent task state template                                                                                 |
 | `HEARTBEAT.md`                | Lean heartbeat instructions with OTA check                                                                     |
 | `templates/`                  | Memory templates (self-review, open-loops, diary, identity-scratchpad, progress)                               |
-| `scripts/metacognition.py`    | Self-evolving metacognition engine                                                                             |
-| `scripts/live_state.py`       | Environment bindings for live state                                                                            |
 | `scripts/check-open-loops.py` | Open loops checker                                                                                             |
 | `.env.example`                | Local environment template                                                                                     |
 
