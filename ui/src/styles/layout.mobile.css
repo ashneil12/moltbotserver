@@ -128,7 +128,8 @@
   }
 
   .content {
-    padding: 4px 4px 16px;
+    padding-inline: 4px;
+    padding-top: 4px;
     gap: 12px;
   }
 
@@ -325,7 +326,8 @@
   }
 
   .content {
-    padding: 4px 4px 12px;
+    padding-inline: 4px;
+    padding-top: 4px;
     gap: 10px;
   }
 

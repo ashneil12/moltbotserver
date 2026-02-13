@@ -4,6 +4,7 @@
   gap: 0;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   height: 100%;
 }
 
@@ -14,6 +15,14 @@
   overflow: hidden;
   /* Smooth transition when sidebar opens/closes */
   transition: flex 250ms ease-out;
+}
+
+/* On narrow viewports (mobile / narrow iframe), remove the min-width
+   constraint so the chat column can shrink to fit the available width. */
+@media (max-width: 600px) {
+  .chat-main {
+    min-width: 0;
+  }
 }
 
 .chat-sidebar {
@@ -31,6 +40,7 @@
     opacity: 0;
     transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -106,7 +116,8 @@
   }
 
   .chat-split-container--open .chat-main {
-    display: none; /* Hide chat on mobile when sidebar open */
+    display: none;
+    /* Hide chat on mobile when sidebar open */
   }
 
   .chat-split-container--open .chat-sidebar {
