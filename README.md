@@ -36,6 +36,7 @@ The entire entrypoint is a MoltBot addition. Upstream OpenClaw has no Docker ent
 
 | Feature                   | Description                                                                                                                                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Human Mode**            | Humanization system with two comprehensive guides (`howtobehuman.md`, `writelikeahuman.md`) loaded into agent context by default. Teaches natural communication, AI-tell avoidance, tone matching, and authentic voice development. Toggled via `OPENCLAW_HUMAN_MODE_ENABLED` env var. |
 | **IDENTITY.md**           | Writable self-evolution file — the agent updates it as it learns user preferences, promoted patterns from self-review, and critical rules. Deployed once, never overwritten. |
 | **WORKING.md**            | Short-term working memory — current task state persisted across compactions.                                                                                                 |
 | **HEARTBEAT.md**          | Configurable heartbeat checklist — the agent runs periodic self-checks, system update evaluation, and self-review.                                                           |
@@ -48,8 +49,11 @@ The entire entrypoint is a MoltBot addition. Upstream OpenClaw has no Docker ent
 MoltBot Server is designed to be provisioned and managed by the [MoltBot Dashboard](https://github.com/ashneil12/moltbot-dashboard) (separate repo):
 
 - **Environment-driven configuration** — all settings flow from dashboard → env vars → entrypoint → `openclaw.json`. No manual config editing.
-- **Capability-specific model routing** — dashboard sets `OPENCLAW_CODING_MODEL`, `OPENCLAW_WRITING_MODEL`, `OPENCLAW_SEARCH_MODEL`, `OPENCLAW_IMAGE_MODEL` independently.
+- **Model presets & routing** — dashboard provides preset profiles (cost-saving, balanced, power) and sets `OPENCLAW_CODING_MODEL`, `OPENCLAW_WRITING_MODEL`, `OPENCLAW_SEARCH_MODEL`, `OPENCLAW_IMAGE_MODEL` independently.
+- **Brave Search integration** — optional `BRAVE_API_KEY` injected into the instance for web search capabilities.
+- **Residential proxy / Camoufox** — optional proxy and anti-detection browser settings for enhanced web browsing.
 - **Concurrency controls** — `OPENCLAW_MAX_CONCURRENT` and `OPENCLAW_SUBAGENT_MAX_CONCURRENT` for per-instance tuning.
+- **Human mode toggle** — `OPENCLAW_HUMAN_MODE_ENABLED` controls whether humanization guides are loaded into agent context.
 - **Human delay** — configurable natural response timing for messaging channels.
 - **Sudo toggle** — `OPENCLAW_DISABLE_SUDO` allows disabling root access per-instance from the dashboard.
 
@@ -122,18 +126,20 @@ docker run -e OPENCLAW_GATEWAY_TOKEN=dev-token \
 
 ## File Map (MoltBot additions)
 
-| File                                 | Purpose                                                               |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| `ACIP_SECURITY.md`                   | Prompt injection defense framework (ACIP v1.3)                        |
-| `SOUL.md`                            | Extended with MoltBot security rules, delegation, memory, OTA updates |
-| `IDENTITY.md`                        | Writable agent identity template                                      |
-| `WORKING.md`                         | Short-term task memory template                                       |
-| `HEARTBEAT.md`                       | Periodic self-check checklist                                         |
-| `docker-entrypoint.sh`               | SaaS entrypoint — config generation, auto-onboard, security hardening |
-| `Dockerfile`                         | Production image build                                                |
-| `Dockerfile.sandbox`                 | Sandbox container for agent tools                                     |
-| `Dockerfile.sandbox-browser`         | Browser sandbox container                                             |
-| `.github/workflows/docker-build.yml` | CI — build and push to GHCR                                           |
+| File                                          | Purpose                                                                              |
+| --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `ACIP_SECURITY.md`                            | Prompt injection defense framework (ACIP v1.3)                                       |
+| `SOUL.md`                                     | Extended with MoltBot security rules, delegation, memory, Human Mode, OTA updates    |
+| `IDENTITY.md`                                 | Writable agent identity template                                                     |
+| `WORKING.md`                                  | Short-term task memory template                                                      |
+| `HEARTBEAT.md`                                | Periodic self-check checklist                                                        |
+| `docs/reference/templates/howtobehuman.md`    | Humanization guide — natural communication, AI-tell avoidance, tone matching         |
+| `docs/reference/templates/writelikeahuman.md` | Writing style guide — authentic voice, imperfection, conversational patterns         |
+| `docker-entrypoint.sh`                        | SaaS entrypoint — config generation, auto-onboard, security hardening                |
+| `Dockerfile`                                  | Production image build                                                               |
+| `Dockerfile.sandbox`                          | Sandbox container for agent tools                                                    |
+| `Dockerfile.sandbox-browser`                  | Browser sandbox container                                                            |
+| `.github/workflows/docker-build.yml`          | CI — build and push to GHCR                                                          |
 
 ---
 
