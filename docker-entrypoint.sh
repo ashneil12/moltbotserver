@@ -129,6 +129,28 @@ generate_config() {
       }"
     fi
 
+    BROWSER_SECTION=""
+    if [ "${OPENCLAW_BROWSER_ENABLED:-}" = "true" ] || [ "${OPENCLAW_BROWSER_ENABLED:-}" = "1" ]; then
+      BROWSER_CDP_HOST="${OPENCLAW_BROWSER_CDP_HOST:-browser}"
+      BROWSER_CDP_PORT="${OPENCLAW_BROWSER_CDP_PORT:-9222}"
+      log_info "Browser sidecar enabled — CDP at ${BROWSER_CDP_HOST}:${BROWSER_CDP_PORT}"
+      BROWSER_SECTION=',
+      "browser": {
+        "enabled": true,
+        "headless": false,
+        "noSandbox": true,
+        "attachOnly": true,
+        "evaluateEnabled": true,
+        "defaultProfile": "openclaw",
+        "profiles": {
+          "openclaw": {
+            "cdpUrl": "http://'"${BROWSER_CDP_HOST}"':'"${BROWSER_CDP_PORT}"'",
+            "color": "#FF4500"
+          }
+        }
+      }'
+    fi
+
     cat > "$CONFIG_FILE" << EOF
 {
   "gateway": {
@@ -203,7 +225,7 @@ generate_config() {
     "queue": {
       "mode": "collect"
     }${HUMAN_DELAY_SECTION}
-  }
+  }${BROWSER_SECTION}
 }
 EOF
     log_info "Configuration generated at $CONFIG_FILE"
@@ -439,4 +461,3 @@ run_doctor
 
 # Execute Command
 exec "$@"
-

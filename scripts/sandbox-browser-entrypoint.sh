@@ -11,10 +11,12 @@ VNC_PORT="${OPENCLAW_BROWSER_VNC_PORT:-${CLAWDBOT_BROWSER_VNC_PORT:-5900}}"
 NOVNC_PORT="${OPENCLAW_BROWSER_NOVNC_PORT:-${CLAWDBOT_BROWSER_NOVNC_PORT:-6080}}"
 ENABLE_NOVNC="${OPENCLAW_BROWSER_ENABLE_NOVNC:-${CLAWDBOT_BROWSER_ENABLE_NOVNC:-1}}"
 HEADLESS="${OPENCLAW_BROWSER_HEADLESS:-${CLAWDBOT_BROWSER_HEADLESS:-0}}"
+PROXY="${OPENCLAW_BROWSER_PROXY:-}"
+RESOLUTION="${OPENCLAW_BROWSER_RESOLUTION:-1280x800x24}"
 
 mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
-Xvfb :1 -screen 0 1280x800x24 -ac -nolisten tcp &
+Xvfb :1 -screen 0 "${RESOLUTION}" -ac -nolisten tcp &
 
 if [[ "${HEADLESS}" == "1" ]]; then
   CHROME_ARGS=(
@@ -45,6 +47,11 @@ CHROME_ARGS+=(
   "--metrics-recording-only"
   "--no-sandbox"
 )
+
+# Proxy support (e.g., socks5://proxy:1080 or http://proxy:8080)
+if [[ -n "${PROXY}" ]]; then
+  CHROME_ARGS+=("--proxy-server=${PROXY}")
+fi
 
 chromium "${CHROME_ARGS[@]}" about:blank &
 
