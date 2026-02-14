@@ -33,7 +33,6 @@ export async function resolveBootstrapFilesForRun(params: {
     sessionKey,
   );
 
-
   return applyBootstrapHookOverrides({
     files: bootstrapFiles,
     workspaceDir: params.workspaceDir,

@@ -303,11 +303,15 @@ export async function ensureAgentWorkspace(params?: {
     try {
       const howtobehumanTemplate = await loadTemplate(DEFAULT_HOWTOBEHUMAN_FILENAME);
       await writeFileIfMissing(howtobehumanPath, howtobehumanTemplate);
-    } catch { /* template not packaged */ }
+    } catch {
+      /* template not packaged */
+    }
     try {
       const writelikeahumanTemplate = await loadTemplate(DEFAULT_WRITELIKEAHUMAN_FILENAME);
       await writeFileIfMissing(writelikeahumanPath, writelikeahumanTemplate);
-    } catch { /* template not packaged */ }
+    } catch {
+      /* template not packaged */
+    }
   } else {
     // Delete guide files when human mode is disabled
     await deleteIfExists(howtobehumanPath);
@@ -315,7 +319,6 @@ export async function ensureAgentWorkspace(params?: {
     // Remove the Human Mode section from SOUL.md
     await removeHumanModeSectionFromSoul(soulPath);
   }
-
 
   if (isBrandNewWorkspace) {
     await writeFileIfMissing(bootstrapPath, bootstrapTemplate);

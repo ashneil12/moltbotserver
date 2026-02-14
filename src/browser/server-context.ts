@@ -11,7 +11,14 @@ import type {
   ProfileStatus,
 } from "./server-context.types.js";
 import { createConfigIO, loadConfig } from "../config/config.js";
-import { appendCdpPath, createTargetViaCdp, fetchJson, fetchOk, getHeadersWithAuth, normalizeCdpWsUrl } from "./cdp.js";
+import {
+  appendCdpPath,
+  createTargetViaCdp,
+  fetchJson,
+  fetchOk,
+  getHeadersWithAuth,
+  normalizeCdpWsUrl,
+} from "./cdp.js";
 import {
   isChromeCdpReady,
   isChromeReachable,
