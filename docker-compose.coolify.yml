@@ -74,7 +74,6 @@ volumes:
   openclaw-data:
   openclaw-workspace:
 
-
 networks:
   coolify:
     external: true

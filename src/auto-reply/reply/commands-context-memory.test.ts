@@ -2,10 +2,14 @@
  * Context Memory Commands Tests
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { HandleCommandsParams, CommandContext, CommandHandlerResult } from "./commands-types.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type {
+  HandleCommandsParams,
+  CommandContext,
+  CommandHandlerResult,
+} from "./commands-types.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import {
   handleFreshCommand,

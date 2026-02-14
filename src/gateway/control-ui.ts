@@ -75,7 +75,10 @@ function applyControlUiSecurityHeaders(res: ServerResponse) {
 
   if (allowedOrigins) {
     // Specific origins provided - use them
-    const origins = allowedOrigins.split(",").map(o => o.trim()).join(" ");
+    const origins = allowedOrigins
+      .split(",")
+      .map((o) => o.trim())
+      .join(" ");
     res.setHeader("Content-Security-Policy", `frame-ancestors ${origins}`);
     // X-Frame-Options doesn't support multiple origins, so we skip it when using CSP
   } else if (isSaaSMode) {

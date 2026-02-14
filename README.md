@@ -34,15 +34,15 @@ The entire entrypoint is a MoltBot addition. Upstream OpenClaw has no Docker ent
 
 ### 🧠 Agent Intelligence Layer
 
-| Feature                   | Description                                                                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Feature                   | Description                                                                                                                                                                                                                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Human Mode**            | Humanization system with two comprehensive guides (`howtobehuman.md`, `writelikeahuman.md`) loaded into agent context by default. Teaches natural communication, AI-tell avoidance, tone matching, and authentic voice development. Toggled via `OPENCLAW_HUMAN_MODE_ENABLED` env var. |
-| **IDENTITY.md**           | Writable self-evolution file — the agent updates it as it learns user preferences, promoted patterns from self-review, and critical rules. Deployed once, never overwritten. |
-| **WORKING.md**            | Short-term working memory — current task state persisted across compactions.                                                                                                 |
-| **HEARTBEAT.md**          | Configurable heartbeat checklist — the agent runs periodic self-checks, system update evaluation, and self-review.                                                           |
-| **Memory infrastructure** | `memory/` directory with `self-review.md` (MISS/HIT logging), `open-loops.md` (pending follow-ups), `diary.md` (reflective entries), and `identity-scratchpad.md`.           |
-| **QMD memory search**     | Configured as default memory backend — hybrid BM25 + vector search with LLM re-ranking.                                                                                      |
-| **OTA update protocol**   | Signal-file based update flow (`.update-available` → `.update-ready` → `.update-applied`) — the AI decides when to apply updates based on activity.                          |
+| **IDENTITY.md**           | Writable self-evolution file — the agent updates it as it learns user preferences, promoted patterns from self-review, and critical rules. Deployed once, never overwritten.                                                                                                           |
+| **WORKING.md**            | Short-term working memory — current task state persisted across compactions.                                                                                                                                                                                                           |
+| **HEARTBEAT.md**          | Configurable heartbeat checklist — the agent runs periodic self-checks, system update evaluation, and self-review.                                                                                                                                                                     |
+| **Memory infrastructure** | `memory/` directory with `self-review.md` (MISS/HIT logging), `open-loops.md` (pending follow-ups), `diary.md` (reflective entries), and `identity-scratchpad.md`.                                                                                                                     |
+| **QMD memory search**     | Configured as default memory backend — hybrid BM25 + vector search with LLM re-ranking.                                                                                                                                                                                                |
+| **OTA update protocol**   | Signal-file based update flow (`.update-available` → `.update-ready` → `.update-applied`) — the AI decides when to apply updates based on activity.                                                                                                                                    |
 
 ### 🎛️ Dashboard Integration
 
@@ -126,20 +126,20 @@ docker run -e OPENCLAW_GATEWAY_TOKEN=dev-token \
 
 ## File Map (MoltBot additions)
 
-| File                                          | Purpose                                                                              |
-| --------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `ACIP_SECURITY.md`                            | Prompt injection defense framework (ACIP v1.3)                                       |
-| `SOUL.md`                                     | Extended with MoltBot security rules, delegation, memory, Human Mode, OTA updates    |
-| `IDENTITY.md`                                 | Writable agent identity template                                                     |
-| `WORKING.md`                                  | Short-term task memory template                                                      |
-| `HEARTBEAT.md`                                | Periodic self-check checklist                                                        |
-| `docs/reference/templates/howtobehuman.md`    | Humanization guide — natural communication, AI-tell avoidance, tone matching         |
-| `docs/reference/templates/writelikeahuman.md` | Writing style guide — authentic voice, imperfection, conversational patterns         |
-| `docker-entrypoint.sh`                        | SaaS entrypoint — config generation, auto-onboard, security hardening                |
-| `Dockerfile`                                  | Production image build                                                               |
-| `Dockerfile.sandbox`                          | Sandbox container for agent tools                                                    |
-| `Dockerfile.sandbox-browser`                  | Browser sandbox container                                                            |
-| `.github/workflows/docker-build.yml`          | CI — build and push to GHCR                                                          |
+| File                                          | Purpose                                                                           |
+| --------------------------------------------- | --------------------------------------------------------------------------------- |
+| `ACIP_SECURITY.md`                            | Prompt injection defense framework (ACIP v1.3)                                    |
+| `SOUL.md`                                     | Extended with MoltBot security rules, delegation, memory, Human Mode, OTA updates |
+| `IDENTITY.md`                                 | Writable agent identity template                                                  |
+| `WORKING.md`                                  | Short-term task memory template                                                   |
+| `HEARTBEAT.md`                                | Periodic self-check checklist                                                     |
+| `docs/reference/templates/howtobehuman.md`    | Humanization guide — natural communication, AI-tell avoidance, tone matching      |
+| `docs/reference/templates/writelikeahuman.md` | Writing style guide — authentic voice, imperfection, conversational patterns      |
+| `docker-entrypoint.sh`                        | SaaS entrypoint — config generation, auto-onboard, security hardening             |
+| `Dockerfile`                                  | Production image build                                                            |
+| `Dockerfile.sandbox`                          | Sandbox container for agent tools                                                 |
+| `Dockerfile.sandbox-browser`                  | Browser sandbox container                                                         |
+| `.github/workflows/docker-build.yml`          | CI — build and push to GHCR                                                       |
 
 ---
 

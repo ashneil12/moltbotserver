@@ -102,7 +102,20 @@ function parseTimeframe(timeframe: string): { start: Date; end: Date } | null {
     "november",
     "december",
   ];
-  const monthAbbr = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  const monthAbbr = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+  ];
 
   for (let i = 0; i < monthNames.length; i++) {
     if (lower.includes(monthNames[i]) || lower.includes(monthAbbr[i])) {
@@ -176,11 +189,7 @@ async function runQmdQuery(
         const lines = stdout.split("\n").filter((line) => line.trim());
         for (const line of lines) {
           // Skip header/info lines
-          if (
-            line.startsWith("Searching") ||
-            line.startsWith("Found") ||
-            line.startsWith("---")
-          ) {
+          if (line.startsWith("Searching") || line.startsWith("Found") || line.startsWith("---")) {
             continue;
           }
 
@@ -228,7 +237,8 @@ async function searchConversationFiles(
 
       // Parse messages from markdown
       // Expected format: ## YYYY-MM-DD HH:MM:SS - Role\nContent...
-      const messagePattern = /## (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (user|assistant)\n([\s\S]*?)(?=\n## |\n---|\$)/gi;
+      const messagePattern =
+        /## (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (user|assistant)\n([\s\S]*?)(?=\n## |\n---|\$)/gi;
       let match: RegExpExecArray | null;
 
       while ((match = messagePattern.exec(content)) !== null) {
@@ -264,10 +274,7 @@ async function searchConversationFiles(
 /**
  * Filter results by timeframe.
  */
-function filterByTimeframe(
-  results: RecallResult[],
-  timeframe: string,
-): RecallResult[] {
+function filterByTimeframe(results: RecallResult[], timeframe: string): RecallResult[] {
   const range = parseTimeframe(timeframe);
   if (!range) {
     return results;
@@ -283,9 +290,7 @@ function filterByTimeframe(
   });
 }
 
-export function createRecallMessageTool(options?: {
-  workspaceDir?: string;
-}): AnyAgentTool {
+export function createRecallMessageTool(options?: { workspaceDir?: string }): AnyAgentTool {
   return {
     label: "Recall Message",
     name: "recall_message",

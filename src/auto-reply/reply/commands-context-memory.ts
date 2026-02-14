@@ -58,9 +58,13 @@ async function searchMemoryFiles(
 
   try {
     const files = await fs.readdir(memoryDir);
-    const mdFiles = files.filter((f) => f.endsWith(".md")).sort().reverse(); // Newest first
+    const mdFiles = files
+      .filter((f) => f.endsWith(".md"))
+      .sort()
+      .reverse(); // Newest first
 
-    for (const file of mdFiles.slice(0, 30)) { // Check last 30 days
+    for (const file of mdFiles.slice(0, 30)) {
+      // Check last 30 days
       const filepath = path.join(memoryDir, file);
       const content = await fs.readFile(filepath, "utf-8");
       const lines = content.split("\n");
@@ -123,7 +127,10 @@ async function removeMemoryFromFile(
 
 // Session state for multi-turn commands
 const pendingForget = new Map<string, Array<{ content: string; file: string; lineNum: number }>>();
-const pendingRemember = new Map<string, Array<{ content: string; file: string; lineNum: number }>>();
+const pendingRemember = new Map<
+  string,
+  Array<{ content: string; file: string; lineNum: number }>
+>();
 
 /**
  * Handle /fresh command - Clear context window, keep memories.
