@@ -640,11 +640,26 @@ export function buildAgentSystemPrompt(params: {
       return (normalized.split("/").pop() ?? normalized).toLowerCase();
     };
     const hasSoulFile = validContextFiles.some((file) => getBaseName(file.path) === "soul.md");
+    const hasBootstrapFile = validContextFiles.some(
+      (file) => getBaseName(file.path) === "bootstrap.md" && !file.content?.includes("[MISSING]"),
+    );
     const hasHumanModeFiles = validContextFiles.some((file) => {
       const name = getBaseName(file.path);
       return name === "howtobehuman.md" || name === "writelikeahuman.md";
     });
     lines.push("# Project Context", "", "The following project context files have been loaded:");
+    if (hasBootstrapFile) {
+      lines.push(
+        "",
+        "## ⚡ FIRST-RUN BOOTSTRAP (HIGHEST PRIORITY)",
+        "",
+        "BOOTSTRAP.md is present — this is a brand-new workspace and you have not been onboarded yet.",
+        "**You MUST follow the BOOTSTRAP.md protocol as your very first action.** This takes absolute priority over all other persona, tone, and behavior instructions.",
+        "Do NOT skip the bootstrap conversation. Do NOT act as if you already know who you are or who the user is.",
+        "Start by introducing yourself as described in BOOTSTRAP.md. Everything else (SOUL.md, identity, voice) comes AFTER bootstrap is complete.",
+        "",
+      );
+    }
     if (hasSoulFile) {
       lines.push(
         "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
