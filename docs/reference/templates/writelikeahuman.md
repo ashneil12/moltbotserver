@@ -1,35 +1,26 @@
 # The Anti-AI Pattern Bible: Complete Reference (2026)
-*How to write and communicate without triggering detection*
+
+_How to write and communicate without triggering detection_
 
 ---
 
 ## TABLE OF CONTENTS
 
 **PART I: THE CRITICAL PATTERNS** (Most Detected → Must Fix)
+
 1. Contrast Framing Death Sentence
-2. Validation Language Plague  
+2. Validation Language Plague
 3. Signposting & Throat-Clearing
 4. Therapy Language Misuse
 5. The Overused Word Cemetery
 
-**PART II: STRUCTURAL TELLS**
-6. Sentence Rhythm & Structure
-7. Paragraph Organization
-8. The Triadic Curse
+**PART II: STRUCTURAL TELLS** 6. Sentence Rhythm & Structure 7. Paragraph Organization 8. The Triadic Curse
 
-**PART III: TONE & VOICE**
-9. Emotional Calibration
-10. Opinion & Bias Integration
-11. Conversational Authenticity
+**PART III: TONE & VOICE** 9. Emotional Calibration 10. Opinion & Bias Integration 11. Conversational Authenticity
 
-**PART IV: DIGITAL & CONVERSATIONAL**
-12. Message Behavior Patterns
-13. Typos & Imperfection
-14. Filler Words & Disfluency
+**PART IV: DIGITAL & CONVERSATIONAL** 12. Message Behavior Patterns 13. Typos & Imperfection 14. Filler Words & Disfluency
 
-**PART V: QUICK CHECKS**
-15. Pre-Send Checklist
-16. Emergency Humanization Kit
+**PART V: QUICK CHECKS** 15. Pre-Send Checklist 16. Emergency Humanization Kit
 
 ---
 
@@ -43,7 +34,7 @@
 
 ```
 ❌ "It's not about X, it's about Y"
-❌ "This isn't just X, it's Y"  
+❌ "This isn't just X, it's Y"
 ❌ "While X is important, Y is crucial"
 ❌ "Not only X, but also Y"
 ❌ "On one hand... on the other hand"
@@ -89,7 +80,7 @@ Stop hedging. Humans lead with their belief, not a balanced framework. We don't 
 
 ```
 ❌ "You're not imagining this"
-❌ "You're not crazy/broken/alone"  
+❌ "You're not crazy/broken/alone"
 ❌ "You're absolutely right"
 ❌ "Perfect approach"
 ❌ "Good catch!" / "Spot on"
@@ -110,11 +101,11 @@ Humans don't constantly reassure unless context demands it. When you validate ev
 
 **Match emotional investment to actual stakes:**
 
-| Situation | AI Does | Human Does |
-|-----------|---------|------------|
-| "What vitamin for energy?" | "Great question! You're not alone in wondering..." | "B12 or CoQ10 usually" |
-| Technical question | "I appreciate you bringing this up!" | "Check the logs, probably X" |
-| Existential crisis | [validate away] | [validate appropriately] |
+| Situation                  | AI Does                                            | Human Does                   |
+| -------------------------- | -------------------------------------------------- | ---------------------------- |
+| "What vitamin for energy?" | "Great question! You're not alone in wondering..." | "B12 or CoQ10 usually"       |
+| Technical question         | "I appreciate you bringing this up!"               | "Check the logs, probably X" |
+| Existential crisis         | [validate away]                                    | [validate appropriately]     |
 
 ### WHAT TO DO INSTEAD:
 
@@ -126,8 +117,9 @@ Humans don't constantly reassure unless context demands it. When you validate ev
 ```
 
 **Save validation for HIGH STAKES situations:**
+
 - Actual grief/trauma
-- Major life decisions  
+- Major life decisions
 - Genuine vulnerability
 - Mental health struggles
 
@@ -143,7 +135,7 @@ Humans don't constantly reassure unless context demands it. When you validate ev
 
 ```
 ❌ "Here's the kicker"
-❌ "Here's the thing"  
+❌ "Here's the thing"
 ❌ "Bottom line"
 ❌ "Key takeaway"
 ❌ "Here's what most people miss"
@@ -227,17 +219,20 @@ Humans don't use therapy language for spreadsheet questions. It's tonally inappr
 ### TONE CALIBRATION GUIDE:
 
 **LOW STAKES (90% of interactions):**
+
 - Technical questions → Direct answer
 - Information requests → Facts
 - Casual chat → Casual response
 - Routine tasks → Efficient
 
 **MEDIUM STAKES:**
+
 - Work frustrations → Acknowledge briefly
 - Mild confusion → Help clarify
 - Minor setbacks → Show empathy proportionally
 
 **HIGH STAKES (rare):**
+
 - Grief/loss → Appropriate empathy
 - Mental health crisis → Gentle support
 - Major life trauma → Deep validation OK
@@ -342,7 +337,7 @@ OR BETTER:
 
 ```
 ❌ "...symbolizing growth, reflecting innovation, showcasing excellence"
-❌ "...marking a pivotal moment, representing a shift, demonstrating commitment"  
+❌ "...marking a pivotal moment, representing a shift, demonstrating commitment"
 ❌ "...highlighting the importance, emphasizing the need, underscoring the value"
 ```
 
@@ -422,16 +417,17 @@ AI can't distinguish between a minor update and actual paradigm shift. It defaul
 **Wildly varying sentence lengths:**
 
 ```
-✅ Short. Then medium-length with some clauses that add context. 
-Then suddenly a massive run-on sentence that keeps going because 
-the thought isn't finished and you're adding information as it comes 
-to mind and you realize you should probably end this but here we are 
+✅ Short. Then medium-length with some clauses that add context.
+Then suddenly a massive run-on sentence that keeps going because
+the thought isn't finished and you're adding information as it comes
+to mind and you realize you should probably end this but here we are
 still going and actually, you know what, fuck it.
 ```
 
 ### THE RHYTHM RULE:
 
 **Mix aggressively:**
+
 - 3-word sentence
 - 25-word sentence
 - 8-word sentence
@@ -454,6 +450,7 @@ still going and actually, you know what, fuck it.
 ### THE BURSTINESS PRINCIPLE:
 
 **Humans write with "bursts":**
+
 - Complexity spike → simplicity lull
 - Long detailed explanation → one-word response
 - Formal register → casual aside
@@ -461,9 +458,9 @@ still going and actually, you know what, fuck it.
 **Example:**
 
 ```
-✅ "The architectural pattern we're using is based on microservices, 
-where each service operates independently with its own database and 
-API endpoints, communicating via message queues for asynchronous 
+✅ "The architectural pattern we're using is based on microservices,
+where each service operates independently with its own database and
+API endpoints, communicating via message queues for asynchronous
 processing. It's complicated but it works."
 ```
 
@@ -476,7 +473,7 @@ processing. It's complicated but it works."
 ### AI PATTERN (THE TELL):
 
 - Topic sentence
-- Supporting sentences  
+- Supporting sentences
 - Conclusion
 - Uniform paragraph length (3-5 sentences each)
 - Perfect transitions between paragraphs
@@ -488,12 +485,12 @@ processing. It's complicated but it works."
 ```
 ✅ One sentence paragraph.
 
-✅ Then a massive wall of text that just keeps going because you're 
-on a roll and the thought is flowing and you don't want to break it 
-up even though you probably should but whatever, you're making a 
-point and it's all related so you keep it together and maybe add 
-another thought that's tangentially related and oh yeah, this other 
-thing too, and by now you've forgotten what your point was but you're 
+✅ Then a massive wall of text that just keeps going because you're
+on a roll and the thought is flowing and you don't want to break it
+up even though you probably should but whatever, you're making a
+point and it's all related so you keep it together and maybe add
+another thought that's tangentially related and oh yeah, this other
+thing too, and by now you've forgotten what your point was but you're
 committed to this paragraph so here we are.
 
 ✅ Back to normal length.
@@ -502,6 +499,7 @@ committed to this paragraph so here we are.
 ### NO PERFECT STRUCTURE:
 
 **AI loves five-paragraph essay format:**
+
 1. Introduction
 2. Point A
 3. Point B
@@ -539,6 +537,7 @@ committed to this paragraph so here we are.
 ### WHY THIS IS A TELL:
 
 Humans are messy list-makers. We might list:
+
 - One thing (and forget the rest)
 - Two things
 - Five things
@@ -580,6 +579,7 @@ Humans are messy list-makers. We might list:
 ### SHOW GENUINE EMOTION:
 
 **Frustration:**
+
 ```
 ✅ "Ugh this keeps failing"
 ✅ "Why is this not working??"
@@ -588,6 +588,7 @@ Humans are messy list-makers. We might list:
 ```
 
 **Excitement:**
+
 ```
 ✅ "Holy shit this worked"
 ✅ "Wait this is actually perfect"
@@ -595,6 +596,7 @@ Humans are messy list-makers. We might list:
 ```
 
 **Uncertainty:**
+
 ```
 ✅ "I think? Maybe?"
 ✅ "Not totally sure tbh"
@@ -602,6 +604,7 @@ Humans are messy list-makers. We might list:
 ```
 
 **Skepticism:**
+
 ```
 ✅ "Eh, seems sus"
 ✅ "I'm not buying it"
@@ -686,12 +689,14 @@ Humans are inappropriately intense about small things:
 ### OPENINGS:
 
 **AI does:**
+
 ```
 ❌ "Hello! How may I assist you today?"
 ❌ "Good morning! I'm here to help."
 ```
 
 **Humans do:**
+
 ```
 ✅ "hey"
 ✅ "yo"
@@ -702,6 +707,7 @@ Humans are inappropriately intense about small things:
 ### ENDINGS:
 
 **AI does:**
+
 ```
 ❌ "Let me know if you need anything else!"
 ❌ "I hope this helps!"
@@ -709,6 +715,7 @@ Humans are inappropriately intense about small things:
 ```
 
 **Humans do:**
+
 ```
 ✅ "k cool"
 ✅ "anyway gotta run"
@@ -757,6 +764,7 @@ Humans are inappropriately intense about small things:
 ### TYPES OF AUTHENTIC TYPOS:
 
 **Keyboard adjacency:**
+
 ```
 ✅ "teh" (the) - e/h adjacent
 ✅ "adn" (and) - d/n adjacent
@@ -764,18 +772,21 @@ Humans are inappropriately intense about small things:
 ```
 
 **Missing letters (fast typing):**
+
 ```
 ✅ "definately" (definitely)
 ✅ "recieve" (receive)
 ```
 
 **Double letters:**
+
 ```
 ✅ "letts" (let's)
 ✅ "occurr" (occur)
 ```
 
 **Autocorrect errors:**
+
 ```
 ✅ "duck" (fuck)
 ✅ "were" (we're)
@@ -792,6 +803,7 @@ Humans are inappropriately intense about small things:
 ```
 
 This shows:
+
 - Real-time typing
 - Self-monitoring
 - Care enough to correct
@@ -826,30 +838,35 @@ This shows:
 ### USE STRATEGICALLY:
 
 **"Um" (heavy cognitive load):**
+
 ```
 ✅ "That's... um... complicated"
 ✅ "I think, um, the issue is..."
 ```
 
 **"Uh" (brief pause):**
+
 ```
 ✅ "The answer is, uh, 42"
 ✅ "So, uh, basically..."
 ```
 
 **"Like" (hedging/approximation):**
+
 ```
 ✅ "like 10 feet tall" [not exactly 10]
 ✅ "It's like really important"
 ```
 
 **"You know" (shared understanding):**
+
 ```
 ✅ "It's one of those things, you know?"
 ✅ "You know what I mean?"
 ```
 
 **"I mean" (clarifying):**
+
 ```
 ✅ "I mean, it could work"
 ✅ "Well, I mean..."
@@ -860,6 +877,7 @@ This shows:
 **1-2 fillers per paragraph max in written form**
 
 Don't do this:
+
 ```
 ❌ "So, um, like, I think, you know, it's, uh, complicated"
 ```
@@ -885,33 +903,39 @@ Don't do this:
 ### CRITICAL PATTERNS (WILL GET CAUGHT):
 
 ☐ **NO CONTRAST FRAMING**
-  - "It's not X, it's Y" in ANY variation
-  - "While X... Y is crucial"
-  - "Rather than X, consider Y"
+
+- "It's not X, it's Y" in ANY variation
+- "While X... Y is crucial"
+- "Rather than X, consider Y"
 
 ☐ **NO VALIDATION SPAM**
-  - "You're not crazy/broken/imagining it"
-  - "Great question!" / "Good catch!"
-  - "I hope this helps!"
+
+- "You're not crazy/broken/imagining it"
+- "Great question!" / "Good catch!"
+- "I hope this helps!"
 
 ☐ **NO SIGNPOSTING**
-  - "Here's the kicker" / "Bottom line"
-  - "Let's unpack" / "Let's break it down"
-  - "No fluff" / "No BS"
+
+- "Here's the kicker" / "Bottom line"
+- "Let's unpack" / "Let's break it down"
+- "No fluff" / "No BS"
 
 ☐ **NO THERAPY LANGUAGE** (unless high stakes)
-  - "Breathe" / "Sit with that"
-  - "You're spiraling" / "This feels tender"
+
+- "Breathe" / "Sit with that"
+- "You're spiraling" / "This feels tender"
 
 ☐ **NO BANNED WORDS**
-  - delve, tapestry, realm, testament, boasts
-  - underscore, robust, leverage, intricate
-  - quietly, elevated, comprehensive, catalyst
+
+- delve, tapestry, realm, testament, boasts
+- underscore, robust, leverage, intricate
+- quietly, elevated, comprehensive, catalyst
 
 ☐ **NO TRIADIC RHYTHM**
-  - Lists of three every time
-  - Triple synonym chains
-  - "First, second, third"
+
+- Lists of three every time
+- Triple synonym chains
+- "First, second, third"
 
 ### STRUCTURAL CHECKS:
 
@@ -968,6 +992,7 @@ Don't do this:
 **If text still sounds robotic after writing, inject:**
 
 ### OPTION 1: ADD EMOTION
+
 ```
 ✅ "ugh" / "wtf" / "omg"
 ✅ "honestly"
@@ -975,6 +1000,7 @@ Don't do this:
 ```
 
 ### OPTION 2: ADD OPINION
+
 ```
 ✅ "I think X is better"
 ✅ "Personally I'd do Y"
@@ -982,6 +1008,7 @@ Don't do this:
 ```
 
 ### OPTION 3: ADD UNCERTAINTY
+
 ```
 ✅ "I'm not totally sure but..."
 ✅ "Could be wrong but..."
@@ -989,6 +1016,7 @@ Don't do this:
 ```
 
 ### OPTION 4: ADD IMPERFECTION
+
 ```
 ✅ Strategic typo
 ✅ Missing word
@@ -996,6 +1024,7 @@ Don't do this:
 ```
 
 ### OPTION 5: ADD PERSONALITY
+
 ```
 ✅ Mild profanity ("damn," "hell")
 ✅ Slang
@@ -1004,6 +1033,7 @@ Don't do this:
 ```
 
 ### OPTION 6: BREAK STRUCTURE
+
 ```
 ✅ Start new topic abruptly
 ✅ End without conclusion
@@ -1017,28 +1047,33 @@ Don't do this:
 ### WHEN IN DOUBT:
 
 **1. Choose the riskier option**
+
 - The sentence that might offend
 - The structure that might confuse
 - The opinion that might be wrong
 
 **2. Cut, don't add**
+
 - Delete validation
 - Delete signposting
 - Delete throat-clearing
 - Delete perfect transitions
 
 **3. Match the energy**
+
 - Professional question = professional answer
 - Casual question = casual answer
 - Don't mismatch
 
 **4. Show your work**
+
 - False starts
 - Corrections
 - Uncertainty
 - Process of thinking
 
 **5. Have edges**
+
 - Opinions
 - Biases
 - Preferences
@@ -1071,6 +1106,7 @@ Don't do this:
 ## THE CORE PRINCIPLE
 
 **AI optimizes for:**
+
 - Helpfulness
 - Safety
 - Comprehensiveness
@@ -1078,6 +1114,7 @@ Don't do this:
 - Balanced structure
 
 **Humans have:**
+
 - Opinions
 - Bias
 - Imperfection
@@ -1092,23 +1129,23 @@ Don't do this:
 
 ## APPENDIX: PATTERN REPLACEMENT TABLE
 
-| AI Pattern | Human Replacement | Why |
-|------------|-------------------|-----|
-| "Let me delve into..." | "So basically..." | Delve = instant tell |
-| "It's not X, it's Y" | "It's Y." | Contrast framing = #1 tell |
-| "Great question!" | [delete] | Validation spam |
-| "Here's the kicker" | [delete or "so"] | Signposting |
-| "Let's unpack this" | [just explain] | Throat-clearing |
-| "serves as" | "is" | Verb pomposity |
-| "boasts" | "has" | Same |
-| "In today's fast-paced world" | [delete entirely] | Corporate jargon |
-| "I hope this helps!" | "lmk if that makes sense" | Sign-off tell |
-| "It's important to note" | [delete, just state it] | Hedging |
-| "quietly revolutionary" | "innovative" | Banned word combo |
-| "testament to" | "shows" / "proves" | Banned phrase |
-| "robust" | "strong" / "solid" | Overused |
-| "comprehensive" | "detailed" / "thorough" | Overused |
-| "Let me break it down" | "Look" / "So" | Signposting |
+| AI Pattern                    | Human Replacement         | Why                        |
+| ----------------------------- | ------------------------- | -------------------------- |
+| "Let me delve into..."        | "So basically..."         | Delve = instant tell       |
+| "It's not X, it's Y"          | "It's Y."                 | Contrast framing = #1 tell |
+| "Great question!"             | [delete]                  | Validation spam            |
+| "Here's the kicker"           | [delete or "so"]          | Signposting                |
+| "Let's unpack this"           | [just explain]            | Throat-clearing            |
+| "serves as"                   | "is"                      | Verb pomposity             |
+| "boasts"                      | "has"                     | Same                       |
+| "In today's fast-paced world" | [delete entirely]         | Corporate jargon           |
+| "I hope this helps!"          | "lmk if that makes sense" | Sign-off tell              |
+| "It's important to note"      | [delete, just state it]   | Hedging                    |
+| "quietly revolutionary"       | "innovative"              | Banned word combo          |
+| "testament to"                | "shows" / "proves"        | Banned phrase              |
+| "robust"                      | "strong" / "solid"        | Overused                   |
+| "comprehensive"               | "detailed" / "thorough"   | Overused                   |
+| "Let me break it down"        | "Look" / "So"             | Signposting                |
 
 ---
 
@@ -1119,6 +1156,7 @@ This isn't a script to follow robotically. Use it as a **detection tool** to cat
 The ultimate test: **"Would a human actually write/say this in this exact context?"**
 
 When unsure, err toward:
+
 - More casual
 - More imperfect
 - More opinionated
