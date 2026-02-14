@@ -66,7 +66,7 @@ function normalizeWsUrl(raw: string | undefined, cdpBaseUrl: string): string | u
   }
 }
 
-// fetchJson and fetchOk imported from ./cdp.js (handles Host header override for non-loopback URLs)
+
 
 /**
  * Create a profile-scoped context for browser operations.

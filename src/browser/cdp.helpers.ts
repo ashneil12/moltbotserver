@@ -1,3 +1,5 @@
+import http from "node:http";
+import https from "node:https";
 import WebSocket from "ws";
 import { isLoopbackHost } from "../gateway/net.js";
 import { rawDataToString } from "../infra/ws.js";
@@ -134,8 +136,6 @@ async function cdpHttpRequest(
   timeoutMs: number,
   init?: { method?: string; body?: string },
 ): Promise<{ status: number; body: string }> {
-  const http = await import("node:http");
-  const https = await import("node:https");
   const parsed = new URL(url);
   const headers = getHeadersWithAuth(url);
   const isHttps = parsed.protocol === "https:";
@@ -158,6 +158,10 @@ async function cdpHttpRequest(
         let data = "";
         res.on("data", (chunk: Buffer) => {
           data += chunk.toString();
+        });
+        res.on("error", (err) => {
+          clearTimeout(timer);
+          reject(err);
         });
         res.on("end", () => {
           clearTimeout(timer);
