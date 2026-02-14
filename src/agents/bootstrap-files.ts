@@ -4,7 +4,6 @@ import { applyBootstrapHookOverrides } from "./bootstrap-hooks.js";
 import { buildBootstrapContextFiles, resolveBootstrapMaxChars } from "./pi-embedded-helpers.js";
 import {
   filterBootstrapFilesForSession,
-  HUMAN_MODE_FILENAMES,
   loadWorkspaceBootstrapFiles,
   type WorkspaceBootstrapFile,
 } from "./workspace.js";
@@ -34,10 +33,7 @@ export async function resolveBootstrapFilesForRun(params: {
     sessionKey,
   );
 
-  // Filter out human mode files when the feature is disabled
-  if (params.humanModeEnabled === false) {
-    bootstrapFiles = bootstrapFiles.filter((f) => !HUMAN_MODE_FILENAMES.has(f.name));
-  }
+
 
   return applyBootstrapHookOverrides({
     files: bootstrapFiles,

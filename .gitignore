@@ -84,6 +84,7 @@ USER.md
 !.agent/workflows/
 local/
 
+
 # Temp/junk files (macOS copy artifacts, logs, scratch docs)
 CLAUDE.md
 CLAUDE*.md
@@ -91,3 +92,4 @@ tmp-*
 server.log
 *.log
 .git 2/
+package-lock.json

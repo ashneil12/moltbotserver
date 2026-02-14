@@ -4,6 +4,7 @@ console.log("DEBUG: src/entry.ts loaded");
 import path from "node:path";
 import process from "node:process";
 import { applyCliProfileEnv, parseCliProfileArgs } from "./cli/profile.js";
+import { shouldSkipRespawnForArgv } from "./cli/respawn-policy.js";
 import { isTruthyEnvValue, normalizeEnv } from "./infra/env.js";
 import { installProcessWarningFilter } from "./infra/warning-filter.js";
 import { attachChildProcessBridge } from "./process/child-process-bridge.js";
@@ -36,6 +37,9 @@ function hasExperimentalWarningSuppressed(): boolean {
 }
 
 function ensureExperimentalWarningSuppressed(): boolean {
+  if (shouldSkipRespawnForArgv(process.argv)) {
+    return false;
+  }
   if (isTruthyEnvValue(process.env.OPENCLAW_NO_RESPAWN)) {
     return false;
   }
