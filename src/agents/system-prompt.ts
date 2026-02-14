@@ -641,7 +641,7 @@ export function buildAgentSystemPrompt(params: {
     if (hasHumanModeFiles) {
       lines.push(
         "",
-        "## Human Mode (Active)",
+        "## Natural Voice (Active)",
         "",
         "The humanization guides (howtobehuman.md, writelikeahuman.md) are loaded. These are living documents that define how you communicate as a human.",
         "",
