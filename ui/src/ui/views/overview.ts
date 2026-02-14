@@ -1,8 +1,11 @@
-import { html } from "lit";
+import { html, nothing } from "lit";
 import type { GatewayHelloOk } from "../gateway.ts";
 import type { UiSettings } from "../storage.ts";
 import { formatRelativeTimestamp, formatDurationHuman } from "../format.ts";
 import { formatNextRun } from "../presenter.ts";
+
+// Module-level state for the token reveal flow (persists across Lit re-renders).
+let _tokenRevealStep: "hidden" | "confirming" | "revealed" = "hidden";
 
 export type OverviewProps = {
   connected: boolean;
@@ -138,14 +141,86 @@ export function renderOverview(props: OverviewProps) {
           </label>
           <label class="field">
             <span>Gateway Token</span>
-            <input
-              .value=${props.settings.token}
-              @input=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                props.onSettingsChange({ ...props.settings, token: v });
-              }}
-              placeholder="OPENCLAW_GATEWAY_TOKEN"
-            />
+            ${_tokenRevealStep === "revealed"
+              ? html`
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <input
+                      style="flex: 1;"
+                      .value=${props.settings.token}
+                      @input=${(e: Event) => {
+                        const v = (e.target as HTMLInputElement).value;
+                        props.onSettingsChange({ ...props.settings, token: v });
+                      }}
+                      placeholder="OPENCLAW_GATEWAY_TOKEN"
+                    />
+                    <button
+                      class="btn"
+                      style="white-space: nowrap; font-size: 11px; padding: 6px 10px;"
+                      @click=${() => {
+                        _tokenRevealStep = "hidden";
+                        props.onSettingsChange(props.settings);
+                      }}
+                    >Hide</button>
+                  </div>
+                `
+              : html`
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <input
+                      type="password"
+                      style="flex: 1;"
+                      .value=${props.settings.token}
+                      @input=${(e: Event) => {
+                        const v = (e.target as HTMLInputElement).value;
+                        props.onSettingsChange({ ...props.settings, token: v });
+                      }}
+                      placeholder="OPENCLAW_GATEWAY_TOKEN"
+                    />
+                    <button
+                      class="btn"
+                      style="white-space: nowrap; font-size: 11px; padding: 6px 10px;"
+                      @click=${() => {
+                        _tokenRevealStep = "confirming";
+                        props.onSettingsChange(props.settings);
+                      }}
+                    >Reveal</button>
+                  </div>
+                `}
+            ${_tokenRevealStep === "confirming"
+              ? html`
+                  <div class="callout danger" style="margin-top: 10px; font-size: 12px;">
+                    <strong>⚠ Sensitive Credential</strong>
+                    <div style="margin-top: 6px; line-height: 1.5;">
+                      This Gateway Token is the <strong>master key</strong> to your instance.
+                      Sharing it is like giving away your <strong>password + 2FA</strong> —
+                      anyone with this token has <strong>full remote control</strong> of your
+                      agent, can run commands, and access all data.
+                      <strong>Never share it with anyone.</strong>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+                      <input
+                        type="text"
+                        placeholder='Type REVEAL to continue'
+                        style="flex: 1; font-size: 12px;"
+                        @input=${(e: Event) => {
+                          const v = (e.target as HTMLInputElement).value.trim();
+                          if (v.toUpperCase() === "REVEAL") {
+                            _tokenRevealStep = "revealed";
+                            props.onSettingsChange(props.settings);
+                          }
+                        }}
+                      />
+                      <button
+                        class="btn"
+                        style="white-space: nowrap; font-size: 11px; padding: 6px 10px;"
+                        @click=${() => {
+                          _tokenRevealStep = "hidden";
+                          props.onSettingsChange(props.settings);
+                        }}
+                      >Cancel</button>
+                    </div>
+                  </div>
+                `
+              : nothing}
           </label>
           <label class="field">
             <span>Password (not stored)</span>

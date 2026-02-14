@@ -179,7 +179,20 @@ function resolveSearchEnabled(params: { search?: WebSearchConfig; sandboxed?: bo
   return true;
 }
 
+/**
+ * Check if Brave Search should be proxied through the dashboard gateway.
+ * When BRAVE_SEARCH_GATEWAY_URL is set (credits mode), searches go through
+ * the dashboard which holds the Brave API key server-side.
+ */
+function isGatewaySearchEnabled(): boolean {
+  return Boolean(process.env.BRAVE_SEARCH_GATEWAY_URL?.trim());
+}
+
 function resolveSearchApiKey(search?: WebSearchConfig): string | undefined {
+  // In gateway mode, no local API key is needed — searches are proxied
+  if (isGatewaySearchEnabled()) {
+    return "__gateway_proxy__";
+  }
   const fromConfig =
     search && "apiKey" in search && typeof search.apiKey === "string"
       ? normalizeSecretInput(search.apiKey)
@@ -549,6 +562,53 @@ async function runGrokSearch(params: {
   return { content, citations, inlineCitations };
 }
 
+/**
+ * Proxy a Brave search through the dashboard gateway (credits mode).
+ * Calls POST /api/gateway/search with the gateway token for auth.
+ */
+async function runGatewayBraveSearch(params: {
+  query: string;
+  count: number;
+  timeoutSeconds: number;
+  country?: string;
+  search_lang?: string;
+  ui_lang?: string;
+  freshness?: string;
+}): Promise<BraveSearchResponse> {
+  const gatewayUrl = process.env.BRAVE_SEARCH_GATEWAY_URL!.trim();
+  const gatewayToken = process.env.AI_GATEWAY_API_KEY;
+
+  if (!gatewayToken) {
+    throw new Error("AI_GATEWAY_API_KEY is required for gateway search proxy");
+  }
+
+  const body: Record<string, unknown> = {
+    query: params.query,
+    count: params.count,
+  };
+  if (params.country) body.country = params.country;
+  if (params.search_lang) body.search_lang = params.search_lang;
+  if (params.ui_lang) body.ui_lang = params.ui_lang;
+  if (params.freshness) body.freshness = params.freshness;
+
+  const res = await fetch(gatewayUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${gatewayToken}`,
+    },
+    body: JSON.stringify(body),
+    signal: withTimeout(undefined, params.timeoutSeconds * 1000),
+  });
+
+  if (!res.ok) {
+    const detail = await readResponseText(res);
+    throw new Error(`Gateway search error (${res.status}): ${detail || res.statusText}`);
+  }
+
+  return (await res.json()) as BraveSearchResponse;
+}
+
 async function runWebSearch(params: {
   query: string;
   count: number;
@@ -639,37 +699,56 @@ async function runWebSearch(params: {
     throw new Error("Unsupported web search provider.");
   }
 
-  const url = new URL(BRAVE_SEARCH_ENDPOINT);
-  url.searchParams.set("q", params.query);
-  url.searchParams.set("count", String(params.count));
-  if (params.country) {
-    url.searchParams.set("country", params.country);
-  }
-  if (params.search_lang) {
-    url.searchParams.set("search_lang", params.search_lang);
-  }
-  if (params.ui_lang) {
-    url.searchParams.set("ui_lang", params.ui_lang);
-  }
-  if (params.freshness) {
-    url.searchParams.set("freshness", params.freshness);
+  // Credits mode: proxy through the dashboard gateway
+  const useGateway = isGatewaySearchEnabled();
+  let data: BraveSearchResponse;
+
+  if (useGateway) {
+    data = await runGatewayBraveSearch({
+      query: params.query,
+      count: params.count,
+      timeoutSeconds: params.timeoutSeconds,
+      country: params.country,
+      search_lang: params.search_lang,
+      ui_lang: params.ui_lang,
+      freshness: params.freshness,
+    });
+  } else {
+    // BYOK mode: call Brave API directly
+    const url = new URL(BRAVE_SEARCH_ENDPOINT);
+    url.searchParams.set("q", params.query);
+    url.searchParams.set("count", String(params.count));
+    if (params.country) {
+      url.searchParams.set("country", params.country);
+    }
+    if (params.search_lang) {
+      url.searchParams.set("search_lang", params.search_lang);
+    }
+    if (params.ui_lang) {
+      url.searchParams.set("ui_lang", params.ui_lang);
+    }
+    if (params.freshness) {
+      url.searchParams.set("freshness", params.freshness);
+    }
+
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "X-Subscription-Token": params.apiKey,
+      },
+      signal: withTimeout(undefined, params.timeoutSeconds * 1000),
+    });
+
+    if (!res.ok) {
+      const detail = await readResponseText(res);
+      throw new Error(`Brave Search API error (${res.status}): ${detail || res.statusText}`);
+    }
+
+    data = (await res.json()) as BraveSearchResponse;
   }
 
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      "X-Subscription-Token": params.apiKey,
-    },
-    signal: withTimeout(undefined, params.timeoutSeconds * 1000),
-  });
 
-  if (!res.ok) {
-    const detail = await readResponseText(res);
-    throw new Error(`Brave Search API error (${res.status}): ${detail || res.statusText}`);
-  }
-
-  const data = (await res.json()) as BraveSearchResponse;
   const results = Array.isArray(data.web?.results) ? (data.web?.results ?? []) : [];
   const mapped = results.map((entry) => {
     const description = entry.description ?? "";
