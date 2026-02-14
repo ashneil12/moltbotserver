@@ -23,6 +23,9 @@ fi
 
 mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
+# Clean up stale lock files from previous runs (prevents Xvfb restart failures)
+rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
+
 Xvfb :1 -screen 0 "${RESOLUTION}" -ac -nolisten tcp &
 
 if [[ "${HEADLESS}" == "1" ]]; then
@@ -43,6 +46,7 @@ fi
 CHROME_ARGS+=(
   "--remote-debugging-address=0.0.0.0"
   "--remote-debugging-port=${CHROME_CDP_PORT}"
+  "--remote-allow-origins=*"
   "--user-data-dir=${HOME}/.chrome"
   "--no-first-run"
   "--no-default-browser-check"
@@ -72,7 +76,10 @@ for i in $(seq 1 100); do
   sleep 0.1
 done
 
-# Expose CDP on all interfaces via socat (gateway connects from another container)
+# Expose CDP on all interfaces via socat (gateway connects from another container).
+# Note: Chrome 107+ rejects HTTP requests with non-IP/non-localhost Host headers,
+# but --remote-allow-origins=* handles WebSocket connections. The gateway-side code
+# handles the HTTP health-check gracefully for remote profiles.
 socat \
   TCP-LISTEN:"${CDP_PORT}",fork,reuseaddr,bind=0.0.0.0 \
   TCP:127.0.0.1:"${CHROME_CDP_PORT}" &

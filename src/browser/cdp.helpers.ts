@@ -27,6 +27,19 @@ export function getHeadersWithAuth(url: string, headers: Record<string, string> 
   const mergedHeaders = { ...relayHeaders, ...headers };
   try {
     const parsed = new URL(url);
+
+    // Chrome 107+ rejects CDP HTTP requests when the Host header isn't an IP
+    // or "localhost".  In Docker networking the gateway connects via service
+    // hostname (e.g. "browser"), which Chrome blocks.  Override Host to
+    // "localhost" for non-loopback targets so Chrome accepts the request.
+    // This is safe because socat/the proxy forwards TCP transparently.
+    const hasHostHeader = Object.keys(mergedHeaders).some(
+      (key) => key.toLowerCase() === "host",
+    );
+    if (!hasHostHeader && !isLoopbackHost(parsed.hostname)) {
+      mergedHeaders["Host"] = "localhost";
+    }
+
     const hasAuthHeader = Object.keys(mergedHeaders).some(
       (key) => key.toLowerCase() === "authorization",
     );
