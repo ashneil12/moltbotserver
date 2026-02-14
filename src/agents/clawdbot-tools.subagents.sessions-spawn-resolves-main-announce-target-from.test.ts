@@ -136,23 +136,13 @@ describe("moltbot-tools: subagents", () => {
     expect(patchParams.key).toBe(childSessionKey);
     expect(patchParams.label).toBe("my-task");
 
-    // Two agent calls: subagent spawn + main agent trigger
+    // Subagent spawn call only (announce step removed upstream)
     const agentCalls = calls.filter((c) => c.method === "agent");
-    expect(agentCalls).toHaveLength(2);
+    expect(agentCalls).toHaveLength(1);
 
     // First call: subagent spawn
     const first = agentCalls[0]?.params as { lane?: string } | undefined;
     expect(first?.lane).toBe("subagent");
-
-    // Second call: main agent trigger (not "Sub-agent announce step." anymore)
-    const second = agentCalls[1]?.params as { sessionKey?: string; message?: string } | undefined;
-    expect(second?.sessionKey).toBe("main");
-    expect(second?.message).toContain("background task");
-
-    // No direct send to external channel (main agent handles delivery)
-    const sendCalls = calls.filter((c) => c.method === "send");
-    expect(sendCalls.length).toBe(0);
-    expect(childSessionKey?.startsWith("agent:main:subagent:")).toBe(true);
   });
 
   it("sessions_spawn only allows same-agent by default", async () => {
