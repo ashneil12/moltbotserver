@@ -1,4 +1,15 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+<<<<<<< HEAD
+=======
+import type {
+  ChannelId,
+  ChannelMessageActionName,
+  ChannelThreadingToolContext,
+} from "../../channels/plugins/types.js";
+import type { OpenClawConfig } from "../../config/config.js";
+import type { OutboundSendDeps } from "./deliver.js";
+import type { MessagePollResult, MessageSendResult } from "./message.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import {
   readNumberParam,
@@ -7,6 +18,7 @@ import {
 } from "../../agents/tools/common.js";
 import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
 import { dispatchChannelMessageAction } from "../../channels/plugins/message-actions.js";
+<<<<<<< HEAD
 import type {
   ChannelId,
   ChannelMessageActionName,
@@ -14,6 +26,8 @@ import type {
 } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   isDeliverableMessageChannel,
   normalizeMessageChannel,
@@ -26,16 +40,26 @@ import {
   resolveMessageChannelSelection,
 } from "./channel-selection.js";
 import { applyTargetToParams } from "./channel-target.js";
+<<<<<<< HEAD
 import type { OutboundSendDeps } from "./deliver.js";
 import {
   hydrateAttachmentParamsForAction,
+=======
+import {
+  hydrateSendAttachmentParams,
+  hydrateSetGroupIconParams,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   normalizeSandboxMediaList,
   normalizeSandboxMediaParams,
   parseButtonsParam,
   parseCardParam,
+<<<<<<< HEAD
   parseComponentsParam,
   readBooleanParam,
   resolveAttachmentMediaPolicy,
+=======
+  readBooleanParam,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   resolveSlackAutoThreadId,
   resolveTelegramAutoThreadId,
 } from "./message-action-params.js";

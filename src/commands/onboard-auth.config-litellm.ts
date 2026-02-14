@@ -1,8 +1,11 @@
 import type { OpenClawConfig } from "../config/config.js";
+<<<<<<< HEAD
 import {
   applyAgentDefaultModelPrimary,
   applyProviderConfigWithDefaultModel,
 } from "./onboard-auth.config-shared.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { LITELLM_DEFAULT_MODEL_REF } from "./onboard-auth.credentials.js";
 
 export const LITELLM_BASE_URL = "http://localhost:4000";
@@ -43,6 +46,7 @@ export function applyLitellmProviderConfig(cfg: OpenClawConfig): OpenClawConfig 
     alias: models[LITELLM_DEFAULT_MODEL_REF]?.alias ?? "LiteLLM",
   };
 
+<<<<<<< HEAD
   const defaultModel = buildLitellmModelDefinition();
 
   const existingProvider = cfg.models?.providers?.litellm as { baseUrl?: unknown } | undefined;
@@ -57,9 +61,68 @@ export function applyLitellmProviderConfig(cfg: OpenClawConfig): OpenClawConfig 
     defaultModel,
     defaultModelId: LITELLM_DEFAULT_MODEL_ID,
   });
+=======
+  const providers = { ...cfg.models?.providers };
+  const existingProvider = providers.litellm;
+  const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
+  const defaultModel = buildLitellmModelDefinition();
+  const hasDefaultModel = existingModels.some((model) => model.id === LITELLM_DEFAULT_MODEL_ID);
+  const mergedModels = hasDefaultModel ? existingModels : [...existingModels, defaultModel];
+  const { apiKey: existingApiKey, ...existingProviderRest } = (existingProvider ?? {}) as Record<
+    string,
+    unknown
+  > as { apiKey?: string };
+  const resolvedBaseUrl =
+    typeof existingProvider?.baseUrl === "string" ? existingProvider.baseUrl.trim() : "";
+  const resolvedApiKey = typeof existingApiKey === "string" ? existingApiKey : undefined;
+  const normalizedApiKey = resolvedApiKey?.trim();
+  providers.litellm = {
+    ...existingProviderRest,
+    baseUrl: resolvedBaseUrl || LITELLM_BASE_URL,
+    api: "openai-completions",
+    ...(normalizedApiKey ? { apiKey: normalizedApiKey } : {}),
+    models: mergedModels.length > 0 ? mergedModels : [defaultModel],
+  };
+
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        models,
+      },
+    },
+    models: {
+      mode: cfg.models?.mode ?? "merge",
+      providers,
+    },
+  };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function applyLitellmConfig(cfg: OpenClawConfig): OpenClawConfig {
   const next = applyLitellmProviderConfig(cfg);
+<<<<<<< HEAD
   return applyAgentDefaultModelPrimary(next, LITELLM_DEFAULT_MODEL_REF);
+=======
+  const existingModel = next.agents?.defaults?.model;
+  return {
+    ...next,
+    agents: {
+      ...next.agents,
+      defaults: {
+        ...next.agents?.defaults,
+        model: {
+          ...(existingModel && "fallbacks" in (existingModel as Record<string, unknown>)
+            ? {
+                fallbacks: (existingModel as { fallbacks?: string[] }).fallbacks,
+              }
+            : undefined),
+          primary: LITELLM_DEFAULT_MODEL_REF,
+        },
+      },
+    },
+  };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

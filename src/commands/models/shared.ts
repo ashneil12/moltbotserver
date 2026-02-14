@@ -61,7 +61,13 @@ export const isLocalBaseUrl = (baseUrl: string) => {
   }
 };
 
+<<<<<<< HEAD
 export async function loadValidConfigOrThrow(): Promise<OpenClawConfig> {
+=======
+export async function updateConfig(
+  mutator: (cfg: OpenClawConfig) => OpenClawConfig,
+): Promise<OpenClawConfig> {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const snapshot = await readConfigFileSnapshot();
   if (!snapshot.valid) {
     const issues = snapshot.issues.map((issue) => `- ${issue.path}: ${issue.message}`).join("\n");

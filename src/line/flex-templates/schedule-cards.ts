@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { attachFooterText } from "./common.js";
 import type { Action, FlexBox, FlexBubble, FlexComponent, FlexText } from "./types.js";
 
@@ -66,6 +67,10 @@ function createMegaBubbleWithFooter(params: {
   return bubble;
 }
 
+=======
+import type { Action, FlexBox, FlexBubble, FlexComponent, FlexText } from "./types.js";
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 /**
  * Create a receipt/summary card (for orders, transactions, data tables)
  *
@@ -113,10 +118,46 @@ export function createReceiptCard(params: {
   );
 
   // Header section
+<<<<<<< HEAD
   const headerContents = buildTitleSubtitleHeader({ title, subtitle });
 
   const bodyContents: FlexComponent[] = [
     ...buildCardHeaderSections(headerContents),
+=======
+  const headerContents: FlexComponent[] = [
+    {
+      type: "text",
+      text: title,
+      weight: "bold",
+      size: "xl",
+      color: "#111111",
+      wrap: true,
+    } as FlexText,
+  ];
+
+  if (subtitle) {
+    headerContents.push({
+      type: "text",
+      text: subtitle,
+      size: "sm",
+      color: "#888888",
+      margin: "sm",
+      wrap: true,
+    } as FlexText);
+  }
+
+  const bodyContents: FlexComponent[] = [
+    {
+      type: "box",
+      layout: "vertical",
+      contents: headerContents,
+      paddingBottom: "lg",
+    } as FlexBox,
+    {
+      type: "separator",
+      color: "#EEEEEE",
+    },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     {
       type: "box",
       layout: "vertical",
@@ -159,7 +200,42 @@ export function createReceiptCard(params: {
     } as FlexBox);
   }
 
+<<<<<<< HEAD
   return createMegaBubbleWithFooter({ bodyContents, footer });
+=======
+  const bubble: FlexBubble = {
+    type: "bubble",
+    size: "mega",
+    body: {
+      type: "box",
+      layout: "vertical",
+      contents: bodyContents,
+      paddingAll: "xl",
+      backgroundColor: "#FFFFFF",
+    },
+  };
+
+  if (footer) {
+    bubble.footer = {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        {
+          type: "text",
+          text: footer,
+          size: "xs",
+          color: "#AAAAAA",
+          wrap: true,
+          align: "center",
+        } as FlexText,
+      ],
+      paddingAll: "lg",
+      backgroundColor: "#FAFAFA",
+    };
+  }
+
+  return bubble;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 /**
@@ -358,7 +434,31 @@ export function createAgendaCard(params: {
   const { title, subtitle, events, footer } = params;
 
   // Header with title and optional subtitle
+<<<<<<< HEAD
   const headerContents = buildTitleSubtitleHeader({ title, subtitle });
+=======
+  const headerContents: FlexComponent[] = [
+    {
+      type: "text",
+      text: title,
+      weight: "bold",
+      size: "xl",
+      color: "#111111",
+      wrap: true,
+    } as FlexText,
+  ];
+
+  if (subtitle) {
+    headerContents.push({
+      type: "text",
+      text: subtitle,
+      size: "sm",
+      color: "#888888",
+      margin: "sm",
+      wrap: true,
+    } as FlexText);
+  }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   // Event timeline items
   const eventItems: FlexComponent[] = events.slice(0, 6).map((event, index) => {
@@ -454,7 +554,20 @@ export function createAgendaCard(params: {
   });
 
   const bodyContents: FlexComponent[] = [
+<<<<<<< HEAD
     ...buildCardHeaderSections(headerContents),
+=======
+    {
+      type: "box",
+      layout: "vertical",
+      contents: headerContents,
+      paddingBottom: "lg",
+    } as FlexBox,
+    {
+      type: "separator",
+      color: "#EEEEEE",
+    },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     {
       type: "box",
       layout: "vertical",
@@ -463,5 +576,40 @@ export function createAgendaCard(params: {
     } as FlexBox,
   ];
 
+<<<<<<< HEAD
   return createMegaBubbleWithFooter({ bodyContents, footer });
+=======
+  const bubble: FlexBubble = {
+    type: "bubble",
+    size: "mega",
+    body: {
+      type: "box",
+      layout: "vertical",
+      contents: bodyContents,
+      paddingAll: "xl",
+      backgroundColor: "#FFFFFF",
+    },
+  };
+
+  if (footer) {
+    bubble.footer = {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        {
+          type: "text",
+          text: footer,
+          size: "xs",
+          color: "#AAAAAA",
+          align: "center",
+          wrap: true,
+        } as FlexText,
+      ],
+      paddingAll: "lg",
+      backgroundColor: "#FAFAFA",
+    };
+  }
+
+  return bubble;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

@@ -16,6 +16,7 @@ export const TalkConfigParamsSchema = Type.Object(
   { additionalProperties: false },
 );
 
+<<<<<<< HEAD
 const TalkProviderConfigSchema = Type.Object(
   {
     voiceId: Type.Optional(Type.String()),
@@ -27,6 +28,8 @@ const TalkProviderConfigSchema = Type.Object(
   { additionalProperties: true },
 );
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export const TalkConfigResultSchema = Type.Object(
   {
     config: Type.Object(
@@ -34,8 +37,11 @@ export const TalkConfigResultSchema = Type.Object(
         talk: Type.Optional(
           Type.Object(
             {
+<<<<<<< HEAD
               provider: Type.Optional(Type.String()),
               providers: Type.Optional(Type.Record(Type.String(), TalkProviderConfigSchema)),
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
               voiceId: Type.Optional(Type.String()),
               voiceAliases: Type.Optional(Type.Record(Type.String(), Type.String())),
               modelId: Type.Optional(Type.String()),

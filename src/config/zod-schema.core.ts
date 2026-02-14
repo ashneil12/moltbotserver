@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { isSafeExecutableValue } from "../infra/exec-safety.js";
+<<<<<<< HEAD
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { sensitive } from "./zod-schema.sensitive.js";
 
 export const ModelApiSchema = z.union([

@@ -5,7 +5,10 @@ import type { OutboundSendDeps } from "../infra/outbound/deliver.js";
 import type { sendMessageSignal } from "../signal/send.js";
 import type { sendMessageSlack } from "../slack/send.js";
 import type { sendMessageTelegram } from "../telegram/send.js";
+<<<<<<< HEAD
 import { createOutboundSendDepsFromCliSource } from "./outbound-send-mapping.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type CliDeps = {
   sendMessageWhatsApp: typeof sendMessageWhatsApp;

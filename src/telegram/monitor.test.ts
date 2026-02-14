@@ -115,12 +115,17 @@ vi.mock("../infra/backoff.js", () => ({
   sleepWithAbort,
 }));
 
+<<<<<<< HEAD
 vi.mock("../infra/unhandled-rejections.js", () => ({
   registerUnhandledRejectionHandler: registerUnhandledRejectionHandlerMock,
 }));
 
 vi.mock("./webhook.js", () => ({
   startTelegramWebhook: startTelegramWebhookSpy,
+=======
+vi.mock("./webhook.js", () => ({
+  startTelegramWebhook: (...args: unknown[]) => startTelegramWebhookSpy(...args),
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }));
 
 vi.mock("../auto-reply/reply.js", () => ({
@@ -140,9 +145,12 @@ describe("monitorTelegramProvider (grammY)", () => {
     computeBackoff.mockClear();
     sleepWithAbort.mockClear();
     startTelegramWebhookSpy.mockClear();
+<<<<<<< HEAD
     registerUnhandledRejectionHandlerMock.mockClear();
     resetUnhandledRejection();
     createTelegramBotErrors.length = 0;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("processes a DM and sends reply", async () => {
@@ -339,6 +347,7 @@ describe("monitorTelegramProvider (grammY)", () => {
     await expect(monitorTelegramProvider({ token: "tok" })).rejects.toThrow("bad token");
   });
 
+<<<<<<< HEAD
   it("force-restarts polling when unhandled network rejection stalls runner", async () => {
     let running = true;
     let releaseTask: (() => void) | undefined;
@@ -374,6 +383,8 @@ describe("monitorTelegramProvider (grammY)", () => {
     expect(runSpy).toHaveBeenCalledTimes(2);
   });
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("passes configured webhookHost to webhook listener", async () => {
     await monitorTelegramProvider({
       token: "tok",
@@ -397,6 +408,7 @@ describe("monitorTelegramProvider (grammY)", () => {
     );
     expect(runSpy).not.toHaveBeenCalled();
   });
+<<<<<<< HEAD
 
   it("webhook mode waits for abort signal before returning", async () => {
     const abort = new AbortController();
@@ -439,4 +451,6 @@ describe("monitorTelegramProvider (grammY)", () => {
     );
     expect(runSpy).not.toHaveBeenCalled();
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

@@ -55,8 +55,12 @@ export function createExecApprovalHandlers(
         twoPhase?: boolean;
       };
       const twoPhase = p.twoPhase === true;
+<<<<<<< HEAD
       const timeoutMs =
         typeof p.timeoutMs === "number" ? p.timeoutMs : DEFAULT_EXEC_APPROVAL_TIMEOUT_MS;
+=======
+      const timeoutMs = typeof p.timeoutMs === "number" ? p.timeoutMs : 120_000;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const explicitId = typeof p.id === "string" && p.id.trim().length > 0 ? p.id.trim() : null;
       const host = typeof p.host === "string" ? p.host.trim() : "";
       const nodeId = typeof p.nodeId === "string" ? p.nodeId.trim() : "";
@@ -88,9 +92,12 @@ export function createExecApprovalHandlers(
         sessionKey: p.sessionKey ?? null,
       };
       const record = manager.create(request, timeoutMs, explicitId);
+<<<<<<< HEAD
       record.requestedByConnId = client?.connId ?? null;
       record.requestedByDeviceId = client?.connect?.device?.id ?? null;
       record.requestedByClientId = client?.connect?.client?.id ?? null;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       // Use register() to synchronously add to pending map before sending any response.
       // This ensures the approval ID is valid immediately after the "accepted" response.
       let decisionPromise: Promise<
@@ -127,12 +134,16 @@ export function createExecApprovalHandlers(
           });
         } catch (err) {
           context.logGateway?.error?.(`exec approvals: forward request failed: ${String(err)}`);
+<<<<<<< HEAD
         }
       }
 
       if (!hasApprovalClients(context) && !forwardedToTargets) {
         manager.expire(record.id, "auto-expire:no-approver-clients");
       }
+=======
+        });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       // Only send immediate "accepted" response when twoPhase is requested.
       // This preserves single-response semantics for existing callers.

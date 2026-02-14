@@ -395,6 +395,7 @@ test("dmScope=per-account-channel-peer uses default accountId when not provided"
 });
 
 describe("parentPeer binding inheritance (thread support)", () => {
+<<<<<<< HEAD
   const threadPeer = { kind: "channel" as const, id: "thread-456" };
   const defaultParentPeer = { kind: "channel" as const, id: "parent-channel-123" };
 
@@ -405,6 +406,19 @@ describe("parentPeer binding inheritance (thread support)", () => {
         channel: "discord" as const,
         peer: { kind: "channel" as const, id: peerId },
       },
+=======
+  test("thread inherits binding from parent channel when no direct match", () => {
+    const cfg: OpenClawConfig = {
+      bindings: [
+        {
+          agentId: "adecco",
+          match: {
+            channel: "discord",
+            peer: { kind: "channel", id: "parent-channel-123" },
+          },
+        },
+      ],
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     };
   }
 
@@ -480,7 +494,19 @@ describe("parentPeer binding inheritance (thread support)", () => {
 
   test("parentPeer with empty id is ignored", () => {
     const cfg: OpenClawConfig = {
+<<<<<<< HEAD
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
+=======
+      bindings: [
+        {
+          agentId: "parent-agent",
+          match: {
+            channel: "discord",
+            peer: { kind: "channel", id: "parent-channel-123" },
+          },
+        },
+      ],
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: { kind: "channel", id: "" } });
     expect(route.agentId).toBe("main");
@@ -489,7 +515,19 @@ describe("parentPeer binding inheritance (thread support)", () => {
 
   test("null parentPeer is handled gracefully", () => {
     const cfg: OpenClawConfig = {
+<<<<<<< HEAD
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
+=======
+      bindings: [
+        {
+          agentId: "parent-agent",
+          match: {
+            channel: "discord",
+            peer: { kind: "channel", id: "parent-channel-123" },
+          },
+        },
+      ],
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: null });
     expect(route.agentId).toBe("main");
@@ -701,5 +739,38 @@ describe("role-based agent routing", () => {
       expectedAgentId: "guild-roles",
       expectedMatchedBy: "binding.guild+roles",
     });
+  });
+
+  test("peer+guild+roles binding does not act as guild+roles fallback when peer mismatches", () => {
+    const cfg: OpenClawConfig = {
+      bindings: [
+        {
+          agentId: "peer-roles",
+          match: {
+            channel: "discord",
+            peer: { kind: "channel", id: "c-target" },
+            guildId: "g1",
+            roles: ["r1"],
+          },
+        },
+        {
+          agentId: "guild-roles",
+          match: {
+            channel: "discord",
+            guildId: "g1",
+            roles: ["r1"],
+          },
+        },
+      ],
+    };
+    const route = resolveAgentRoute({
+      cfg,
+      channel: "discord",
+      guildId: "g1",
+      memberRoleIds: ["r1"],
+      peer: { kind: "channel", id: "c-other" },
+    });
+    expect(route.agentId).toBe("guild-roles");
+    expect(route.matchedBy).toBe("binding.guild+roles");
   });
 });

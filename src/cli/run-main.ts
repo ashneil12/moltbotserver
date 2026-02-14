@@ -62,7 +62,11 @@ export function shouldEnsureCliPath(argv: string[]): boolean {
 }
 
 export async function runCli(argv: string[] = process.argv) {
+<<<<<<< HEAD
   const normalizedArgv = normalizeWindowsArgv(argv);
+=======
+  const normalizedArgv = stripWindowsNodeExec(argv);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   loadDotEnv({ quiet: true });
   normalizeEnv();
   if (shouldEnsureCliPath(normalizedArgv)) {
@@ -95,6 +99,7 @@ export async function runCli(argv: string[] = process.argv) {
   // Register the primary command (builtin or subcli) so help and command parsing
   // are correct even with lazy command registration.
   const primary = getPrimaryCommand(parseArgv);
+<<<<<<< HEAD
   if (primary) {
     const { getProgramContext } = await import("./program/program-context.js");
     const ctx = getProgramContext(program);
@@ -102,6 +107,9 @@ export async function runCli(argv: string[] = process.argv) {
       const { registerCoreCliByName } = await import("./program/command-registry.js");
       await registerCoreCliByName(program, ctx, primary, parseArgv);
     }
+=======
+  if (primary && shouldRegisterPrimarySubcommand(parseArgv)) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const { registerSubCliByName } = await import("./program/register.subclis.js");
     await registerSubCliByName(program, primary);
   }
@@ -121,6 +129,64 @@ export async function runCli(argv: string[] = process.argv) {
   }
 
   await program.parseAsync(parseArgv);
+<<<<<<< HEAD
+=======
+}
+
+function stripWindowsNodeExec(argv: string[]): string[] {
+  if (process.platform !== "win32") {
+    return argv;
+  }
+  const stripControlChars = (value: string): string => {
+    let out = "";
+    for (let i = 0; i < value.length; i += 1) {
+      const code = value.charCodeAt(i);
+      if (code >= 32 && code !== 127) {
+        out += value[i];
+      }
+    }
+    return out;
+  };
+  const normalizeArg = (value: string): string =>
+    stripControlChars(value)
+      .replace(/^['"]+|['"]+$/g, "")
+      .trim();
+  const normalizeCandidate = (value: string): string =>
+    normalizeArg(value).replace(/^\\\\\\?\\/, "");
+  const execPath = normalizeCandidate(process.execPath);
+  const execPathLower = execPath.toLowerCase();
+  const execBase = path.basename(execPath).toLowerCase();
+  const isExecPath = (value: string | undefined): boolean => {
+    if (!value) {
+      return false;
+    }
+    const normalized = normalizeCandidate(value);
+    if (!normalized) {
+      return false;
+    }
+    const lower = normalized.toLowerCase();
+    return (
+      lower === execPathLower ||
+      path.basename(lower) === execBase ||
+      lower.endsWith("\\node.exe") ||
+      lower.endsWith("/node.exe") ||
+      lower.includes("node.exe") ||
+      (path.basename(lower) === "node.exe" && fs.existsSync(normalized))
+    );
+  };
+  const filtered = argv.filter((arg, index) => index === 0 || !isExecPath(arg));
+  if (filtered.length < 3) {
+    return filtered;
+  }
+  const cleaned = [...filtered];
+  if (isExecPath(cleaned[1])) {
+    cleaned.splice(1, 1);
+  }
+  if (isExecPath(cleaned[2])) {
+    cleaned.splice(2, 1);
+  }
+  return cleaned;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function isCliMainModule(): boolean {

@@ -2,6 +2,7 @@ import type { OutboundIdentity } from "../../../infra/outbound/identity.js";
 import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
 import { sendMessageSlack, type SlackSendIdentity } from "../../../slack/send.js";
 import type { ChannelOutboundAdapter } from "../types.js";
+<<<<<<< HEAD
 
 function resolveSlackSendIdentity(identity?: OutboundIdentity): SlackSendIdentity | undefined {
   if (!identity) {
@@ -88,11 +89,16 @@ async function sendSlackOutboundMessage(params: {
   });
   return { channel: "slack" as const, ...result };
 }
+=======
+import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
+import { sendMessageSlack } from "../../../slack/send.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export const slackOutbound: ChannelOutboundAdapter = {
   deliveryMode: "direct",
   chunker: null,
   textChunkLimit: 4000,
+<<<<<<< HEAD
   sendText: async ({ to, text, accountId, deps, replyToId, threadId, identity }) => {
     return await sendSlackOutboundMessage({
       to,
@@ -102,8 +108,40 @@ export const slackOutbound: ChannelOutboundAdapter = {
       replyToId,
       threadId,
       identity,
+=======
+  sendText: async ({ to, text, accountId, deps, replyToId, threadId }) => {
+    const send = deps?.sendSlack ?? sendMessageSlack;
+    // Use threadId fallback so routed tool notifications stay in the Slack thread.
+    const threadTs = replyToId ?? (threadId != null ? String(threadId) : undefined);
+    let finalText = text;
+
+    // Run message_sending hooks (e.g. thread-ownership can cancel the send).
+    const hookRunner = getGlobalHookRunner();
+    if (hookRunner?.hasHooks("message_sending")) {
+      const hookResult = await hookRunner.runMessageSending(
+        { to, content: text, metadata: { threadTs, channelId: to } },
+        { channelId: "slack", accountId: accountId ?? undefined },
+      );
+      if (hookResult?.cancel) {
+        return {
+          channel: "slack",
+          messageId: "cancelled-by-hook",
+          channelId: to,
+          meta: { cancelled: true },
+        };
+      }
+      if (hookResult?.content) {
+        finalText = hookResult.content;
+      }
+    }
+
+    const result = await send(to, finalText, {
+      threadTs,
+      accountId: accountId ?? undefined,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   },
+<<<<<<< HEAD
   sendMedia: async ({
     to,
     text,
@@ -118,6 +156,35 @@ export const slackOutbound: ChannelOutboundAdapter = {
     return await sendSlackOutboundMessage({
       to,
       text,
+=======
+  sendMedia: async ({ to, text, mediaUrl, accountId, deps, replyToId, threadId }) => {
+    const send = deps?.sendSlack ?? sendMessageSlack;
+    // Use threadId fallback so routed tool notifications stay in the Slack thread.
+    const threadTs = replyToId ?? (threadId != null ? String(threadId) : undefined);
+    let finalText = text;
+
+    // Run message_sending hooks (e.g. thread-ownership can cancel the send).
+    const hookRunner = getGlobalHookRunner();
+    if (hookRunner?.hasHooks("message_sending")) {
+      const hookResult = await hookRunner.runMessageSending(
+        { to, content: text, metadata: { threadTs, channelId: to, mediaUrl } },
+        { channelId: "slack", accountId: accountId ?? undefined },
+      );
+      if (hookResult?.cancel) {
+        return {
+          channel: "slack",
+          messageId: "cancelled-by-hook",
+          channelId: to,
+          meta: { cancelled: true },
+        };
+      }
+      if (hookResult?.content) {
+        finalText = hookResult.content;
+      }
+    }
+
+    const result = await send(to, finalText, {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       mediaUrl,
       mediaLocalRoots,
       accountId,

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -78,11 +79,45 @@ vi.mock("@buape/carbon/gateway", () => ({
   GatewayIntents,
   GatewayPlugin,
 }));
+=======
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { HttpsProxyAgent, getLastAgent, proxyAgentSpy, resetLastAgent, webSocketSpy } = vi.hoisted(
+  () => {
+    const proxyAgentSpy = vi.fn();
+    const webSocketSpy = vi.fn();
+
+    class HttpsProxyAgent {
+      static lastCreated: HttpsProxyAgent | undefined;
+      proxyUrl: string;
+      constructor(proxyUrl: string) {
+        if (proxyUrl === "bad-proxy") {
+          throw new Error("bad proxy");
+        }
+        this.proxyUrl = proxyUrl;
+        HttpsProxyAgent.lastCreated = this;
+        proxyAgentSpy(proxyUrl);
+      }
+    }
+
+    return {
+      HttpsProxyAgent,
+      getLastAgent: () => HttpsProxyAgent.lastCreated,
+      proxyAgentSpy,
+      resetLastAgent: () => {
+        HttpsProxyAgent.lastCreated = undefined;
+      },
+      webSocketSpy,
+    };
+  },
+);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 vi.mock("https-proxy-agent", () => ({
   HttpsProxyAgent,
 }));
 
+<<<<<<< HEAD
 vi.mock("undici", () => ({
   ProxyAgent: class {
     proxyUrl: string;
@@ -95,6 +130,8 @@ vi.mock("undici", () => ({
   fetch: undiciFetchMock,
 }));
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 vi.mock("ws", () => ({
   default: class MockWebSocket {
     constructor(url: string, options?: { agent?: unknown }) {
@@ -104,6 +141,7 @@ vi.mock("ws", () => ({
 }));
 
 describe("createDiscordGatewayPlugin", () => {
+<<<<<<< HEAD
   let createDiscordGatewayPlugin: typeof import("./gateway-plugin.js").createDiscordGatewayPlugin;
 
   beforeAll(async () => {
@@ -112,12 +150,26 @@ describe("createDiscordGatewayPlugin", () => {
 
   function createRuntime() {
     return {
+=======
+  beforeEach(() => {
+    proxyAgentSpy.mockReset();
+    webSocketSpy.mockReset();
+    resetLastAgent();
+  });
+
+  it("uses proxy agent for gateway WebSocket when configured", async () => {
+    const { createDiscordGatewayPlugin } = await import("./gateway-plugin.js");
+    const { GatewayPlugin } = await import("@buape/carbon/gateway");
+
+    const runtime = {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       log: vi.fn(),
       error: vi.fn(),
       exit: vi.fn(() => {
         throw new Error("exit");
       }),
     };
+<<<<<<< HEAD
   }
 
   beforeEach(() => {
@@ -132,6 +184,8 @@ describe("createDiscordGatewayPlugin", () => {
 
   it("uses proxy agent for gateway WebSocket when configured", async () => {
     const runtime = createRuntime();
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const plugin = createDiscordGatewayPlugin({
       discordConfig: { proxy: "http://proxy.test:8080" },
@@ -144,7 +198,11 @@ describe("createDiscordGatewayPlugin", () => {
       .createWebSocket;
     createWebSocket("wss://gateway.discord.gg");
 
+<<<<<<< HEAD
     expect(wsProxyAgentSpy).toHaveBeenCalledWith("http://proxy.test:8080");
+=======
+    expect(proxyAgentSpy).toHaveBeenCalledWith("http://proxy.test:8080");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(webSocketSpy).toHaveBeenCalledWith(
       "wss://gateway.discord.gg",
       expect.objectContaining({ agent: getLastAgent() }),
@@ -154,7 +212,20 @@ describe("createDiscordGatewayPlugin", () => {
   });
 
   it("falls back to the default gateway plugin when proxy is invalid", async () => {
+<<<<<<< HEAD
     const runtime = createRuntime();
+=======
+    const { createDiscordGatewayPlugin } = await import("./gateway-plugin.js");
+    const { GatewayPlugin } = await import("@buape/carbon/gateway");
+
+    const runtime = {
+      log: vi.fn(),
+      error: vi.fn(),
+      exit: vi.fn(() => {
+        throw new Error("exit");
+      }),
+    };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const plugin = createDiscordGatewayPlugin({
       discordConfig: { proxy: "bad-proxy" },
@@ -165,6 +236,7 @@ describe("createDiscordGatewayPlugin", () => {
     expect(runtime.error).toHaveBeenCalled();
     expect(runtime.log).not.toHaveBeenCalled();
   });
+<<<<<<< HEAD
 
   it("uses proxy fetch for gateway metadata lookup before registering", async () => {
     const runtime = createRuntime();
@@ -194,4 +266,6 @@ describe("createDiscordGatewayPlugin", () => {
     );
     expect(baseRegisterClientSpy).toHaveBeenCalledTimes(1);
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

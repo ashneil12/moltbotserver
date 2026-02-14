@@ -28,7 +28,13 @@ const FAST_WAIT_OPTS = { timeout: 1_000, interval: 2 } as const;
 let ws: WebSocket;
 let port: number;
 
+<<<<<<< HEAD:src/gateway/server.roles-allowlist-update.test.ts
 installConnectedControlUiServerSuite((started) => {
+=======
+beforeAll(async () => {
+  const started = await startServerWithClient(undefined, { controlUiEnabled: true });
+  server = started.server;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/server.roles-allowlist-update.e2e.test.ts
   ws = started.ws;
   port = started.port;
 });
@@ -44,8 +50,21 @@ const connectNodeClient = async (params: {
   if (!token) {
     throw new Error("OPENCLAW_GATEWAY_TOKEN is required for node test clients");
   }
+<<<<<<< HEAD:src/gateway/server.roles-allowlist-update.test.ts
   return await connectGatewayClient({
     url: `ws://127.0.0.1:${params.port}`,
+=======
+  let settled = false;
+  let resolveReady: (() => void) | null = null;
+  let rejectReady: ((err: Error) => void) | null = null;
+  const ready = new Promise<void>((resolve, reject) => {
+    resolveReady = resolve;
+    rejectReady = reject;
+  });
+  const client = new GatewayClient({
+    url: `ws://127.0.0.1:${params.port}`,
+    connectDelayMs: 0,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/server.roles-allowlist-update.e2e.test.ts
     token,
     role: "node",
     clientName: GATEWAY_CLIENT_NAMES.NODE_HOST,
@@ -162,7 +181,10 @@ describe("gateway update.run", () => {
     process.on("SIGUSR1", sigusr1);
 
     try {
+<<<<<<< HEAD:src/gateway/server.roles-allowlist-update.test.ts
       await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/server.roles-allowlist-update.e2e.test.ts
       await fs.writeFile(CONFIG_PATH, JSON.stringify({ update: { channel: "beta" } }, null, 2));
       const updateMock = vi.mocked(runGatewayUpdate);
       updateMock.mockClear();

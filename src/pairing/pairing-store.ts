@@ -2,6 +2,10 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+<<<<<<< HEAD
+=======
+import type { ChannelId, ChannelPairingAdapter } from "../channels/plugins/types.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { getPairingAdapter } from "../channels/plugins/pairing.js";
 import type { ChannelId, ChannelPairingAdapter } from "../channels/plugins/types.js";
 import { resolveOAuthDir, resolveStateDir } from "../config/paths.js";

@@ -33,7 +33,10 @@ let importPiSdk = defaultImportPiSdk;
 const CODEX_PROVIDER = "openai-codex";
 const OPENAI_CODEX_GPT53_MODEL_ID = "gpt-5.3-codex";
 const OPENAI_CODEX_GPT53_SPARK_MODEL_ID = "gpt-5.3-codex-spark";
+<<<<<<< HEAD
 const NON_PI_NATIVE_MODEL_PROVIDERS = new Set(["kilocode"]);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function applyOpenAICodexSparkFallback(models: ModelCatalogEntry[]): void {
   const hasSpark = models.some(
@@ -60,6 +63,7 @@ function applyOpenAICodexSparkFallback(models: ModelCatalogEntry[]): void {
   });
 }
 
+<<<<<<< HEAD
 function normalizeConfiguredModelInput(input: unknown): Array<"text" | "image"> | undefined {
   if (!Array.isArray(input)) {
     return undefined;
@@ -143,6 +147,8 @@ function mergeConfiguredOptInProviderModels(params: {
   }
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function resetModelCatalogCacheForTest() {
   modelCatalogPromise = null;
   hasLoggedModelCatalogError = false;
@@ -226,7 +232,10 @@ export async function loadModelCatalog(params?: {
         const input = Array.isArray(entry?.input) ? entry.input : undefined;
         models.push({ id, name, provider, contextWindow, reasoning, input });
       }
+<<<<<<< HEAD
       mergeConfiguredOptInProviderModels({ config: cfg, models });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       applyOpenAICodexSparkFallback(models);
 
       if (models.length === 0) {

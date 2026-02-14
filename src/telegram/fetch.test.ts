@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
 import { resolveFetch } from "../infra/fetch.js";
 import { resetTelegramFetchStateForTests, resolveTelegramFetch } from "./fetch.js";
 
@@ -10,6 +11,11 @@ const AgentCtor = vi.hoisted(() =>
     this.options = options;
   }),
 );
+=======
+import { resetTelegramFetchStateForTests, resolveTelegramFetch } from "./fetch.js";
+
+const setDefaultAutoSelectFamily = vi.hoisted(() => vi.fn());
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 vi.mock("node:net", async () => {
   const actual = await vi.importActual<typeof import("node:net")>("node:net");
@@ -18,6 +24,7 @@ vi.mock("node:net", async () => {
     setDefaultAutoSelectFamily,
   };
 });
+<<<<<<< HEAD
 
 vi.mock("node:dns", async () => {
   const actual = await vi.importActual<typeof import("node:dns")>("node:dns");
@@ -54,12 +61,34 @@ describe("resolveTelegramFetch", () => {
     const fetchMock = vi.fn(async () => ({}));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
+=======
+
+describe("resolveTelegramFetch", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    resetTelegramFetchStateForTests();
+    setDefaultAutoSelectFamily.mockReset();
+    vi.unstubAllEnvs();
+    vi.clearAllMocks();
+    if (originalFetch) {
+      globalThis.fetch = originalFetch;
+    } else {
+      delete (globalThis as { fetch?: typeof fetch }).fetch;
+    }
+  });
+
+  it("returns wrapped global fetch when available", async () => {
+    const fetchMock = vi.fn(async () => ({}));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const resolved = resolveTelegramFetch();
 
     expect(resolved).toBeTypeOf("function");
     expect(resolved).not.toBe(fetchMock);
   });
 
+<<<<<<< HEAD
   it("wraps proxy fetches and normalizes foreign signals once", async () => {
     let seenSignal: AbortSignal | undefined;
     const proxyFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -68,6 +97,11 @@ describe("resolveTelegramFetch", () => {
     });
 
     const resolved = resolveTelegramFetch(proxyFetch as unknown as typeof fetch);
+=======
+  it("prefers proxy fetch when provided", async () => {
+    const fetchMock = vi.fn(async () => ({}));
+    const resolved = resolveTelegramFetch(fetchMock as unknown as typeof fetch);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(resolved).toBeTypeOf("function");
 
     let abortHandler: (() => void) | null = null;

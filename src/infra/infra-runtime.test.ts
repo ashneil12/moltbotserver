@@ -85,6 +85,16 @@ describe("infra runtime", () => {
   describe("restart authorization", () => {
     setupRestartSignalSuite();
 
+<<<<<<< HEAD
+=======
+    afterEach(async () => {
+      await vi.runOnlyPendingTimersAsync();
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+      __testing.resetSigusr1State();
+    });
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     it("authorizes exactly once when scheduled restart emits", async () => {
       expect(consumeGatewaySigusr1RestartAuthorization()).toBe(false);
 
@@ -124,12 +134,33 @@ describe("infra runtime", () => {
         process.removeListener("SIGUSR1", handler);
       }
     });
+<<<<<<< HEAD
 
     it("coalesces duplicate scheduled restarts into a single pending timer", async () => {
+=======
+  });
+
+  describe("pre-restart deferral check", () => {
+    beforeEach(() => {
+      __testing.resetSigusr1State();
+      vi.useFakeTimers();
+      vi.spyOn(process, "kill").mockImplementation(() => true);
+    });
+
+    afterEach(async () => {
+      await vi.runOnlyPendingTimersAsync();
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+      __testing.resetSigusr1State();
+    });
+
+    it("emits SIGUSR1 immediately when no deferral check is registered", async () => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const emitSpy = vi.spyOn(process, "emit");
       const handler = () => {};
       process.on("SIGUSR1", handler);
       try {
+<<<<<<< HEAD
         const first = scheduleGatewaySigusr1Restart({ delayMs: 1_000, reason: "first" });
         const second = scheduleGatewaySigusr1Restart({ delayMs: 1_000, reason: "second" });
 
@@ -142,16 +173,66 @@ describe("infra runtime", () => {
         await vi.advanceTimersByTimeAsync(1);
         const sigusr1Emits = emitSpy.mock.calls.filter((args) => args[0] === "SIGUSR1");
         expect(sigusr1Emits.length).toBe(1);
+=======
+        scheduleGatewaySigusr1Restart({ delayMs: 0 });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(emitSpy).toHaveBeenCalledWith("SIGUSR1");
       } finally {
         process.removeListener("SIGUSR1", handler);
       }
     });
 
-    it("applies restart cooldown between emitted restart cycles", async () => {
+    it("emits SIGUSR1 immediately when deferral check returns 0", async () => {
       const emitSpy = vi.spyOn(process, "emit");
       const handler = () => {};
       process.on("SIGUSR1", handler);
       try {
+        setPreRestartDeferralCheck(() => 0);
+        scheduleGatewaySigusr1Restart({ delayMs: 0 });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(emitSpy).toHaveBeenCalledWith("SIGUSR1");
+      } finally {
+        process.removeListener("SIGUSR1", handler);
+      }
+    });
+
+    it("defers SIGUSR1 until deferral check returns 0", async () => {
+      const emitSpy = vi.spyOn(process, "emit");
+      const handler = () => {};
+      process.on("SIGUSR1", handler);
+      try {
+        let pending = 2;
+        setPreRestartDeferralCheck(() => pending);
+        scheduleGatewaySigusr1Restart({ delayMs: 0 });
+
+        // After initial delay fires, deferral check returns 2 — should NOT emit yet
+        await vi.advanceTimersByTimeAsync(0);
+        expect(emitSpy).not.toHaveBeenCalledWith("SIGUSR1");
+
+        // After one poll (500ms), still pending
+        await vi.advanceTimersByTimeAsync(500);
+        expect(emitSpy).not.toHaveBeenCalledWith("SIGUSR1");
+
+        // Drain pending work
+        pending = 0;
+        await vi.advanceTimersByTimeAsync(500);
+        expect(emitSpy).toHaveBeenCalledWith("SIGUSR1");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
+      } finally {
+        process.removeListener("SIGUSR1", handler);
+      }
+    });
+
+<<<<<<< HEAD
+    it("applies restart cooldown between emitted restart cycles", async () => {
+=======
+    it("emits SIGUSR1 after deferral timeout even if still pending", async () => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
+      const emitSpy = vi.spyOn(process, "emit");
+      const handler = () => {};
+      process.on("SIGUSR1", handler);
+      try {
+<<<<<<< HEAD
         const first = scheduleGatewaySigusr1Restart({ delayMs: 0, reason: "first" });
         expect(first.coalesced).toBe(false);
         expect(first.delayMs).toBe(0);
@@ -170,6 +251,34 @@ describe("infra runtime", () => {
 
         await vi.advanceTimersByTimeAsync(1);
         expect(emitSpy.mock.calls.filter((args) => args[0] === "SIGUSR1").length).toBe(2);
+=======
+        setPreRestartDeferralCheck(() => 5); // always pending
+        scheduleGatewaySigusr1Restart({ delayMs: 0 });
+
+        // Fire initial timeout
+        await vi.advanceTimersByTimeAsync(0);
+        expect(emitSpy).not.toHaveBeenCalledWith("SIGUSR1");
+
+        // Advance past the 30s max deferral wait
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(emitSpy).toHaveBeenCalledWith("SIGUSR1");
+      } finally {
+        process.removeListener("SIGUSR1", handler);
+      }
+    });
+
+    it("emits SIGUSR1 if deferral check throws", async () => {
+      const emitSpy = vi.spyOn(process, "emit");
+      const handler = () => {};
+      process.on("SIGUSR1", handler);
+      try {
+        setPreRestartDeferralCheck(() => {
+          throw new Error("boom");
+        });
+        scheduleGatewaySigusr1Restart({ delayMs: 0 });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(emitSpy).toHaveBeenCalledWith("SIGUSR1");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       } finally {
         process.removeListener("SIGUSR1", handler);
       }

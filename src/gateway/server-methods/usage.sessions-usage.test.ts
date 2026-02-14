@@ -184,6 +184,30 @@ describe("sessions.usage", () => {
           vi.mocked(loadSessionCostSummary).mock.calls.some((call) => call[0]?.agentId === "opus"),
         ).toBe(true);
       });
+<<<<<<< HEAD
+=======
+
+      // Query via discovered key: agent:<id>:<sessionId>
+      await usageHandlers["sessions.usage"]({
+        respond,
+        params: {
+          startDate: "2026-02-01",
+          endDate: "2026-02-02",
+          key: "agent:opus:s-opus",
+          limit: 10,
+        },
+      } as unknown as Parameters<(typeof usageHandlers)["sessions.usage"]>[0]);
+
+      expect(respond).toHaveBeenCalledTimes(1);
+      expect(respond.mock.calls[0]?.[0]).toBe(true);
+      const result = respond.mock.calls[0]?.[1] as unknown as { sessions: Array<{ key: string }> };
+      expect(result.sessions).toHaveLength(1);
+      expect(result.sessions[0]?.key).toBe(storeKey);
+      expect(vi.mocked(loadSessionCostSummary)).toHaveBeenCalled();
+      expect(
+        vi.mocked(loadSessionCostSummary).mock.calls.some((call) => call[0]?.agentId === "opus"),
+      ).toBe(true);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     } finally {
       fs.rmSync(stateDir, { recursive: true, force: true });
     }
@@ -202,22 +226,45 @@ describe("sessions.usage", () => {
   });
 
   it("passes parsed agentId into sessions.usage.timeseries", async () => {
+<<<<<<< HEAD
     await runSessionsUsageTimeseries({
       key: "agent:opus:s-opus",
     });
+=======
+    const respond = vi.fn();
+
+    await usageHandlers["sessions.usage.timeseries"]({
+      respond,
+      params: {
+        key: "agent:opus:s-opus",
+      },
+    } as unknown as Parameters<(typeof usageHandlers)["sessions.usage.timeseries"]>[0]);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(vi.mocked(loadSessionUsageTimeSeries)).toHaveBeenCalled();
     expect(vi.mocked(loadSessionUsageTimeSeries).mock.calls[0]?.[0]?.agentId).toBe("opus");
   });
 
   it("passes parsed agentId into sessions.usage.logs", async () => {
+<<<<<<< HEAD
     await runSessionsUsageLogs({
       key: "agent:opus:s-opus",
     });
+=======
+    const respond = vi.fn();
+
+    await usageHandlers["sessions.usage.logs"]({
+      respond,
+      params: {
+        key: "agent:opus:s-opus",
+      },
+    } as unknown as Parameters<(typeof usageHandlers)["sessions.usage.logs"]>[0]);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(vi.mocked(loadSessionLogs)).toHaveBeenCalled();
     expect(vi.mocked(loadSessionLogs).mock.calls[0]?.[0]?.agentId).toBe("opus");
   });
+<<<<<<< HEAD
 
   it("rejects traversal-style keys in timeseries/log lookups", async () => {
     const timeseriesRespond = await runSessionsUsageTimeseries({
@@ -242,4 +289,6 @@ describe("sessions.usage", () => {
       }),
     );
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

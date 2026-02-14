@@ -1,13 +1,27 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
+<<<<<<< HEAD
 import { resolveForwardCompatModel } from "../../agents/model-forward-compat.js";
 import { parseModelRef } from "../../agents/model-selection.js";
 import type { ModelRegistry } from "../../agents/pi-model-discovery.js";
 import type { RuntimeEnv } from "../../runtime.js";
+=======
+import type { ModelRegistry } from "../../agents/pi-model-discovery.js";
+import type { RuntimeEnv } from "../../runtime.js";
+import type { ModelRow } from "./list.types.js";
+import { ensureAuthProfileStore } from "../../agents/auth-profiles.js";
+import { resolveForwardCompatModel } from "../../agents/model-forward-compat.js";
+import { parseModelRef } from "../../agents/model-selection.js";
+import { resolveModel } from "../../agents/pi-embedded-runner/model.js";
+import { loadConfig } from "../../config/config.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveConfiguredEntries } from "./list.configured.js";
 import { formatErrorWithStack } from "./list.errors.js";
 import { loadModelRegistry, toModelRow } from "./list.registry.js";
 import { printModelTable } from "./list.table.js";
+<<<<<<< HEAD
 import type { ModelRow } from "./list.types.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { DEFAULT_PROVIDER, ensureFlagCompatibility, isLocalBaseUrl, modelKey } from "./shared.js";
 
 export async function modelsListCommand(
@@ -110,7 +124,10 @@ export async function modelsListCommand(
         }
       }
       if (!model) {
+<<<<<<< HEAD
         const { resolveModel } = await import("../../agents/pi-embedded-runner/model.js");
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         model = resolveModel(entry.ref.provider, entry.ref.model, undefined, cfg).model;
       }
       if (opts.local && model && !isLocalBaseUrl(model.baseUrl)) {

@@ -50,6 +50,7 @@ vi.mock("../imessage/send.js", () => {
 });
 
 describe("createDefaultDeps", () => {
+<<<<<<< HEAD
   function expectUnusedModulesNotLoaded(exclude: keyof typeof moduleLoads): void {
     const keys = Object.keys(moduleLoads) as Array<keyof typeof moduleLoads>;
     for (const key of keys) {
@@ -60,6 +61,8 @@ describe("createDefaultDeps", () => {
     }
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -81,7 +84,15 @@ describe("createDefaultDeps", () => {
 
     expect(moduleLoads.telegram).toHaveBeenCalledTimes(1);
     expect(sendFns.telegram).toHaveBeenCalledTimes(1);
+<<<<<<< HEAD
     expectUnusedModulesNotLoaded("telegram");
+=======
+    expect(moduleLoads.whatsapp).not.toHaveBeenCalled();
+    expect(moduleLoads.discord).not.toHaveBeenCalled();
+    expect(moduleLoads.slack).not.toHaveBeenCalled();
+    expect(moduleLoads.signal).not.toHaveBeenCalled();
+    expect(moduleLoads.imessage).not.toHaveBeenCalled();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("reuses module cache after first dynamic import", async () => {

@@ -79,6 +79,7 @@ export const discordOutbound: ChannelOutboundAdapter = {
   chunker: null,
   textChunkLimit: 2000,
   pollMaxOptions: 10,
+<<<<<<< HEAD
   resolveTarget: ({ to }) => normalizeDiscordOutboundTarget(to),
   sendText: async ({ to, text, accountId, deps, replyToId, threadId, identity, silent }) => {
     if (!silent) {
@@ -93,6 +94,9 @@ export const discordOutbound: ChannelOutboundAdapter = {
         return { channel: "discord", ...webhookResult };
       }
     }
+=======
+  sendText: async ({ to, text, accountId, deps, replyToId, silent }) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const send = deps?.sendDiscord ?? sendMessageDiscord;
     const target = resolveDiscordOutboundTarget({ to, threadId });
     const result = await send(target, text, {
@@ -103,6 +107,7 @@ export const discordOutbound: ChannelOutboundAdapter = {
     });
     return { channel: "discord", ...result };
   },
+<<<<<<< HEAD
   sendMedia: async ({
     to,
     text,
@@ -114,6 +119,9 @@ export const discordOutbound: ChannelOutboundAdapter = {
     threadId,
     silent,
   }) => {
+=======
+  sendMedia: async ({ to, text, mediaUrl, accountId, deps, replyToId, silent }) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const send = deps?.sendDiscord ?? sendMessageDiscord;
     const target = resolveDiscordOutboundTarget({ to, threadId });
     const result = await send(target, text, {

@@ -50,7 +50,10 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+<<<<<<< HEAD
             android:windowSoftInputMode="adjustResize"
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|keyboard|keyboardHidden|navigation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

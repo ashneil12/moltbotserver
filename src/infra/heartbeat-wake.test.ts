@@ -8,6 +8,7 @@ import {
 } from "./heartbeat-wake.js";
 
 describe("heartbeat-wake", () => {
+<<<<<<< HEAD
   async function expectRetryAfterDefaultDelay(params: {
     handler: ReturnType<typeof vi.fn>;
     initialReason: string;
@@ -29,6 +30,8 @@ describe("heartbeat-wake", () => {
     expect(params.handler.mock.calls[1]?.[0]).toEqual({ reason: params.expectedRetryReason });
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   beforeEach(() => {
     resetHeartbeatWakeStateForTests();
   });
@@ -65,11 +68,27 @@ describe("heartbeat-wake", () => {
       .fn()
       .mockResolvedValueOnce({ status: "skipped", reason: "requests-in-flight" })
       .mockResolvedValueOnce({ status: "ran", durationMs: 1 });
+<<<<<<< HEAD
     await expectRetryAfterDefaultDelay({
       handler,
       initialReason: "interval",
       expectedRetryReason: "interval",
     });
+=======
+    setHeartbeatWakeHandler(handler);
+
+    requestHeartbeatNow({ reason: "interval", coalesceMs: 0 });
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler.mock.calls[1]?.[0]).toEqual({ reason: "interval" });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("keeps retry cooldown even when a sooner request arrives", async () => {
@@ -100,11 +119,27 @@ describe("heartbeat-wake", () => {
       .fn()
       .mockRejectedValueOnce(new Error("boom"))
       .mockResolvedValueOnce({ status: "skipped", reason: "disabled" });
+<<<<<<< HEAD
     await expectRetryAfterDefaultDelay({
       handler,
       initialReason: "exec-event",
       expectedRetryReason: "exec-event",
     });
+=======
+    setHeartbeatWakeHandler(handler);
+
+    requestHeartbeatNow({ reason: "exec-event", coalesceMs: 0 });
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler.mock.calls[1]?.[0]).toEqual({ reason: "exec-event" });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("stale disposer does not clear a newer handler", async () => {
@@ -248,6 +283,7 @@ describe("heartbeat-wake", () => {
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler).toHaveBeenCalledWith({ reason: "manual" });
     expect(hasPendingHeartbeatWake()).toBe(false);
+<<<<<<< HEAD
   });
 
   it("forwards wake target fields and preserves them across retries", async () => {
@@ -317,5 +353,7 @@ describe("heartbeat-wake", () => {
         },
       ]),
     );
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

@@ -125,7 +125,12 @@ describe("state + config path candidates", () => {
   });
 
   it("CONFIG_PATH prefers existing config when present", async () => {
+<<<<<<< HEAD
     await withTempRoot("openclaw-config-", async (root) => {
+=======
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-"));
+    try {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const legacyDir = path.join(root, ".openclaw");
       await fs.mkdir(legacyDir, { recursive: true });
       const legacyPath = path.join(legacyDir, "openclaw.json");
@@ -133,7 +138,13 @@ describe("state + config path candidates", () => {
 
       const resolved = resolveConfigPathCandidate({} as NodeJS.ProcessEnv, () => root);
       expect(resolved).toBe(legacyPath);
+<<<<<<< HEAD
     });
+=======
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("respects state dir overrides when config is missing", async () => {

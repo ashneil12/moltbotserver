@@ -3,7 +3,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
+<<<<<<< HEAD
 import { withEnv } from "../test-utils/env.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { loadOpenClawPlugins } from "./loader.js";
 
 type TempPlugin = { dir: string; file: string; id: string };
@@ -64,6 +67,7 @@ function writePlugin(params: {
   return { dir, file, id: params.id };
 }
 
+<<<<<<< HEAD
 function loadBundledMemoryPluginRegistry(options?: {
   packageMeta?: { name: string; version: string; description?: string };
   pluginBody?: string;
@@ -131,6 +135,8 @@ function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) 
   expect(registry.channels.some((entry) => entry.plugin.id === "telegram")).toBe(true);
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 afterEach(() => {
   if (prevBundledDir === undefined) {
     delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;

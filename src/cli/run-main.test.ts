@@ -44,12 +44,18 @@ describe("shouldRegisterPrimarySubcommand", () => {
   it("skips eager primary registration for help/version invocations", () => {
     expect(shouldRegisterPrimarySubcommand(["node", "openclaw", "status", "--help"])).toBe(false);
     expect(shouldRegisterPrimarySubcommand(["node", "openclaw", "-V"])).toBe(false);
+<<<<<<< HEAD
     expect(shouldRegisterPrimarySubcommand(["node", "openclaw", "-v"])).toBe(false);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("keeps eager primary registration for regular command runs", () => {
     expect(shouldRegisterPrimarySubcommand(["node", "openclaw", "status"])).toBe(true);
+<<<<<<< HEAD
     expect(shouldRegisterPrimarySubcommand(["node", "openclaw", "acp", "-v"])).toBe(true);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });
 
@@ -109,7 +115,10 @@ describe("shouldEnsureCliPath", () => {
   it("skips path bootstrap for help/version invocations", () => {
     expect(shouldEnsureCliPath(["node", "openclaw", "--help"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "openclaw", "-V"])).toBe(false);
+<<<<<<< HEAD
     expect(shouldEnsureCliPath(["node", "openclaw", "-v"])).toBe(false);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("skips path bootstrap for read-only fast paths", () => {
@@ -122,6 +131,9 @@ describe("shouldEnsureCliPath", () => {
   it("keeps path bootstrap for mutating or unknown commands", () => {
     expect(shouldEnsureCliPath(["node", "openclaw", "message", "send"])).toBe(true);
     expect(shouldEnsureCliPath(["node", "openclaw", "voicecall", "status"])).toBe(true);
+<<<<<<< HEAD
     expect(shouldEnsureCliPath(["node", "openclaw", "acp", "-v"])).toBe(true);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

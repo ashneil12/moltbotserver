@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+<<<<<<< HEAD
 import path from "node:path";
 import {
   collectProviderApiKeysForExecution,
@@ -7,13 +8,31 @@ import {
 import { requireApiKey, resolveApiKeyForProvider } from "../agents/model-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import { applyTemplate } from "../auto-reply/templating.js";
+=======
+import os from "node:os";
+import path from "node:path";
+import type { MsgContext } from "../auto-reply/templating.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type { OpenClawConfig } from "../config/config.js";
 import type {
   MediaUnderstandingConfig,
   MediaUnderstandingModelConfig,
 } from "../config/types.tools.js";
+<<<<<<< HEAD
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+=======
+import type {
+  MediaUnderstandingCapability,
+  MediaUnderstandingDecision,
+  MediaUnderstandingModelDecision,
+  MediaUnderstandingOutput,
+  MediaUnderstandingProvider,
+} from "./types.js";
+import { requireApiKey, resolveApiKeyForProvider } from "../agents/model-auth.js";
+import { applyTemplate } from "../auto-reply/templating.js";
+import { logVerbose, shouldLogVerbose } from "../globals.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { runExec } from "../process/exec.js";
 import { MediaAttachmentCache } from "./attachments.js";
 import {
@@ -22,6 +41,7 @@ import {
   DEFAULT_TIMEOUT_SECONDS,
 } from "./defaults.js";
 import { MediaUnderstandingSkipError } from "./errors.js";
+<<<<<<< HEAD
 import { fileExists } from "./fs.js";
 import { extractGeminiResponse } from "./output-extract.js";
 import { describeImageWithModel } from "./providers/image.js";
@@ -34,6 +54,11 @@ import type {
   MediaUnderstandingOutput,
   MediaUnderstandingProvider,
 } from "./types.js";
+=======
+import { describeImageWithModel } from "./providers/image.js";
+import { getMediaUnderstandingProvider, normalizeMediaProviderId } from "./providers/index.js";
+import { resolveMaxBytes, resolveMaxChars, resolvePrompt, resolveTimeoutMs } from "./resolve.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { estimateBase64Size, resolveVideoMaxBase64Bytes } from "./video.js";
 
 export type ProviderRegistry = Map<string, MediaUnderstandingProvider>;
@@ -46,6 +71,36 @@ function trimOutput(text: string, maxChars?: number): string {
   return trimmed.slice(0, maxChars).trim();
 }
 
+<<<<<<< HEAD
+=======
+function extractLastJsonObject(raw: string): unknown {
+  const trimmed = raw.trim();
+  const start = trimmed.lastIndexOf("{");
+  if (start === -1) {
+    return null;
+  }
+  const slice = trimmed.slice(start);
+  try {
+    return JSON.parse(slice);
+  } catch {
+    return null;
+  }
+}
+
+function extractGeminiResponse(raw: string): string | null {
+  const payload = extractLastJsonObject(raw);
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  const response = (payload as { response?: unknown }).response;
+  if (typeof response !== "string") {
+    return null;
+  }
+  const trimmed = response.trim();
+  return trimmed || null;
+}
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function extractSherpaOnnxText(raw: string): string | null {
   const tryParse = (value: string): string | null => {
     const trimmed = value.trim();
@@ -134,6 +189,21 @@ function resolveWhisperCppOutputPath(args: string[]): string | null {
   return `${outputBase}.txt`;
 }
 
+<<<<<<< HEAD
+=======
+async function fileExists(filePath?: string | null): Promise<boolean> {
+  if (!filePath) {
+    return false;
+  }
+  try {
+    await fs.stat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 async function resolveCliOutput(params: {
   command: string;
   args: string[];
@@ -275,6 +345,7 @@ export function buildModelDecision(params: {
   };
 }
 
+<<<<<<< HEAD
 function resolveEntryRunOptions(params: {
   capability: MediaUnderstandingCapability;
   entry: MediaUnderstandingModelConfig;
@@ -343,6 +414,8 @@ async function resolveProviderExecutionContext(params: {
   return { apiKeys, baseUrl, headers };
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function formatDecisionSummary(decision: MediaUnderstandingDecision): string {
   const total = decision.attachments.length;
   const success = decision.attachments.filter(
@@ -379,12 +452,28 @@ export async function runProviderEntry(params: {
     throw new Error(`Provider entry missing provider for ${capability}`);
   }
   const providerId = normalizeMediaProviderId(providerIdRaw);
+<<<<<<< HEAD
   const { maxBytes, maxChars, timeoutMs, prompt } = resolveEntryRunOptions({
     capability,
     entry,
     cfg,
     config: params.config,
   });
+=======
+  const maxBytes = resolveMaxBytes({ capability, entry, cfg, config: params.config });
+  const maxChars = resolveMaxChars({ capability, entry, cfg, config: params.config });
+  const timeoutMs = resolveTimeoutMs(
+    entry.timeoutSeconds ??
+      params.config?.timeoutSeconds ??
+      cfg.tools?.media?.[capability]?.timeoutSeconds,
+    DEFAULT_TIMEOUT_SECONDS[capability],
+  );
+  const prompt = resolvePrompt(
+    capability,
+    entry.prompt ?? params.config?.prompt ?? cfg.tools?.media?.[capability]?.prompt,
+    maxChars,
+  );
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   if (capability === "image") {
     if (!params.agentDir) {
@@ -445,12 +534,16 @@ export async function runProviderEntry(params: {
     if (!provider.transcribeAudio) {
       throw new Error(`Audio transcription provider "${providerId}" not available.`);
     }
+<<<<<<< HEAD
     const transcribeAudio = provider.transcribeAudio;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const media = await params.cache.getBuffer({
       attachmentIndex: params.attachmentIndex,
       maxBytes,
       timeoutMs,
     });
+<<<<<<< HEAD
     const { apiKeys, baseUrl, headers } = await resolveProviderExecutionContext({
       providerId,
       cfg,
@@ -458,12 +551,31 @@ export async function runProviderEntry(params: {
       config: params.config,
       agentDir: params.agentDir,
     });
+=======
+    const auth = await resolveApiKeyForProvider({
+      provider: providerId,
+      cfg,
+      profileId: entry.profile,
+      preferredProfile: entry.preferredProfile,
+      agentDir: params.agentDir,
+    });
+    const apiKey = requireApiKey(auth, providerId);
+    const providerConfig = cfg.models?.providers?.[providerId];
+    const baseUrl = entry.baseUrl ?? params.config?.baseUrl ?? providerConfig?.baseUrl;
+    const mergedHeaders = {
+      ...providerConfig?.headers,
+      ...params.config?.headers,
+      ...entry.headers,
+    };
+    const headers = Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const providerQuery = resolveProviderQuery({
       providerId,
       config: params.config,
       entry,
     });
     const model = entry.model?.trim() || DEFAULT_AUDIO_MODELS[providerId] || entry.model;
+<<<<<<< HEAD
     const result = await executeWithApiKeyRotation({
       provider: providerId,
       apiKeys,
@@ -481,6 +593,20 @@ export async function runProviderEntry(params: {
           query: providerQuery,
           timeoutMs,
         }),
+=======
+    const result = await provider.transcribeAudio({
+      buffer: media.buffer,
+      fileName: media.fileName,
+      mime: media.mime,
+      apiKey,
+      baseUrl,
+      headers,
+      model,
+      language: entry.language ?? params.config?.language ?? cfg.tools?.media?.audio?.language,
+      prompt,
+      query: providerQuery,
+      timeoutMs,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
     return {
       kind: "audio.transcription",
@@ -494,7 +620,10 @@ export async function runProviderEntry(params: {
   if (!provider.describeVideo) {
     throw new Error(`Video understanding provider "${providerId}" not available.`);
   }
+<<<<<<< HEAD
   const describeVideo = provider.describeVideo;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const media = await params.cache.getBuffer({
     attachmentIndex: params.attachmentIndex,
     maxBytes,
@@ -508,6 +637,7 @@ export async function runProviderEntry(params: {
       `Video attachment ${params.attachmentIndex + 1} base64 payload ${estimatedBase64Bytes} exceeds ${maxBase64Bytes}`,
     );
   }
+<<<<<<< HEAD
   const { apiKeys, baseUrl, headers } = await resolveProviderExecutionContext({
     providerId,
     cfg,
@@ -530,6 +660,27 @@ export async function runProviderEntry(params: {
         prompt,
         timeoutMs,
       }),
+=======
+  const auth = await resolveApiKeyForProvider({
+    provider: providerId,
+    cfg,
+    profileId: entry.profile,
+    preferredProfile: entry.preferredProfile,
+    agentDir: params.agentDir,
+  });
+  const apiKey = requireApiKey(auth, providerId);
+  const providerConfig = cfg.models?.providers?.[providerId];
+  const result = await provider.describeVideo({
+    buffer: media.buffer,
+    fileName: media.fileName,
+    mime: media.mime,
+    apiKey,
+    baseUrl: providerConfig?.baseUrl,
+    headers: providerConfig?.headers,
+    model: entry.model,
+    prompt,
+    timeoutMs,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
   return {
     kind: "video.description",
@@ -555,20 +706,40 @@ export async function runCliEntry(params: {
   if (!command) {
     throw new Error(`CLI entry missing command for ${capability}`);
   }
+<<<<<<< HEAD
   const { maxBytes, maxChars, timeoutMs, prompt } = resolveEntryRunOptions({
     capability,
     entry,
     cfg,
     config: params.config,
   });
+=======
+  const maxBytes = resolveMaxBytes({ capability, entry, cfg, config: params.config });
+  const maxChars = resolveMaxChars({ capability, entry, cfg, config: params.config });
+  const timeoutMs = resolveTimeoutMs(
+    entry.timeoutSeconds ??
+      params.config?.timeoutSeconds ??
+      cfg.tools?.media?.[capability]?.timeoutSeconds,
+    DEFAULT_TIMEOUT_SECONDS[capability],
+  );
+  const prompt = resolvePrompt(
+    capability,
+    entry.prompt ?? params.config?.prompt ?? cfg.tools?.media?.[capability]?.prompt,
+    maxChars,
+  );
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const pathResult = await params.cache.getPath({
     attachmentIndex: params.attachmentIndex,
     maxBytes,
     timeoutMs,
   });
+<<<<<<< HEAD
   const outputDir = await fs.mkdtemp(
     path.join(resolvePreferredOpenClawTmpDir(), "openclaw-media-cli-"),
   );
+=======
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-cli-"));
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const mediaPath = pathResult.path;
   const outputBase = path.join(outputDir, path.parse(mediaPath).name);
 

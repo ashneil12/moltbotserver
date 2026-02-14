@@ -1,7 +1,11 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+<<<<<<< HEAD
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+=======
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type { OpenClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import {
@@ -146,10 +150,24 @@ describe("loader", () => {
     });
 
     it("should handle module loading errors gracefully", async () => {
+<<<<<<< HEAD
       const cfg = createEnabledHooksConfig([
         {
           event: "command:new",
           module: "missing-handler.js",
+=======
+      const cfg: OpenClawConfig = {
+        hooks: {
+          internal: {
+            enabled: true,
+            handlers: [
+              {
+                event: "command:new",
+                module: "/nonexistent/path/handler.js",
+              },
+            ],
+          },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         },
       ]);
 

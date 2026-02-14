@@ -25,7 +25,10 @@ import {
   type SessionScope,
   updateSessionStore,
 } from "../../config/sessions.js";
+<<<<<<< HEAD
 import type { TtsAutoMode } from "../../config/types.tts.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { archiveSessionTranscripts } from "../../gateway/session-utils.fs.js";
 import { deliverSessionMaintenanceWarning } from "../../infra/session-maintenance-warning.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";

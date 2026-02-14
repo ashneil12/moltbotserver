@@ -1,13 +1,26 @@
+<<<<<<< HEAD
+=======
+import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   discoverHuggingfaceModels,
   isHuggingfacePolicyLocked,
 } from "../agents/huggingface-models.js";
+<<<<<<< HEAD
 import { normalizeApiKeyInput, validateApiKeyInput } from "./auth-choice.api-key.js";
 import {
   createAuthChoiceAgentModelNoter,
   ensureApiKeyFromOptionEnvOrPrompt,
 } from "./auth-choice.apply-helpers.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
+=======
+import { resolveEnvApiKey } from "../agents/model-auth.js";
+import {
+  formatApiKeyPreview,
+  normalizeApiKeyInput,
+  validateApiKeyInput,
+} from "./auth-choice.api-key.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import { ensureModelAllowlistEntry } from "./model-allowlist.js";
 import {
@@ -26,6 +39,7 @@ export async function applyAuthChoiceHuggingface(
 
   let nextConfig = params.config;
   let agentModelOverride: string | undefined;
+<<<<<<< HEAD
   const noteAgentModel = createAuthChoiceAgentModelNoter(params);
 
   const hfKey = await ensureApiKeyFromOptionEnvOrPrompt({
@@ -45,6 +59,59 @@ export async function applyAuthChoiceHuggingface(
     ].join("\n"),
     noteTitle: "Hugging Face",
   });
+=======
+  const noteAgentModel = async (model: string) => {
+    if (!params.agentId) {
+      return;
+    }
+    await params.prompter.note(
+      `Default model set to ${model} for agent "${params.agentId}".`,
+      "Model configured",
+    );
+  };
+
+  let hasCredential = false;
+  let hfKey = "";
+
+  if (!hasCredential && params.opts?.token && params.opts.tokenProvider === "huggingface") {
+    hfKey = normalizeApiKeyInput(params.opts.token);
+    await setHuggingfaceApiKey(hfKey, params.agentDir);
+    hasCredential = true;
+  }
+
+  if (!hasCredential) {
+    await params.prompter.note(
+      [
+        "Hugging Face Inference Providers offer OpenAI-compatible chat completions.",
+        "Create a token at: https://huggingface.co/settings/tokens (fine-grained, 'Make calls to Inference Providers').",
+      ].join("\n"),
+      "Hugging Face",
+    );
+  }
+
+  if (!hasCredential) {
+    const envKey = resolveEnvApiKey("huggingface");
+    if (envKey) {
+      const useExisting = await params.prompter.confirm({
+        message: `Use existing Hugging Face token (${envKey.source}, ${formatApiKeyPreview(envKey.apiKey)})?`,
+        initialValue: true,
+      });
+      if (useExisting) {
+        hfKey = envKey.apiKey;
+        await setHuggingfaceApiKey(hfKey, params.agentDir);
+        hasCredential = true;
+      }
+    }
+  }
+  if (!hasCredential) {
+    const key = await params.prompter.text({
+      message: "Enter Hugging Face API key (HF token)",
+      validate: validateApiKeyInput,
+    });
+    hfKey = normalizeApiKeyInput(String(key ?? ""));
+    await setHuggingfaceApiKey(hfKey, params.agentDir);
+  }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   nextConfig = applyAuthProfileConfig(nextConfig, {
     profileId: "huggingface:default",
     provider: "huggingface",

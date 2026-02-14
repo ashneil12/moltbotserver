@@ -26,6 +26,7 @@ import {
   resolveCloudflareAiGatewayBaseUrl,
 } from "./cloudflare-ai-gateway.js";
 import {
+<<<<<<< HEAD
   buildDoubaoModelDefinition,
   DOUBAO_BASE_URL,
   DOUBAO_MODEL_CATALOG,
@@ -33,6 +34,8 @@ import {
   DOUBAO_CODING_MODEL_CATALOG,
 } from "./doubao-models.js";
 import {
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   discoverHuggingfaceModels,
   HUGGINGFACE_BASE_URL,
   HUGGINGFACE_MODEL_CATALOG,
@@ -151,6 +154,7 @@ const OLLAMA_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
+<<<<<<< HEAD
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const OPENROUTER_DEFAULT_MODEL_ID = "auto";
 const OPENROUTER_DEFAULT_CONTEXT_WINDOW = 200000;
@@ -162,6 +166,8 @@ const OPENROUTER_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const VLLM_BASE_URL = "http://127.0.0.1:8000/v1";
 const VLLM_DEFAULT_CONTEXT_WINDOW = 128000;
 const VLLM_DEFAULT_MAX_TOKENS = 8192;
@@ -322,6 +328,59 @@ async function discoverVllmModels(
       });
   } catch (error) {
     log.warn(`Failed to discover vLLM models: ${String(error)}`);
+    return [];
+  }
+}
+
+async function discoverVllmModels(
+  baseUrl: string,
+  apiKey?: string,
+): Promise<ModelDefinitionConfig[]> {
+  // Skip vLLM discovery in test environments
+  if (process.env.VITEST || process.env.NODE_ENV === "test") {
+    return [];
+  }
+
+  const trimmedBaseUrl = baseUrl.trim().replace(/\/+$/, "");
+  const url = `${trimmedBaseUrl}/models`;
+
+  try {
+    const trimmedApiKey = apiKey?.trim();
+    const response = await fetch(url, {
+      headers: trimmedApiKey ? { Authorization: `Bearer ${trimmedApiKey}` } : undefined,
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) {
+      console.warn(`Failed to discover vLLM models: ${response.status}`);
+      return [];
+    }
+    const data = (await response.json()) as VllmModelsResponse;
+    const models = data.data ?? [];
+    if (models.length === 0) {
+      console.warn("No vLLM models found on local instance");
+      return [];
+    }
+
+    return models
+      .map((m) => ({ id: typeof m.id === "string" ? m.id.trim() : "" }))
+      .filter((m) => Boolean(m.id))
+      .map((m) => {
+        const modelId = m.id;
+        const lower = modelId.toLowerCase();
+        const isReasoning =
+          lower.includes("r1") || lower.includes("reasoning") || lower.includes("think");
+        return {
+          id: modelId,
+          name: modelId,
+          reasoning: isReasoning,
+          input: ["text"],
+          cost: VLLM_DEFAULT_COST,
+          contextWindow: VLLM_DEFAULT_CONTEXT_WINDOW,
+          maxTokens: VLLM_DEFAULT_MAX_TOKENS,
+        } satisfies ModelDefinitionConfig;
+      });
+  } catch (error) {
+    console.warn(`Failed to discover vLLM models: ${String(error)}`);
     return [];
   }
 }
@@ -677,6 +736,7 @@ function buildTogetherProvider(): ProviderConfig {
   };
 }
 
+<<<<<<< HEAD
 function buildOpenrouterProvider(): ProviderConfig {
   return {
     baseUrl: OPENROUTER_BASE_URL,
@@ -701,6 +761,8 @@ function buildOpenrouterProvider(): ProviderConfig {
   };
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 async function buildVllmProvider(params?: {
   baseUrl?: string;
   apiKey?: string;
@@ -713,7 +775,10 @@ async function buildVllmProvider(params?: {
     models,
   };
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function buildQianfanProvider(): ProviderConfig {
   return {
     baseUrl: QIANFAN_BASE_URL,

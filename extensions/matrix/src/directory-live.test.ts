@@ -51,6 +51,7 @@ describe("matrix directory live", () => {
 
     expect(resolveMatrixAuth).toHaveBeenCalledWith({ cfg, accountId: "assistant" });
   });
+<<<<<<< HEAD
 
   it("returns no peer results for empty query without resolving auth", async () => {
     const result = await listMatrixDirectoryPeersLive({
@@ -71,4 +72,6 @@ describe("matrix directory live", () => {
     expect(result).toEqual([]);
     expect(resolveMatrixAuth).not.toHaveBeenCalled();
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

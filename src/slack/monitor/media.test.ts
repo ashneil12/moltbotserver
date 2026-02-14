@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as ssrf from "../../infra/net/ssrf.js";
+<<<<<<< HEAD
 import type { SavedMedia } from "../../media/store.js";
 import * as mediaStore from "../../media/store.js";
 import { mockPinnedHostnameResolution } from "../../test-helpers/ssrf.js";
@@ -10,6 +11,10 @@ import {
   resolveSlackMedia,
   resolveSlackThreadHistory,
 } from "./media.js";
+=======
+import * as mediaStore from "../../media/store.js";
+import { fetchWithSlackAuth, resolveSlackMedia, resolveSlackThreadHistory } from "./media.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 // Store original fetch
 const originalFetch = globalThis.fetch;
@@ -183,9 +188,16 @@ describe("resolveSlackMedia", () => {
   });
 
   it("prefers url_private_download over url_private", async () => {
+<<<<<<< HEAD
     vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
       createSavedMedia("/tmp/test.jpg", "image/jpeg"),
     );
+=======
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue({
+      path: "/tmp/test.jpg",
+      contentType: "image/jpeg",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const mockResponse = new Response(Buffer.from("image data"), {
       status: 200,
@@ -249,9 +261,16 @@ describe("resolveSlackMedia", () => {
     // saveMediaBuffer re-detects MIME from buffer bytes, so it may return
     // video/mp4 for MP4 containers.  Verify resolveSlackMedia preserves
     // the overridden audio/* type in its return value despite this.
+<<<<<<< HEAD
     const saveMediaBufferMock = vi
       .spyOn(mediaStore, "saveMediaBuffer")
       .mockResolvedValue(createSavedMedia("/tmp/voice.mp4", "video/mp4"));
+=======
+    const saveMediaBufferMock = vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue({
+      path: "/tmp/voice.mp4",
+      contentType: "video/mp4",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const mockResponse = new Response(Buffer.from("audio data"), {
       status: 200,
@@ -273,7 +292,10 @@ describe("resolveSlackMedia", () => {
     });
 
     expect(result).not.toBeNull();
+<<<<<<< HEAD
     expect(result).toHaveLength(1);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     // saveMediaBuffer should receive the overridden audio/mp4
     expect(saveMediaBufferMock).toHaveBeenCalledWith(
       expect.any(Buffer),
@@ -283,6 +305,7 @@ describe("resolveSlackMedia", () => {
     );
     // Returned contentType must be the overridden value, not the
     // re-detected video/mp4 from saveMediaBuffer
+<<<<<<< HEAD
     expect(result![0]?.contentType).toBe("audio/mp4");
   });
 
@@ -290,6 +313,16 @@ describe("resolveSlackMedia", () => {
     const saveMediaBufferMock = vi
       .spyOn(mediaStore, "saveMediaBuffer")
       .mockResolvedValue(createSavedMedia("/tmp/video.mp4", "video/mp4"));
+=======
+    expect(result!.contentType).toBe("audio/mp4");
+  });
+
+  it("preserves original MIME for non-voice Slack files", async () => {
+    const saveMediaBufferMock = vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue({
+      path: "/tmp/video.mp4",
+      contentType: "video/mp4",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const mockResponse = new Response(Buffer.from("video data"), {
       status: 200,
@@ -310,13 +343,17 @@ describe("resolveSlackMedia", () => {
     });
 
     expect(result).not.toBeNull();
+<<<<<<< HEAD
     expect(result).toHaveLength(1);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(saveMediaBufferMock).toHaveBeenCalledWith(
       expect.any(Buffer),
       "video/mp4",
       "inbound",
       16 * 1024 * 1024,
     );
+<<<<<<< HEAD
     expect(result![0]?.contentType).toBe("video/mp4");
   });
 
@@ -324,6 +361,15 @@ describe("resolveSlackMedia", () => {
     vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
       createSavedMedia("/tmp/test.jpg", "image/jpeg"),
     );
+=======
+  });
+
+  it("falls through to next file when first file returns error", async () => {
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue({
+      path: "/tmp/test.jpg",
+      contentType: "image/jpeg",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     // First file: 404
     const errorResponse = new Response("Not Found", { status: 404 });

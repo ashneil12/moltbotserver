@@ -1,5 +1,9 @@
 import fs from "node:fs";
+<<<<<<< HEAD
 import type { OAuthCredentials } from "@mariozechner/pi-ai";
+=======
+import type { AuthProfileCredential, AuthProfileStore, ProfileUsageStats } from "./types.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveOAuthPath } from "../../config/paths.js";
 import { withFileLock } from "../../infra/file-lock.js";
 import { loadJsonFile, saveJsonFile } from "../../infra/json-file.js";

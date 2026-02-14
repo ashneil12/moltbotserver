@@ -8,11 +8,15 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
+<<<<<<< HEAD
 import {
   isBlockedHostnameOrIp,
   readJsonBodyWithLimit,
   requestBodyErrorToText,
 } from "openclaw/plugin-sdk";
+=======
+import { readJsonBodyWithLimit, requestBodyErrorToText } from "openclaw/plugin-sdk";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { z } from "zod";
 import { publishNostrProfile, getNostrProfileState } from "./channel.js";
 import { NostrProfileSchema, type NostrProfile } from "./config-schema.js";

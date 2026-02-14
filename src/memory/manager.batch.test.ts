@@ -2,8 +2,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
 import { useFastShortTimeouts } from "../../test/helpers/fast-short-timeouts.js";
 import type { OpenClawConfig } from "../config/config.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { getMemorySearchManager, type MemoryIndexManager } from "./index.js";
 import { createOpenAIEmbeddingProviderMock } from "./test-embeddings-mock.js";
 import "./test-runtime-mocks.js";
@@ -21,10 +24,15 @@ vi.mock("./embeddings.js", () => ({
 
 describe("memory indexing with OpenAI batches", () => {
   let fixtureRoot: string;
+<<<<<<< HEAD
+=======
+  let caseId = 0;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   let workspaceDir: string;
   let memoryDir: string;
   let indexPath: string;
   let manager: MemoryIndexManager | null = null;
+<<<<<<< HEAD
 
   async function readOpenAIBatchUploadRequests(body: FormData) {
     let uploadedRequests: Array<{ custom_id?: string }> = [];
@@ -139,12 +147,40 @@ describe("memory indexing with OpenAI batches", () => {
     await fs.rm(fixtureRoot, { recursive: true, force: true });
   });
 
+=======
+
+  function useFastShortTimeouts() {
+    const realSetTimeout = setTimeout;
+    const spy = vi.spyOn(global, "setTimeout").mockImplementation(((
+      handler: TimerHandler,
+      timeout?: number,
+      ...args: unknown[]
+    ) => {
+      const delay = typeof timeout === "number" ? timeout : 0;
+      if (delay > 0 && delay <= 2000) {
+        return realSetTimeout(handler, 0, ...args);
+      }
+      return realSetTimeout(handler, delay, ...args);
+    }) as typeof setTimeout);
+    return () => spy.mockRestore();
+  }
+
+  beforeAll(async () => {
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mem-batch-"));
+  });
+
+  afterAll(async () => {
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
+  });
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   beforeEach(async () => {
     embedBatch.mockClear();
     embedQuery.mockClear();
     embedBatch.mockImplementation(async (texts: string[]) =>
       texts.map((_text, index) => [index + 1, 0, 0]),
     );
+<<<<<<< HEAD
 
     await fs.rm(memoryDir, { recursive: true, force: true });
     await fs.mkdir(memoryDir, { recursive: true });
@@ -160,10 +196,22 @@ describe("memory indexing with OpenAI batches", () => {
     (manager as unknown as { batchFailureLastProvider?: string }).batchFailureLastProvider =
       undefined;
     (manager as unknown as { batch: { enabled: boolean } }).batch.enabled = true;
+=======
+    workspaceDir = path.join(fixtureRoot, `case-${++caseId}`);
+    indexPath = path.join(workspaceDir, "index.sqlite");
+    await fs.mkdir(path.join(workspaceDir, "memory"), { recursive: true });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   afterEach(async () => {
     vi.unstubAllGlobals();
+<<<<<<< HEAD
+=======
+    if (manager) {
+      await manager.close();
+      manager = null;
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("uses OpenAI batch uploads when enabled", async () => {
@@ -223,15 +271,31 @@ describe("memory indexing with OpenAI batches", () => {
       }
       await manager.sync({ reason: "test" });
 
+<<<<<<< HEAD
       const status = manager.status();
       expect(status.chunks).toBeGreaterThan(0);
       expect(state.batchCreates).toBe(2);
+=======
+    try {
+      const result = await getMemorySearchManager({ cfg, agentId: "main" });
+      expect(result.manager).not.toBeNull();
+      if (!result.manager) {
+        throw new Error("manager missing");
+      }
+      manager = result.manager;
+      await manager.sync({ force: true });
+
+      const status = manager.status();
+      expect(status.chunks).toBeGreaterThan(0);
+      expect(batchCreates).toBe(2);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     } finally {
       restoreTimeouts();
     }
   });
 
   it("tracks batch failures, resets on success, and disables after repeated failures", async () => {
+<<<<<<< HEAD
     const restoreTimeouts = useFastShortTimeouts();
     const memoryFile = path.join(memoryDir, "2026-01-09.md");
     await fs.writeFile(memoryFile, ["flaky", "batch"].join("\n\n"));
@@ -242,8 +306,13 @@ describe("memory indexing with OpenAI batches", () => {
       await fs.utimes(memoryFile, date, date);
     };
     await touch();
+=======
+    const content = ["flaky", "batch"].join("\n\n");
+    await fs.writeFile(path.join(workspaceDir, "memory", "2026-01-09.md"), content);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     let mode: "fail" | "ok" = "fail";
+<<<<<<< HEAD
     const { fetchMock } = createOpenAIBatchFetchMock({
       onCreateBatch: () =>
         mode === "fail"
@@ -252,6 +321,69 @@ describe("memory indexing with OpenAI batches", () => {
               status: 200,
               headers: { "Content-Type": "application/json" },
             }),
+=======
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.endsWith("/files")) {
+        const body = init?.body;
+        if (!(body instanceof FormData)) {
+          throw new Error("expected FormData upload");
+        }
+        for (const [key, value] of body.entries()) {
+          if (key !== "file") {
+            continue;
+          }
+          if (typeof value === "string") {
+            uploadedRequests = value
+              .split("\n")
+              .filter(Boolean)
+              .map((line) => JSON.parse(line) as { custom_id?: string });
+          } else {
+            const text = await value.text();
+            uploadedRequests = text
+              .split("\n")
+              .filter(Boolean)
+              .map((line) => JSON.parse(line) as { custom_id?: string });
+          }
+        }
+        return new Response(JSON.stringify({ id: "file_1" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.endsWith("/batches")) {
+        if (mode === "fail") {
+          return new Response("batch failed", { status: 400 });
+        }
+        return new Response(JSON.stringify({ id: "batch_1", status: "in_progress" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.endsWith("/batches/batch_1")) {
+        return new Response(
+          JSON.stringify({ id: "batch_1", status: "completed", output_file_id: "file_out" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.endsWith("/files/file_out/content")) {
+        const lines = uploadedRequests.map((request, index) =>
+          JSON.stringify({
+            custom_id: request.custom_id,
+            response: {
+              status_code: 200,
+              body: { data: [{ embedding: [index + 1, 0, 0], index: 0 }] },
+            },
+          }),
+        );
+        return new Response(lines.join("\n"), {
+          status: 200,
+          headers: { "Content-Type": "application/jsonl" },
+        });
+      }
+      throw new Error(`unexpected fetch ${url}`);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
 
     vi.stubGlobal("fetch", fetchMock);
@@ -268,6 +400,7 @@ describe("memory indexing with OpenAI batches", () => {
       expect(status.batch?.enabled).toBe(true);
       expect(status.batch?.failures).toBe(1);
 
+<<<<<<< HEAD
       // Success should reset failure count.
       embedBatch.mockClear();
       mode = "ok";
@@ -317,5 +450,57 @@ describe("memory indexing with OpenAI batches", () => {
     } finally {
       restoreTimeouts();
     }
+=======
+    // First failure: fallback to regular embeddings and increment failure count.
+    await manager.sync({ force: true });
+    expect(embedBatch).toHaveBeenCalled();
+    let status = manager.status();
+    expect(status.batch?.enabled).toBe(true);
+    expect(status.batch?.failures).toBe(1);
+
+    // Success should reset failure count.
+    embedBatch.mockClear();
+    mode = "ok";
+    await fs.writeFile(
+      path.join(workspaceDir, "memory", "2026-01-09.md"),
+      ["flaky", "batch", "recovery"].join("\n\n"),
+    );
+    await manager.sync({ force: true });
+    status = manager.status();
+    expect(status.batch?.enabled).toBe(true);
+    expect(status.batch?.failures).toBe(0);
+    expect(embedBatch).not.toHaveBeenCalled();
+
+    // Two more failures after reset should disable remote batching.
+    mode = "fail";
+    await fs.writeFile(
+      path.join(workspaceDir, "memory", "2026-01-09.md"),
+      ["flaky", "batch", "fail-a"].join("\n\n"),
+    );
+    await manager.sync({ force: true });
+    status = manager.status();
+    expect(status.batch?.enabled).toBe(true);
+    expect(status.batch?.failures).toBe(1);
+
+    await fs.writeFile(
+      path.join(workspaceDir, "memory", "2026-01-09.md"),
+      ["flaky", "batch", "fail-b"].join("\n\n"),
+    );
+    await manager.sync({ force: true });
+    status = manager.status();
+    expect(status.batch?.enabled).toBe(false);
+    expect(status.batch?.failures).toBeGreaterThanOrEqual(2);
+
+    // Once disabled, batch endpoints are skipped and fallback embeddings run directly.
+    const fetchCalls = fetchMock.mock.calls.length;
+    embedBatch.mockClear();
+    await fs.writeFile(
+      path.join(workspaceDir, "memory", "2026-01-09.md"),
+      ["flaky", "batch", "fallback"].join("\n\n"),
+    );
+    await manager.sync({ force: true });
+    expect(fetchMock.mock.calls.length).toBe(fetchCalls);
+    expect(embedBatch).toHaveBeenCalled();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

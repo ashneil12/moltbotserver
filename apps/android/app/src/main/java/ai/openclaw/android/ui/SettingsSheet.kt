@@ -77,6 +77,18 @@ fun SettingsSheet(viewModel: MainViewModel) {
   val locationMode by viewModel.locationMode.collectAsState()
   val locationPreciseEnabled by viewModel.locationPreciseEnabled.collectAsState()
   val preventSleep by viewModel.preventSleep.collectAsState()
+<<<<<<< HEAD
+=======
+  val wakeWords by viewModel.wakeWords.collectAsState()
+  val voiceWakeMode by viewModel.voiceWakeMode.collectAsState()
+  val voiceWakeStatusText by viewModel.voiceWakeStatusText.collectAsState()
+  val isConnected by viewModel.isConnected.collectAsState()
+  val manualEnabled by viewModel.manualEnabled.collectAsState()
+  val manualHost by viewModel.manualHost.collectAsState()
+  val manualPort by viewModel.manualPort.collectAsState()
+  val manualTls by viewModel.manualTls.collectAsState()
+  val gatewayToken by viewModel.gatewayToken.collectAsState()
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   val canvasDebugStatusEnabled by viewModel.canvasDebugStatusEnabled.collectAsState()
 
   val listState = rememberLazyListState()
@@ -315,6 +327,7 @@ fun SettingsSheet(viewModel: MainViewModel) {
         )
       }
       item {
+<<<<<<< HEAD
         ListItem(
           modifier = settingsRowModifier(),
           colors = listItemColors,
@@ -323,6 +336,108 @@ fun SettingsSheet(viewModel: MainViewModel) {
             Text(
               if (micPermissionGranted) {
                 "Granted. Use the Voice tab mic button to capture transcript."
+=======
+        Text(
+          gatewayDiscoveryFooterText,
+          modifier = Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          style = MaterialTheme.typography.labelMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    }
+
+    item { HorizontalDivider() }
+
+    item {
+      ListItem(
+        headlineContent = { Text("Advanced") },
+        supportingContent = { Text("Manual gateway connection") },
+        trailingContent = {
+          Icon(
+            imageVector = if (advancedExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = if (advancedExpanded) "Collapse" else "Expand",
+          )
+        },
+        modifier =
+          Modifier.clickable {
+            setAdvancedExpanded(!advancedExpanded)
+          },
+      )
+    }
+    item {
+      AnimatedVisibility(visible = advancedExpanded) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+          ListItem(
+            headlineContent = { Text("Use Manual Gateway") },
+            supportingContent = { Text("Use this when discovery is blocked.") },
+            trailingContent = { Switch(checked = manualEnabled, onCheckedChange = viewModel::setManualEnabled) },
+          )
+
+          OutlinedTextField(
+            value = manualHost,
+            onValueChange = viewModel::setManualHost,
+            label = { Text("Host") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = manualEnabled,
+          )
+          OutlinedTextField(
+            value = manualPort.toString(),
+            onValueChange = { v -> viewModel.setManualPort(v.toIntOrNull() ?: 0) },
+            label = { Text("Port") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = manualEnabled,
+          )
+          OutlinedTextField(
+            value = gatewayToken,
+            onValueChange = viewModel::setGatewayToken,
+            label = { Text("Gateway Token") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = manualEnabled,
+            singleLine = true,
+          )
+          ListItem(
+            headlineContent = { Text("Require TLS") },
+            supportingContent = { Text("Pin the gateway certificate on first connect.") },
+            trailingContent = { Switch(checked = manualTls, onCheckedChange = viewModel::setManualTls, enabled = manualEnabled) },
+            modifier = Modifier.alpha(if (manualEnabled) 1f else 0.5f),
+          )
+
+          val hostOk = manualHost.trim().isNotEmpty()
+          val portOk = manualPort in 1..65535
+          Button(
+            onClick = {
+              NodeForegroundService.start(context)
+              viewModel.connectManual()
+            },
+            enabled = manualEnabled && hostOk && portOk,
+          ) {
+            Text("Connect (Manual)")
+          }
+        }
+      }
+    }
+
+    item { HorizontalDivider() }
+
+    // Voice
+    item { Text("Voice", style = MaterialTheme.typography.titleSmall) }
+    item {
+      val enabled = voiceWakeMode != VoiceWakeMode.Off
+      ListItem(
+        headlineContent = { Text("Voice Wake") },
+        supportingContent = { Text(voiceWakeStatusText) },
+        trailingContent = {
+          Switch(
+            checked = enabled,
+            onCheckedChange = { on ->
+              if (on) {
+                val micOk =
+                  ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                    PackageManager.PERMISSION_GRANTED
+                if (!micOk) audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                viewModel.setVoiceWakeMode(VoiceWakeMode.Foreground)
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
               } else {
                 "Required for Voice tab transcription."
               },

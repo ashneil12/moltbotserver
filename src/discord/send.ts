@@ -41,10 +41,15 @@ export {
   sendMessageDiscord,
   sendPollDiscord,
   sendStickerDiscord,
+<<<<<<< HEAD
   sendWebhookMessageDiscord,
   sendVoiceMessageDiscord,
 } from "./send.outbound.js";
 export { sendDiscordComponentMessage } from "./send.components.js";
+=======
+  sendVoiceMessageDiscord,
+} from "./send.outbound.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export {
   fetchChannelPermissionsDiscord,
   hasAllGuildPermissionsDiscord,

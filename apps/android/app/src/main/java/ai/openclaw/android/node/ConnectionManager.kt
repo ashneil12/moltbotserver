@@ -26,6 +26,7 @@ class ConnectionManager(
   private val hasRecordAudioPermission: () -> Boolean,
   private val manualTls: () -> Boolean,
 ) {
+<<<<<<< HEAD
   companion object {
     internal fun resolveTlsParamsForEndpoint(
       endpoint: GatewayEndpoint,
@@ -79,6 +80,8 @@ class ConnectionManager(
     }
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   fun buildInvokeCommands(): List<String> =
     buildList {
       add(OpenClawCanvasCommand.Present.rawValue)
@@ -176,13 +179,52 @@ class ConnectionManager(
       caps = emptyList(),
       commands = emptyList(),
       permissions = emptyMap(),
+<<<<<<< HEAD
       client = buildClientInfo(clientId = "openclaw-android", clientMode = "ui"),
+=======
+      client = buildClientInfo(clientId = "openclaw-control-ui", clientMode = "ui"),
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       userAgent = buildUserAgent(),
     )
   }
 
   fun resolveTlsParams(endpoint: GatewayEndpoint): GatewayTlsParams? {
     val stored = prefs.loadGatewayTlsFingerprint(endpoint.stableId)
+<<<<<<< HEAD
     return resolveTlsParamsForEndpoint(endpoint, storedFingerprint = stored, manualTlsEnabled = manualTls())
+=======
+    val hinted = endpoint.tlsEnabled || !endpoint.tlsFingerprintSha256.isNullOrBlank()
+    val manual = endpoint.stableId.startsWith("manual|")
+
+    if (manual) {
+      if (!manualTls()) return null
+      return GatewayTlsParams(
+        required = true,
+        expectedFingerprint = endpoint.tlsFingerprintSha256 ?: stored,
+        allowTOFU = stored == null,
+        stableId = endpoint.stableId,
+      )
+    }
+
+    if (hinted) {
+      return GatewayTlsParams(
+        required = true,
+        expectedFingerprint = endpoint.tlsFingerprintSha256 ?: stored,
+        allowTOFU = stored == null,
+        stableId = endpoint.stableId,
+      )
+    }
+
+    if (!stored.isNullOrBlank()) {
+      return GatewayTlsParams(
+        required = true,
+        expectedFingerprint = stored,
+        allowTOFU = false,
+        stableId = endpoint.stableId,
+      )
+    }
+
+    return null
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 }

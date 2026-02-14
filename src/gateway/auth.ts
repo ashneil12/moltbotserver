@@ -11,14 +11,19 @@ import {
   type AuthRateLimiter,
   type RateLimitCheckResult,
 } from "./auth-rate-limit.js";
+<<<<<<< HEAD
 import { resolveGatewayCredentialsFromValues } from "./credentials.js";
 import {
   isLocalishHost,
+=======
+import {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   isLoopbackAddress,
   isTrustedProxyAddress,
   resolveClientIp,
 } from "./net.js";
 
+<<<<<<< HEAD
 export type ResolvedGatewayAuthMode = "none" | "token" | "password" | "trusted-proxy";
 export type ResolvedGatewayAuthModeSource =
   | "override"
@@ -26,6 +31,9 @@ export type ResolvedGatewayAuthModeSource =
   | "password"
   | "token"
   | "default";
+=======
+export type ResolvedGatewayAuthMode = "token" | "password";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type ResolvedGatewayAuth = {
   mode: ResolvedGatewayAuthMode;
@@ -321,6 +329,7 @@ export function assertGatewayAuthConfigured(auth: ResolvedGatewayAuth): void {
 function authorizeTrustedProxy(params: {
   req?: IncomingMessage;
   trustedProxies?: string[];
+<<<<<<< HEAD
   trustedProxyConfig: GatewayTrustedProxyConfig;
 }): { user: string } | { reason: string } {
   const { req, trustedProxies, trustedProxyConfig } = params;
@@ -364,6 +373,16 @@ function shouldAllowTailscaleHeaderAuth(authSurface: GatewayAuthSurface): boolea
 export async function authorizeGatewayConnect(
   params: AuthorizeGatewayConnectParams,
 ): Promise<GatewayAuthResult> {
+=======
+  tailscaleWhois?: TailscaleWhoisLookup;
+  /** Optional rate limiter instance; when provided, failed attempts are tracked per IP. */
+  rateLimiter?: AuthRateLimiter;
+  /** Client IP used for rate-limit tracking. Falls back to proxy-aware request IP resolution. */
+  clientIp?: string;
+  /** Optional limiter scope; defaults to shared-secret auth scope. */
+  rateLimitScope?: string;
+}): Promise<GatewayAuthResult> {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const { auth, connectAuth, req, trustedProxies } = params;
   const tailscaleWhois = params.tailscaleWhois ?? readTailscaleWhoisIdentity;
   const authSurface = params.authSurface ?? "http";
@@ -374,6 +393,7 @@ export async function authorizeGatewayConnect(
     params.allowRealIpFallback === true,
   );
 
+<<<<<<< HEAD
   if (auth.mode === "trusted-proxy") {
     if (!auth.trustedProxy) {
       return { ok: false, reason: "trusted_proxy_config_missing" };
@@ -403,6 +423,12 @@ export async function authorizeGatewayConnect(
     params.clientIp ??
     resolveRequestClientIp(req, trustedProxies, params.allowRealIpFallback === true) ??
     req?.socket?.remoteAddress;
+=======
+  // --- Rate-limit gate ---
+  const limiter = params.rateLimiter;
+  const ip =
+    params.clientIp ?? resolveRequestClientIp(req, trustedProxies) ?? req?.socket?.remoteAddress;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const rateLimitScope = params.rateLimitScope ?? AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET;
   if (limiter) {
     const rlCheck: RateLimitCheckResult = limiter.check(ip, rateLimitScope);
@@ -416,12 +442,20 @@ export async function authorizeGatewayConnect(
     }
   }
 
+<<<<<<< HEAD
   if (allowTailscaleHeaderAuth && auth.allowTailscale && !localDirect) {
+=======
+  if (auth.allowTailscale && !localDirect) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const tailscaleCheck = await resolveVerifiedTailscaleUser({
       req,
       tailscaleWhois,
     });
     if (tailscaleCheck.ok) {
+<<<<<<< HEAD
+=======
+      // Successful auth – reset rate-limit counter for this IP.
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       limiter?.reset(ip, rateLimitScope);
       return {
         ok: true,

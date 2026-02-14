@@ -1,5 +1,6 @@
 import path from "node:path";
 import { z } from "zod";
+<<<<<<< HEAD
 import { InstallRecordShape } from "./zod-schema.installs.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 
@@ -30,6 +31,9 @@ function isSafeRelativeModulePath(raw: string): boolean {
 const SafeRelativeModulePathSchema = z
   .string()
   .refine(isSafeRelativeModulePath, "module must be a safe relative path (no absolute paths)");
+=======
+import { sensitive } from "./zod-schema.sensitive.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export const HookMappingSchema = z
   .object({

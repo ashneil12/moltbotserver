@@ -1,8 +1,33 @@
+<<<<<<< HEAD
 import type { PluginRuntime, RuntimeEnv } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+=======
+import type { PluginRuntime } from "openclaw/plugin-sdk";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CoreConfig } from "./types.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { matrixPlugin } from "./channel.js";
 import { setMatrixRuntime } from "./runtime.js";
 import type { CoreConfig } from "./types.js";
+
+vi.mock("@vector-im/matrix-bot-sdk", () => ({
+  ConsoleLogger: class {
+    trace = vi.fn();
+    debug = vi.fn();
+    info = vi.fn();
+    warn = vi.fn();
+    error = vi.fn();
+  },
+  MatrixClient: class {},
+  LogService: {
+    setLogger: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+  SimpleFsStorageProvider: class {},
+  RustSdkCryptoStorageProvider: class {},
+}));
 
 vi.mock("@vector-im/matrix-bot-sdk", () => ({
   ConsoleLogger: class {
@@ -140,11 +165,19 @@ describe("matrix directory", () => {
       },
     } as unknown as CoreConfig;
 
+<<<<<<< HEAD
     expect(matrixPlugin.groups!.resolveRequireMention!({ cfg, groupId: "!room:example.org" })).toBe(
       true,
     );
     expect(
       matrixPlugin.groups!.resolveRequireMention!({
+=======
+    expect(matrixPlugin.groups.resolveRequireMention({ cfg, groupId: "!room:example.org" })).toBe(
+      true,
+    );
+    expect(
+      matrixPlugin.groups.resolveRequireMention({
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         cfg,
         accountId: "assistant",
         groupId: "!room:example.org",

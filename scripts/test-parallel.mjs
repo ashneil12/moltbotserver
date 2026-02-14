@@ -19,6 +19,7 @@ const unitIsolatedFilesRaw = [
   "src/auto-reply/tool-meta.test.ts",
   "src/auto-reply/envelope.test.ts",
   "src/commands/auth-choice.test.ts",
+<<<<<<< HEAD
   // Process supervision + docker setup suites are stable but setup-heavy.
   "src/process/supervisor/supervisor.test.ts",
   "src/docker-setup.test.ts",
@@ -38,6 +39,8 @@ const unitIsolatedFilesRaw = [
   // CLI smoke/agent flows are stable but setup-heavy.
   "src/cli/program.smoke.test.ts",
   "src/commands/agent.test.ts",
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "src/media/store.test.ts",
   "src/media/store.header-ext.test.ts",
   "src/web/media.test.ts",
@@ -88,6 +91,7 @@ const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 const isMacOS = process.platform === "darwin" || process.env.RUNNER_OS === "macOS";
 const isWindows = process.platform === "win32" || process.env.RUNNER_OS === "Windows";
 const isWindowsCi = isCI && isWindows;
+<<<<<<< HEAD
 const hostCpuCount = os.cpus().length;
 const hostMemoryGiB = Math.floor(os.totalmem() / 1024 ** 3);
 // Keep aggressive local defaults for high-memory workstations (Mac Studio class).
@@ -97,11 +101,20 @@ const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "", 10)
 // vmForks is a big win for transform/import heavy suites, but Node 24 had
 // regressions with Vitest's vm runtime in this repo, and low-memory local hosts
 // are more likely to hit per-worker V8 heap ceilings. Keep it opt-out via
+=======
+const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "", 10);
+// vmForks is a big win for transform/import heavy suites, but Node 24 had
+// regressions with Vitest's vm runtime in this repo. Keep it opt-out via
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 // OPENCLAW_TEST_VM_FORKS=0, and let users force-enable with =1.
 const supportsVmForks = Number.isFinite(nodeMajor) ? nodeMajor !== 24 : true;
 const useVmForks =
   process.env.OPENCLAW_TEST_VM_FORKS === "1" ||
+<<<<<<< HEAD
   (process.env.OPENCLAW_TEST_VM_FORKS !== "0" && !isWindows && supportsVmForks && !lowMemLocalHost);
+=======
+  (process.env.OPENCLAW_TEST_VM_FORKS !== "0" && !isWindows && supportsVmForks);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const disableIsolation = process.env.OPENCLAW_TEST_NO_ISOLATE === "1";
 const runs = [
   ...(useVmForks

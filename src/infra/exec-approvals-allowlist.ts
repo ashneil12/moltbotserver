@@ -1,16 +1,26 @@
+<<<<<<< HEAD
 import path from "node:path";
+=======
+import fs from "node:fs";
+import path from "node:path";
+import type { ExecAllowlistEntry } from "./exec-approvals.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   DEFAULT_SAFE_BINS,
   analyzeShellCommand,
   isWindowsPlatform,
   matchAllowlist,
   resolveAllowlistCandidatePath,
+<<<<<<< HEAD
   resolveCommandResolutionFromArgv,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   splitCommandChain,
   type ExecCommandAnalysis,
   type CommandResolution,
   type ExecCommandSegment,
 } from "./exec-approvals-analysis.js";
+<<<<<<< HEAD
 import type { ExecAllowlistEntry } from "./exec-approvals.js";
 import {
   SAFE_BIN_PROFILES,
@@ -28,6 +38,32 @@ import {
 
 function hasShellLineContinuation(command: string): boolean {
   return /\\(?:\r\n|\n|\r)/.test(command);
+=======
+
+function isPathLikeToken(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+  if (trimmed === "-") {
+    return false;
+  }
+  if (trimmed.startsWith("./") || trimmed.startsWith("../") || trimmed.startsWith("~")) {
+    return true;
+  }
+  if (trimmed.startsWith("/")) {
+    return true;
+  }
+  return /^[A-Za-z]:[\\/]/.test(trimmed);
+}
+
+function defaultFileExists(filePath: string): boolean {
+  try {
+    return fs.existsSync(filePath);
+  } catch {
+    return false;
+  }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function normalizeSafeBins(entries?: string[]): Set<string> {
@@ -51,6 +87,7 @@ export function isSafeBinUsage(params: {
   argv: string[];
   resolution: CommandResolution | null;
   safeBins: Set<string>;
+<<<<<<< HEAD
   platform?: string | null;
   trustedSafeBinDirs?: ReadonlySet<string>;
   safeBinProfiles?: Readonly<Record<string, SafeBinProfile>>;
@@ -61,6 +98,11 @@ export function isSafeBinUsage(params: {
   if (isWindowsPlatform(params.platform ?? process.platform)) {
     return false;
   }
+=======
+  cwd?: string;
+  fileExists?: (filePath: string) => boolean;
+}): boolean {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (params.safeBins.size === 0) {
     return false;
   }
@@ -69,13 +111,20 @@ export function isSafeBinUsage(params: {
   if (!execName) {
     return false;
   }
+<<<<<<< HEAD
   const matchesSafeBin = params.safeBins.has(execName);
+=======
+  const matchesSafeBin =
+    params.safeBins.has(execName) ||
+    (process.platform === "win32" && params.safeBins.has(path.parse(execName).name));
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (!matchesSafeBin) {
     return false;
   }
   if (!resolution?.resolvedPath) {
     return false;
   }
+<<<<<<< HEAD
   const isTrustedPath = params.isTrustedSafeBinPathFn ?? isTrustedSafeBinPath;
   if (
     !isTrustedPath({
@@ -96,11 +145,43 @@ export function isSafeBinUsage(params: {
 
 function isPathScopedExecutableToken(token: string): boolean {
   return token.includes("/") || token.includes("\\");
+=======
+  const cwd = params.cwd ?? process.cwd();
+  const exists = params.fileExists ?? defaultFileExists;
+  const argv = params.argv.slice(1);
+  for (let i = 0; i < argv.length; i += 1) {
+    const token = argv[i];
+    if (!token) {
+      continue;
+    }
+    if (token === "-") {
+      continue;
+    }
+    if (token.startsWith("-")) {
+      const eqIndex = token.indexOf("=");
+      if (eqIndex > 0) {
+        const value = token.slice(eqIndex + 1);
+        if (value && (isPathLikeToken(value) || exists(path.resolve(cwd, value)))) {
+          return false;
+        }
+      }
+      continue;
+    }
+    if (isPathLikeToken(token)) {
+      return false;
+    }
+    if (exists(path.resolve(cwd, token))) {
+      return false;
+    }
+  }
+  return true;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export type ExecAllowlistEvaluation = {
   allowlistSatisfied: boolean;
   allowlistMatches: ExecAllowlistEntry[];
+<<<<<<< HEAD
   segmentSatisfiedBy: ExecSegmentSatisfiedBy[];
 };
 
@@ -171,11 +252,16 @@ function isSkillAutoAllowedSegment(params: {
   return Boolean(params.skillBinTrust.get(executableName)?.has(resolvedPath));
 }
 
+=======
+};
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function evaluateSegments(
   segments: ExecCommandSegment[],
   params: {
     allowlist: ExecAllowlistEntry[];
     safeBins: Set<string>;
+<<<<<<< HEAD
     safeBinProfiles?: Readonly<Record<string, SafeBinProfile>>;
     cwd?: string;
     platform?: string | null;
@@ -202,6 +288,17 @@ function evaluateSegments(
       segment.resolution?.effectiveArgv && segment.resolution.effectiveArgv.length > 0
         ? segment.resolution.effectiveArgv
         : segment.argv;
+=======
+    cwd?: string;
+    skillBins?: Set<string>;
+    autoAllowSkills?: boolean;
+  },
+): { satisfied: boolean; matches: ExecAllowlistEntry[] } {
+  const matches: ExecAllowlistEntry[] = [];
+  const allowSkills = params.autoAllowSkills === true && (params.skillBins?.size ?? 0) > 0;
+
+  const satisfied = segments.every((segment) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const candidatePath = resolveAllowlistCandidatePath(segment.resolution, params.cwd);
     const candidateResolution =
       candidatePath && segment.resolution
@@ -212,6 +309,7 @@ function evaluateSegments(
       matches.push(match);
     }
     const safe = isSafeBinUsage({
+<<<<<<< HEAD
       argv: effectiveArgv,
       resolution: segment.resolution,
       safeBins: params.safeBins,
@@ -243,12 +341,28 @@ function resolveAnalysisSegmentGroups(analysis: ExecCommandAnalysis): ExecComman
     return analysis.chains;
   }
   return [analysis.segments];
+=======
+      argv: segment.argv,
+      resolution: segment.resolution,
+      safeBins: params.safeBins,
+      cwd: params.cwd,
+    });
+    const skillAllow =
+      allowSkills && segment.resolution?.executableName
+        ? params.skillBins?.has(segment.resolution.executableName)
+        : false;
+    return Boolean(match || safe || skillAllow);
+  });
+
+  return { satisfied, matches };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function evaluateExecAllowlist(params: {
   analysis: ExecCommandAnalysis;
   allowlist: ExecAllowlistEntry[];
   safeBins: Set<string>;
+<<<<<<< HEAD
   safeBinProfiles?: Readonly<Record<string, SafeBinProfile>>;
   cwd?: string;
   platform?: string | null;
@@ -288,6 +402,44 @@ export function evaluateExecAllowlist(params: {
     segmentSatisfiedBy.push(...result.segmentSatisfiedBy);
   }
   return { allowlistSatisfied: true, allowlistMatches, segmentSatisfiedBy };
+=======
+  cwd?: string;
+  skillBins?: Set<string>;
+  autoAllowSkills?: boolean;
+}): ExecAllowlistEvaluation {
+  const allowlistMatches: ExecAllowlistEntry[] = [];
+  if (!params.analysis.ok || params.analysis.segments.length === 0) {
+    return { allowlistSatisfied: false, allowlistMatches };
+  }
+
+  // If the analysis contains chains, evaluate each chain part separately
+  if (params.analysis.chains) {
+    for (const chainSegments of params.analysis.chains) {
+      const result = evaluateSegments(chainSegments, {
+        allowlist: params.allowlist,
+        safeBins: params.safeBins,
+        cwd: params.cwd,
+        skillBins: params.skillBins,
+        autoAllowSkills: params.autoAllowSkills,
+      });
+      if (!result.satisfied) {
+        return { allowlistSatisfied: false, allowlistMatches: [] };
+      }
+      allowlistMatches.push(...result.matches);
+    }
+    return { allowlistSatisfied: true, allowlistMatches };
+  }
+
+  // No chains, evaluate all segments together
+  const result = evaluateSegments(params.analysis.segments, {
+    allowlist: params.allowlist,
+    safeBins: params.safeBins,
+    cwd: params.cwd,
+    skillBins: params.skillBins,
+    autoAllowSkills: params.autoAllowSkills,
+  });
+  return { allowlistSatisfied: result.satisfied, allowlistMatches: result.matches };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export type ExecAllowlistAnalysis = {
@@ -295,6 +447,7 @@ export type ExecAllowlistAnalysis = {
   allowlistSatisfied: boolean;
   allowlistMatches: ExecAllowlistEntry[];
   segments: ExecCommandSegment[];
+<<<<<<< HEAD
   segmentSatisfiedBy: ExecSegmentSatisfiedBy[];
 };
 
@@ -441,6 +594,10 @@ export function resolveAllowAlwaysPatterns(params: {
   return Array.from(patterns);
 }
 
+=======
+};
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 /**
  * Evaluates allowlist for shell commands (including &&, ||, ;) and returns analysis metadata.
  */
@@ -448,6 +605,7 @@ export function evaluateShellAllowlist(params: {
   command: string;
   allowlist: ExecAllowlistEntry[];
   safeBins: Set<string>;
+<<<<<<< HEAD
   safeBinProfiles?: Readonly<Record<string, SafeBinProfile>>;
   cwd?: string;
   env?: NodeJS.ProcessEnv;
@@ -470,6 +628,14 @@ export function evaluateShellAllowlist(params: {
     return analysisFailure();
   }
 
+=======
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  skillBins?: Set<string>;
+  autoAllowSkills?: boolean;
+  platform?: string | null;
+}): ExecAllowlistAnalysis {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const chainParts = isWindowsPlatform(params.platform) ? null : splitCommandChain(params.command);
   if (!chainParts) {
     const analysis = analyzeShellCommand({
@@ -479,16 +645,29 @@ export function evaluateShellAllowlist(params: {
       platform: params.platform,
     });
     if (!analysis.ok) {
+<<<<<<< HEAD
       return analysisFailure();
+=======
+      return {
+        analysisOk: false,
+        allowlistSatisfied: false,
+        allowlistMatches: [],
+        segments: [],
+      };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     const evaluation = evaluateExecAllowlist({
       analysis,
       allowlist: params.allowlist,
       safeBins: params.safeBins,
+<<<<<<< HEAD
       safeBinProfiles: params.safeBinProfiles,
       cwd: params.cwd,
       platform: params.platform,
       trustedSafeBinDirs: params.trustedSafeBinDirs,
+=======
+      cwd: params.cwd,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       skillBins: params.skillBins,
       autoAllowSkills: params.autoAllowSkills,
     });
@@ -497,13 +676,19 @@ export function evaluateShellAllowlist(params: {
       allowlistSatisfied: evaluation.allowlistSatisfied,
       allowlistMatches: evaluation.allowlistMatches,
       segments: analysis.segments,
+<<<<<<< HEAD
       segmentSatisfiedBy: evaluation.segmentSatisfiedBy,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     };
   }
 
   const allowlistMatches: ExecAllowlistEntry[] = [];
   const segments: ExecCommandSegment[] = [];
+<<<<<<< HEAD
   const segmentSatisfiedBy: ExecSegmentSatisfiedBy[] = [];
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   for (const part of chainParts) {
     const analysis = analyzeShellCommand({
@@ -513,7 +698,16 @@ export function evaluateShellAllowlist(params: {
       platform: params.platform,
     });
     if (!analysis.ok) {
+<<<<<<< HEAD
       return analysisFailure();
+=======
+      return {
+        analysisOk: false,
+        allowlistSatisfied: false,
+        allowlistMatches: [],
+        segments: [],
+      };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
 
     segments.push(...analysis.segments);
@@ -521,22 +715,32 @@ export function evaluateShellAllowlist(params: {
       analysis,
       allowlist: params.allowlist,
       safeBins: params.safeBins,
+<<<<<<< HEAD
       safeBinProfiles: params.safeBinProfiles,
       cwd: params.cwd,
       platform: params.platform,
       trustedSafeBinDirs: params.trustedSafeBinDirs,
+=======
+      cwd: params.cwd,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       skillBins: params.skillBins,
       autoAllowSkills: params.autoAllowSkills,
     });
     allowlistMatches.push(...evaluation.allowlistMatches);
+<<<<<<< HEAD
     segmentSatisfiedBy.push(...evaluation.segmentSatisfiedBy);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (!evaluation.allowlistSatisfied) {
       return {
         analysisOk: true,
         allowlistSatisfied: false,
         allowlistMatches,
         segments,
+<<<<<<< HEAD
         segmentSatisfiedBy,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       };
     }
   }
@@ -546,6 +750,9 @@ export function evaluateShellAllowlist(params: {
     allowlistSatisfied: true,
     allowlistMatches,
     segments,
+<<<<<<< HEAD
     segmentSatisfiedBy,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   };
 }

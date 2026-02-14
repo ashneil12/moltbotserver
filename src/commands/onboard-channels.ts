@@ -197,7 +197,11 @@ async function noteChannelPrimer(
       "Multi-user DMs: run: " +
         formatCliCommand('openclaw config set session.dmScope "per-channel-peer"') +
         ' (or "per-account-channel-peer" for multi-account channels) to isolate sessions.',
+<<<<<<< HEAD
       `Docs: ${formatDocsLink("/channels/pairing", "channels/pairing")}`,
+=======
+      `Docs: ${formatDocsLink("/start/pairing", "start/pairing")}`,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       "",
       ...channelLines,
     ].join("\n"),
@@ -253,7 +257,11 @@ async function maybeConfigureDmPolicies(params: {
         "Multi-user DMs: run: " +
           formatCliCommand('openclaw config set session.dmScope "per-channel-peer"') +
           ' (or "per-account-channel-peer" for multi-account channels) to isolate sessions.',
+<<<<<<< HEAD
         `Docs: ${formatDocsLink("/channels/pairing", "channels/pairing")}`,
+=======
+        `Docs: ${formatDocsLink("/start/pairing", "start/pairing")}`,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       ].join("\n"),
       `${policy.label} DM access`,
     );

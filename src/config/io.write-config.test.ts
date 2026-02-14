@@ -1,16 +1,60 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+<<<<<<< HEAD
 import { describe, expect, it, vi } from "vitest";
 import { withTempHome } from "./home-env.test-harness.js";
 import { createConfigIO } from "./io.js";
 import type { OpenClawConfig } from "./types.js";
 
 describe("config io write", () => {
+=======
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { createConfigIO } from "./io.js";
+
+type HomeEnvSnapshot = {
+  home: string | undefined;
+  userProfile: string | undefined;
+  homeDrive: string | undefined;
+  homePath: string | undefined;
+  stateDir: string | undefined;
+};
+
+function snapshotHomeEnv(): HomeEnvSnapshot {
+  return {
+    home: process.env.HOME,
+    userProfile: process.env.USERPROFILE,
+    homeDrive: process.env.HOMEDRIVE,
+    homePath: process.env.HOMEPATH,
+    stateDir: process.env.OPENCLAW_STATE_DIR,
+  };
+}
+
+function restoreHomeEnv(snapshot: HomeEnvSnapshot) {
+  const restoreKey = (key: string, value: string | undefined) => {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  };
+  restoreKey("HOME", snapshot.home);
+  restoreKey("USERPROFILE", snapshot.userProfile);
+  restoreKey("HOMEDRIVE", snapshot.homeDrive);
+  restoreKey("HOMEPATH", snapshot.homePath);
+  restoreKey("OPENCLAW_STATE_DIR", snapshot.stateDir);
+}
+
+describe("config io write", () => {
+  let fixtureRoot = "";
+  let fixtureCount = 0;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const silentLogger = {
     warn: () => {},
     error: () => {},
   };
 
+<<<<<<< HEAD
   async function writeConfigAndCreateIo(params: {
     home: string;
     initialConfig: Record<string, unknown>;
@@ -114,6 +158,54 @@ describe("config io write", () => {
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
         home,
         initialConfig: { gateway: { port: 18789 } },
+=======
+  beforeAll(async () => {
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-io-"));
+  });
+
+  afterAll(async () => {
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
+  });
+
+  const withTempHome = async <T>(fn: (home: string) => Promise<T>): Promise<T> => {
+    const home = path.join(fixtureRoot, `home-${fixtureCount++}`);
+    await fs.mkdir(path.join(home, ".openclaw"), { recursive: true });
+
+    const snapshot = snapshotHomeEnv();
+    process.env.HOME = home;
+    process.env.USERPROFILE = home;
+    process.env.OPENCLAW_STATE_DIR = path.join(home, ".openclaw");
+
+    if (process.platform === "win32") {
+      const match = home.match(/^([A-Za-z]:)(.*)$/);
+      if (match) {
+        process.env.HOMEDRIVE = match[1];
+        process.env.HOMEPATH = match[2] || "\\";
+      }
+    }
+
+    try {
+      return await fn(home);
+    } finally {
+      restoreHomeEnv(snapshot);
+    }
+  };
+
+  it("persists caller changes onto resolved config without leaking runtime defaults", async () => {
+    await withTempHome(async (home) => {
+      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ gateway: { port: 18789 } }, null, 2),
+        "utf-8",
+      );
+
+      const io = createConfigIO({
+        env: {} as NodeJS.ProcessEnv,
+        homedir: () => home,
+        logger: silentLogger,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       });
       const persisted = await writeTokenAuthAndReadConfig({ io, snapshot, configPath });
       expect(persisted.gateway).toEqual({
@@ -126,6 +218,7 @@ describe("config io write", () => {
     });
   });
 
+<<<<<<< HEAD
   it('shows actionable guidance for dmPolicy="open" without wildcard allowFrom', async () => {
     await withTempHome("openclaw-config-io-", async (home) => {
       const io = createConfigIO({
@@ -279,15 +372,62 @@ describe("config io write", () => {
                   command: "codex",
                   env: {
                     OPENAI_API_KEY: "${OPENAI_API_KEY}",
+=======
+  it("preserves env var references when writing", async () => {
+    await withTempHome(async (home) => {
+      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+      await fs.writeFile(
+        configPath,
+        JSON.stringify(
+          {
+            agents: {
+              defaults: {
+                cliBackends: {
+                  codex: {
+                    command: "codex",
+                    env: {
+                      OPENAI_API_KEY: "${OPENAI_API_KEY}",
+                    },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
                   },
                 },
               },
             },
+<<<<<<< HEAD
           },
           gateway: { port: 18789 },
         },
       });
       const persisted = (await writeTokenAuthAndReadConfig({ io, snapshot, configPath })) as {
+=======
+            gateway: { port: 18789 },
+          },
+          null,
+          2,
+        ),
+        "utf-8",
+      );
+
+      const io = createConfigIO({
+        env: { OPENAI_API_KEY: "sk-secret" } as NodeJS.ProcessEnv,
+        homedir: () => home,
+        logger: silentLogger,
+      });
+
+      const snapshot = await io.readConfigFileSnapshot();
+      expect(snapshot.valid).toBe(true);
+
+      const next = structuredClone(snapshot.config);
+      next.gateway = {
+        ...next.gateway,
+        auth: { mode: "token" },
+      };
+
+      await io.writeConfigFile(next);
+
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         agents: { defaults: { cliBackends: { codex: { env: { OPENAI_API_KEY: string } } } } };
         gateway: { port: number; auth: { mode: string } };
       };
@@ -301,6 +441,7 @@ describe("config io write", () => {
     });
   });
 
+<<<<<<< HEAD
   it("does not reintroduce Slack/Discord legacy dm.policy defaults when writing", async () => {
     await withTempHome("openclaw-config-io-", async (home) => {
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
@@ -349,6 +490,10 @@ describe("config io write", () => {
 
   it("keeps env refs in arrays when appending entries", async () => {
     await withTempHome("openclaw-config-io-", async (home) => {
+=======
+  it("keeps env refs in arrays when appending entries", async () => {
+    await withTempHome(async (home) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const configPath = path.join(home, ".openclaw", "openclaw.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
@@ -421,6 +566,7 @@ describe("config io write", () => {
   });
 
   it("logs an overwrite audit entry when replacing an existing config file", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-io-", async (home) => {
       const warn = vi.fn();
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
@@ -432,6 +578,28 @@ describe("config io write", () => {
           error: vi.fn() as (msg: string) => void,
         },
       });
+=======
+    await withTempHome(async (home) => {
+      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ gateway: { port: 18789 } }, null, 2),
+        "utf-8",
+      );
+      const warn = vi.fn();
+      const io = createConfigIO({
+        env: {} as NodeJS.ProcessEnv,
+        homedir: () => home,
+        logger: {
+          warn,
+          error: vi.fn(),
+        },
+      });
+
+      const snapshot = await io.readConfigFileSnapshot();
+      expect(snapshot.valid).toBe(true);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const next = structuredClone(snapshot.config);
       next.gateway = {
         ...next.gateway,
@@ -451,7 +619,11 @@ describe("config io write", () => {
   });
 
   it("does not log an overwrite audit entry when creating config for the first time", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-io-", async (home) => {
+=======
+    await withTempHome(async (home) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const warn = vi.fn();
       const io = createConfigIO({
         env: {} as NodeJS.ProcessEnv,
@@ -474,6 +646,7 @@ describe("config io write", () => {
   });
 
   it("appends config write audit JSONL entries with forensic metadata", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-io-", async (home) => {
       const { configPath, lines, last } = await writeGatewayPatchAndReadLastAuditEntry({
         home,
@@ -482,6 +655,41 @@ describe("config io write", () => {
         env: {} as NodeJS.ProcessEnv,
       });
       expect(lines.length).toBeGreaterThan(0);
+=======
+    await withTempHome(async (home) => {
+      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const auditPath = path.join(home, ".openclaw", "logs", "config-audit.jsonl");
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ gateway: { port: 18789 } }, null, 2),
+        "utf-8",
+      );
+
+      const io = createConfigIO({
+        env: {} as NodeJS.ProcessEnv,
+        homedir: () => home,
+        logger: {
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+      });
+
+      const snapshot = await io.readConfigFileSnapshot();
+      expect(snapshot.valid).toBe(true);
+
+      const next = structuredClone(snapshot.config);
+      next.gateway = {
+        ...next.gateway,
+        mode: "local",
+      };
+
+      await io.writeConfigFile(next);
+
+      const lines = (await fs.readFile(auditPath, "utf-8")).trim().split("\n").filter(Boolean);
+      expect(lines.length).toBeGreaterThan(0);
+      const last = JSON.parse(lines.at(-1) ?? "{}") as Record<string, unknown>;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       expect(last.source).toBe("config-io");
       expect(last.event).toBe("config.write");
       expect(last.configPath).toBe(configPath);
@@ -494,17 +702,53 @@ describe("config io write", () => {
   });
 
   it("records gateway watch session markers in config audit entries", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-io-", async (home) => {
       const { last } = await writeGatewayPatchAndReadLastAuditEntry({
         home,
         initialConfig: { gateway: { mode: "local" } },
         gatewayPatch: { bind: "loopback" },
+=======
+    await withTempHome(async (home) => {
+      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const auditPath = path.join(home, ".openclaw", "logs", "config-audit.jsonl");
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ gateway: { mode: "local" } }, null, 2),
+        "utf-8",
+      );
+
+      const io = createConfigIO({
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         env: {
           OPENCLAW_WATCH_MODE: "1",
           OPENCLAW_WATCH_SESSION: "watch-session-1",
           OPENCLAW_WATCH_COMMAND: "gateway --force",
         } as NodeJS.ProcessEnv,
+<<<<<<< HEAD
       });
+=======
+        homedir: () => home,
+        logger: {
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+      });
+
+      const snapshot = await io.readConfigFileSnapshot();
+      expect(snapshot.valid).toBe(true);
+      const next = structuredClone(snapshot.config);
+      next.gateway = {
+        ...next.gateway,
+        bind: "loopback",
+      };
+
+      await io.writeConfigFile(next);
+
+      const lines = (await fs.readFile(auditPath, "utf-8")).trim().split("\n").filter(Boolean);
+      const last = JSON.parse(lines.at(-1) ?? "{}") as Record<string, unknown>;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       expect(last.watchMode).toBe(true);
       expect(last.watchSession).toBe("watch-session-1");
       expect(last.watchCommand).toBe("gateway --force");

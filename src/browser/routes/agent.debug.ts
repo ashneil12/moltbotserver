@@ -10,6 +10,11 @@ import {
 } from "./agent.shared.js";
 import { DEFAULT_TRACE_DIR, resolvePathWithinRoot } from "./path-output.js";
 import type { BrowserRouteRegistrar } from "./types.js";
+<<<<<<< HEAD
+=======
+import { handleRouteError, readBody, requirePwAi, resolveProfileContext } from "./agent.shared.js";
+import { DEFAULT_TRACE_DIR, resolvePathWithinRoot } from "./path-output.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { toBoolean, toStringOrEmpty } from "./utils.js";
 
 export function registerBrowserAgentDebugRoutes(
@@ -111,6 +116,7 @@ export function registerBrowserAgentDebugRoutes(
     const body = readBody(req);
     const targetId = resolveTargetIdFromBody(body);
     const out = toStringOrEmpty(body.path) || "";
+<<<<<<< HEAD
 
     await withPlaywrightRouteContext({
       req,
@@ -145,5 +151,40 @@ export function registerBrowserAgentDebugRoutes(
         });
       },
     });
+=======
+    try {
+      const tab = await profileCtx.ensureTabAvailable(targetId);
+      const pw = await requirePwAi(res, "trace stop");
+      if (!pw) {
+        return;
+      }
+      const id = crypto.randomUUID();
+      const dir = DEFAULT_TRACE_DIR;
+      await fs.mkdir(dir, { recursive: true });
+      const tracePathResult = resolvePathWithinRoot({
+        rootDir: dir,
+        requestedPath: out,
+        scopeLabel: "trace directory",
+        defaultFileName: `browser-trace-${id}.zip`,
+      });
+      if (!tracePathResult.ok) {
+        res.status(400).json({ error: tracePathResult.error });
+        return;
+      }
+      const tracePath = tracePathResult.path;
+      await pw.traceStopViaPlaywright({
+        cdpUrl: profileCtx.profile.cdpUrl,
+        targetId: tab.targetId,
+        path: tracePath,
+      });
+      res.json({
+        ok: true,
+        targetId: tab.targetId,
+        path: path.resolve(tracePath),
+      });
+    } catch (err) {
+      handleRouteError(ctx, res, err);
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 }

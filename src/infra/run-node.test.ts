@@ -21,6 +21,10 @@ describe("run-node script", () => {
         const argsPath = path.join(tmp, ".pnpm-args.txt");
         const indexPath = path.join(tmp, "dist", "control-ui", "index.html");
 
+<<<<<<< HEAD
+=======
+        await fs.mkdir(fakeBinDir, { recursive: true });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         await fs.mkdir(path.dirname(indexPath), { recursive: true });
         await fs.writeFile(indexPath, "<html>sentinel</html>\n", "utf-8");
 

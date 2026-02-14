@@ -43,6 +43,7 @@ const routeStatus: RouteSpec = {
 };
 
 const routeSessions: RouteSpec = {
+<<<<<<< HEAD
   // Fast-path only bare `sessions`; subcommands (e.g. `sessions cleanup`)
   // must fall through to Commander so nested handlers run.
   match: (path) => path[0] === "sessions" && !path[1],
@@ -53,6 +54,11 @@ const routeSessions: RouteSpec = {
     if (agent === null) {
       return false;
     }
+=======
+  match: (path) => path[0] === "sessions",
+  run: async (argv) => {
+    const json = hasFlag(argv, "--json");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const store = getFlagValue(argv, "--store");
     if (store === null) {
       return false;
@@ -62,7 +68,11 @@ const routeSessions: RouteSpec = {
       return false;
     }
     const { sessionsCommand } = await import("../../commands/sessions.js");
+<<<<<<< HEAD
     await sessionsCommand({ json, store, agent, allAgents, active }, defaultRuntime);
+=======
+    await sessionsCommand({ json, store, active }, defaultRuntime);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return true;
   },
 };

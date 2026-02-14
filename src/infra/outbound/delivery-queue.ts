@@ -1,10 +1,19 @@
+<<<<<<< HEAD
+=======
+import crypto from "node:crypto";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import fs from "node:fs";
 import path from "node:path";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
+<<<<<<< HEAD
 import { resolveStateDir } from "../../config/paths.js";
 import { generateSecureUuid } from "../secure-random.js";
 import type { OutboundChannel } from "./targets.js";
+=======
+import type { OutboundChannel } from "./targets.js";
+import { resolveStateDir } from "../../config/paths.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const QUEUE_DIRNAME = "delivery-queue";
 const FAILED_DIRNAME = "failed";
@@ -18,6 +27,7 @@ const BACKOFF_MS: readonly number[] = [
   600_000, // retry 4: 10m
 ];
 
+<<<<<<< HEAD
 type DeliveryMirrorPayload = {
   sessionKey: string;
   agentId?: string;
@@ -26,6 +36,11 @@ type DeliveryMirrorPayload = {
 };
 
 type QueuedDeliveryPayload = {
+=======
+export interface QueuedDelivery {
+  id: string;
+  enqueuedAt: number;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   channel: Exclude<OutboundChannel, "none">;
   to: string;
   accountId?: string;
@@ -40,12 +55,21 @@ type QueuedDeliveryPayload = {
   bestEffort?: boolean;
   gifPlayback?: boolean;
   silent?: boolean;
+<<<<<<< HEAD
   mirror?: DeliveryMirrorPayload;
 };
 
 export interface QueuedDelivery extends QueuedDeliveryPayload {
   id: string;
   enqueuedAt: number;
+=======
+  mirror?: {
+    sessionKey: string;
+    agentId?: string;
+    text?: string;
+    mediaUrls?: string[];
+  };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   retryCount: number;
   lastError?: string;
 }
@@ -68,6 +92,7 @@ export async function ensureQueueDir(stateDir?: string): Promise<string> {
 }
 
 /** Persist a delivery entry to disk before attempting send. Returns the entry ID. */
+<<<<<<< HEAD
 type QueuedDeliveryParams = QueuedDeliveryPayload;
 
 export async function enqueueDelivery(
@@ -76,6 +101,30 @@ export async function enqueueDelivery(
 ): Promise<string> {
   const queueDir = await ensureQueueDir(stateDir);
   const id = generateSecureUuid();
+=======
+export async function enqueueDelivery(
+  params: {
+    channel: Exclude<OutboundChannel, "none">;
+    to: string;
+    accountId?: string;
+    payloads: ReplyPayload[];
+    threadId?: string | number | null;
+    replyToId?: string | null;
+    bestEffort?: boolean;
+    gifPlayback?: boolean;
+    silent?: boolean;
+    mirror?: {
+      sessionKey: string;
+      agentId?: string;
+      text?: string;
+      mediaUrls?: string[];
+    };
+  },
+  stateDir?: string,
+): Promise<string> {
+  const queueDir = await ensureQueueDir(stateDir);
+  const id = crypto.randomUUID();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const entry: QueuedDelivery = {
     id,
     enqueuedAt: Date.now(),
@@ -185,6 +234,7 @@ export function computeBackoffMs(retryCount: number): number {
   return BACKOFF_MS[Math.min(retryCount - 1, BACKOFF_MS.length - 1)] ?? BACKOFF_MS.at(-1) ?? 0;
 }
 
+<<<<<<< HEAD
 export type DeliverFn = (
   params: {
     cfg: OpenClawConfig;
@@ -192,6 +242,27 @@ export type DeliverFn = (
       skipQueue?: boolean;
     },
 ) => Promise<unknown>;
+=======
+export type DeliverFn = (params: {
+  cfg: OpenClawConfig;
+  channel: Exclude<OutboundChannel, "none">;
+  to: string;
+  accountId?: string;
+  payloads: ReplyPayload[];
+  threadId?: string | number | null;
+  replyToId?: string | null;
+  bestEffort?: boolean;
+  gifPlayback?: boolean;
+  silent?: boolean;
+  mirror?: {
+    sessionKey: string;
+    agentId?: string;
+    text?: string;
+    mediaUrls?: string[];
+  };
+  skipQueue?: boolean;
+}) => Promise<unknown>;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export interface RecoveryLogger {
   info(msg: string): void;
@@ -282,6 +353,7 @@ export async function recoverPendingDeliveries(opts: {
       recovered += 1;
       opts.log.info(`Recovered delivery ${entry.id} to ${entry.channel}:${entry.to}`);
     } catch (err) {
+<<<<<<< HEAD
       const errMsg = err instanceof Error ? err.message : String(err);
       if (isPermanentDeliveryError(errMsg)) {
         opts.log.warn(`Delivery ${entry.id} hit permanent error — moving to failed/: ${errMsg}`);
@@ -295,11 +367,25 @@ export async function recoverPendingDeliveries(opts: {
       }
       try {
         await failDelivery(entry.id, errMsg, opts.stateDir);
+=======
+      try {
+        await failDelivery(
+          entry.id,
+          err instanceof Error ? err.message : String(err),
+          opts.stateDir,
+        );
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       } catch {
         // Best-effort update.
       }
       failed += 1;
+<<<<<<< HEAD
       opts.log.warn(`Retry failed for delivery ${entry.id}: ${errMsg}`);
+=======
+      opts.log.warn(
+        `Retry failed for delivery ${entry.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
   }
 
@@ -310,6 +396,7 @@ export async function recoverPendingDeliveries(opts: {
 }
 
 export { MAX_RETRIES };
+<<<<<<< HEAD
 
 const PERMANENT_ERROR_PATTERNS: readonly RegExp[] = [
   /no conversation reference found/i,
@@ -325,3 +412,5 @@ const PERMANENT_ERROR_PATTERNS: readonly RegExp[] = [
 export function isPermanentDeliveryError(error: string): boolean {
   return PERMANENT_ERROR_PATTERNS.some((re) => re.test(error));
 }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

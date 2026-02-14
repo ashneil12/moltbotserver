@@ -95,6 +95,7 @@ describe("gateway session utils", () => {
     );
   });
 
+<<<<<<< HEAD
   test("resolveSessionStoreKey falls back to first list entry when no agent is marked default", () => {
     const cfg = {
       session: { mainKey: "main" },
@@ -114,6 +115,8 @@ describe("gateway session utils", () => {
     expect(resolveSessionStoreKey({ cfg, sessionKey: "thread-1" })).toBe("agent:main:thread-1");
   });
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   test("resolveSessionStoreKey normalizes session key casing", () => {
     const cfg = {
       session: { mainKey: "main" },
@@ -241,6 +244,7 @@ describe("gateway session utils", () => {
     });
     expect(Object.keys(store).toSorted()).toEqual(["agent:ops:work"]);
   });
+<<<<<<< HEAD
 
   test("listAgentsForGateway rejects avatar symlink escapes outside workspace", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "session-utils-avatar-outside-"));
@@ -493,6 +497,8 @@ describe("resolveSessionModelIdentityRef", () => {
       model: "anthropic/claude-sonnet-4-6",
     });
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });
 
 describe("deriveSessionTitle", () => {

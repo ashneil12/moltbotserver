@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { findRoutedCommand } from "./routes.js";
 
 describe("program routes", () => {
+<<<<<<< HEAD
   function expectRoute(path: string[]) {
     const route = findRoutedCommand(path);
     expect(route).not.toBeNull();
@@ -15,10 +16,16 @@ describe("program routes", () => {
 
   it("matches status route and preserves plugin loading", () => {
     const route = expectRoute(["status"]);
+=======
+  it("matches status route and preserves plugin loading", () => {
+    const route = findRoutedCommand(["status"]);
+    expect(route).not.toBeNull();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(route?.loadPlugins).toBe(true);
   });
 
   it("returns false when status timeout flag value is missing", async () => {
+<<<<<<< HEAD
     await expectRunFalse(["status"], ["node", "openclaw", "status", "--timeout"]);
   });
 
@@ -36,6 +43,17 @@ describe("program routes", () => {
 
   it("does not fast-route sessions subcommands", () => {
     expect(findRoutedCommand(["sessions", "cleanup"])).toBeNull();
+=======
+    const route = findRoutedCommand(["status"]);
+    expect(route).not.toBeNull();
+    await expect(route?.run(["node", "openclaw", "status", "--timeout"])).resolves.toBe(false);
+  });
+
+  it("returns false for sessions route when --store value is missing", async () => {
+    const route = findRoutedCommand(["sessions"]);
+    expect(route).not.toBeNull();
+    await expect(route?.run(["node", "openclaw", "sessions", "--store"])).resolves.toBe(false);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("does not match unknown routes", () => {
@@ -43,6 +61,7 @@ describe("program routes", () => {
   });
 
   it("returns false for config get route when path argument is missing", async () => {
+<<<<<<< HEAD
     await expectRunFalse(["config", "get"], ["node", "openclaw", "config", "get", "--json"]);
   });
 
@@ -86,5 +105,16 @@ describe("program routes", () => {
       ["models", "status"],
       ["node", "openclaw", "models", "status", "--probe-profile"],
     );
+=======
+    const route = findRoutedCommand(["config", "get"]);
+    expect(route).not.toBeNull();
+    await expect(route?.run(["node", "openclaw", "config", "get", "--json"])).resolves.toBe(false);
+  });
+
+  it("returns false for config unset route when path argument is missing", async () => {
+    const route = findRoutedCommand(["config", "unset"]);
+    expect(route).not.toBeNull();
+    await expect(route?.run(["node", "openclaw", "config", "unset"])).resolves.toBe(false);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

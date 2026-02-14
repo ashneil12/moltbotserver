@@ -1,5 +1,10 @@
 import fs from "node:fs";
+<<<<<<< HEAD
 import { readJsonFileWithFallback, writeJsonFileAtomically } from "openclaw/plugin-sdk";
+=======
+import path from "node:path";
+import { safeParseJson } from "openclaw/plugin-sdk";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { withFileLock as withPathLock } from "./file-lock.js";
 
 const STORE_LOCK_OPTIONS = {

@@ -5,12 +5,22 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
+<<<<<<< HEAD
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+=======
+import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
+import type { OpenClawConfig, ConfigFileSnapshot } from "../config/config.js";
+import type { AgentToolsConfig } from "../config/types.tools.js";
+import type { SkillScanFinding } from "./skill-scanner.js";
+import type { ExecFn } from "./windows-acl.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
 import {
   resolveSandboxConfigForAgent,
   resolveSandboxToolPolicyForAgent,
 } from "../agents/sandbox.js";
+<<<<<<< HEAD
 import { SANDBOX_BROWSER_SECURITY_HASH_EPOCH } from "../agents/sandbox/constants.js";
 import { execDockerRaw, type ExecDockerRawResult } from "../agents/sandbox/docker.js";
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
@@ -18,13 +28,20 @@ import { loadWorkspaceSkillEntries } from "../agents/skills.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import { formatCliCommand } from "../cli/command-format.js";
+=======
+import { loadWorkspaceSkillEntries } from "../agents/skills.js";
+import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { resolveNativeSkillsEnabled } from "../config/commands.js";
 import type { OpenClawConfig, ConfigFileSnapshot } from "../config/config.js";
 import { createConfigIO } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
 import { resolveOAuthDir } from "../config/paths.js";
+<<<<<<< HEAD
 import type { AgentToolsConfig } from "../config/types.tools.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {
@@ -33,11 +50,15 @@ import {
   inspectPathPermissions,
   safeStat,
 } from "./audit-fs.js";
+<<<<<<< HEAD
 import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
 import type { SkillScanFinding } from "./skill-scanner.js";
 import * as skillScanner from "./skill-scanner.js";
 import type { ExecFn } from "./windows-acl.js";
+=======
+import * as skillScanner from "./skill-scanner.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type SecurityAuditFinding = {
   checkId: string;
@@ -104,6 +125,7 @@ function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string):
     .join("\n");
 }
 
+<<<<<<< HEAD
 async function listInstalledPluginDirs(params: {
   stateDir: string;
   onReadError?: (error: unknown) => void;
@@ -122,6 +144,36 @@ async function listInstalledPluginDirs(params: {
     .map((entry) => entry.name)
     .filter(Boolean);
   return { extensionsDir, pluginDirs };
+=======
+function unionAllow(base?: string[], extra?: string[]): string[] | undefined {
+  if (!Array.isArray(extra) || extra.length === 0) {
+    return base;
+  }
+  if (!Array.isArray(base) || base.length === 0) {
+    return Array.from(new Set(["*", ...extra]));
+  }
+  return Array.from(new Set([...base, ...extra]));
+}
+
+function pickToolPolicy(config?: {
+  allow?: string[];
+  alsoAllow?: string[];
+  deny?: string[];
+}): SandboxToolPolicy | undefined {
+  if (!config) {
+    return undefined;
+  }
+  const allow = Array.isArray(config.allow)
+    ? unionAllow(config.allow, config.alsoAllow)
+    : Array.isArray(config.alsoAllow) && config.alsoAllow.length > 0
+      ? unionAllow(undefined, config.alsoAllow)
+      : undefined;
+  const deny = Array.isArray(config.deny) ? config.deny : undefined;
+  if (!allow && !deny) {
+    return undefined;
+  }
+  return { allow, deny };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 function resolveToolPolicies(params: {
@@ -134,8 +186,13 @@ function resolveToolPolicies(params: {
   const profilePolicy = resolveToolProfilePolicy(profile);
   const policies: Array<SandboxToolPolicy | undefined> = [
     profilePolicy,
+<<<<<<< HEAD
     pickSandboxToolPolicy(params.cfg.tools ?? undefined),
     pickSandboxToolPolicy(params.agentTools),
+=======
+    pickToolPolicy(params.cfg.tools ?? undefined),
+    pickToolPolicy(params.agentTools),
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   ];
   if (params.sandboxMode === "all") {
     policies.push(resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined));
@@ -223,6 +280,7 @@ function hasProviderPluginAllow(params: {
   return false;
 }
 
+<<<<<<< HEAD
 function isPinnedRegistrySpec(spec: string): boolean {
   const value = spec.trim();
   if (!value) {
@@ -246,6 +304,8 @@ async function readInstalledPackageVersion(dir: string): Promise<string | undefi
   }
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 // --------------------------------------------------------------------------
 // Exported collectors
 // --------------------------------------------------------------------------
@@ -712,6 +772,78 @@ export async function collectPluginsTrustFindings(params: {
         detail: `Detected hook install metadata drift:\n${hookVersionDrift.map((entry) => `- ${entry}`).join("\n")}`,
         remediation:
           "Run `openclaw hooks update --all` (or reinstall affected hooks) to refresh install metadata.",
+      });
+    }
+  }
+
+  const enabledExtensionPluginIds = resolveEnabledExtensionPluginIds({
+    cfg: params.cfg,
+    pluginDirs,
+  });
+  if (enabledExtensionPluginIds.length > 0) {
+    const enabledPluginSet = new Set(enabledExtensionPluginIds);
+    const contexts: Array<{
+      label: string;
+      agentId?: string;
+      tools?: AgentToolsConfig;
+    }> = [{ label: "default" }];
+    for (const entry of params.cfg.agents?.list ?? []) {
+      if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
+        continue;
+      }
+      contexts.push({
+        label: `agents.list.${entry.id}`,
+        agentId: entry.id,
+        tools: entry.tools,
+      });
+    }
+
+    const permissiveContexts: string[] = [];
+    for (const context of contexts) {
+      const profile = context.tools?.profile ?? params.cfg.tools?.profile;
+      const restrictiveProfile = Boolean(resolveToolProfilePolicy(profile));
+      const sandboxMode = resolveSandboxConfigForAgent(params.cfg, context.agentId).mode;
+      const policies = resolveToolPolicies({
+        cfg: params.cfg,
+        agentTools: context.tools,
+        sandboxMode,
+        agentId: context.agentId,
+      });
+      const broadPolicy = isToolAllowedByPolicies("__openclaw_plugin_probe__", policies);
+      const explicitPluginAllow =
+        !restrictiveProfile &&
+        (hasExplicitPluginAllow({
+          allowEntries: collectAllowEntries(params.cfg.tools),
+          enabledPluginIds: enabledPluginSet,
+        }) ||
+          hasProviderPluginAllow({
+            byProvider: params.cfg.tools?.byProvider,
+            enabledPluginIds: enabledPluginSet,
+          }) ||
+          hasExplicitPluginAllow({
+            allowEntries: collectAllowEntries(context.tools),
+            enabledPluginIds: enabledPluginSet,
+          }) ||
+          hasProviderPluginAllow({
+            byProvider: context.tools?.byProvider,
+            enabledPluginIds: enabledPluginSet,
+          }));
+
+      if (broadPolicy || explicitPluginAllow) {
+        permissiveContexts.push(context.label);
+      }
+    }
+
+    if (permissiveContexts.length > 0) {
+      findings.push({
+        checkId: "plugins.tools_reachable_permissive_policy",
+        severity: "warn",
+        title: "Extension plugin tools may be reachable under permissive tool policy",
+        detail:
+          `Enabled extension plugins: ${enabledExtensionPluginIds.join(", ")}.\n` +
+          `Permissive tool policy contexts:\n${permissiveContexts.map((entry) => `- ${entry}`).join("\n")}`,
+        remediation:
+          "Use restrictive profiles (`minimal`/`coding`) or explicit tool allowlists that exclude plugin tools for agents handling untrusted input.",
       });
     }
   }

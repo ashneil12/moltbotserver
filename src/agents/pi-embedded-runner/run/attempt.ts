@@ -44,7 +44,10 @@ import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
 import { resolveModelAuthMode } from "../../model-auth.js";
 import { resolveDefaultModelForAgent } from "../../model-selection.js";
 import { createOllamaStreamFn, OLLAMA_NATIVE_BASE_URL } from "../../ollama-stream.js";
+<<<<<<< HEAD
 import { resolveOwnerDisplaySetting } from "../../owner-display.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   isCloudCodeAssistFormatError,
   resolveBootstrapMaxChars,
@@ -109,10 +112,13 @@ import { installToolResultContextGuard } from "../tool-result-context-guard.js";
 import { splitSdkTools } from "../tool-split.js";
 import { describeUnknownError, mapThinkingLevel } from "../utils.js";
 import { flushPendingToolResultsAfterIdle } from "../wait-for-idle-before-flush.js";
+<<<<<<< HEAD
 import {
   selectCompactionTimeoutSnapshot,
   shouldFlagCompactionTimeout,
 } from "./compaction-timeout.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { detectAndLoadPromptImages } from "./images.js";
 import type { EmbeddedRunAttemptParams, EmbeddedRunAttemptResult } from "./types.js";
 
@@ -176,6 +182,7 @@ export function injectHistoryImagesIntoMessages(
   return didMutate;
 }
 
+<<<<<<< HEAD
 export async function resolvePromptBuildHookResult(params: {
   prompt: string;
   messages: unknown[];
@@ -240,6 +247,8 @@ export function resolveAttemptFsWorkspaceOnly(params: {
   });
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function summarizeMessagePayload(msg: AgentMessage): { textChars: number; imageBlocks: number } {
   const content = (msg as { content?: unknown }).content;
   if (typeof content === "string") {
@@ -1039,6 +1048,7 @@ export async function runEmbeddedAttempt(
         // Run before_prompt_build hooks to allow plugins to inject prompt context.
         // Legacy compatibility: before_agent_start is also checked for context fields.
         let effectivePrompt = params.prompt;
+<<<<<<< HEAD
         const hookCtx = {
           agentId: hookAgentId,
           sessionKey: params.sessionKey,
@@ -1058,6 +1068,22 @@ export async function runEmbeddedAttempt(
             effectivePrompt = `${hookResult.prependContext}\n\n${params.prompt}`;
             log.debug(
               `hooks: prepended context to prompt (${hookResult.prependContext.length} chars)`,
+=======
+        if (hookRunner?.hasHooks("before_agent_start")) {
+          try {
+            const hookResult = await hookRunner.runBeforeAgentStart(
+              {
+                prompt: params.prompt,
+                messages: activeSession.messages,
+              },
+              {
+                agentId: hookAgentId,
+                sessionKey: params.sessionKey,
+                sessionId: params.sessionId,
+                workspaceDir: params.workspaceDir,
+                messageProvider: params.messageProvider ?? undefined,
+              },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             );
           }
           const legacySystemPrompt =
@@ -1148,6 +1174,7 @@ export async function runEmbeddedAttempt(
             );
           }
 
+<<<<<<< HEAD
           if (hookRunner?.hasHooks("llm_input")) {
             hookRunner
               .runLlmInput(
@@ -1174,6 +1201,8 @@ export async function runEmbeddedAttempt(
               });
           }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           // Only pass images option if there are actually images to pass
           // This avoids potential issues with models that don't expect the images parameter
           if (imageResult.images.length > 0) {
@@ -1401,7 +1430,10 @@ export async function runEmbeddedAttempt(
       // flushPendingToolResults() fires while tools are still executing, inserting
       // synthetic "missing tool result" errors and causing silent agent failures.
       // See: https://github.com/openclaw/openclaw/issues/8643
+<<<<<<< HEAD
       removeToolResultContextGuard?.();
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       await flushPendingToolResultsAfterIdle({
         agent: session?.agent,
         sessionManager,

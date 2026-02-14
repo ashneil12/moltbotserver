@@ -176,6 +176,12 @@ describe("browser extension install (fs-mocked)", () => {
       const dir = path.join(tmp, "browser", "chrome-extension");
       writeManifest(dir);
 
+<<<<<<< HEAD
+=======
+      const { Command } = await import("commander");
+      const { registerBrowserExtensionCommands } = await import("./browser-cli-extension.js");
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const program = new Command();
       const browser = program.command("browser").option("--json", "JSON output", false);
       registerBrowserExtensionCommands(

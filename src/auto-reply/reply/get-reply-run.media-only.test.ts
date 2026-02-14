@@ -50,7 +50,10 @@ vi.mock("./body.js", () => ({
 
 vi.mock("./groups.js", () => ({
   buildGroupIntro: vi.fn().mockReturnValue(""),
+<<<<<<< HEAD
   buildGroupChatContext: vi.fn().mockReturnValue(""),
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }));
 
 vi.mock("./inbound-meta.js", () => ({
@@ -80,7 +83,10 @@ vi.mock("./typing-mode.js", () => ({
 }));
 
 import { runReplyAgent } from "./agent-runner.js";
+<<<<<<< HEAD
 import { routeReply } from "./route-reply.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function baseParams(
   overrides: Partial<Parameters<typeof runPreparedReply>[0]> = {},
@@ -170,6 +176,7 @@ describe("runPreparedReply media-only handling", () => {
     expect(call?.followupRun.prompt).toContain("[User sent media without caption]");
   });
 
+<<<<<<< HEAD
   it("keeps thread history context on follow-up turns", async () => {
     const result = await runPreparedReply(
       baseParams({
@@ -184,6 +191,8 @@ describe("runPreparedReply media-only handling", () => {
     expect(call?.followupRun.prompt).toContain("Earlier message in this thread");
   });
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("returns the empty-body reply when there is no text and no media", async () => {
     const result = await runPreparedReply(
       baseParams({
@@ -205,6 +214,7 @@ describe("runPreparedReply media-only handling", () => {
     });
     expect(vi.mocked(runReplyAgent)).not.toHaveBeenCalled();
   });
+<<<<<<< HEAD
 
   it("omits auth key labels from /new and /reset confirmation messages", async () => {
     await runPreparedReply(
@@ -249,4 +259,6 @@ describe("runPreparedReply media-only handling", () => {
 
     expect(vi.mocked(routeReply)).not.toHaveBeenCalled();
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

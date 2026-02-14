@@ -12,7 +12,10 @@ import { applyAuthChoiceOAuth } from "./auth-choice.apply.oauth.js";
 import { applyAuthChoiceOpenAI } from "./auth-choice.apply.openai.js";
 import { applyAuthChoiceQwenPortal } from "./auth-choice.apply.qwen-portal.js";
 import { applyAuthChoiceVllm } from "./auth-choice.apply.vllm.js";
+<<<<<<< HEAD
 import { applyAuthChoiceVolcengine } from "./auth-choice.apply.volcengine.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { applyAuthChoiceXAI } from "./auth-choice.apply.xai.js";
 import type { AuthChoice, OnboardOptions } from "./onboard-types.js";
 

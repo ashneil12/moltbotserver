@@ -16,7 +16,10 @@ vi.mock("./graph-upload.js", async () => {
   };
 });
 
+<<<<<<< HEAD
 import { resolvePreferredOpenClawTmpDir } from "../../../src/infra/tmp-openclaw-dir.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   type MSTeamsAdapter,
   renderReplyPayloadsToMessages,
@@ -189,7 +192,11 @@ describe("msteams messenger", () => {
     });
 
     it("preserves parsed mentions when appending OneDrive fallback file links", async () => {
+<<<<<<< HEAD
       const tmpDir = await mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "msteams-mention-"));
+=======
+      const tmpDir = await mkdtemp(path.join(os.tmpdir(), "msteams-mention-"));
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const localFile = path.join(tmpDir, "note.txt");
       await writeFile(localFile, "hello");
 
@@ -202,7 +209,13 @@ describe("msteams messenger", () => {
           },
         };
 
+<<<<<<< HEAD
         const adapter = createNoopAdapter();
+=======
+        const adapter: MSTeamsAdapter = {
+          continueConversation: async () => {},
+        };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
         const ids = await sendMSTeamsMessages({
           replyStyle: "thread",

@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 import { isPlainObject } from "../infra/plain-object.js";
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 /**
  * Preserves `${VAR}` environment variable references during config write-back.
  *
@@ -18,6 +21,18 @@ import { isPlainObject } from "../infra/plain-object.js";
 
 const ENV_VAR_PATTERN = /\$\{[A-Z_][A-Z0-9_]*\}/;
 
+<<<<<<< HEAD
+=======
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.prototype.toString.call(value) === "[object Object]"
+  );
+}
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 /**
  * Check if a string contains any `${VAR}` env var references.
  */

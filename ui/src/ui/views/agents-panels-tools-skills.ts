@@ -1,6 +1,11 @@
 import { html, nothing } from "lit";
+<<<<<<< HEAD
 import { normalizeToolName } from "../../../../src/agents/tool-policy-shared.js";
 import type { SkillStatusEntry, SkillStatusReport, ToolsCatalogResult } from "../types.ts";
+=======
+import type { SkillStatusEntry, SkillStatusReport } from "../types.ts";
+import { normalizeToolName } from "../../../../src/agents/tool-policy.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   isAllowedByPolicy,
   matchesList,
@@ -9,6 +14,7 @@ import {
   resolveToolProfile,
   TOOL_SECTIONS,
 } from "./agents-utils.ts";
+<<<<<<< HEAD
 import type { SkillGroup } from "./skills-grouping.ts";
 import { groupSkills } from "./skills-grouping.ts";
 import {
@@ -16,6 +22,8 @@ import {
   computeSkillReasons,
   renderSkillStatusChips,
 } from "./skills-shared.ts";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function renderAgentTools(params: {
   agentId: string;
@@ -23,9 +31,12 @@ export function renderAgentTools(params: {
   configLoading: boolean;
   configSaving: boolean;
   configDirty: boolean;
+<<<<<<< HEAD
   toolsCatalogLoading: boolean;
   toolsCatalogError: string | null;
   toolsCatalogResult: ToolsCatalogResult | null;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   onProfileChange: (agentId: string, profile: string | null, clearAllow: boolean) => void;
   onOverridesChange: (agentId: string, alsoAllow: string[], deny: string[]) => void;
   onConfigReload: () => void;
@@ -53,6 +64,7 @@ export function renderAgentTools(params: {
   const basePolicy = hasAgentAllow
     ? { allow: agentTools.allow ?? [], deny: agentTools.deny ?? [] }
     : (resolveToolProfile(profile) ?? undefined);
+<<<<<<< HEAD
   const sections =
     params.toolsCatalogResult?.groups?.length &&
     params.toolsCatalogResult.agentId === params.agentId
@@ -64,6 +76,9 @@ export function renderAgentTools(params: {
       ? params.toolsCatalogResult.profiles
       : PROFILE_OPTIONS;
   const toolIds = sections.flatMap((section) => section.tools.map((tool) => tool.id));
+=======
+  const toolIds = TOOL_SECTIONS.flatMap((section) => section.tools.map((tool) => tool.id));
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const resolveAllowed = (toolId: string) => {
     const baseAllowed = isAllowedByPolicy(toolId, basePolicy);
@@ -153,6 +168,7 @@ export function renderAgentTools(params: {
       </div>
 
       ${
+<<<<<<< HEAD
         params.toolsCatalogError
           ? html`
               <div class="callout warn" style="margin-top: 12px">
@@ -162,6 +178,8 @@ export function renderAgentTools(params: {
           : nothing
       }
       ${
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         !params.configForm
           ? html`
               <div class="callout info" style="margin-top: 12px">
@@ -213,7 +231,11 @@ export function renderAgentTools(params: {
       <div class="agent-tools-presets" style="margin-top: 16px;">
         <div class="label">Quick Presets</div>
         <div class="agent-tools-buttons">
+<<<<<<< HEAD
           ${profileOptions.map(
+=======
+          ${PROFILE_OPTIONS.map(
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             (option) => html`
               <button
                 class="btn btn--sm ${profile === option.id ? "active" : ""}"
@@ -235,6 +257,7 @@ export function renderAgentTools(params: {
       </div>
 
       <div class="agent-tools-grid" style="margin-top: 20px;">
+<<<<<<< HEAD
         ${sections.map(
           (section) =>
             html`
@@ -278,6 +301,20 @@ export function renderAgentTools(params: {
                                 : nothing
                             }
                           </div>
+=======
+        ${TOOL_SECTIONS.map(
+          (section) =>
+            html`
+              <div class="agent-tools-section">
+                <div class="agent-tools-header">${section.label}</div>
+                <div class="agent-tools-list">
+                  ${section.tools.map((tool) => {
+                    const { allowed } = resolveAllowed(tool.id);
+                    return html`
+                      <div class="agent-tool-row">
+                        <div>
+                          <div class="agent-tool-title mono">${tool.label}</div>
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
                           <div class="agent-tool-sub">${tool.description}</div>
                         </div>
                         <label class="cfg-toggle">
@@ -298,6 +335,7 @@ export function renderAgentTools(params: {
             `,
         )}
       </div>
+<<<<<<< HEAD
       ${
         params.toolsCatalogLoading
           ? html`
@@ -305,10 +343,54 @@ export function renderAgentTools(params: {
             `
           : nothing
       }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     </section>
   `;
 }
 
+<<<<<<< HEAD
+=======
+type SkillGroup = {
+  id: string;
+  label: string;
+  skills: SkillStatusEntry[];
+};
+
+const SKILL_SOURCE_GROUPS: Array<{ id: string; label: string; sources: string[] }> = [
+  { id: "workspace", label: "Workspace Skills", sources: ["openclaw-workspace"] },
+  { id: "built-in", label: "Built-in Skills", sources: ["openclaw-bundled"] },
+  { id: "installed", label: "Installed Skills", sources: ["openclaw-managed"] },
+  { id: "extra", label: "Extra Skills", sources: ["openclaw-extra"] },
+];
+
+function groupSkills(skills: SkillStatusEntry[]): SkillGroup[] {
+  const groups = new Map<string, SkillGroup>();
+  for (const def of SKILL_SOURCE_GROUPS) {
+    groups.set(def.id, { id: def.id, label: def.label, skills: [] });
+  }
+  const builtInGroup = SKILL_SOURCE_GROUPS.find((group) => group.id === "built-in");
+  const other: SkillGroup = { id: "other", label: "Other Skills", skills: [] };
+  for (const skill of skills) {
+    const match = skill.bundled
+      ? builtInGroup
+      : SKILL_SOURCE_GROUPS.find((group) => group.sources.includes(skill.source));
+    if (match) {
+      groups.get(match.id)?.skills.push(skill);
+    } else {
+      other.skills.push(skill);
+    }
+  }
+  const ordered = SKILL_SOURCE_GROUPS.map((group) => groups.get(group.id)).filter(
+    (group): group is SkillGroup => Boolean(group && group.skills.length > 0),
+  );
+  if (other.skills.length > 0) {
+    ordered.push(other);
+  }
+  return ordered;
+}
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function renderAgentSkills(params: {
   agentId: string;
   report: SkillStatusReport | null;
@@ -501,14 +583,46 @@ function renderAgentSkillRow(
   },
 ) {
   const enabled = params.usingAllowlist ? params.allowSet.has(skill.name) : true;
+<<<<<<< HEAD
   const missing = computeSkillMissing(skill);
   const reasons = computeSkillReasons(skill);
+=======
+  const missing = [
+    ...skill.missing.bins.map((b) => `bin:${b}`),
+    ...skill.missing.env.map((e) => `env:${e}`),
+    ...skill.missing.config.map((c) => `config:${c}`),
+    ...skill.missing.os.map((o) => `os:${o}`),
+  ];
+  const reasons: string[] = [];
+  if (skill.disabled) {
+    reasons.push("disabled");
+  }
+  if (skill.blockedByAllowlist) {
+    reasons.push("blocked by allowlist");
+  }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return html`
     <div class="list-item agent-skill-row">
       <div class="list-main">
         <div class="list-title">${skill.emoji ? `${skill.emoji} ` : ""}${skill.name}</div>
         <div class="list-sub">${skill.description}</div>
+<<<<<<< HEAD
         ${renderSkillStatusChips({ skill })}
+=======
+        <div class="chip-row" style="margin-top: 6px;">
+          <span class="chip">${skill.source}</span>
+          <span class="chip ${skill.eligible ? "chip-ok" : "chip-warn"}">
+            ${skill.eligible ? "eligible" : "blocked"}
+          </span>
+          ${
+            skill.disabled
+              ? html`
+                  <span class="chip chip-warn">disabled</span>
+                `
+              : nothing
+          }
+        </div>
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         ${
           missing.length > 0
             ? html`<div class="muted" style="margin-top: 6px;">Missing: ${missing.join(", ")}</div>`

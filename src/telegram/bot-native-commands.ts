@@ -17,6 +17,7 @@ import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ChannelGroupPolicy } from "../config/group-policy.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
+<<<<<<< HEAD
 import { recordSessionMetaFromInbound, resolveStorePath } from "../config/sessions.js";
 import {
   normalizeTelegramCommandName,
@@ -29,6 +30,9 @@ import type {
   TelegramGroupConfig,
   TelegramTopicConfig,
 } from "../config/types.js";
+=======
+import { resolveTelegramCustomCommands } from "../config/telegram-custom-commands.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { danger, logVerbose } from "../globals.js";
 import { getChildLogger } from "../logging.js";
 import { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
@@ -41,7 +45,11 @@ import { resolveAgentRoute } from "../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
+<<<<<<< HEAD
 import { isSenderAllowed, normalizeAllowFromWithStore } from "./bot-access.js";
+=======
+import { firstDefined, isSenderAllowed, normalizeAllowFromWithStore } from "./bot-access.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   buildCappedTelegramMenuCommands,
   buildPluginTelegramMenuCommands,
@@ -347,6 +355,7 @@ export const registerTelegramNativeCommands = ({
     runtime.error?.(danger(issue));
   }
   const allCommandsFull: Array<{ command: string; description: string }> = [
+<<<<<<< HEAD
     ...nativeCommands
       .map((command) => {
         const normalized = normalizeTelegramCommandName(command.name);
@@ -365,6 +374,13 @@ export const registerTelegramNativeCommands = ({
       })
       .filter((cmd): cmd is { command: string; description: string } => cmd !== null),
     ...(nativeEnabled ? pluginCatalog.commands : []),
+=======
+    ...nativeCommands.map((command) => ({
+      command: command.name,
+      description: command.description,
+    })),
+    ...pluginCatalog.commands,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     ...customCommands,
   ];
   const { commandsToRegister, totalCommands, maxCommands, overflowCount } =
@@ -382,6 +398,7 @@ export const registerTelegramNativeCommands = ({
   // Keep hidden commands callable by registering handlers for the full catalog.
   syncTelegramMenuCommands({ bot, runtime, commandsToRegister });
 
+<<<<<<< HEAD
   const resolveCommandRuntimeContext = (params: {
     msg: NonNullable<TelegramNativeCommandContext["message"]>;
     isGroup: boolean;
@@ -437,6 +454,9 @@ export const registerTelegramNativeCommands = ({
   });
 
   if (commandsToRegister.length > 0 || pluginCatalog.commands.length > 0) {
+=======
+  if (commandsToRegister.length > 0) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (typeof (bot as unknown as { command?: unknown }).command !== "function") {
       logVerbose("telegram: bot.command unavailable; skipping native handlers");
     } else {

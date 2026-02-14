@@ -198,6 +198,7 @@ describe("canvas host", () => {
     }
   });
 
+<<<<<<< HEAD
   it(
     "serves HTML with injection and broadcasts reload on file changes",
     async () => {
@@ -212,6 +213,39 @@ describe("canvas host", () => {
         port: 0,
         listenHost: "127.0.0.1",
         allowInTests: true,
+=======
+  it("serves HTML with injection and broadcasts reload on file changes", async () => {
+    const dir = await createCaseDir();
+    const index = path.join(dir, "index.html");
+    await fs.writeFile(index, "<html><body>v1</body></html>", "utf8");
+
+    const server = await startCanvasHost({
+      runtime: quietRuntime,
+      rootDir: dir,
+      port: 0,
+      listenHost: "127.0.0.1",
+      allowInTests: true,
+    });
+
+    try {
+      const res = await fetch(`http://127.0.0.1:${server.port}${CANVAS_HOST_PATH}/`);
+      const html = await res.text();
+      expect(res.status).toBe(200);
+      expect(html).toContain("v1");
+      expect(html).toContain(CANVAS_WS_PATH);
+
+      const ws = new WebSocket(`ws://127.0.0.1:${server.port}${CANVAS_WS_PATH}`);
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("ws open timeout")), 5000);
+        ws.on("open", () => {
+          clearTimeout(timer);
+          resolve();
+        });
+        ws.on("error", (err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       });
 
       try {
@@ -240,6 +274,7 @@ describe("canvas host", () => {
           });
         });
 
+<<<<<<< HEAD
         const msg = new Promise<string>((resolve, reject) => {
           const timer = setTimeout(
             () => reject(new Error("reload timeout")),
@@ -262,6 +297,16 @@ describe("canvas host", () => {
     CANVAS_RELOAD_TEST_TIMEOUT_MS,
   );
 
+=======
+      await fs.writeFile(index, "<html><body>v2</body></html>", "utf8");
+      expect(await msg).toBe("reload");
+      ws.close();
+    } finally {
+      await server.close();
+    }
+  }, 20_000);
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("serves A2UI scaffold and blocks traversal/symlink escapes", async () => {
     const dir = await createCaseDir();
     const a2uiRoot = path.resolve(process.cwd(), "src/canvas-host/a2ui");

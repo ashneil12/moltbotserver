@@ -64,12 +64,15 @@ export type MonitorMattermostOpts = {
 type FetchLike = (input: URL | RequestInfo, init?: RequestInit) => Promise<Response>;
 type MediaKind = "image" | "audio" | "video" | "document" | "unknown";
 
+<<<<<<< HEAD
 type MattermostReaction = {
   user_id?: string;
   post_id?: string;
   emoji_name?: string;
   create_at?: number;
 };
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const RECENT_MATTERMOST_MESSAGE_TTL_MS = 5 * 60_000;
 const RECENT_MATTERMOST_MESSAGE_MAX = 2000;
 const CHANNEL_CACHE_TTL_MS = 5 * 60_000;
@@ -1042,9 +1045,12 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     onPosted: async (post, payload) => {
       await debouncer.enqueue({ post, payload });
     },
+<<<<<<< HEAD
     onReaction: async (payload) => {
       await handleReactionEvent(payload);
     },
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   await runWithReconnect(connectOnce, {

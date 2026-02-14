@@ -4,6 +4,7 @@ import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { fileExists, readJsonFile, resolveArchiveKind } from "../infra/archive.js";
 import { resolveExistingInstallPath, withExtractedArchiveRoot } from "../infra/install-flow.js";
 import {
+<<<<<<< HEAD
   resolveInstallModeOptions,
   resolveTimedInstallModeOptions,
 } from "../infra/install-mode-options.js";
@@ -24,6 +25,15 @@ import {
 } from "../infra/npm-pack-install.js";
 import { validateRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "../security/scan-paths.js";
+=======
+  extractArchive,
+  fileExists,
+  readJsonFile,
+  resolveArchiveKind,
+  resolvePackedRootDir,
+} from "../infra/archive.js";
+import { runCommandWithTimeout } from "../process/exec.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import * as skillScanner from "../security/skill-scanner.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
 import { loadPluginManifest } from "./manifest.js";

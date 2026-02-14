@@ -491,6 +491,7 @@ export const OpenClawSchema = z
           .optional(),
         auth: z
           .object({
+<<<<<<< HEAD
             mode: z
               .union([
                 z.literal("none"),
@@ -499,6 +500,9 @@ export const OpenClawSchema = z
                 z.literal("trusted-proxy"),
               ])
               .optional(),
+=======
+            mode: z.union([z.literal("token"), z.literal("password")]).optional(),
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             token: z.string().optional().register(sensitive),
             password: z.string().optional().register(sensitive),
             allowTailscale: z.boolean().optional(),
@@ -523,7 +527,10 @@ export const OpenClawSchema = z
           .strict()
           .optional(),
         trustedProxies: z.array(z.string()).optional(),
+<<<<<<< HEAD
         allowRealIpFallback: z.boolean().optional(),
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         tools: z
           .object({
             deny: z.array(z.string()).optional(),
@@ -531,7 +538,10 @@ export const OpenClawSchema = z
           })
           .strict()
           .optional(),
+<<<<<<< HEAD
         channelHealthCheckMinutes: z.number().int().min(0).optional(),
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         tailscale: z
           .object({
             mode: z.union([z.literal("off"), z.literal("serve"), z.literal("funnel")]).optional(),

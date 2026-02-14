@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import { createOpenClawTools } from "../agents/openclaw-tools.js";
 import {
   resolveEffectiveToolPolicy,
@@ -36,6 +37,22 @@ import { getBearerToken, getHeader } from "./http-utils.js";
 
 const DEFAULT_BODY_BYTES = 2 * 1024 * 1024;
 const MEMORY_TOOL_NAMES = new Set(["memory_search", "memory_get"]);
+
+/**
+ * Tools denied via HTTP /tools/invoke regardless of session policy.
+ * Prevents RCE and privilege escalation from HTTP API surface.
+ * Configurable via gateway.tools.{deny,allow} in openclaw.json.
+ */
+const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
+  // Session orchestration — spawning agents remotely is RCE
+  "sessions_spawn",
+  // Cross-session injection — message injection across sessions
+  "sessions_send",
+  // Gateway control plane — prevents gateway reconfiguration via HTTP
+  "gateway",
+  // Interactive setup — requires terminal QR scan, hangs on HTTP
+  "whatsapp_login",
+];
 
 type ToolsInvokeBody = {
   tool?: unknown;
@@ -112,6 +129,7 @@ function getErrorMessage(err: unknown): string {
   return String(err);
 }
 
+<<<<<<< HEAD
 function resolveToolInputErrorStatus(err: unknown): number | null {
   if (err instanceof ToolInputError) {
     const status = (err as { status?: unknown }).status;
@@ -129,6 +147,18 @@ function resolveToolInputErrorStatus(err: unknown): number | null {
     return status;
   }
   return name === "ToolAuthorizationError" ? 403 : 400;
+=======
+function isToolInputError(err: unknown): boolean {
+  if (err instanceof ToolInputError) {
+    return true;
+  }
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "name" in err &&
+    (err as { name?: unknown }).name === "ToolInputError"
+  );
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function handleToolsInvokeHttpRequest(
@@ -138,7 +168,10 @@ export async function handleToolsInvokeHttpRequest(
     auth: ResolvedGatewayAuth;
     maxBodyBytes?: number;
     trustedProxies?: string[];
+<<<<<<< HEAD
     allowRealIpFallback?: boolean;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     rateLimiter?: AuthRateLimiter;
   },
 ): Promise<boolean> {
@@ -159,7 +192,10 @@ export async function handleToolsInvokeHttpRequest(
     connectAuth: token ? { token, password: token } : null,
     req,
     trustedProxies: opts.trustedProxies ?? cfg.gateway?.trustedProxies,
+<<<<<<< HEAD
     allowRealIpFallback: opts.allowRealIpFallback ?? cfg.gateway?.allowRealIpFallback,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     rateLimiter: opts.rateLimiter,
   });
   if (!authResult.ok) {
@@ -299,6 +335,17 @@ export async function handleToolsInvokeHttpRequest(
   const gatewayDenySet = new Set(gatewayDenyNames);
   const gatewayFiltered = subagentFiltered.filter((t) => !gatewayDenySet.has(t.name));
 
+<<<<<<< HEAD
+=======
+  // Gateway HTTP-specific deny list — applies to ALL sessions via HTTP.
+  const gatewayToolsCfg = cfg.gateway?.tools;
+  const gatewayDenyNames = DEFAULT_GATEWAY_HTTP_TOOL_DENY.filter(
+    (name) => !gatewayToolsCfg?.allow?.includes(name),
+  ).concat(Array.isArray(gatewayToolsCfg?.deny) ? gatewayToolsCfg.deny : []);
+  const gatewayDenySet = new Set(gatewayDenyNames);
+  const gatewayFiltered = subagentFiltered.filter((t) => !gatewayDenySet.has(t.name));
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const tool = gatewayFiltered.find((t) => t.name === toolName);
   if (!tool) {
     sendJson(res, 404, {
@@ -319,9 +366,14 @@ export async function handleToolsInvokeHttpRequest(
     const result = await (tool as any).execute?.(`http-${Date.now()}`, toolArgs);
     sendJson(res, 200, { ok: true, result });
   } catch (err) {
+<<<<<<< HEAD
     const inputStatus = resolveToolInputErrorStatus(err);
     if (inputStatus !== null) {
       sendJson(res, inputStatus, {
+=======
+    if (isToolInputError(err)) {
+      sendJson(res, 400, {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         ok: false,
         error: { type: "tool_error", message: getErrorMessage(err) || "invalid tool arguments" },
       });

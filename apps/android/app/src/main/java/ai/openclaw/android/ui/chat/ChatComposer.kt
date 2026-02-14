@@ -42,7 +42,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+<<<<<<< HEAD
 import androidx.compose.ui.text.font.FontWeight
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,10 +76,20 @@ fun ChatComposer(
 ) {
   var input by rememberSaveable { mutableStateOf("") }
   var showThinkingMenu by remember { mutableStateOf(false) }
+<<<<<<< HEAD
+=======
+  var showSessionMenu by remember { mutableStateOf(false) }
+
+  val sessionOptions = resolveSessionChoices(sessionKey, sessions, mainSessionKey = mainSessionKey)
+  val currentSessionLabel = friendlySessionName(
+    sessionOptions.firstOrNull { it.key == sessionKey }?.displayName ?: sessionKey
+  )
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   val canSend = pendingRunCount == 0 && (input.trim().isNotEmpty() || attachments.isNotEmpty()) && healthOk
   val sendBusy = pendingRunCount > 0
 
+<<<<<<< HEAD
   Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Row(
       modifier = Modifier.fillMaxWidth(),
@@ -109,6 +122,70 @@ fun ChatComposer(
           ThinkingMenuItem("low", thinkingLevel, onSetThinkingLevel) { showThinkingMenu = false }
           ThinkingMenuItem("medium", thinkingLevel, onSetThinkingLevel) { showThinkingMenu = false }
           ThinkingMenuItem("high", thinkingLevel, onSetThinkingLevel) { showThinkingMenu = false }
+=======
+  Surface(
+    shape = MaterialTheme.shapes.large,
+    color = MaterialTheme.colorScheme.surfaceContainer,
+    tonalElevation = 0.dp,
+    shadowElevation = 0.dp,
+  ) {
+    Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Box {
+          FilledTonalButton(
+            onClick = { showSessionMenu = true },
+            contentPadding = ButtonDefaults.ContentPadding,
+          ) {
+            Text(currentSessionLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
+          }
+
+          DropdownMenu(expanded = showSessionMenu, onDismissRequest = { showSessionMenu = false }) {
+            for (entry in sessionOptions) {
+              DropdownMenuItem(
+                text = { Text(friendlySessionName(entry.displayName ?: entry.key)) },
+                onClick = {
+                  onSelectSession(entry.key)
+                  showSessionMenu = false
+                },
+                trailingIcon = {
+                  if (entry.key == sessionKey) {
+                    Text("✓")
+                  } else {
+                    Spacer(modifier = Modifier.width(10.dp))
+                  }
+                },
+              )
+            }
+          }
+        }
+
+        Box {
+          FilledTonalButton(
+            onClick = { showThinkingMenu = true },
+            contentPadding = ButtonDefaults.ContentPadding,
+          ) {
+            Text("🧠 ${thinkingLabel(thinkingLevel)}", maxLines = 1)
+          }
+
+          DropdownMenu(expanded = showThinkingMenu, onDismissRequest = { showThinkingMenu = false }) {
+            ThinkingMenuItem("off", thinkingLevel, onSetThinkingLevel) { showThinkingMenu = false }
+            ThinkingMenuItem("low", thinkingLevel, onSetThinkingLevel) { showThinkingMenu = false }
+            ThinkingMenuItem("medium", thinkingLevel, onSetThinkingLevel) { showThinkingMenu = false }
+            ThinkingMenuItem("high", thinkingLevel, onSetThinkingLevel) { showThinkingMenu = false }
+          }
+        }
+
+        FilledTonalIconButton(onClick = onRefresh, modifier = Modifier.size(42.dp)) {
+          Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+        }
+
+        FilledTonalIconButton(onClick = onPickImages, modifier = Modifier.size(42.dp)) {
+          Icon(Icons.Default.AttachFile, contentDescription = "Add image")
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         }
       }
 

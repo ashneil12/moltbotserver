@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -6,6 +7,11 @@ import * as tar from "tar";
 import { describe, expect, it } from "vitest";
 import type { ReleaseAsset } from "./signal-install.js";
 import { extractSignalCliArchive, looksLikeArchive, pickAsset } from "./signal-install.js";
+=======
+import { describe, expect, it } from "vitest";
+import type { ReleaseAsset } from "./signal-install.js";
+import { looksLikeArchive, pickAsset } from "./signal-install.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 // Realistic asset list modelled after an actual signal-cli GitHub release.
 const SAMPLE_ASSETS: ReleaseAsset[] = [
@@ -131,6 +137,7 @@ describe("pickAsset", () => {
     });
   });
 });
+<<<<<<< HEAD
 
 describe("extractSignalCliArchive", () => {
   async function withArchiveWorkspace(run: (workDir: string) => Promise<void>) {
@@ -192,3 +199,5 @@ describe("extractSignalCliArchive", () => {
     });
   });
 });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

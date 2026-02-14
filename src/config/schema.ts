@@ -1,8 +1,12 @@
 import { CHANNEL_IDS } from "../channels/registry.js";
 import { VERSION } from "../version.js";
+<<<<<<< HEAD
 import type { ConfigUiHint, ConfigUiHints } from "./schema.hints.js";
 import { applySensitiveHints, buildBaseHints, mapSensitivePaths } from "./schema.hints.js";
 import { applyDerivedTags } from "./schema.tags.js";
+=======
+import { applySensitiveHints, buildBaseHints, mapSensitivePaths } from "./schema.hints.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { OpenClawSchema } from "./zod-schema.js";
 
 export type { ConfigUiHint, ConfigUiHints } from "./schema.hints.js";
@@ -328,7 +332,11 @@ function buildBaseConfigSchema(): ConfigSchemaResponse {
     unrepresentable: "any",
   });
   schema.title = "OpenClawConfig";
+<<<<<<< HEAD
   const hints = applyDerivedTags(mapSensitivePaths(OpenClawSchema, "", buildBaseHints()));
+=======
+  const hints = mapSensitivePaths(OpenClawSchema, "", buildBaseHints());
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const next = {
     schema: stripChannelSchema(schema),
     uiHints: hints,
@@ -352,6 +360,7 @@ export function buildConfigSchema(params?: {
   const mergedWithoutSensitiveHints = applyHeartbeatTargetHints(
     applyChannelHints(applyPluginHints(base.uiHints, plugins), channels),
     channels,
+<<<<<<< HEAD
   );
   const extensionHintKeys = collectExtensionHintKeys(
     mergedWithoutSensitiveHints,
@@ -360,7 +369,15 @@ export function buildConfigSchema(params?: {
   );
   const mergedHints = applyDerivedTags(
     applySensitiveHints(mergedWithoutSensitiveHints, extensionHintKeys),
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   );
+  const extensionHintKeys = collectExtensionHintKeys(
+    mergedWithoutSensitiveHints,
+    plugins,
+    channels,
+  );
+  const mergedHints = applySensitiveHints(mergedWithoutSensitiveHints, extensionHintKeys);
   const mergedSchema = applyChannelSchemas(applyPluginSchemas(base.schema, plugins), channels);
   return {
     ...base,

@@ -166,6 +166,7 @@ function resolvePathWithinSessionsDir(
     throw new Error("Session file path must not be empty");
   }
   const resolvedBase = path.resolve(sessionsDir);
+<<<<<<< HEAD
   const realBase = safeRealpathSync(resolvedBase) ?? resolvedBase;
   // Normalize absolute paths that are within the sessions directory.
   // Older versions stored absolute sessionFile paths in sessions.json;
@@ -218,6 +219,16 @@ function resolvePathWithinSessionsDir(
     throw new Error("Session file path must be within sessions directory");
   }
   return path.resolve(realBase, normalized);
+=======
+  // Normalize absolute paths that are within the sessions directory.
+  // Older versions stored absolute sessionFile paths in sessions.json;
+  // convert them to relative so the containment check passes.
+  const normalized = path.isAbsolute(trimmed) ? path.relative(resolvedBase, trimmed) : trimmed;
+  if (!normalized || normalized.startsWith("..") || path.isAbsolute(normalized)) {
+    throw new Error("Session file path must be within sessions directory");
+  }
+  return path.resolve(resolvedBase, normalized);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function resolveSessionTranscriptPathInDir(

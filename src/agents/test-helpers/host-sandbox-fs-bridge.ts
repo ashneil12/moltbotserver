@@ -1,11 +1,37 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+<<<<<<< HEAD
 import { resolveSandboxPath } from "../sandbox-paths.js";
 import type { SandboxFsBridge, SandboxFsStat, SandboxResolvedPath } from "../sandbox/fs-bridge.js";
 
 export function createSandboxFsBridgeFromResolver(
   resolvePath: (filePath: string, cwd?: string) => SandboxResolvedPath,
 ): SandboxFsBridge {
+=======
+import type { SandboxFsBridge, SandboxFsStat, SandboxResolvedPath } from "../sandbox/fs-bridge.js";
+import { resolveSandboxPath } from "../sandbox-paths.js";
+
+export function createHostSandboxFsBridge(rootDir: string): SandboxFsBridge {
+  const root = path.resolve(rootDir);
+
+  const resolvePath = (filePath: string, cwd?: string): SandboxResolvedPath => {
+    const resolved = resolveSandboxPath({
+      filePath,
+      cwd: cwd ?? root,
+      root,
+    });
+    const relativePath = resolved.relative
+      ? resolved.relative.split(path.sep).filter(Boolean).join(path.posix.sep)
+      : "";
+    const containerPath = relativePath ? path.posix.join("/workspace", relativePath) : "/workspace";
+    return {
+      hostPath: resolved.resolved,
+      relativePath,
+      containerPath,
+    };
+  };
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return {
     resolvePath: ({ filePath, cwd }) => resolvePath(filePath, cwd),
     readFile: async ({ filePath, cwd }) => {
@@ -55,6 +81,7 @@ export function createSandboxFsBridgeFromResolver(
     },
   };
 }
+<<<<<<< HEAD
 
 export function createHostSandboxFsBridge(rootDir: string): SandboxFsBridge {
   const root = path.resolve(rootDir);
@@ -78,3 +105,5 @@ export function createHostSandboxFsBridge(rootDir: string): SandboxFsBridge {
 
   return createSandboxFsBridgeFromResolver(resolvePath);
 }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

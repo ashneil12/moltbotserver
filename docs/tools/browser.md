@@ -420,7 +420,11 @@ Actions:
 - `openclaw browser select 9 OptionA OptionB`
 - `openclaw browser download e12 report.pdf`
 - `openclaw browser waitfordownload report.pdf`
+<<<<<<< HEAD
 - `openclaw browser upload /tmp/openclaw/uploads/file.pdf`
+=======
+- `openclaw browser upload /tmp/file.pdf`
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 - `openclaw browser fill --fields '[{"ref":"1","type":"text","value":"Ada"}]'`
 - `openclaw browser dialog --accept`
 - `openclaw browser wait --text "Done"`
@@ -456,8 +460,11 @@ Notes:
 - Download and trace output paths are constrained to OpenClaw temp roots:
   - traces: `/tmp/openclaw` (fallback: `${os.tmpdir()}/openclaw`)
   - downloads: `/tmp/openclaw/downloads` (fallback: `${os.tmpdir()}/openclaw/downloads`)
+<<<<<<< HEAD
 - Upload paths are constrained to an OpenClaw temp uploads root:
   - uploads: `/tmp/openclaw/uploads` (fallback: `${os.tmpdir()}/openclaw/uploads`)
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 - `upload` can also set file inputs directly via `--input-ref` or `--element`.
 - `snapshot`:
   - `--format ai` (default when Playwright is installed): returns an AI snapshot with numeric refs (`aria-ref="<n>"`).

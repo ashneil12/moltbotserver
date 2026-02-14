@@ -75,10 +75,13 @@ class SecurePrefs(context: Context) {
     MutableStateFlow(prefs.getString("gateway.manual.token", "") ?: "")
   val gatewayToken: StateFlow<String> = _gatewayToken
 
+<<<<<<< HEAD
   private val _onboardingCompleted =
     MutableStateFlow(prefs.getBoolean("onboarding.completed", false))
   val onboardingCompleted: StateFlow<Boolean> = _onboardingCompleted
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   private val _lastDiscoveredStableId =
     MutableStateFlow(
       prefs.getString("gateway.lastDiscoveredStableID", "") ?: "",
@@ -152,6 +155,7 @@ class SecurePrefs(context: Context) {
   }
 
   fun setGatewayToken(value: String) {
+<<<<<<< HEAD
     val trimmed = value.trim()
     prefs.edit(commit = true) { putString("gateway.manual.token", trimmed) }
     _gatewayToken.value = trimmed
@@ -164,6 +168,10 @@ class SecurePrefs(context: Context) {
   fun setOnboardingCompleted(value: Boolean) {
     prefs.edit { putBoolean("onboarding.completed", value) }
     _onboardingCompleted.value = value
+=======
+    prefs.edit { putString("gateway.manual.token", value) }
+    _gatewayToken.value = value
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   fun setCanvasDebugStatusEnabled(value: Boolean) {

@@ -4,7 +4,20 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { runNodeWatchedPaths } from "./run-node.mjs";
 
+<<<<<<< HEAD
 const WATCH_NODE_RUNNER = "scripts/run-node.mjs";
+=======
+const args = process.argv.slice(2);
+const env = { ...process.env };
+const cwd = process.cwd();
+const compiler = "tsdown";
+const watchSession = `${Date.now()}-${process.pid}`;
+env.OPENCLAW_WATCH_MODE = "1";
+env.OPENCLAW_WATCH_SESSION = watchSession;
+if (args.length > 0) {
+  env.OPENCLAW_WATCH_COMMAND = args.join(" ");
+}
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const buildWatchArgs = (args) => [
   ...runNodeWatchedPaths.flatMap((watchPath) => ["--watch-path", watchPath]),

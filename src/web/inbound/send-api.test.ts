@@ -51,6 +51,7 @@ describe("createWebSendApi", () => {
       }),
     );
   });
+<<<<<<< HEAD
 
   it("sends plain text messages", async () => {
     await api.sendMessage("+1555", "hello");
@@ -155,4 +156,6 @@ describe("createWebSendApi", () => {
     await api.sendComposingTo("+1555");
     expect(sendPresenceUpdate).toHaveBeenCalledWith("composing", "1555@s.whatsapp.net");
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

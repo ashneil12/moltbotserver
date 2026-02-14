@@ -242,6 +242,7 @@ async function resolveChannelId(
   return { channelId: dmChannel.id, dm: true };
 }
 
+<<<<<<< HEAD
 export async function resolveDiscordChannelType(
   rest: RequestClient,
   channelId: string,
@@ -256,6 +257,10 @@ export async function resolveDiscordChannelType(
 
 // Discord message flag for silent/suppress notifications
 export const SUPPRESS_NOTIFICATIONS_FLAG = 1 << 12;
+=======
+// Discord message flag for silent/suppress notifications
+const SUPPRESS_NOTIFICATIONS_FLAG = 1 << 12;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function buildDiscordTextChunks(
   text: string,
@@ -388,7 +393,16 @@ async function sendDiscordText(
     return (await request(
       () =>
         rest.post(Routes.channelMessages(channelId), {
+<<<<<<< HEAD
           body,
+=======
+          body: {
+            content: chunks[0],
+            message_reference: messageReference,
+            ...(embeds?.length ? { embeds } : {}),
+            ...(flags ? { flags } : {}),
+          },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         }) as Promise<{ id: string; channel_id: string }>,
       "text",
     )) as { id: string; channel_id: string };
@@ -397,8 +411,26 @@ async function sendDiscordText(
     return await sendChunk(chunks[0], true);
   }
   let last: { id: string; channel_id: string } | null = null;
+<<<<<<< HEAD
   for (const [index, chunk] of chunks.entries()) {
     last = await sendChunk(chunk, index === 0);
+=======
+  let isFirst = true;
+  for (const chunk of chunks) {
+    last = (await request(
+      () =>
+        rest.post(Routes.channelMessages(channelId), {
+          body: {
+            content: chunk,
+            message_reference: isFirst ? messageReference : undefined,
+            ...(isFirst && embeds?.length ? { embeds } : {}),
+            ...(flags ? { flags } : {}),
+          },
+        }) as Promise<{ id: string; channel_id: string }>,
+      "text",
+    )) as { id: string; channel_id: string };
+    isFirst = false;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
   if (!last) {
     throw new Error("Discord send failed (empty chunk result)");
@@ -425,6 +457,7 @@ async function sendDiscordMedia(
   const caption = chunks[0] ?? "";
   const messageReference = replyTo ? { message_id: replyTo, fail_if_not_exists: false } : undefined;
   const flags = silent ? SUPPRESS_NOTIFICATIONS_FLAG : undefined;
+<<<<<<< HEAD
   const fileData = toDiscordFileBlob(media.buffer);
   const captionComponents = resolveDiscordSendComponents({
     components,
@@ -444,13 +477,27 @@ async function sendDiscordMedia(
       },
     ],
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const res = (await request(
     () =>
       rest.post(Routes.channelMessages(channelId), {
         body: stripUndefinedFields({
           ...serializePayload(payload),
           ...(messageReference ? { message_reference: messageReference } : {}),
+<<<<<<< HEAD
         }),
+=======
+          ...(embeds?.length ? { embeds } : {}),
+          ...(flags ? { flags } : {}),
+          files: [
+            {
+              data: media.buffer,
+              name: media.fileName ?? "upload",
+            },
+          ],
+        },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }) as Promise<{ id: string; channel_id: string }>,
     "media",
   )) as { id: string; channel_id: string };

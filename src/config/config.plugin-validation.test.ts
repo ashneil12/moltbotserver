@@ -101,6 +101,7 @@ describe("config plugin validation", () => {
         ]),
       );
     }
+<<<<<<< HEAD
   });
 
   it("warns for removed legacy plugin ids instead of failing validation", async () => {
@@ -143,6 +144,8 @@ describe("config plugin validation", () => {
         ]),
       );
     }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("surfaces plugin config diagnostics", async () => {
@@ -187,6 +190,7 @@ describe("config plugin validation", () => {
       plugins: { enabled: false, entries: { discord: { enabled: true } } },
     });
     expect(res.ok).toBe(true);
+<<<<<<< HEAD
   });
 
   it("accepts channels.modelByChannel", async () => {
@@ -202,6 +206,8 @@ describe("config plugin validation", () => {
       },
     });
     expect(res.ok).toBe(true);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("accepts plugin heartbeat targets", async () => {

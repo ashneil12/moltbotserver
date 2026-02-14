@@ -1,16 +1,25 @@
+<<<<<<< HEAD
 import path from "node:path";
 import { confirm, isCancel } from "@clack/prompts";
+=======
+import { confirm, isCancel } from "@clack/prompts";
+import path from "node:path";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   checkShellCompletionStatus,
   ensureCompletionCacheExists,
 } from "../../commands/doctor-completion.js";
 import { doctorCommand } from "../../commands/doctor.js";
+<<<<<<< HEAD
 import {
   readConfigFileSnapshot,
   resolveGatewayPort,
   writeConfigFile,
 } from "../../config/config.js";
 import { resolveGatewayService } from "../../daemon/service.js";
+=======
+import { readConfigFileSnapshot, writeConfigFile } from "../../config/config.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   channelToNpmTag,
   DEFAULT_GIT_CHANNEL,
@@ -37,6 +46,7 @@ import { pathExists } from "../../utils.js";
 import { replaceCliName, resolveCliName } from "../cli-name.js";
 import { formatCliCommand } from "../command-format.js";
 import { installCompletion } from "../completion-cli.js";
+<<<<<<< HEAD
 import { runDaemonInstall, runDaemonRestart } from "../daemon-cli.js";
 import {
   renderRestartDiagnostics,
@@ -51,6 +61,14 @@ import {
   ensureGitCheckout,
   normalizeTag,
   parseTimeoutMsOrExit,
+=======
+import { runDaemonRestart } from "../daemon-cli.js";
+import { createUpdateProgress, printResult } from "./progress.js";
+import {
+  DEFAULT_PACKAGE_NAME,
+  ensureGitCheckout,
+  normalizeTag,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   readPackageName,
   readPackageVersion,
   resolveGitInstallDir,
@@ -65,7 +83,10 @@ import {
 import { suppressDeprecations } from "./suppress-deprecations.js";
 
 const CLI_NAME = resolveCliName();
+<<<<<<< HEAD
 const SERVICE_REFRESH_TIMEOUT_MS = 60_000;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const UPDATE_QUIPS = [
   "Leveled up! New skills unlocked. You're welcome.",
@@ -94,6 +115,7 @@ function pickUpdateQuip(): string {
   return UPDATE_QUIPS[Math.floor(Math.random() * UPDATE_QUIPS.length)] ?? "Update complete.";
 }
 
+<<<<<<< HEAD
 function resolveGatewayInstallEntrypointCandidates(root?: string): string[] {
   if (!root) {
     return [];
@@ -200,6 +222,8 @@ async function refreshGatewayServiceEnv(params: {
   await runDaemonInstall({ force: true, json: params.jsonMode || undefined });
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 async function tryInstallShellCompletion(opts: {
   jsonMode: boolean;
   skipPrompt: boolean;
@@ -268,7 +292,14 @@ async function runPackageInstallUpdate(params: {
     installKind: params.installKind,
     timeoutMs: params.timeoutMs,
   });
+<<<<<<< HEAD
   const runCommand = createGlobalCommandRunner();
+=======
+  const runCommand = async (argv: string[], options: { timeoutMs: number }) => {
+    const res = await runCommandWithTimeout(argv, options);
+    return { stdout: res.stdout, stderr: res.stderr, code: res.code };
+  };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const pkgRoot = await resolveGlobalPackageRoot(manager, runCommand, params.timeoutMs);
   const packageName =
@@ -505,9 +536,12 @@ async function maybeRestartService(params: {
   shouldRestart: boolean;
   result: UpdateRunResult;
   opts: UpdateCommandOptions;
+<<<<<<< HEAD
   refreshServiceEnv: boolean;
   gatewayPort: number;
   restartScriptPath?: string | null;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }): Promise<void> {
   if (params.shouldRestart) {
     if (!params.opts.json) {
@@ -516,6 +550,7 @@ async function maybeRestartService(params: {
     }
 
     try {
+<<<<<<< HEAD
       let restarted = false;
       let restartInitiated = false;
       if (params.refreshServiceEnv) {
@@ -541,6 +576,9 @@ async function maybeRestartService(params: {
         restarted = await runDaemonRestart();
       }
 
+=======
+      const restarted = await runDaemonRestart();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       if (!params.opts.json && restarted) {
         defaultRuntime.log(theme.success("Daemon restarted successfully."));
         defaultRuntime.log("");
@@ -557,6 +595,7 @@ async function maybeRestartService(params: {
           delete process.env.OPENCLAW_UPDATE_IN_PROGRESS;
         }
       }
+<<<<<<< HEAD
 
       if (!params.opts.json && restartInitiated) {
         const service = resolveGatewayService();
@@ -595,6 +634,8 @@ async function maybeRestartService(params: {
         }
         defaultRuntime.log("");
       }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     } catch (err) {
       if (!params.opts.json) {
         defaultRuntime.log(theme.warn(`Daemon restart failed: ${String(err)}`));
@@ -629,9 +670,18 @@ async function maybeRestartService(params: {
 export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   suppressDeprecations();
 
+<<<<<<< HEAD
   const timeoutMs = parseTimeoutMsOrExit(opts.timeout);
   const shouldRestart = opts.restart !== false;
   if (timeoutMs === null) {
+=======
+  const timeoutMs = opts.timeout ? Number.parseInt(opts.timeout, 10) * 1000 : undefined;
+  const shouldRestart = opts.restart !== false;
+
+  if (timeoutMs !== undefined && (Number.isNaN(timeoutMs) || timeoutMs <= 0)) {
+    defaultRuntime.error("--timeout must be a positive integer (seconds)");
+    defaultRuntime.exit(1);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return;
   }
 
@@ -672,6 +722,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 
   const explicitTag = normalizeTag(opts.tag);
   let tag = explicitTag ?? channelToNpmTag(channel);
+<<<<<<< HEAD
   let currentVersion: string | null = null;
   let targetVersion: string | null = null;
   let downgradeRisk = false;
@@ -680,6 +731,13 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   if (updateInstallKind !== "git") {
     currentVersion = switchToPackage ? null : await readPackageVersion(root);
     targetVersion = explicitTag
+=======
+
+  if (updateInstallKind !== "git") {
+    const currentVersion = switchToPackage ? null : await readPackageVersion(root);
+    let fallbackToLatest = false;
+    const targetVersion = explicitTag
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       ? await resolveTargetVersion(tag, timeoutMs)
       : await resolveNpmChannelTag({ channel, timeoutMs }).then((resolved) => {
           tag = resolved.tag;
@@ -688,6 +746,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
         });
     const cmp =
       currentVersion && targetVersion ? compareSemverStrings(currentVersion, targetVersion) : null;
+<<<<<<< HEAD
     downgradeRisk =
       !fallbackToLatest &&
       currentVersion != null &&
@@ -788,6 +847,40 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   }
 
   if (updateInstallKind === "git" && opts.tag && !opts.json) {
+=======
+    const needsConfirm =
+      !fallbackToLatest &&
+      currentVersion != null &&
+      (targetVersion == null || (cmp != null && cmp > 0));
+
+    if (needsConfirm && !opts.yes) {
+      if (!process.stdin.isTTY || opts.json) {
+        defaultRuntime.error(
+          [
+            "Downgrade confirmation required.",
+            "Downgrading can break configuration. Re-run in a TTY to confirm.",
+          ].join("\n"),
+        );
+        defaultRuntime.exit(1);
+        return;
+      }
+
+      const targetLabel = targetVersion ?? `${tag} (unknown)`;
+      const message = `Downgrading from ${currentVersion} to ${targetLabel} can break configuration. Continue?`;
+      const ok = await confirm({
+        message: stylePromptMessage(message),
+        initialValue: false,
+      });
+      if (isCancel(ok) || !ok) {
+        if (!opts.json) {
+          defaultRuntime.log(theme.muted("Update cancelled."));
+        }
+        defaultRuntime.exit(0);
+        return;
+      }
+    }
+  } else if (opts.tag && !opts.json) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     defaultRuntime.log(
       theme.muted("Note: --tag applies to npm installs only; git updates ignore it."),
     );
@@ -816,6 +909,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   const { progress, stop } = createUpdateProgress(showProgress);
   const startedAt = Date.now();
 
+<<<<<<< HEAD
   let restartScriptPath: string | null = null;
   let refreshGatewayServiceEnv = false;
   if (shouldRestart) {
@@ -830,6 +924,8 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     }
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const result = switchToPackage
     ? await runPackageInstallUpdate({
         root,
@@ -902,9 +998,12 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     shouldRestart,
     result,
     opts,
+<<<<<<< HEAD
     refreshServiceEnv: refreshGatewayServiceEnv,
     gatewayPort: resolveGatewayPort(configSnapshot.valid ? configSnapshot.config : undefined),
     restartScriptPath,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   if (!opts.json) {

@@ -1,7 +1,10 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
 import { withTempDir } from "../test-utils/temp-dir.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   cameraTempPath,
   parseCameraClipPayload,
@@ -242,5 +245,46 @@ describe("nodes screen helpers", () => {
       id: "id1",
     });
     expect(p).toBe(path.join("/tmp", "openclaw-screen-record-id1.mp4"));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("writes url payload to file", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("url-content", { status: 200 })),
+    );
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-test-"));
+    const out = path.join(dir, "x.bin");
+    try {
+      await writeUrlToFile(out, "https://example.com/clip.mp4");
+      await expect(fs.readFile(out, "utf8")).resolves.toBe("url-content");
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects non-https url payload", async () => {
+    await expect(writeUrlToFile("/tmp/ignored", "http://example.com/x.bin")).rejects.toThrow(
+      /only https/i,
+    );
+  });
+
+  it("rejects oversized content-length for url payload", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("tiny", {
+            status: 200,
+            headers: { "content-length": String(999_999_999) },
+          }),
+      ),
+    );
+    await expect(writeUrlToFile("/tmp/ignored", "https://example.com/huge.bin")).rejects.toThrow(
+      /exceeds max/i,
+    );
   });
 });

@@ -170,6 +170,7 @@ describe("mattermost websocket monitor", () => {
     expect(patches.some((patch) => patch.connected === true)).toBe(true);
     expect(patches.filter((patch) => patch.connected === false)).toHaveLength(2);
   });
+<<<<<<< HEAD
 
   it("dispatches reaction events to the reaction handler", async () => {
     const socket = new FakeWebSocket();
@@ -229,4 +230,6 @@ describe("mattermost websocket monitor", () => {
     );
     expect(payload.data?.reaction).toBeDefined();
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

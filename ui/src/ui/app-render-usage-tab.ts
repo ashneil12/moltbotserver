@@ -37,8 +37,11 @@ export function renderUsageTab(state: AppViewState) {
     timeSeriesBreakdownMode: state.usageTimeSeriesBreakdownMode,
     timeSeries: state.usageTimeSeries,
     timeSeriesLoading: state.usageTimeSeriesLoading,
+<<<<<<< HEAD
     timeSeriesCursorStart: state.usageTimeSeriesCursorStart,
     timeSeriesCursorEnd: state.usageTimeSeriesCursorEnd,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     sessionLogs: state.usageSessionLogs,
     sessionLogsLoading: state.usageSessionLogsLoading,
     sessionLogsExpanded: state.usageSessionLogsExpanded,
@@ -73,10 +76,13 @@ export function renderUsageTab(state: AppViewState) {
     onRefresh: () => loadUsage(state),
     onTimeZoneChange: (zone) => {
       state.usageTimeZone = zone;
+<<<<<<< HEAD
       state.usageSelectedDays = [];
       state.usageSelectedHours = [];
       state.usageSelectedSessions = [];
       void loadUsage(state);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     },
     onToggleContextExpanded: () => {
       state.usageContextExpanded = !state.usageContextExpanded;
@@ -202,10 +208,13 @@ export function renderUsageTab(state: AppViewState) {
         }
       }
 
+<<<<<<< HEAD
       // Reset range selection when switching sessions
       state.usageTimeSeriesCursorStart = null;
       state.usageTimeSeriesCursorEnd = null;
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       // Load timeseries/logs only if exactly one session selected
       if (state.usageSelectedSessions.length === 1) {
         void loadSessionTimeSeries(state, state.usageSelectedSessions[0]);
@@ -247,10 +256,13 @@ export function renderUsageTab(state: AppViewState) {
     onTimeSeriesBreakdownChange: (mode) => {
       state.usageTimeSeriesBreakdownMode = mode;
     },
+<<<<<<< HEAD
     onTimeSeriesCursorRangeChange: (start, end) => {
       state.usageTimeSeriesCursorStart = start;
       state.usageTimeSeriesCursorEnd = end;
     },
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     onClearDays: () => {
       state.usageSelectedDays = [];
     },

@@ -1,30 +1,71 @@
+<<<<<<< HEAD
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { type ExecHost, maxAsk, minSecurity } from "../infra/exec-approvals.js";
 import { resolveExecSafeBinRuntimePolicy } from "../infra/exec-safe-bin-runtime-policy.js";
+=======
+import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import crypto from "node:crypto";
+import type { BashSandboxConfig } from "./bash-tools.shared.js";
+import {
+  type ExecAsk,
+  type ExecHost,
+  type ExecSecurity,
+  type ExecApprovalsFile,
+  addAllowlistEntry,
+  evaluateShellAllowlist,
+  maxAsk,
+  minSecurity,
+  requiresExecApproval,
+  resolveSafeBins,
+  recordAllowlistUse,
+  resolveExecApprovals,
+  resolveExecApprovalsFromFile,
+} from "../infra/exec-approvals.js";
+import { buildNodeShellCommand } from "../infra/node-shell.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   getShellPathFromLoginShell,
   resolveShellEnvFallbackTimeoutMs,
 } from "../infra/shell-env.js";
 import { logInfo } from "../logger.js";
 import { parseAgentSessionKey, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
+<<<<<<< HEAD
 import { markBackgrounded } from "./bash-process-registry.js";
 import { processGatewayAllowlist } from "./bash-tools.exec-host-gateway.js";
 import { executeNodeHostCommand } from "./bash-tools.exec-host-node.js";
 import {
   DEFAULT_MAX_OUTPUT,
+=======
+import { markBackgrounded, tail } from "./bash-process-registry.js";
+import {
+  DEFAULT_APPROVAL_REQUEST_TIMEOUT_MS,
+  DEFAULT_APPROVAL_TIMEOUT_MS,
+  DEFAULT_MAX_OUTPUT,
+  DEFAULT_NOTIFY_TAIL_CHARS,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   DEFAULT_PATH,
   DEFAULT_PENDING_MAX_OUTPUT,
   applyPathPrepend,
   applyShellPath,
+<<<<<<< HEAD
   normalizeExecAsk,
   normalizeExecHost,
   normalizeExecSecurity,
+=======
+  createApprovalSlug,
+  emitExecSystemEvent,
+  normalizeExecAsk,
+  normalizeExecHost,
+  normalizeExecSecurity,
+  normalizeNotifyOutput,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   normalizePathPrepend,
   renderExecHostLabel,
   resolveApprovalRunningNoticeMs,
   runExecProcess,
+<<<<<<< HEAD
   sanitizeHostBaseEnv,
   execSchema,
   validateHostEnv,
@@ -34,6 +75,12 @@ import type {
   ExecToolDefaults,
   ExecToolDetails,
 } from "./bash-tools.exec-types.js";
+=======
+  execSchema,
+  type ExecProcessHandle,
+  validateHostEnv,
+} from "./bash-tools.exec-runtime.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   buildSandboxEnv,
   clampWithDefault,
@@ -43,7 +90,33 @@ import {
   resolveWorkdir,
   truncateMiddle,
 } from "./bash-tools.shared.js";
+<<<<<<< HEAD
 import { assertSandboxPath } from "./sandbox-paths.js";
+=======
+import { callGatewayTool } from "./tools/gateway.js";
+import { listNodes, resolveNodeIdFromList } from "./tools/nodes-utils.js";
+
+export type ExecToolDefaults = {
+  host?: ExecHost;
+  security?: ExecSecurity;
+  ask?: ExecAsk;
+  node?: string;
+  pathPrepend?: string[];
+  safeBins?: string[];
+  agentId?: string;
+  backgroundMs?: number;
+  timeoutSec?: number;
+  approvalRunningNoticeMs?: number;
+  sandbox?: BashSandboxConfig;
+  elevated?: ExecElevatedDefaults;
+  allowBackground?: boolean;
+  scopeKey?: string;
+  sessionKey?: string;
+  messageProvider?: string;
+  notifyOnExit?: boolean;
+  cwd?: string;
+};
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type { BashSandboxConfig } from "./bash-tools.shared.js";
 export type {
@@ -52,6 +125,7 @@ export type {
   ExecToolDetails,
 } from "./bash-tools.exec-types.js";
 
+<<<<<<< HEAD
 function extractScriptTargetFromCommand(
   command: string,
 ): { kind: "python"; relOrAbsPath: string } | { kind: "node"; relOrAbsPath: string } | null {
@@ -147,6 +221,40 @@ async function validateScriptFileForShellBleed(params: {
     }
   }
 }
+=======
+export type ExecElevatedDefaults = {
+  enabled: boolean;
+  allowed: boolean;
+  defaultLevel: "on" | "off" | "ask" | "full";
+};
+
+export type ExecToolDetails =
+  | {
+      status: "running";
+      sessionId: string;
+      pid?: number;
+      startedAt: number;
+      cwd?: string;
+      tail?: string;
+    }
+  | {
+      status: "completed" | "failed";
+      exitCode: number | null;
+      durationMs: number;
+      aggregated: string;
+      cwd?: string;
+    }
+  | {
+      status: "approval-pending";
+      approvalId: string;
+      approvalSlug: string;
+      expiresAtMs: number;
+      host: ExecHost;
+      command: string;
+      cwd?: string;
+      nodeId?: string;
+    };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function createExecTool(
   defaults?: ExecToolDefaults,

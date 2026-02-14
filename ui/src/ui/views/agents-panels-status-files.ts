@@ -1,4 +1,5 @@
 import { html, nothing } from "lit";
+<<<<<<< HEAD
 import { formatRelativeTimestamp } from "../format.ts";
 import {
   formatCronPayload,
@@ -6,6 +7,8 @@ import {
   formatCronState,
   formatNextRun,
 } from "../presenter.ts";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type {
   AgentFileEntry,
   AgentsFilesListResult,
@@ -14,6 +17,16 @@ import type {
   CronJob,
   CronStatus,
 } from "../types.ts";
+<<<<<<< HEAD
+=======
+import { formatRelativeTimestamp } from "../format.ts";
+import {
+  formatCronPayload,
+  formatCronSchedule,
+  formatCronState,
+  formatNextRun,
+} from "../presenter.ts";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { formatBytes, type AgentContext } from "./agents-utils.ts";
 
 function renderAgentContextCard(context: AgentContext, subtitle: string) {

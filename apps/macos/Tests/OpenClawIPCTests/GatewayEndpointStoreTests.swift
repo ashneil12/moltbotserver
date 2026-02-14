@@ -218,8 +218,13 @@ import Testing
         #expect(url.absoluteString == "https://gateway.example:443/remote-ui/")
     }
 
+<<<<<<< HEAD
     @Test func normalizeGatewayUrlAddsDefaultPortForLoopbackWs() {
         let url = GatewayRemoteConfig.normalizeGatewayUrl("ws://127.0.0.1")
+=======
+    @Test func normalizeGatewayUrlAddsDefaultPortForWs() {
+        let url = GatewayRemoteConfig.normalizeGatewayUrl("ws://gateway")
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         #expect(url?.port == 18789)
         #expect(url?.absoluteString == "ws://127.0.0.1:18789")
     }

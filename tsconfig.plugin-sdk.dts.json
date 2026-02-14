@@ -8,8 +8,23 @@
     "noEmitOnError": true,
     "outDir": "dist/plugin-sdk",
     "rootDir": "src",
-    "tsBuildInfoFile": "dist/plugin-sdk/.tsbuildinfo"
+    "tsBuildInfoFile": "dist/plugin-sdk/.tsbuildinfo",
+    "types": [
+      "node"
+    ]
   },
+<<<<<<< HEAD
   "include": ["src/plugin-sdk/index.ts", "src/plugin-sdk/account-id.ts", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+=======
+  "include": [
+    "src/plugin-sdk/index.ts",
+    "src/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts"
+  ]
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

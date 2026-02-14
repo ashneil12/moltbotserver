@@ -9,6 +9,13 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ClientToolDefinition } from "../agents/pi-embedded-runner/run/params.js";
+<<<<<<< HEAD
+=======
+import type { ImageContent } from "../commands/agent/types.js";
+import type { GatewayHttpResponsesConfig } from "../config/types.gateway.js";
+import type { AuthRateLimiter } from "./auth-rate-limit.js";
+import { buildHistoryContextFromEntries, type HistoryEntry } from "../auto-reply/reply/history.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { createDefaultDeps } from "../cli/deps.js";
 import { agentCommand } from "../commands/agent.js";
 import type { ImageContent } from "../commands/agent/types.js";
@@ -29,12 +36,25 @@ import {
   type InputImageSource,
 } from "../media/input-files.js";
 import { defaultRuntime } from "../runtime.js";
+<<<<<<< HEAD
 import { resolveAssistantStreamDeltaText } from "./agent-event-assistant-text.js";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import { sendJson, setSseHeaders, writeDone } from "./http-common.js";
 import { handleGatewayPostJsonEndpoint } from "./http-endpoint-helpers.js";
 import { resolveAgentIdForRequest, resolveSessionKey } from "./http-utils.js";
+=======
+import { authorizeGatewayConnect, type ResolvedGatewayAuth } from "./auth.js";
+import {
+  readJsonBodyOrError,
+  sendGatewayAuthFailure,
+  sendJson,
+  sendMethodNotAllowed,
+  setSseHeaders,
+  writeDone,
+} from "./http-common.js";
+import { getBearerToken, resolveAgentIdForRequest, resolveSessionKey } from "./http-utils.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   CreateResponseBodySchema,
   type CreateResponseBody,
@@ -50,7 +70,10 @@ type OpenResponsesHttpOptions = {
   maxBodyBytes?: number;
   config?: GatewayHttpResponsesConfig;
   trustedProxies?: string[];
+<<<<<<< HEAD
   allowRealIpFallback?: boolean;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   rateLimiter?: AuthRateLimiter;
 };
 
@@ -266,6 +289,32 @@ export async function handleOpenResponsesHttpRequest(
   res: ServerResponse,
   opts: OpenResponsesHttpOptions,
 ): Promise<boolean> {
+<<<<<<< HEAD
+=======
+  const url = new URL(req.url ?? "/", `http://${req.headers.host || "localhost"}`);
+  if (url.pathname !== "/v1/responses") {
+    return false;
+  }
+
+  if (req.method !== "POST") {
+    sendMethodNotAllowed(res);
+    return true;
+  }
+
+  const token = getBearerToken(req);
+  const authResult = await authorizeGatewayConnect({
+    auth: opts.auth,
+    connectAuth: { token, password: token },
+    req,
+    trustedProxies: opts.trustedProxies,
+    rateLimiter: opts.rateLimiter,
+  });
+  if (!authResult.ok) {
+    sendGatewayAuthFailure(res, authResult);
+    return true;
+  }
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const limits = resolveResponsesLimits(opts.config);
   const maxBodyBytes =
     opts.maxBodyBytes ??

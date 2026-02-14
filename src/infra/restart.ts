@@ -16,9 +16,12 @@ const SPAWN_TIMEOUT_MS = 2000;
 const SIGUSR1_AUTH_GRACE_MS = 5000;
 const DEFAULT_DEFERRAL_POLL_MS = 500;
 const DEFAULT_DEFERRAL_MAX_WAIT_MS = 30_000;
+<<<<<<< HEAD
 const RESTART_COOLDOWN_MS = 30_000;
 
 const restartLog = createSubsystemLogger("restart");
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 let sigusr1AuthorizedCount = 0;
 let sigusr1AuthorizedUntil = 0;
@@ -27,15 +30,19 @@ let preRestartCheck: (() => number) | null = null;
 let restartCycleToken = 0;
 let emittedRestartToken = 0;
 let consumedRestartToken = 0;
+<<<<<<< HEAD
 let lastRestartEmittedAt = 0;
 let pendingRestartTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingRestartDueAt = 0;
 let pendingRestartReason: string | undefined;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function hasUnconsumedRestartSignal(): boolean {
   return emittedRestartToken > consumedRestartToken;
 }
 
+<<<<<<< HEAD
 function clearPendingScheduledRestart(): void {
   if (pendingRestartTimer) {
     clearTimeout(pendingRestartTimer);
@@ -86,6 +93,8 @@ function formatRestartAudit(audit: RestartAuditInfo | undefined): string {
   return fields.length > 0 ? fields.join(" ") : "actor=<unknown>";
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 /**
  * Register a callback that scheduleGatewaySigusr1Restart checks before emitting SIGUSR1.
  * The callback should return the number of pending items (0 = safe to restart).
@@ -102,10 +111,15 @@ export function setPreRestartDeferralCheck(fn: () => number): void {
  */
 export function emitGatewayRestart(): boolean {
   if (hasUnconsumedRestartSignal()) {
+<<<<<<< HEAD
     clearPendingScheduledRestart();
     return false;
   }
   clearPendingScheduledRestart();
+=======
+    return false;
+  }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const cycleToken = ++restartCycleToken;
   emittedRestartToken = cycleToken;
   authorizeGatewaySigusr1Restart();
@@ -120,7 +134,10 @@ export function emitGatewayRestart(): boolean {
     emittedRestartToken = consumedRestartToken;
     return false;
   }
+<<<<<<< HEAD
   lastRestartEmittedAt = Date.now();
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return true;
 }
 
@@ -372,6 +389,7 @@ export function scheduleGatewaySigusr1Restart(opts?: {
     typeof opts?.reason === "string" && opts.reason.trim()
       ? opts.reason.trim().slice(0, 200)
       : undefined;
+<<<<<<< HEAD
   const mode = process.listenerCount("SIGUSR1") > 0 ? "emit" : "signal";
   const nowMs = Date.now();
   const cooldownMsApplied = Math.max(0, lastRestartEmittedAt + RESTART_COOLDOWN_MS - nowMs);
@@ -434,15 +452,30 @@ export function scheduleGatewaySigusr1Restart(opts?: {
     },
     Math.max(0, requestedDueAt - nowMs),
   );
+=======
+
+  setTimeout(() => {
+    const pendingCheck = preRestartCheck;
+    if (!pendingCheck) {
+      emitGatewayRestart();
+      return;
+    }
+    deferGatewayRestartUntilIdle({ getPendingCount: pendingCheck });
+  }, delayMs);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return {
     ok: true,
     pid: process.pid,
     signal: "SIGUSR1",
     delayMs: Math.max(0, requestedDueAt - nowMs),
     reason,
+<<<<<<< HEAD
     mode,
     coalesced: false,
     cooldownMsApplied,
+=======
+    mode: process.listenerCount("SIGUSR1") > 0 ? "emit" : "signal",
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   };
 }
 
@@ -455,7 +488,10 @@ export const __testing = {
     restartCycleToken = 0;
     emittedRestartToken = 0;
     consumedRestartToken = 0;
+<<<<<<< HEAD
     lastRestartEmittedAt = 0;
     clearPendingScheduledRestart();
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   },
 };

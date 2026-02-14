@@ -401,20 +401,32 @@ export class GatewayClient {
     this.connectNonce = null;
     this.connectSent = false;
     const rawConnectDelayMs = this.opts.connectDelayMs;
+<<<<<<< HEAD
     const connectChallengeTimeoutMs =
       typeof rawConnectDelayMs === "number" && Number.isFinite(rawConnectDelayMs)
         ? Math.max(250, Math.min(10_000, rawConnectDelayMs))
         : 2_000;
+=======
+    const connectDelayMs =
+      typeof rawConnectDelayMs === "number" && Number.isFinite(rawConnectDelayMs)
+        ? Math.max(0, Math.min(5_000, rawConnectDelayMs))
+        : 750;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (this.connectTimer) {
       clearTimeout(this.connectTimer);
     }
     this.connectTimer = setTimeout(() => {
+<<<<<<< HEAD
       if (this.connectSent || this.ws?.readyState !== WebSocket.OPEN) {
         return;
       }
       this.opts.onConnectError?.(new Error("gateway connect challenge timeout"));
       this.ws?.close(1008, "connect challenge timeout");
     }, connectChallengeTimeoutMs);
+=======
+      this.sendConnect();
+    }, connectDelayMs);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   private scheduleReconnect() {

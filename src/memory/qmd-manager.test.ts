@@ -2,7 +2,10 @@ import { EventEmitter } from "node:events";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+<<<<<<< HEAD
 import type { Mock } from "vitest";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { logWarnMock, logDebugMock, logInfoMock } = vi.hoisted(() => ({
@@ -57,6 +60,7 @@ function emitAndClose(
   });
 }
 
+<<<<<<< HEAD
 function isMcporterCommand(cmd: unknown): boolean {
   if (typeof cmd !== "string") {
     return false;
@@ -64,6 +68,8 @@ function isMcporterCommand(cmd: unknown): boolean {
   return /(^|[\\/])mcporter(?:\.cmd)?$/i.test(cmd);
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 vi.mock("../logging/subsystem.js", () => ({
   createSubsystemLogger: () => {
     const logger = {
@@ -100,6 +106,7 @@ describe("QmdMemoryManager", () => {
   let cfg: OpenClawConfig;
   const agentId = "main";
 
+<<<<<<< HEAD
   async function createManager(params?: { mode?: "full" | "status"; cfg?: OpenClawConfig }) {
     const cfgToUse = params?.cfg ?? cfg;
     const resolved = resolveMemoryBackendConfig({ cfg: cfgToUse, agentId });
@@ -116,6 +123,8 @@ describe("QmdMemoryManager", () => {
     return { manager, resolved };
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   beforeAll(async () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "qmd-manager-test-fixtures-"));
   });
@@ -127,11 +136,19 @@ describe("QmdMemoryManager", () => {
   beforeEach(async () => {
     spawnMock.mockClear();
     spawnMock.mockImplementation(() => createMockChild());
+<<<<<<< HEAD
     logWarnMock.mockClear();
     logDebugMock.mockClear();
     logInfoMock.mockClear();
     tmpRoot = path.join(fixtureRoot, `case-${fixtureCount++}`);
     await fs.mkdir(tmpRoot);
+=======
+    logWarnMock.mockReset();
+    logDebugMock.mockReset();
+    logInfoMock.mockReset();
+    tmpRoot = path.join(fixtureRoot, `case-${fixtureCount++}`);
+    await fs.mkdir(tmpRoot, { recursive: true });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     workspaceDir = path.join(tmpRoot, "workspace");
     await fs.mkdir(workspaceDir);
     stateDir = path.join(tmpRoot, "state");
@@ -155,8 +172,11 @@ describe("QmdMemoryManager", () => {
   afterEach(async () => {
     vi.useRealTimers();
     delete process.env.OPENCLAW_STATE_DIR;
+<<<<<<< HEAD
     delete (globalThis as Record<string, unknown>).__openclawMcporterDaemonStart;
     delete (globalThis as Record<string, unknown>).__openclawMcporterColdStartWarned;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("debounces back-to-back sync calls", async () => {
@@ -203,6 +223,7 @@ describe("QmdMemoryManager", () => {
       return createMockChild();
     });
 
+<<<<<<< HEAD
     const { manager } = await createManager({ mode: "full" });
     expect(releaseUpdate).not.toBeNull();
     (releaseUpdate as (() => void) | null)?.();
@@ -224,6 +245,12 @@ describe("QmdMemoryManager", () => {
 
     const { manager } = await createManager({ mode: "status" });
     expect(spawnMock).not.toHaveBeenCalled();
+=======
+    const resolved = resolveMemoryBackendConfig({ cfg, agentId });
+    const manager = await QmdMemoryManager.create({ cfg, agentId, resolved });
+    expect(releaseUpdate).not.toBeNull();
+    releaseUpdate?.();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await manager?.close();
   });
 
@@ -258,15 +285,24 @@ describe("QmdMemoryManager", () => {
     });
 
     const resolved = resolveMemoryBackendConfig({ cfg, agentId });
+<<<<<<< HEAD
     const createPromise = QmdMemoryManager.create({ cfg, agentId, resolved, mode: "full" });
     await updateSpawned.promise;
+=======
+    const createPromise = QmdMemoryManager.create({ cfg, agentId, resolved });
+    await waitForCondition(() => releaseUpdate !== null, 400);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     let created = false;
     void createPromise.then(() => {
       created = true;
     });
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(created).toBe(false);
+<<<<<<< HEAD
     (releaseUpdate as (() => void) | null)?.();
+=======
+    releaseUpdate?.();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const manager = await createPromise;
     await manager?.close();
   });
@@ -1110,7 +1146,11 @@ describe("QmdMemoryManager", () => {
     const inFlight = manager.sync({ reason: "interval" });
     const forced = manager.sync({ reason: "manual", force: true });
 
+<<<<<<< HEAD
     await firstUpdateSpawned.promise;
+=======
+    await waitForCondition(() => updateCalls >= 1, 80);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(updateCalls).toBe(1);
     if (!releaseFirstUpdate) {
       throw new Error("first update release missing");
@@ -1170,14 +1210,22 @@ describe("QmdMemoryManager", () => {
     const inFlight = manager.sync({ reason: "interval" });
     const forcedOne = manager.sync({ reason: "manual", force: true });
 
+<<<<<<< HEAD
     await firstUpdateSpawned.promise;
+=======
+    await waitForCondition(() => updateCalls >= 1, 80);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(updateCalls).toBe(1);
     if (!releaseFirstUpdate) {
       throw new Error("first update release missing");
     }
     (releaseFirstUpdate as () => void)();
 
+<<<<<<< HEAD
     await secondUpdateSpawned.promise;
+=======
+    await waitForCondition(() => updateCalls >= 2, 120);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const forcedTwo = manager.sync({ reason: "manual-again", force: true });
 
     if (!releaseSecondUpdate) {
@@ -1951,6 +1999,7 @@ describe("QmdMemoryManager", () => {
     writeFileSpy.mockRestore();
   });
 
+<<<<<<< HEAD
   it("fails closed when sqlite index is busy during doc lookup or search", async () => {
     const cases = [
       {
@@ -2038,13 +2087,22 @@ describe("QmdMemoryManager", () => {
     const exactDocid = "abc123";
     spawnMock.mockImplementation((_cmd: string, args: string[]) => {
       if (args[0] === "search") {
+=======
+  it("fails search when sqlite index is busy so caller can fallback", async () => {
+    spawnMock.mockImplementation((_cmd: string, args: string[]) => {
+      if (args[0] === "query") {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         const child = createMockChild({ autoClose: false });
         emitAndClose(
           child,
           "stdout",
+<<<<<<< HEAD
           JSON.stringify([
             { docid: exactDocid, score: 1, snippet: "@@ -5,2\nremember this\nnext line" },
           ]),
+=======
+          JSON.stringify([{ docid: "abc123", score: 1, snippet: "@@ -1,1\nremember this" }]),
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         );
         return child;
       }
@@ -2168,7 +2226,11 @@ describe("QmdMemoryManager", () => {
     spawnMock.mockImplementation((_cmd: string, args: string[]) => {
       if (args[0] === "search") {
         const child = createMockChild({ autoClose: false });
+<<<<<<< HEAD
         emitAndClose(child, "stdout", noisyPayload);
+=======
+        emitAndClose(child, "stdout", "No results found.");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         return child;
       }
       return createMockChild();
@@ -2182,12 +2244,24 @@ describe("QmdMemoryManager", () => {
     await manager.close();
   });
 
+<<<<<<< HEAD
   it("treats plain-text no-results markers from stdout/stderr as empty result sets", async () => {
     const cases = [
       { name: "stdout with punctuation", stream: "stdout", payload: "No results found." },
       { name: "stdout without punctuation", stream: "stdout", payload: "No results found\n\n" },
       { name: "stderr", stream: "stderr", payload: "No results found.\n" },
     ] as const;
+=======
+  it("treats plain-text no-results stdout without punctuation as empty", async () => {
+    spawnMock.mockImplementation((_cmd: string, args: string[]) => {
+      if (args[0] === "query") {
+        const child = createMockChild({ autoClose: false });
+        emitAndClose(child, "stdout", "No results found\n\n");
+        return child;
+      }
+      return createMockChild();
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     for (const testCase of cases) {
       spawnMock.mockImplementation((_cmd: string, args: string[]) => {
@@ -2206,6 +2280,37 @@ describe("QmdMemoryManager", () => {
       ).resolves.toEqual([]);
       await manager.close();
     }
+<<<<<<< HEAD
+=======
+
+    await expect(
+      manager.search("missing", { sessionKey: "agent:main:slack:dm:u123" }),
+    ).resolves.toEqual([]);
+    await manager.close();
+  });
+
+  it("treats plain-text no-results stderr as an empty result set", async () => {
+    spawnMock.mockImplementation((_cmd: string, args: string[]) => {
+      if (args[0] === "query") {
+        const child = createMockChild({ autoClose: false });
+        emitAndClose(child, "stderr", "No results found.\n");
+        return child;
+      }
+      return createMockChild();
+    });
+
+    const resolved = resolveMemoryBackendConfig({ cfg, agentId });
+    const manager = await QmdMemoryManager.create({ cfg, agentId, resolved });
+    expect(manager).toBeTruthy();
+    if (!manager) {
+      throw new Error("manager missing");
+    }
+
+    await expect(
+      manager.search("missing", { sessionKey: "agent:main:slack:dm:u123" }),
+    ).resolves.toEqual([]);
+    await manager.close();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("throws when stdout is empty without the no-results marker", async () => {
@@ -2322,6 +2427,7 @@ describe("QmdMemoryManager", () => {
   });
 });
 
+<<<<<<< HEAD
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -2330,4 +2436,15 @@ function createDeferred<T>() {
     reject = rej;
   });
   return { promise, resolve, reject };
+=======
+async function waitForCondition(check: () => boolean, timeoutMs: number): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (check()) {
+      return;
+    }
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+  throw new Error("condition was not met in time");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

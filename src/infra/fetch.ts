@@ -55,7 +55,10 @@ export function wrapFetchWithAbortSignal(fetchImpl: typeof fetch): typeof fetch 
     }
     const controller = new AbortController();
     const onAbort = bindAbortRelay(controller);
+<<<<<<< HEAD
     let listenerAttached = false;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (signal.aborted) {
       controller.abort();
     } else {

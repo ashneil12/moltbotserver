@@ -17,6 +17,7 @@ type ConsoleSettings = {
 };
 export type ConsoleLoggerSettings = ConsoleSettings;
 
+<<<<<<< HEAD
 const requireConfig = resolveNodeRequireFromMeta(import.meta.url);
 type ConsoleConfigLoader = () => OpenClawConfig["logging"] | undefined;
 const loadConfigFallbackDefault: ConsoleConfigLoader = () => {
@@ -27,6 +28,16 @@ const loadConfigFallbackDefault: ConsoleConfigLoader = () => {
         }
       | undefined;
     return loaded?.loadConfig?.().logging;
+=======
+const requireConfig = createRequire(import.meta.url);
+type ConsoleConfigLoader = () => OpenClawConfig["logging"] | undefined;
+const loadConfigFallbackDefault: ConsoleConfigLoader = () => {
+  try {
+    const loaded = requireConfig("../config/config.js") as {
+      loadConfig?: () => OpenClawConfig;
+    };
+    return loaded.loadConfig?.().logging;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   } catch {
     return undefined;
   }

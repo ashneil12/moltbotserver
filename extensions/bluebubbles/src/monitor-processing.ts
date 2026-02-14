@@ -1,6 +1,7 @@
 import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import {
   createReplyPrefixOptions,
+<<<<<<< HEAD
   evictOldHistoryKeys,
   logAckFailure,
   logInboundDrop,
@@ -16,6 +17,21 @@ import {
 import { downloadBlueBubblesAttachment } from "./attachments.js";
 import { markBlueBubblesChatRead, sendBlueBubblesTyping } from "./chat.js";
 import { fetchBlueBubblesHistory } from "./history.js";
+=======
+  logAckFailure,
+  logInboundDrop,
+  logTypingFailure,
+  resolveAckReaction,
+  resolveControlCommandGate,
+} from "openclaw/plugin-sdk";
+import type {
+  BlueBubblesCoreRuntime,
+  BlueBubblesRuntimeEnv,
+  WebhookTarget,
+} from "./monitor-shared.js";
+import { downloadBlueBubblesAttachment } from "./attachments.js";
+import { markBlueBubblesChatRead, sendBlueBubblesTyping } from "./chat.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { sendBlueBubblesMedia } from "./media-send.js";
 import {
   buildMessagePlaceholder,
@@ -34,18 +50,22 @@ import {
   resolveBlueBubblesMessageId,
   resolveReplyContextFromCache,
 } from "./monitor-reply-cache.js";
+<<<<<<< HEAD
 import type {
   BlueBubblesCoreRuntime,
   BlueBubblesRuntimeEnv,
   WebhookTarget,
 } from "./monitor-shared.js";
 import { isBlueBubblesPrivateApiEnabled } from "./probe.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { normalizeBlueBubblesReactionInput, sendBlueBubblesReaction } from "./reactions.js";
 import { resolveChatGuidForTarget, sendMessageBlueBubbles } from "./send.js";
 import { formatBlueBubblesChatTarget, isAllowedBlueBubblesSender } from "./targets.js";
 
 const DEFAULT_TEXT_LIMIT = 4000;
 const invalidAckReactions = new Set<string>();
+<<<<<<< HEAD
 const REPLY_DIRECTIVE_TAG_RE = /\[\[\s*(?:reply_to_current|reply_to\s*:\s*[^\]\n]+)\s*\]\]/gi;
 const PENDING_OUTBOUND_MESSAGE_ID_TTL_MS = 2 * 60 * 1000;
 
@@ -176,6 +196,8 @@ function consumePendingOutboundMessageId(params: {
 
   return null;
 }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function logVerbose(
   core: BlueBubblesCoreRuntime,
@@ -243,6 +265,7 @@ function resolveBlueBubblesAckReaction(params: {
   }
 }
 
+<<<<<<< HEAD
 /**
  * In-memory rolling history map keyed by account + chat identifier.
  * Populated from incoming messages during the session.
@@ -415,12 +438,17 @@ function buildInboundHistorySnapshot(params: {
   return selected;
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export async function processMessage(
   message: NormalizedWebhookMessage,
   target: WebhookTarget,
 ): Promise<void> {
   const { account, config, runtime, core, statusSink } = target;
+<<<<<<< HEAD
   const privateApiEnabled = isBlueBubblesPrivateApiEnabled(account.accountId);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const groupFlag = resolveGroupFlagFromChatGuid(message.chatGuid);
   const isGroup = typeof groupFlag === "boolean" ? groupFlag : message.isGroup;
@@ -466,6 +494,7 @@ export async function processMessage(
   if (message.fromMe) {
     // Cache from-me messages so reply context can resolve sender/body.
     cacheInboundMessage();
+<<<<<<< HEAD
     if (cacheMessageId) {
       const pending = consumePendingOutboundMessageId({
         accountId: account.accountId,
@@ -486,6 +515,8 @@ export async function processMessage(
         });
       }
     }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return;
   }
 
@@ -501,6 +532,7 @@ export async function processMessage(
 
   const dmPolicy = account.config.dmPolicy ?? "pairing";
   const groupPolicy = account.config.groupPolicy ?? "allowlist";
+<<<<<<< HEAD
   const storeAllowFrom = await core.channel.pairing
     .readAllowFromStore("bluebubbles")
     .catch(() => []);
@@ -510,12 +542,29 @@ export async function processMessage(
     storeAllowFrom,
     dmPolicy,
   });
+=======
+  const configAllowFrom = (account.config.allowFrom ?? []).map((entry) => String(entry));
+  const configGroupAllowFrom = (account.config.groupAllowFrom ?? []).map((entry) => String(entry));
+  const storeAllowFrom = await core.channel.pairing
+    .readAllowFromStore("bluebubbles")
+    .catch(() => []);
+  const effectiveAllowFrom = [...configAllowFrom, ...storeAllowFrom]
+    .map((entry) => String(entry).trim())
+    .filter(Boolean);
+  const effectiveGroupAllowFrom = [
+    ...(configGroupAllowFrom.length > 0 ? configGroupAllowFrom : configAllowFrom),
+    ...storeAllowFrom,
+  ]
+    .map((entry) => String(entry).trim())
+    .filter(Boolean);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const groupAllowEntry = formatGroupAllowlistEntry({
     chatGuid: message.chatGuid,
     chatId: message.chatId ?? undefined,
     chatIdentifier: message.chatIdentifier ?? undefined,
   });
   const groupName = message.chatName?.trim() || undefined;
+<<<<<<< HEAD
   const accessDecision = resolveDmGroupAccessDecision({
     isGroup,
     dmPolicy,
@@ -546,6 +595,23 @@ export async function processMessage(
         return;
       }
       if (accessDecision.reason === "groupPolicy=allowlist (empty allowlist)") {
+=======
+
+  if (isGroup) {
+    if (groupPolicy === "disabled") {
+      logVerbose(core, runtime, "Blocked BlueBubbles group message (groupPolicy=disabled)");
+      logGroupAllowlistHint({
+        runtime,
+        reason: "groupPolicy=disabled",
+        entry: groupAllowEntry,
+        chatName: groupName,
+        accountId: account.accountId,
+      });
+      return;
+    }
+    if (groupPolicy === "allowlist") {
+      if (effectiveGroupAllowFrom.length === 0) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         logVerbose(core, runtime, "Blocked BlueBubbles group message (no allowlist)");
         logGroupAllowlistHint({
           runtime,
@@ -556,7 +622,18 @@ export async function processMessage(
         });
         return;
       }
+<<<<<<< HEAD
       if (accessDecision.reason === "groupPolicy=allowlist (not allowlisted)") {
+=======
+      const allowed = isAllowedBlueBubblesSender({
+        allowFrom: effectiveGroupAllowFrom,
+        sender: message.senderId,
+        chatId: message.chatId ?? undefined,
+        chatGuid: message.chatGuid ?? undefined,
+        chatIdentifier: message.chatIdentifier ?? undefined,
+      });
+      if (!allowed) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         logVerbose(
           core,
           runtime,
@@ -576,14 +653,21 @@ export async function processMessage(
         });
         return;
       }
+<<<<<<< HEAD
       return;
     }
 
     if (accessDecision.reason === "dmPolicy=disabled") {
+=======
+    }
+  } else {
+    if (dmPolicy === "disabled") {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       logVerbose(core, runtime, `Blocked BlueBubbles DM from ${message.senderId}`);
       logVerbose(core, runtime, `drop: dmPolicy disabled sender=${message.senderId}`);
       return;
     }
+<<<<<<< HEAD
 
     if (accessDecision.decision === "pairing") {
       const { code, created } = await core.channel.pairing.upsertPairingRequest({
@@ -630,6 +714,65 @@ export async function processMessage(
       `drop: dm sender not allowed sender=${message.senderId} allowFrom=${effectiveAllowFrom.join(",")}`,
     );
     return;
+=======
+    if (dmPolicy !== "open") {
+      const allowed = isAllowedBlueBubblesSender({
+        allowFrom: effectiveAllowFrom,
+        sender: message.senderId,
+        chatId: message.chatId ?? undefined,
+        chatGuid: message.chatGuid ?? undefined,
+        chatIdentifier: message.chatIdentifier ?? undefined,
+      });
+      if (!allowed) {
+        if (dmPolicy === "pairing") {
+          const { code, created } = await core.channel.pairing.upsertPairingRequest({
+            channel: "bluebubbles",
+            id: message.senderId,
+            meta: { name: message.senderName },
+          });
+          runtime.log?.(
+            `[bluebubbles] pairing request sender=${message.senderId} created=${created}`,
+          );
+          if (created) {
+            logVerbose(core, runtime, `bluebubbles pairing request sender=${message.senderId}`);
+            try {
+              await sendMessageBlueBubbles(
+                message.senderId,
+                core.channel.pairing.buildPairingReply({
+                  channel: "bluebubbles",
+                  idLine: `Your BlueBubbles sender id: ${message.senderId}`,
+                  code,
+                }),
+                { cfg: config, accountId: account.accountId },
+              );
+              statusSink?.({ lastOutboundAt: Date.now() });
+            } catch (err) {
+              logVerbose(
+                core,
+                runtime,
+                `bluebubbles pairing reply failed for ${message.senderId}: ${String(err)}`,
+              );
+              runtime.error?.(
+                `[bluebubbles] pairing reply failed sender=${message.senderId}: ${String(err)}`,
+              );
+            }
+          }
+        } else {
+          logVerbose(
+            core,
+            runtime,
+            `Blocked unauthorized BlueBubbles sender ${message.senderId} (dmPolicy=${dmPolicy})`,
+          );
+          logVerbose(
+            core,
+            runtime,
+            `drop: dm sender not allowed sender=${message.senderId} allowFrom=${effectiveAllowFrom.join(",")}`,
+          );
+        }
+        return;
+      }
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   const chatId = message.chatId ?? undefined;
@@ -827,6 +970,7 @@ export async function processMessage(
       ? `${rawBody} ${replyTag}`
       : `${replyTag} ${rawBody}`
     : rawBody;
+<<<<<<< HEAD
   // Build fromLabel the same way as iMessage/Signal (formatInboundFromLabel):
   // group label + id for groups, sender for DMs.
   // The sender identity is included in the envelope body via formatInboundEnvelope.
@@ -836,6 +980,9 @@ export async function processMessage(
     : senderLabel !== message.senderId
       ? `${senderLabel} id:${message.senderId}`
       : senderLabel;
+=======
+  const fromLabel = isGroup ? undefined : message.senderName || `user:${message.senderId}`;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const groupSubject = isGroup ? message.chatName?.trim() || undefined : undefined;
   const groupMembers = isGroup
     ? formatGroupMembers({
@@ -851,15 +998,22 @@ export async function processMessage(
     storePath,
     sessionKey: route.sessionKey,
   });
+<<<<<<< HEAD
   const body = core.channel.reply.formatInboundEnvelope({
+=======
+  const body = core.channel.reply.formatAgentEnvelope({
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     channel: "BlueBubbles",
     from: fromLabel,
     timestamp: message.timestamp,
     previousTimestamp,
     envelope: envelopeOptions,
     body: baseBody,
+<<<<<<< HEAD
     chatType: isGroup ? "group" : "direct",
     sender: { name: message.senderName || undefined, id: message.senderId },
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
   let chatGuidForActions = chatGuid;
   if (!chatGuidForActions && baseUrl && password) {
@@ -950,10 +1104,17 @@ export async function processMessage(
       ? formatBlueBubblesChatTarget({ chatGuid: chatGuidForActions })
       : message.senderId;
 
+<<<<<<< HEAD
   const maybeEnqueueOutboundMessageId = (messageId?: string, snippet?: string): boolean => {
     const trimmed = messageId?.trim();
     if (!trimmed || trimmed === "ok" || trimmed === "unknown") {
       return false;
+=======
+  const maybeEnqueueOutboundMessageId = (messageId?: string, snippet?: string) => {
+    const trimmed = messageId?.trim();
+    if (!trimmed || trimmed === "ok" || trimmed === "unknown") {
+      return;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     // Cache outbound message to get short ID
     const cacheEntry = rememberBlueBubblesReplyCache({
@@ -972,6 +1133,7 @@ export async function processMessage(
       sessionKey: route.sessionKey,
       contextKey: `bluebubbles:outbound:${outboundTarget}:${trimmed}`,
     });
+<<<<<<< HEAD
     return true;
   };
   const sanitizeReplyDirectiveText = (value: string): string => {
@@ -1096,6 +1258,13 @@ export async function processMessage(
     Body: body,
     BodyForAgent: rawBody,
     InboundHistory: inboundHistory,
+=======
+  };
+
+  const ctxPayload = {
+    Body: body,
+    BodyForAgent: body,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     RawBody: rawBody,
     CommandBody: rawBody,
     BodyForCommands: rawBody,
@@ -1130,7 +1299,11 @@ export async function processMessage(
     OriginatingTo: `bluebubbles:${outboundTarget}`,
     WasMentioned: effectiveWasMentioned,
     CommandAuthorized: commandAuthorized,
+<<<<<<< HEAD
   });
+=======
+  };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   let sentMessage = false;
   let streamingActive = false;
@@ -1174,9 +1347,13 @@ export async function processMessage(
         ...prefixOptions,
         deliver: async (payload, info) => {
           const rawReplyToId =
+<<<<<<< HEAD
             privateApiEnabled && typeof payload.replyToId === "string"
               ? payload.replyToId.trim()
               : "";
+=======
+            typeof payload.replyToId === "string" ? payload.replyToId.trim() : "";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           // Resolve short ID (e.g., "5") to full UUID
           const replyToMessageGuid = rawReplyToId
             ? resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
@@ -1192,13 +1369,18 @@ export async function processMessage(
               channel: "bluebubbles",
               accountId: account.accountId,
             });
+<<<<<<< HEAD
             const text = sanitizeReplyDirectiveText(
               core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode),
             );
+=======
+            const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             let first = true;
             for (const mediaUrl of mediaList) {
               const caption = first ? text : undefined;
               first = false;
+<<<<<<< HEAD
               const cachedBody = (caption ?? "").trim() || "<media:attachment>";
               const pendingId = rememberPendingOutboundMessageId({
                 accountId: account.accountId,
@@ -1226,6 +1408,18 @@ export async function processMessage(
               if (maybeEnqueueOutboundMessageId(result.messageId, cachedBody)) {
                 forgetPendingOutboundMessageId(pendingId);
               }
+=======
+              const result = await sendBlueBubblesMedia({
+                cfg: config,
+                to: outboundTarget,
+                mediaUrl,
+                caption: caption ?? undefined,
+                replyToId: replyToMessageGuid || null,
+                accountId: account.accountId,
+              });
+              const cachedBody = (caption ?? "").trim() || "<media:attachment>";
+              maybeEnqueueOutboundMessageId(result.messageId, cachedBody);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
               sentMessage = true;
               statusSink?.({ lastOutboundAt: Date.now() });
               if (info.kind === "block") {
@@ -1245,9 +1439,13 @@ export async function processMessage(
             channel: "bluebubbles",
             accountId: account.accountId,
           });
+<<<<<<< HEAD
           const text = sanitizeReplyDirectiveText(
             core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode),
           );
+=======
+          const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           const chunks =
             chunkMode === "newline"
               ? core.channel.text.chunkTextWithMode(text, textLimit, chunkMode)
@@ -1259,6 +1457,7 @@ export async function processMessage(
             return;
           }
           for (const chunk of chunks) {
+<<<<<<< HEAD
             const pendingId = rememberPendingOutboundMessageId({
               accountId: account.accountId,
               sessionKey: route.sessionKey,
@@ -1282,6 +1481,14 @@ export async function processMessage(
             if (maybeEnqueueOutboundMessageId(result.messageId, chunk)) {
               forgetPendingOutboundMessageId(pendingId);
             }
+=======
+            const result = await sendMessageBlueBubbles(outboundTarget, chunk, {
+              cfg: config,
+              accountId: account.accountId,
+              replyToMessageGuid: replyToMessageGuid || undefined,
+            });
+            maybeEnqueueOutboundMessageId(result.messageId, chunk);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             sentMessage = true;
             statusSink?.({ lastOutboundAt: Date.now() });
             if (info.kind === "block") {
@@ -1386,6 +1593,7 @@ export async function processReaction(
 
   const dmPolicy = account.config.dmPolicy ?? "pairing";
   const groupPolicy = account.config.groupPolicy ?? "allowlist";
+<<<<<<< HEAD
   const storeAllowFrom = await core.channel.pairing
     .readAllowFromStore("bluebubbles")
     .catch(() => []);
@@ -1404,14 +1612,65 @@ export async function processReaction(
     isSenderAllowed: (allowFrom) =>
       isAllowedBlueBubblesSender({
         allowFrom,
+=======
+  const configAllowFrom = (account.config.allowFrom ?? []).map((entry) => String(entry));
+  const configGroupAllowFrom = (account.config.groupAllowFrom ?? []).map((entry) => String(entry));
+  const storeAllowFrom = await core.channel.pairing
+    .readAllowFromStore("bluebubbles")
+    .catch(() => []);
+  const effectiveAllowFrom = [...configAllowFrom, ...storeAllowFrom]
+    .map((entry) => String(entry).trim())
+    .filter(Boolean);
+  const effectiveGroupAllowFrom = [
+    ...(configGroupAllowFrom.length > 0 ? configGroupAllowFrom : configAllowFrom),
+    ...storeAllowFrom,
+  ]
+    .map((entry) => String(entry).trim())
+    .filter(Boolean);
+
+  if (reaction.isGroup) {
+    if (groupPolicy === "disabled") {
+      return;
+    }
+    if (groupPolicy === "allowlist") {
+      if (effectiveGroupAllowFrom.length === 0) {
+        return;
+      }
+      const allowed = isAllowedBlueBubblesSender({
+        allowFrom: effectiveGroupAllowFrom,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         sender: reaction.senderId,
         chatId: reaction.chatId ?? undefined,
         chatGuid: reaction.chatGuid ?? undefined,
         chatIdentifier: reaction.chatIdentifier ?? undefined,
+<<<<<<< HEAD
       }),
   });
   if (accessDecision.decision !== "allow") {
     return;
+=======
+      });
+      if (!allowed) {
+        return;
+      }
+    }
+  } else {
+    if (dmPolicy === "disabled") {
+      return;
+    }
+    if (dmPolicy !== "open") {
+      const allowed = isAllowedBlueBubblesSender({
+        allowFrom: effectiveAllowFrom,
+        sender: reaction.senderId,
+        chatId: reaction.chatId ?? undefined,
+        chatGuid: reaction.chatGuid ?? undefined,
+        chatIdentifier: reaction.chatIdentifier ?? undefined,
+      });
+      if (!allowed) {
+        return;
+      }
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   const chatId = reaction.chatId ?? undefined;

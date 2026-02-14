@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+<<<<<<< HEAD
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -26,6 +27,16 @@ describe("loadExtraBootstrapFiles", () => {
 
   it("loads recognized bootstrap files from glob patterns", async () => {
     const workspaceDir = await createWorkspaceDir("glob");
+=======
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { makeTempWorkspace } from "../test-helpers/workspace.js";
+import { loadExtraBootstrapFiles } from "./workspace.js";
+
+describe("loadExtraBootstrapFiles", () => {
+  it("loads recognized bootstrap files from glob patterns", async () => {
+    const workspaceDir = await makeTempWorkspace("openclaw-extra-bootstrap-glob-");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const packageDir = path.join(workspaceDir, "packages", "core");
     await fs.mkdir(packageDir, { recursive: true });
     await fs.writeFile(path.join(packageDir, "TOOLS.md"), "tools", "utf-8");
@@ -39,7 +50,11 @@ describe("loadExtraBootstrapFiles", () => {
   });
 
   it("keeps path-traversal attempts outside workspace excluded", async () => {
+<<<<<<< HEAD
     const rootDir = await createWorkspaceDir("root");
+=======
+    const rootDir = await makeTempWorkspace("openclaw-extra-bootstrap-root-");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const workspaceDir = path.join(rootDir, "workspace");
     const outsideDir = path.join(rootDir, "outside");
     await fs.mkdir(workspaceDir, { recursive: true });
@@ -56,7 +71,11 @@ describe("loadExtraBootstrapFiles", () => {
       return;
     }
 
+<<<<<<< HEAD
     const rootDir = await createWorkspaceDir("symlink");
+=======
+    const rootDir = await makeTempWorkspace("openclaw-extra-bootstrap-symlink-");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const realWorkspace = path.join(rootDir, "real-workspace");
     const linkedWorkspace = path.join(rootDir, "linked-workspace");
     await fs.mkdir(realWorkspace, { recursive: true });

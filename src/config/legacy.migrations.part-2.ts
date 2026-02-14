@@ -381,6 +381,7 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
       }
 
       if (routing.transcribeAudio !== undefined) {
+<<<<<<< HEAD
         applyLegacyAudioTranscriptionModel({
           raw,
           source: routing.transcribeAudio,
@@ -390,6 +391,24 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
             "Removed routing.transcribeAudio (tools.media.audio.models already set).",
           invalidMessage: "Removed routing.transcribeAudio (invalid or empty command).",
         });
+=======
+        const mapped = mapLegacyAudioTranscription(routing.transcribeAudio);
+        if (mapped) {
+          const tools = ensureRecord(raw, "tools");
+          const media = ensureRecord(tools, "media");
+          const mediaAudio = ensureRecord(media, "audio");
+          const models = Array.isArray(mediaAudio.models) ? (mediaAudio.models as unknown[]) : [];
+          if (models.length === 0) {
+            mediaAudio.enabled = true;
+            mediaAudio.models = [mapped];
+            changes.push("Moved routing.transcribeAudio → tools.media.audio.models.");
+          } else {
+            changes.push("Removed routing.transcribeAudio (tools.media.audio.models already set).");
+          }
+        } else {
+          changes.push("Removed routing.transcribeAudio (invalid or empty command).");
+        }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         delete routing.transcribeAudio;
       }
 
@@ -407,6 +426,7 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
         return;
       }
 
+<<<<<<< HEAD
       applyLegacyAudioTranscriptionModel({
         raw,
         source: audio.transcription,
@@ -420,6 +440,35 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
         delete raw.audio;
       } else {
         raw.audio = audio;
+=======
+      const mapped = mapLegacyAudioTranscription(audio.transcription);
+      if (mapped) {
+        const tools = ensureRecord(raw, "tools");
+        const media = ensureRecord(tools, "media");
+        const mediaAudio = ensureRecord(media, "audio");
+        const models = Array.isArray(mediaAudio.models) ? (mediaAudio.models as unknown[]) : [];
+        if (models.length === 0) {
+          mediaAudio.enabled = true;
+          mediaAudio.models = [mapped];
+          changes.push("Moved audio.transcription → tools.media.audio.models.");
+        } else {
+          changes.push("Removed audio.transcription (tools.media.audio.models already set).");
+        }
+        delete audio.transcription;
+        if (Object.keys(audio).length === 0) {
+          delete raw.audio;
+        } else {
+          raw.audio = audio;
+        }
+      } else {
+        delete audio.transcription;
+        changes.push("Removed audio.transcription (invalid or empty command).");
+        if (Object.keys(audio).length === 0) {
+          delete raw.audio;
+        } else {
+          raw.audio = audio;
+        }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
     },
   },

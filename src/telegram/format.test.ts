@@ -85,6 +85,15 @@ describe("markdownToTelegramHtml", () => {
     expect(res).toContain("(<code>backup.sh</code>).");
   });
 
+<<<<<<< HEAD
+=======
+  it("keeps .co domains as links", () => {
+    const res = markdownToTelegramHtml("Visit t.co and openclaw.co");
+    expect(res).toContain('<a href="http://t.co">t.co</a>');
+    expect(res).toContain('<a href="http://openclaw.co">openclaw.co</a>');
+  });
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("renders spoiler tags", () => {
     const res = markdownToTelegramHtml("the answer is ||42||");
     expect(res).toBe("the answer is <tg-spoiler>42</tg-spoiler>");

@@ -36,6 +36,7 @@ export function resolveHookConfig(
   return entry;
 }
 
+<<<<<<< HEAD
 function evaluateHookRuntimeEligibility(params: {
   entry: HookEntry;
   config?: OpenClawConfig;
@@ -58,6 +59,31 @@ function evaluateHookRuntimeEligibility(params: {
     hasEnv: (envName) => Boolean(process.env[envName] || hookConfig?.env?.[envName]),
     isConfigPathTruthy: (configPath) => isConfigPathTruthy(config, configPath),
   });
+=======
+export function resolveRuntimePlatform(): string {
+  return process.platform;
+}
+
+export function hasBinary(bin: string): boolean {
+  const pathEnv = process.env.PATH ?? "";
+  const parts = pathEnv.split(path.delimiter).filter(Boolean);
+  const extensions =
+    process.platform === "win32"
+      ? ["", ...(process.env.PATHEXT ?? ".EXE;.CMD;.BAT;.COM").split(";").filter(Boolean)]
+      : [""];
+  for (const part of parts) {
+    for (const ext of extensions) {
+      const candidate = path.join(part, bin + ext);
+      try {
+        fs.accessSync(candidate, fs.constants.X_OK);
+        return true;
+      } catch {
+        // keep scanning
+      }
+    }
+  }
+  return false;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function shouldIncludeHook(params: {

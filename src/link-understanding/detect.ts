@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { isBlockedHostnameOrIp } from "../infra/net/ssrf.js";
+=======
+import { isBlockedHostname, isPrivateIpAddress } from "../infra/net/ssrf.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { DEFAULT_MAX_LINKS } from "./defaults.js";
 
 // Remove markdown link syntax so only bare URLs are considered.
@@ -22,13 +26,27 @@ function isAllowedUrl(raw: string): boolean {
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return false;
     }
+<<<<<<< HEAD
     if (isBlockedHostnameOrIp(parsed.hostname)) {
+=======
+    if (isBlockedHost(parsed.hostname)) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       return false;
     }
     return true;
   } catch {
     return false;
   }
+}
+
+/** Block loopback, private, link-local, and metadata addresses. */
+function isBlockedHost(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  return (
+    normalized === "localhost.localdomain" ||
+    isBlockedHostname(normalized) ||
+    isPrivateIpAddress(normalized)
+  );
 }
 
 export function extractLinksFromMessage(message: string, opts?: { maxLinks?: number }): string[] {

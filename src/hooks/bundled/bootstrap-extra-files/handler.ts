@@ -2,12 +2,18 @@ import {
   filterBootstrapFilesForSession,
   loadExtraBootstrapFiles,
 } from "../../../agents/workspace.js";
+<<<<<<< HEAD
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveHookConfig } from "../../config.js";
 import { isAgentBootstrapEvent, type HookHandler } from "../../hooks.js";
 
 const HOOK_KEY = "bootstrap-extra-files";
+<<<<<<< HEAD
 const log = createSubsystemLogger("bootstrap-extra-files");
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function normalizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -54,7 +60,11 @@ const bootstrapExtraFilesHook: HookHandler = async (event) => {
       context.sessionKey,
     );
   } catch (err) {
+<<<<<<< HEAD
     log.warn(`failed: ${String(err)}`);
+=======
+    console.warn(`[bootstrap-extra-files] failed: ${String(err)}`);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 };
 

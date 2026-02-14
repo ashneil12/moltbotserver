@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import {
+<<<<<<< HEAD
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
   registerWebhookTarget,
@@ -17,6 +18,14 @@ import {
 } from "./monitor-normalize.js";
 import { logVerbose, processMessage, processReaction } from "./monitor-processing.js";
 import {
+=======
+  normalizeWebhookMessage,
+  normalizeWebhookReaction,
+  type NormalizedWebhookMessage,
+} from "./monitor-normalize.js";
+import { logVerbose, processMessage, processReaction } from "./monitor-processing.js";
+import {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   _resetBlueBubblesShortIdState,
   resolveBlueBubblesMessageId,
 } from "./monitor-reply-cache.js";
@@ -313,6 +322,7 @@ function maskSecret(value: string): string {
   return `${value.slice(0, 2)}***${value.slice(-2)}`;
 }
 
+<<<<<<< HEAD
 function normalizeAuthToken(raw: string): string {
   const value = raw.trim();
   if (!value) {
@@ -338,6 +348,8 @@ function safeEqualSecret(aRaw: string, bRaw: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export async function handleBlueBubblesWebhookRequest(
   req: IncomingMessage,
   res: ServerResponse,
@@ -355,7 +367,17 @@ export async function handleBlueBubblesWebhookRequest(
 
   const body = await readBlueBubblesWebhookBody(req, 1024 * 1024);
   if (!body.ok) {
+<<<<<<< HEAD
     res.statusCode = body.statusCode;
+=======
+    if (body.error === "payload too large") {
+      res.statusCode = 413;
+    } else if (body.error === "request body timeout") {
+      res.statusCode = 408;
+    } else {
+      res.statusCode = 400;
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     res.end(body.error ?? "invalid payload");
     console.warn(`[bluebubbles] webhook rejected: ${body.error ?? "invalid payload"}`);
     return true;

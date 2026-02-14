@@ -21,10 +21,15 @@ export type ActionGate<T extends Record<string, boolean | undefined>> = (
   defaultValue?: boolean,
 ) => boolean;
 
+<<<<<<< HEAD
 export const OWNER_ONLY_TOOL_ERROR = "Tool restricted to owner senders.";
 
 export class ToolInputError extends Error {
   readonly status: number = 400;
+=======
+export class ToolInputError extends Error {
+  readonly status = 400;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   constructor(message: string) {
     super(message);
@@ -32,6 +37,7 @@ export class ToolInputError extends Error {
   }
 }
 
+<<<<<<< HEAD
 export class ToolAuthorizationError extends ToolInputError {
   override readonly status = 403;
 
@@ -41,6 +47,8 @@ export class ToolAuthorizationError extends ToolInputError {
   }
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function createActionGate<T extends Record<string, boolean | undefined>>(
   actions: T | undefined,
 ): ActionGate<T> {

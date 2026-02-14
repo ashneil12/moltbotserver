@@ -125,6 +125,7 @@ function resolveSlackMediaMimetype(
   return mime;
 }
 
+<<<<<<< HEAD
 export type SlackMediaResult = {
   path: string;
   contentType?: string;
@@ -186,6 +187,8 @@ async function mapLimit<T, R>(
  * Downloads all files attached to a Slack message and returns them as an array.
  * Returns `null` when no files could be downloaded.
  */
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export async function resolveSlackMedia(params: {
   files?: SlackFile[];
   token: string;
@@ -305,6 +308,24 @@ export async function resolveSlackAttachmentContent(params: {
       if (fileMedia) {
         allMedia.push(...fileMedia);
       }
+<<<<<<< HEAD
+=======
+      const effectiveMime = resolveSlackMediaMimetype(file, fetched.contentType);
+      const saved = await saveMediaBuffer(
+        fetched.buffer,
+        effectiveMime,
+        "inbound",
+        params.maxBytes,
+      );
+      const label = fetched.fileName ?? file.name;
+      return {
+        path: saved.path,
+        contentType: effectiveMime ?? saved.contentType,
+        placeholder: label ? `[Slack file: ${label}]` : "[Slack file]",
+      };
+    } catch {
+      // Ignore download failures and fall through to the next file.
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
   }
 

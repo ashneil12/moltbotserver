@@ -12,7 +12,11 @@ import { readSecretFromFile } from "./secret-file.js";
 import { AcpGatewayAgent } from "./translator.js";
 import type { AcpServerOptions } from "./types.js";
 
+<<<<<<< HEAD
 export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void> {
+=======
+export function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void> {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const cfg = loadConfig();
   const connection = buildGatewayConnectionDetails({
     config: cfg,
@@ -33,6 +37,7 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
     onClosed = resolve;
   });
   let stopped = false;
+<<<<<<< HEAD
   let onGatewayReadyResolve!: () => void;
   let onGatewayReadyReject!: (err: Error) => void;
   let gatewayReadySettled = false;
@@ -54,6 +59,8 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
     gatewayReadySettled = true;
     onGatewayReadyReject(err instanceof Error ? err : new Error(String(err)));
   };
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const gateway = new GatewayClient({
     url: connection.url,
@@ -92,7 +99,10 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
       return;
     }
     stopped = true;
+<<<<<<< HEAD
     resolveGatewayReady();
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     gateway.stop();
     // If no WebSocket is active (e.g. between reconnect attempts),
     // gateway.stop() won't trigger onClose, so resolve directly.
@@ -102,6 +112,7 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
 
+<<<<<<< HEAD
   // Start gateway first and wait for hello before accepting ACP requests.
   gateway.start();
   await gatewayReady.catch((err) => {
@@ -112,6 +123,8 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
     return closed;
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const input = Writable.toWeb(process.stdout);
   const output = Readable.toWeb(process.stdin) as unknown as ReadableStream<Uint8Array>;
   const stream = ndJsonStream(input, output);
@@ -122,6 +135,10 @@ export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void
     return agent;
   }, stream);
 
+<<<<<<< HEAD
+=======
+  gateway.start();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return closed;
 }
 
@@ -224,6 +241,7 @@ Options:
 }
 
 if (isMainModule({ currentFile: fileURLToPath(import.meta.url) })) {
+<<<<<<< HEAD
   const argv = process.argv.slice(2);
   if (argv.includes("--token") || argv.includes("--gateway-token")) {
     console.error(
@@ -236,6 +254,9 @@ if (isMainModule({ currentFile: fileURLToPath(import.meta.url) })) {
     );
   }
   const opts = parseArgs(argv);
+=======
+  const opts = parseArgs(process.argv.slice(2));
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   serveAcpGateway(opts).catch((err) => {
     console.error(String(err));
     process.exit(1);

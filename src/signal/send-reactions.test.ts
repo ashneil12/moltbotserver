@@ -27,7 +27,11 @@ vi.mock("./client.js", () => ({
 
 describe("sendReactionSignal", () => {
   beforeEach(() => {
+<<<<<<< HEAD
     rpcMock.mockClear().mockResolvedValue({ timestamp: 123 });
+=======
+    rpcMock.mockReset().mockResolvedValue({ timestamp: 123 });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("uses recipients array and targetAuthor for uuid dms", async () => {

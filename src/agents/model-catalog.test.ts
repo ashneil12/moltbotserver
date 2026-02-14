@@ -241,4 +241,43 @@ describe("loadModelCatalog", () => {
     expect(matches).toHaveLength(1);
     expect(matches[0]?.name).toBe("Claude Opus 4.6");
   });
+
+  it("adds openai-codex/gpt-5.3-codex-spark when base gpt-5.3-codex exists", async () => {
+    __setModelCatalogImportForTest(
+      async () =>
+        ({
+          AuthStorage: class {},
+          ModelRegistry: class {
+            getAll() {
+              return [
+                {
+                  id: "gpt-5.3-codex",
+                  provider: "openai-codex",
+                  name: "GPT-5.3 Codex",
+                  reasoning: true,
+                  contextWindow: 200000,
+                  input: ["text"],
+                },
+                {
+                  id: "gpt-5.2-codex",
+                  provider: "openai-codex",
+                  name: "GPT-5.2 Codex",
+                },
+              ];
+            }
+          },
+        }) as unknown as PiSdkModule,
+    );
+
+    const result = await loadModelCatalog({ config: {} as OpenClawConfig });
+    expect(result).toContainEqual(
+      expect.objectContaining({
+        provider: "openai-codex",
+        id: "gpt-5.3-codex-spark",
+      }),
+    );
+    const spark = result.find((entry) => entry.id === "gpt-5.3-codex-spark");
+    expect(spark?.name).toBe("gpt-5.3-codex-spark");
+    expect(spark?.reasoning).toBe(true);
+  });
 });

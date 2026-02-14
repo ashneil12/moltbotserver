@@ -122,9 +122,12 @@ importers:
       https-proxy-agent:
         specifier: ^7.0.6
         version: 7.0.6
+<<<<<<< HEAD
       ipaddr.js:
         specifier: ^2.3.0
         version: 2.3.0
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       jiti:
         specifier: ^2.6.1
         version: 2.6.1

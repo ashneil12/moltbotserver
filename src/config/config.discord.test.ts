@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { loadConfig, validateConfigObject } from "./config.js";
 import { withTempHomeConfig } from "./test-helpers.js";
+=======
+import fs from "node:fs/promises";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { loadConfig } from "./config.js";
+import { withTempHome } from "./test-helpers.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 describe("config discord", () => {
   let previousHome: string | undefined;
@@ -46,6 +54,7 @@ describe("config discord", () => {
       async () => {
         const cfg = loadConfig();
 
+<<<<<<< HEAD
         expect(cfg.channels?.discord?.enabled).toBe(true);
         expect(cfg.channels?.discord?.dm?.groupEnabled).toBe(true);
         expect(cfg.channels?.discord?.dm?.groupChannels).toEqual(["openclaw-dm"]);
@@ -57,6 +66,9 @@ describe("config discord", () => {
       },
     );
   });
+=======
+      const cfg = loadConfig();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   it("rejects numeric discord allowlist entries", () => {
     const res = validateConfigObject({

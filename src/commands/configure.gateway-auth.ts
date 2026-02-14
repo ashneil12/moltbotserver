@@ -28,6 +28,18 @@ function sanitizeTokenValue(value: string | undefined): string | undefined {
   return trimmed;
 }
 
+/** Reject undefined, empty, and common JS string-coercion artifacts for token auth. */
+function sanitizeTokenValue(value: string | undefined): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "undefined" || trimmed === "null") {
+    return undefined;
+  }
+  return trimmed;
+}
+
 const ANTHROPIC_OAUTH_MODEL_KEYS = [
   "anthropic/claude-sonnet-4-6",
   "anthropic/claude-opus-4-6",
@@ -58,6 +70,7 @@ export function buildGatewayAuthConfig(params: {
     const token = sanitizeTokenValue(params.token) ?? randomToken();
     return { ...base, mode: "token", token };
   }
+<<<<<<< HEAD
   if (params.mode === "password") {
     const password = params.password?.trim();
     return { ...base, mode: "password", ...(password && { password }) };
@@ -69,6 +82,10 @@ export function buildGatewayAuthConfig(params: {
     return { ...base, mode: "trusted-proxy", trustedProxy: params.trustedProxy };
   }
   return base;
+=======
+  const password = params.password?.trim();
+  return { ...base, mode: "password", ...(password && { password }) };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function promptAuthConfig(

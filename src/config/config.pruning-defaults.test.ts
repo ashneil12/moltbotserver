@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+<<<<<<< HEAD
 import { withEnvAsync } from "../test-utils/env.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { loadConfig } from "./config.js";
 import { withTempHome } from "./test-helpers.js";
 
@@ -21,7 +24,11 @@ describe("config pruning defaults", () => {
       await withTempHome(async (home) => {
         await writeConfigForTest(home, { agents: { defaults: {} } });
 
+<<<<<<< HEAD
         const cfg = loadConfig();
+=======
+      const cfg = loadConfig();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
         expect(cfg.agents?.defaults?.contextPruning?.mode).toBeUndefined();
       });

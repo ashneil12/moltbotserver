@@ -169,7 +169,10 @@ export const TelegramAccountSchemaBase = z
     webhookSecret: z.string().optional().register(sensitive),
     webhookPath: z.string().optional(),
     webhookHost: z.string().optional(),
+<<<<<<< HEAD
     webhookPort: z.number().int().positive().optional(),
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     actions: z
       .object({
         reactions: z.boolean().optional(),
@@ -424,7 +427,10 @@ export const DiscordAccountSchema = z
       .strict()
       .optional(),
     responsePrefix: z.string().optional(),
+<<<<<<< HEAD
     ackReaction: z.string().optional(),
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     activity: z.string().optional(),
     status: z.enum(["online", "dnd", "idle", "invisible"]).optional(),
     activityType: z
@@ -434,8 +440,11 @@ export const DiscordAccountSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
+<<<<<<< HEAD
     normalizeDiscordStreamingConfig(value);
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const activityText = typeof value.activity === "string" ? value.activity.trim() : "";
     const hasActivity = Boolean(activityText);
     const hasActivityType = value.activityType !== undefined;
@@ -465,6 +474,7 @@ export const DiscordAccountSchema = z
         path: ["activityType"],
       });
     }
+<<<<<<< HEAD
 
     const dmPolicy = value.dmPolicy ?? value.dm?.policy ?? "pairing";
     const allowFrom = value.allowFrom ?? value.dm?.allowFrom;
@@ -478,6 +488,8 @@ export const DiscordAccountSchema = z
       message:
         'channels.discord.dmPolicy="open" requires channels.discord.allowFrom (or channels.discord.dm.allowFrom) to include "*"',
     });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
 export const DiscordConfigSchema = DiscordAccountSchema.extend({

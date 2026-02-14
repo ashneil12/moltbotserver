@@ -52,6 +52,7 @@ export function registerAcpCli(program: Command) {
     )
     .action(async (opts) => {
       try {
+<<<<<<< HEAD
         const gatewayToken = resolveSecretOption({
           direct: opts.token as string | undefined,
           file: opts.tokenFile as string | undefined,
@@ -72,6 +73,8 @@ export function registerAcpCli(program: Command) {
         if (opts.password) {
           warnSecretCliFlag("--password");
         }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         await serveAcpGateway({
           gatewayUrl: opts.url as string | undefined,
           gatewayToken,

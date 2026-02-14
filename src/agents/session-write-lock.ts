@@ -33,7 +33,40 @@ const CLEANUP_SIGNALS = ["SIGINT", "SIGTERM", "SIGQUIT", "SIGABRT"] as const;
 type CleanupSignal = (typeof CLEANUP_SIGNALS)[number];
 const CLEANUP_STATE_KEY = Symbol.for("openclaw.sessionWriteLockCleanupState");
 const HELD_LOCKS_KEY = Symbol.for("openclaw.sessionWriteLockHeldLocks");
+<<<<<<< HEAD
 const WATCHDOG_STATE_KEY = Symbol.for("openclaw.sessionWriteLockWatchdogState");
+=======
+
+type CleanupState = {
+  registered: boolean;
+  cleanupHandlers: Map<CleanupSignal, () => void>;
+};
+
+function resolveHeldLocks(): Map<string, HeldLock> {
+  const proc = process as NodeJS.Process & {
+    [HELD_LOCKS_KEY]?: Map<string, HeldLock>;
+  };
+  if (!proc[HELD_LOCKS_KEY]) {
+    proc[HELD_LOCKS_KEY] = new Map<string, HeldLock>();
+  }
+  return proc[HELD_LOCKS_KEY];
+}
+
+const HELD_LOCKS = resolveHeldLocks();
+
+function resolveCleanupState(): CleanupState {
+  const proc = process as NodeJS.Process & {
+    [CLEANUP_STATE_KEY]?: CleanupState;
+  };
+  if (!proc[CLEANUP_STATE_KEY]) {
+    proc[CLEANUP_STATE_KEY] = {
+      registered: false,
+      cleanupHandlers: new Map<CleanupSignal, () => void>(),
+    };
+  }
+  return proc[CLEANUP_STATE_KEY];
+}
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const DEFAULT_STALE_MS = 30 * 60 * 1000;
 const DEFAULT_MAX_HOLD_MS = 5 * 60 * 1000;
@@ -184,6 +217,7 @@ function releaseAllLocksSync(): void {
   }
 }
 
+<<<<<<< HEAD
 async function runLockWatchdogCheck(nowMs = Date.now()): Promise<number> {
   let released = 0;
   for (const [sessionFile, held] of HELD_LOCKS.entries()) {
@@ -220,6 +254,8 @@ function ensureWatchdogStarted(intervalMs: number): void {
   watchdogState.timer.unref?.();
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function handleTerminationSignal(signal: CleanupSignal): void {
   releaseAllLocksSync();
   const cleanupState = resolveCleanupState();
@@ -247,8 +283,11 @@ function registerCleanupHandlers(): void {
       releaseAllLocksSync();
     });
   }
+<<<<<<< HEAD
 
   ensureWatchdogStarted(DEFAULT_WATCHDOG_INTERVAL_MS);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   // Handle termination signals
   for (const signal of CLEANUP_SIGNALS) {

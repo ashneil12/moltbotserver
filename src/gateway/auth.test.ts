@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
+<<<<<<< HEAD
 import {
   authorizeGatewayConnect,
   authorizeHttpGatewayConnect,
@@ -43,6 +44,24 @@ function createTailscaleForwardedReq(): never {
 
 function createTailscaleWhois() {
   return async () => ({ login: "peter", name: "Peter" });
+}
+=======
+import { authorizeGatewayConnect } from "./auth.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
+
+function createLimiterSpy(): AuthRateLimiter & {
+  check: ReturnType<typeof vi.fn>;
+  recordFailure: ReturnType<typeof vi.fn>;
+  reset: ReturnType<typeof vi.fn>;
+} {
+  return {
+    check: vi.fn(() => ({ allowed: true, remaining: 10, retryAfterMs: 0 })),
+    recordFailure: vi.fn(),
+    reset: vi.fn(),
+    size: () => 0,
+    prune: () => {},
+    dispose: () => {},
+  };
 }
 
 describe("gateway auth", () => {
@@ -295,6 +314,7 @@ describe("gateway auth", () => {
     expect(res.user).toBe("peter");
   });
 
+<<<<<<< HEAD
   it("keeps tailscale header auth disabled on HTTP auth wrapper", async () => {
     await expectTailscaleHeaderAuthResult({
       authorize: authorizeHttpGatewayConnect,
@@ -313,10 +333,28 @@ describe("gateway auth", () => {
     const limiter = await expectTokenMismatchWithLimiter({
       reqHeaders: { "x-forwarded-for": "203.0.113.10" },
     });
+=======
+  it("uses proxy-aware request client IP by default for rate-limit checks", async () => {
+    const limiter = createLimiterSpy();
+    const res = await authorizeGatewayConnect({
+      auth: { mode: "token", token: "secret", allowTailscale: false },
+      connectAuth: { token: "wrong" },
+      req: {
+        socket: { remoteAddress: "127.0.0.1" },
+        headers: { "x-forwarded-for": "203.0.113.10" },
+      } as never,
+      trustedProxies: ["127.0.0.1"],
+      rateLimiter: limiter,
+    });
+
+    expect(res.ok).toBe(false);
+    expect(res.reason).toBe("token_mismatch");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(limiter.check).toHaveBeenCalledWith("203.0.113.10", "shared-secret");
     expect(limiter.recordFailure).toHaveBeenCalledWith("203.0.113.10", "shared-secret");
   });
 
+<<<<<<< HEAD
   it("ignores X-Real-IP fallback by default for rate-limit checks", async () => {
     const limiter = await expectTokenMismatchWithLimiter({
       reqHeaders: { "x-real-ip": "203.0.113.77" },
@@ -334,6 +372,8 @@ describe("gateway auth", () => {
     expect(limiter.recordFailure).toHaveBeenCalledWith("203.0.113.77", "shared-secret");
   });
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("passes custom rate-limit scope to limiter operations", async () => {
     const limiter = createLimiterSpy();
     const res = await authorizeGatewayConnect({
@@ -348,6 +388,7 @@ describe("gateway auth", () => {
     expect(limiter.check).toHaveBeenCalledWith(undefined, "custom-scope");
     expect(limiter.recordFailure).toHaveBeenCalledWith(undefined, "custom-scope");
   });
+<<<<<<< HEAD
 });
 
 describe("trusted-proxy auth", () => {
@@ -536,4 +577,6 @@ describe("trusted-proxy auth", () => {
     expect(res.ok).toBe(true);
     expect(res.user).toBe("nick@example.com");
   });
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

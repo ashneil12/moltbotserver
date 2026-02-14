@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+=======
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { ToolInputError } from "../agents/tools/common.js";
+import { createTestRegistry } from "../test-utils/channel-plugins.js";
+import { resetTestPluginRegistry, setTestPluginRegistry, testState } from "./test-helpers.mocks.js";
+import { installGatewayTestHooks, getFreePort, startGatewayServer } from "./test-helpers.server.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const TEST_GATEWAY_TOKEN = "test-gateway-token-1234567890";
 
@@ -135,6 +144,7 @@ vi.mock("../agents/openclaw-tools.js", () => {
 
 const { handleToolsInvokeHttpRequest } = await import("./tools-invoke-http.js");
 
+<<<<<<< HEAD
 let pluginHttpHandlers: Array<(req: IncomingMessage, res: ServerResponse) => Promise<boolean>> = [];
 
 let sharedPort = 0;
@@ -276,6 +286,87 @@ describe("POST /tools/invoke", () => {
   it("invokes a tool and returns {ok:true,result}", async () => {
     allowAgentsListForMain();
     const res = await invokeAgentsListAuthed({ sessionKey: "main" });
+=======
+const allowAgentsListForMain = () => {
+  testState.agentsConfig = {
+    list: [
+      {
+        id: "main",
+        tools: {
+          allow: ["agents_list"],
+        },
+      },
+    ],
+    // oxlint-disable-next-line typescript/no-explicit-any
+  } as any;
+};
+
+const invokeAgentsList = async (params: {
+  port: number;
+  headers?: Record<string, string>;
+  sessionKey?: string;
+}) => {
+  const body: Record<string, unknown> = { tool: "agents_list", action: "json", args: {} };
+  if (params.sessionKey) {
+    body.sessionKey = params.sessionKey;
+  }
+  return await fetch(`http://127.0.0.1:${params.port}/tools/invoke`, {
+    method: "POST",
+    headers: { "content-type": "application/json", connection: "close", ...params.headers },
+    body: JSON.stringify(body),
+  });
+};
+
+const invokeTool = async (params: {
+  port: number;
+  tool: string;
+  args?: Record<string, unknown>;
+  action?: string;
+  headers?: Record<string, string>;
+  sessionKey?: string;
+}) => {
+  const body: Record<string, unknown> = {
+    tool: params.tool,
+    args: params.args ?? {},
+  };
+  if (params.action) {
+    body.action = params.action;
+  }
+  if (params.sessionKey) {
+    body.sessionKey = params.sessionKey;
+  }
+  return await fetch(`http://127.0.0.1:${params.port}/tools/invoke`, {
+    method: "POST",
+    headers: { "content-type": "application/json", connection: "close", ...params.headers },
+    body: JSON.stringify(body),
+  });
+};
+
+describe("POST /tools/invoke", () => {
+  let sharedPort = 0;
+  let sharedServer: Awaited<ReturnType<typeof startGatewayServer>>;
+
+  beforeAll(async () => {
+    sharedPort = await getFreePort();
+    sharedServer = await startGatewayServer(sharedPort, {
+      bind: "loopback",
+    });
+  });
+
+  afterAll(async () => {
+    await sharedServer.close();
+  });
+
+  it("invokes a tool and returns {ok:true,result}", async () => {
+    allowAgentsListForMain();
+    const token = resolveGatewayToken();
+
+    const res = await invokeAgentsList({
+      port: sharedPort,
+      headers: { authorization: `Bearer ${token}` },
+      sessionKey: "main",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -284,6 +375,7 @@ describe("POST /tools/invoke", () => {
   });
 
   it("supports tools.alsoAllow in profile and implicit modes", async () => {
+<<<<<<< HEAD
     cfg = {
       ...cfg,
       agents: { list: [{ id: "main", default: true }] },
@@ -302,6 +394,39 @@ describe("POST /tools/invoke", () => {
     };
 
     const resImplicit = await invokeAgentsListAuthed({ sessionKey: "main" });
+=======
+    testState.agentsConfig = {
+      list: [{ id: "main" }],
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any;
+
+    const { writeConfigFile } = await import("../config/config.js");
+    await writeConfigFile({
+      tools: { profile: "minimal", alsoAllow: ["agents_list"] },
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any);
+    const token = resolveGatewayToken();
+
+    const resProfile = await invokeAgentsList({
+      port: sharedPort,
+      headers: { authorization: `Bearer ${token}` },
+      sessionKey: "main",
+    });
+
+    expect(resProfile.status).toBe(200);
+    const profileBody = await resProfile.json();
+    expect(profileBody.ok).toBe(true);
+
+    await writeConfigFile({
+      tools: { alsoAllow: ["agents_list"] },
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any);
+    const resImplicit = await invokeAgentsList({
+      port: sharedPort,
+      headers: { authorization: `Bearer ${token}` },
+      sessionKey: "main",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(resImplicit.status).toBe(200);
     const implicitBody = await resImplicit.json();
     expect(implicitBody.ok).toBe(true);
@@ -341,11 +466,55 @@ describe("POST /tools/invoke", () => {
     expect(denyRes.status).toBe(404);
 
     allowAgentsListForMain();
+<<<<<<< HEAD
     cfg = {
       ...cfg,
+=======
+    try {
+      const token = resolveGatewayToken();
+      const res = await invokeAgentsList({
+        port: sharedPort,
+        headers: { authorization: `Bearer ${token}` },
+        sessionKey: "main",
+      });
+
+      expect(res.status).toBe(200);
+      expect(pluginHandler).not.toHaveBeenCalled();
+    } finally {
+      resetTestPluginRegistry();
+    }
+  });
+
+  it("returns 404 when denylisted or blocked by tools.profile", async () => {
+    testState.agentsConfig = {
+      list: [
+        {
+          id: "main",
+          tools: {
+            deny: ["agents_list"],
+          },
+        },
+      ],
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any;
+    const token = resolveGatewayToken();
+
+    const denyRes = await invokeAgentsList({
+      port: sharedPort,
+      headers: { authorization: `Bearer ${token}` },
+      sessionKey: "main",
+    });
+    expect(denyRes.status).toBe(404);
+
+    allowAgentsListForMain();
+
+    const { writeConfigFile } = await import("../config/config.js");
+    await writeConfigFile({
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       tools: { profile: "minimal" },
     };
 
+<<<<<<< HEAD
     const profileRes = await invokeAgentsListAuthed({ sessionKey: "main" });
     expect(profileRes.status).toBe(404);
   });
@@ -367,6 +536,34 @@ describe("POST /tools/invoke", () => {
     const res = await invokeToolAuthed({
       tool: "sessions_spawn",
       args: { task: "test" },
+=======
+    const profileRes = await invokeAgentsList({
+      port: sharedPort,
+      headers: { authorization: `Bearer ${token}` },
+      sessionKey: "main",
+    });
+    expect(profileRes.status).toBe(404);
+  });
+
+  it("denies sessions_spawn via HTTP even when agent policy allows", async () => {
+    testState.agentsConfig = {
+      list: [
+        {
+          id: "main",
+          tools: { allow: ["sessions_spawn"] },
+        },
+      ],
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any;
+
+    const token = resolveGatewayToken();
+
+    const res = await invokeTool({
+      port: sharedPort,
+      tool: "sessions_spawn",
+      args: { task: "test" },
+      headers: { authorization: `Bearer ${token}` },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       sessionKey: "main",
     });
 
@@ -376,6 +573,7 @@ describe("POST /tools/invoke", () => {
     expect(body.error.type).toBe("not_found");
   });
 
+<<<<<<< HEAD
   it("propagates message target/thread headers into tools context for sessions_spawn", async () => {
     cfg = {
       ...cfg,
@@ -415,6 +613,20 @@ describe("POST /tools/invoke", () => {
 
     const res = await invokeToolAuthed({
       tool: "sessions_send",
+=======
+  it("denies sessions_send via HTTP gateway", async () => {
+    testState.agentsConfig = {
+      list: [{ id: "main", tools: { allow: ["sessions_send"] } }],
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any;
+
+    const token = resolveGatewayToken();
+
+    const res = await invokeTool({
+      port: sharedPort,
+      tool: "sessions_send",
+      headers: { authorization: `Bearer ${token}` },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       sessionKey: "main",
     });
 
@@ -422,6 +634,7 @@ describe("POST /tools/invoke", () => {
   });
 
   it("denies gateway tool via HTTP", async () => {
+<<<<<<< HEAD
     cfg = {
       ...cfg,
       agents: {
@@ -469,6 +682,19 @@ describe("POST /tools/invoke", () => {
 
     const res = await invokeToolAuthed({
       tool: "gateway",
+=======
+    testState.agentsConfig = {
+      list: [{ id: "main", tools: { allow: ["gateway"] } }],
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any;
+
+    const token = resolveGatewayToken();
+
+    const res = await invokeTool({
+      port: sharedPort,
+      tool: "gateway",
+      headers: { authorization: `Bearer ${token}` },
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       sessionKey: "main",
     });
 
@@ -498,6 +724,7 @@ describe("POST /tools/invoke", () => {
       session: { mainKey: "primary" },
     };
 
+<<<<<<< HEAD
     const resDefault = await invokeAgentsListAuthed();
     expect(resDefault.status).toBe(200);
 
@@ -545,5 +772,95 @@ describe("POST /tools/invoke", () => {
     expect(crashBody.ok).toBe(false);
     expect(crashBody.error?.type).toBe("tool_error");
     expect(crashBody.error?.message).toBe("tool execution failed");
+=======
+    const token = resolveGatewayToken();
+
+    const resDefault = await invokeAgentsList({
+      port: sharedPort,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(resDefault.status).toBe(200);
+
+    const resMain = await invokeAgentsList({
+      port: sharedPort,
+      headers: { authorization: `Bearer ${token}` },
+      sessionKey: "main",
+    });
+    expect(resMain.status).toBe(200);
+  });
+
+  it("maps tool input errors to 400 and unexpected execution errors to 500", async () => {
+    const registry = createTestRegistry();
+    registry.tools.push({
+      pluginId: "tools-invoke-test",
+      source: "test",
+      names: ["tools_invoke_test"],
+      optional: false,
+      factory: () => ({
+        label: "Tools Invoke Test",
+        name: "tools_invoke_test",
+        description: "Test-only tool.",
+        parameters: {
+          type: "object",
+          properties: {
+            mode: { type: "string" },
+          },
+          required: ["mode"],
+          additionalProperties: false,
+        },
+        execute: async (_toolCallId, args) => {
+          const mode = (args as { mode?: unknown }).mode;
+          if (mode === "input") {
+            throw new ToolInputError("mode invalid");
+          }
+          if (mode === "crash") {
+            throw new Error("boom");
+          }
+          return { ok: true };
+        },
+      }),
+    });
+    setTestPluginRegistry(registry);
+    const { writeConfigFile } = await import("../config/config.js");
+    await writeConfigFile({
+      plugins: { enabled: true },
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any);
+
+    const token = resolveGatewayToken();
+
+    try {
+      const inputRes = await invokeTool({
+        port: sharedPort,
+        tool: "tools_invoke_test",
+        args: { mode: "input" },
+        headers: { authorization: `Bearer ${token}` },
+        sessionKey: "main",
+      });
+      expect(inputRes.status).toBe(400);
+      const inputBody = await inputRes.json();
+      expect(inputBody.ok).toBe(false);
+      expect(inputBody.error?.type).toBe("tool_error");
+      expect(inputBody.error?.message).toBe("mode invalid");
+
+      const crashRes = await invokeTool({
+        port: sharedPort,
+        tool: "tools_invoke_test",
+        args: { mode: "crash" },
+        headers: { authorization: `Bearer ${token}` },
+        sessionKey: "main",
+      });
+      expect(crashRes.status).toBe(500);
+      const crashBody = await crashRes.json();
+      expect(crashBody.ok).toBe(false);
+      expect(crashBody.error?.type).toBe("tool_error");
+      expect(crashBody.error?.message).toBe("tool execution failed");
+    } finally {
+      await writeConfigFile({
+        // oxlint-disable-next-line typescript/no-explicit-any
+      } as any);
+      resetTestPluginRegistry();
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

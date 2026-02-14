@@ -1616,11 +1616,18 @@ public struct TalkConfigParams: Codable, Sendable {
     public let includesecrets: Bool?
 
     public init(
+<<<<<<< HEAD
         includesecrets: Bool?)
     {
         self.includesecrets = includesecrets
     }
 
+=======
+        includesecrets: Bool?
+    ) {
+        self.includesecrets = includesecrets
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     private enum CodingKeys: String, CodingKey {
         case includesecrets = "includeSecrets"
     }
@@ -1630,11 +1637,18 @@ public struct TalkConfigResult: Codable, Sendable {
     public let config: [String: AnyCodable]
 
     public init(
+<<<<<<< HEAD
         config: [String: AnyCodable])
     {
         self.config = config
     }
 
+=======
+        config: [String: AnyCodable]
+    ) {
+        self.config = config
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     private enum CodingKeys: String, CodingKey {
         case config
     }
@@ -2828,8 +2842,13 @@ public struct ExecApprovalRequestParams: Codable, Sendable {
         resolvedpath: AnyCodable?,
         sessionkey: AnyCodable?,
         timeoutms: Int?,
+<<<<<<< HEAD
         twophase: Bool?)
     {
+=======
+        twophase: Bool?
+    ) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         self.id = id
         self.command = command
         self.cwd = cwd

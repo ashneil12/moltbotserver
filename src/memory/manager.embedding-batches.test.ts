@@ -1,8 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+<<<<<<< HEAD
 import { describe, expect, it } from "vitest";
 import { useFastShortTimeouts } from "../../test/helpers/fast-short-timeouts.js";
 import { installEmbeddingManagerFixture } from "./embedding-manager.test-harness.js";
+=======
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { getMemorySearchManager, type MemoryIndexManager } from "./index.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const fx = installEmbeddingManagerFixture({
   fixturePrefix: "openclaw-mem-",
@@ -28,6 +33,7 @@ const fx = installEmbeddingManagerFixture({
 const { embedBatch } = fx;
 
 describe("memory embedding batches", () => {
+<<<<<<< HEAD
   it("splits large files across multiple embedding batches", async () => {
     const memoryDir = fx.getMemoryDir();
     const managerLarge = fx.getManagerLarge();
@@ -38,11 +44,74 @@ describe("memory embedding batches", () => {
     await fs.writeFile(path.join(memoryDir, "2026-01-03.md"), content);
     const updates: Array<{ completed: number; total: number; label?: string }> = [];
     await managerLarge.sync({
+=======
+  let fixtureRoot: string;
+  let caseId = 0;
+  let workspaceDir: string;
+  let indexPath: string;
+  let manager: MemoryIndexManager | null = null;
+
+  beforeAll(async () => {
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mem-"));
+  });
+
+  afterAll(async () => {
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
+  });
+
+  beforeEach(async () => {
+    embedBatch.mockClear();
+    embedQuery.mockClear();
+    workspaceDir = path.join(fixtureRoot, `case-${++caseId}`);
+    indexPath = path.join(workspaceDir, "index.sqlite");
+    await fs.mkdir(path.join(workspaceDir, "memory"), { recursive: true });
+  });
+
+  afterEach(async () => {
+    if (manager) {
+      await manager.close();
+      manager = null;
+    }
+  });
+
+  it("splits large files across multiple embedding batches", async () => {
+    const line = "a".repeat(200);
+    const content = Array.from({ length: 40 }, () => line).join("\n");
+    await fs.writeFile(path.join(workspaceDir, "memory", "2026-01-03.md"), content);
+
+    const cfg = {
+      agents: {
+        defaults: {
+          workspace: workspaceDir,
+          memorySearch: {
+            provider: "openai",
+            model: "mock-embed",
+            store: { path: indexPath },
+            chunking: { tokens: 200, overlap: 0 },
+            sync: { watch: false, onSessionStart: false, onSearch: false },
+            query: { minScore: 0 },
+          },
+        },
+        list: [{ id: "main", default: true }],
+      },
+    };
+
+    const result = await getMemorySearchManager({ cfg, agentId: "main" });
+    expect(result.manager).not.toBeNull();
+    if (!result.manager) {
+      throw new Error("manager missing");
+    }
+    manager = result.manager;
+    const updates: Array<{ completed: number; total: number; label?: string }> = [];
+    await manager.sync({
+      force: true,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       progress: (update) => {
         updates.push(update);
       },
     });
 
+<<<<<<< HEAD
     const status = managerLarge.status();
     const totalTexts = embedBatch.mock.calls.reduce(
       (sum: number, call: unknown[]) => sum + ((call[0] as string[] | undefined)?.length ?? 0),
@@ -54,6 +123,12 @@ describe("memory embedding batches", () => {
       (call: unknown[]) => (call[0] as string[] | undefined) ?? [],
     );
     expect(inputs.every((text) => Buffer.byteLength(text, "utf8") <= 8000)).toBe(true);
+=======
+    const status = manager.status();
+    const totalTexts = embedBatch.mock.calls.reduce((sum, call) => sum + (call[0]?.length ?? 0), 0);
+    expect(totalTexts).toBe(status.chunks);
+    expect(embedBatch.mock.calls.length).toBeGreaterThan(1);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(updates.length).toBeGreaterThan(0);
     expect(updates.some((update) => update.label?.includes("/"))).toBe(true);
     const last = updates[updates.length - 1];
@@ -62,19 +137,53 @@ describe("memory embedding batches", () => {
   });
 
   it("keeps small files in a single embedding batch", async () => {
+<<<<<<< HEAD
     const memoryDir = fx.getMemoryDir();
     const managerSmall = fx.getManagerSmall();
     const line = "b".repeat(120);
     const content = Array.from({ length: 4 }, () => line).join("\n");
     await fs.writeFile(path.join(memoryDir, "2026-01-04.md"), content);
     await managerSmall.sync({ reason: "test" });
+=======
+    const line = "b".repeat(120);
+    const content = Array.from({ length: 4 }, () => line).join("\n");
+    await fs.writeFile(path.join(workspaceDir, "memory", "2026-01-04.md"), content);
+
+    const cfg = {
+      agents: {
+        defaults: {
+          workspace: workspaceDir,
+          memorySearch: {
+            provider: "openai",
+            model: "mock-embed",
+            store: { path: indexPath },
+            chunking: { tokens: 200, overlap: 0 },
+            sync: { watch: false, onSessionStart: false, onSearch: false },
+            query: { minScore: 0 },
+          },
+        },
+        list: [{ id: "main", default: true }],
+      },
+    };
+
+    const result = await getMemorySearchManager({ cfg, agentId: "main" });
+    expect(result.manager).not.toBeNull();
+    if (!result.manager) {
+      throw new Error("manager missing");
+    }
+    manager = result.manager;
+    await manager.sync({ force: true });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(embedBatch.mock.calls.length).toBe(1);
   });
 
   it("retries embeddings on transient rate limit and 5xx errors", async () => {
+<<<<<<< HEAD
     const memoryDir = fx.getMemoryDir();
     const managerSmall = fx.getManagerSmall();
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const line = "d".repeat(120);
     const content = Array.from({ length: 4 }, () => line).join("\n");
     await fs.writeFile(path.join(memoryDir, "2026-01-06.md"), content);
@@ -93,11 +202,54 @@ describe("memory embedding batches", () => {
       return texts.map(() => [0, 1, 0]);
     });
 
+<<<<<<< HEAD
     const restoreFastTimeouts = useFastShortTimeouts();
     try {
       await managerSmall.sync({ reason: "test" });
     } finally {
       restoreFastTimeouts();
+=======
+    const realSetTimeout = setTimeout;
+    const setTimeoutSpy = vi.spyOn(global, "setTimeout").mockImplementation(((
+      handler: TimerHandler,
+      timeout?: number,
+      ...args: unknown[]
+    ) => {
+      const delay = typeof timeout === "number" ? timeout : 0;
+      if (delay > 0 && delay <= 2000) {
+        return realSetTimeout(handler, 0, ...args);
+      }
+      return realSetTimeout(handler, delay, ...args);
+    }) as typeof setTimeout);
+
+    const cfg = {
+      agents: {
+        defaults: {
+          workspace: workspaceDir,
+          memorySearch: {
+            provider: "openai",
+            model: "mock-embed",
+            store: { path: indexPath },
+            chunking: { tokens: 200, overlap: 0 },
+            sync: { watch: false, onSessionStart: false, onSearch: false },
+            query: { minScore: 0 },
+          },
+        },
+        list: [{ id: "main", default: true }],
+      },
+    };
+
+    const result = await getMemorySearchManager({ cfg, agentId: "main" });
+    expect(result.manager).not.toBeNull();
+    if (!result.manager) {
+      throw new Error("manager missing");
+    }
+    manager = result.manager;
+    try {
+      await manager.sync({ force: true });
+    } finally {
+      setTimeoutSpy.mockRestore();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
 
     expect(calls).toBe(3);

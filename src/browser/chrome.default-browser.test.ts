@@ -17,10 +17,18 @@ import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 
 describe("browser default executable detection", () => {
+<<<<<<< HEAD
   const launchServicesPlist = "com.apple.launchservices.secure.plist";
   const chromeExecutablePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
   function mockMacDefaultBrowser(bundleId: string, appPath = ""): void {
+=======
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("prefers default Chromium browser on macOS", () => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     vi.mocked(execFileSync).mockImplementation((cmd, args) => {
       const argsStr = Array.isArray(args) ? args.join(" ") : "";
       if (cmd === "/usr/bin/plutil" && argsStr.includes("LSHandlers")) {
@@ -64,8 +72,27 @@ describe("browser default executable detection", () => {
   });
 
   it("falls back when default browser is non-Chromium on macOS", () => {
+<<<<<<< HEAD
     mockMacDefaultBrowser("com.apple.Safari");
     mockChromeExecutableExists();
+=======
+    vi.mocked(execFileSync).mockImplementation((cmd, args) => {
+      const argsStr = Array.isArray(args) ? args.join(" ") : "";
+      if (cmd === "/usr/bin/plutil" && argsStr.includes("LSHandlers")) {
+        return JSON.stringify([
+          { LSHandlerURLScheme: "http", LSHandlerRoleAll: "com.apple.Safari" },
+        ]);
+      }
+      return "";
+    });
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
+      const value = String(p);
+      if (value.includes("com.apple.launchservices.secure.plist")) {
+        return true;
+      }
+      return value.includes("Google Chrome.app/Contents/MacOS/Google Chrome");
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const exe = resolveBrowserExecutableForPlatform(
       {} as Parameters<typeof resolveBrowserExecutableForPlatform>[0],

@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+import type { DatabaseSync } from "node:sqlite";
+import { type FSWatcher } from "chokidar";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
@@ -30,6 +35,25 @@ import type {
   MemorySource,
   MemorySyncProgressUpdate,
 } from "./types.js";
+<<<<<<< HEAD
+=======
+import { resolveAgentDir, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import { resolveMemorySearchConfig } from "../agents/memory-search.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+import {
+  createEmbeddingProvider,
+  type EmbeddingProvider,
+  type EmbeddingProviderResult,
+  type GeminiEmbeddingClient,
+  type OpenAiEmbeddingClient,
+  type VoyageEmbeddingClient,
+} from "./embeddings.js";
+import { bm25RankToScore, buildFtsQuery, mergeHybridResults } from "./hybrid.js";
+import { isMemoryPath, normalizeExtraMemoryPaths } from "./internal.js";
+import { memoryManagerEmbeddingOps } from "./manager-embedding-ops.js";
+import { searchKeyword, searchVector } from "./manager-search.js";
+import { memoryManagerSyncOps } from "./manager-sync-ops.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const SNIPPET_MAX_CHARS = 700;
 const VECTOR_TABLE = "chunks_vec";
 const FTS_TABLE = "chunks_fts";
@@ -40,7 +64,13 @@ const log = createSubsystemLogger("memory");
 
 const INDEX_CACHE = new Map<string, MemoryIndexManager>();
 
+<<<<<<< HEAD
 export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements MemorySearchManager {
+=======
+export class MemoryIndexManager implements MemorySearchManager {
+  // oxlint-disable-next-line typescript/no-explicit-any
+  [key: string]: any;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   private readonly cacheKey: string;
   protected readonly cfg: OpenClawConfig;
   protected readonly agentId: string;
@@ -270,7 +300,7 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       ? await this.searchKeyword(cleaned, candidates).catch(() => [])
       : [];
 
-    const queryVec = await this.embedQueryWithTimeout(cleaned);
+    const queryVec = (await this.embedQueryWithTimeout(cleaned)) as number[];
     const hasVector = queryVec.some((v) => v !== 0);
     const vectorResults = hasVector
       ? await this.searchVector(queryVec, candidates).catch(() => [])
@@ -637,4 +667,24 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     this.db.close();
     INDEX_CACHE.delete(this.cacheKey);
   }
+<<<<<<< HEAD
+=======
 }
+
+function applyPrototypeMixins(target: object, ...sources: object[]): void {
+  for (const source of sources) {
+    for (const name of Object.getOwnPropertyNames(source)) {
+      if (name === "constructor") {
+        continue;
+      }
+      const descriptor = Object.getOwnPropertyDescriptor(source, name);
+      if (!descriptor) {
+        continue;
+      }
+      Object.defineProperty(target, name, descriptor);
+    }
+  }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
+}
+
+applyPrototypeMixins(MemoryIndexManager.prototype, memoryManagerSyncOps, memoryManagerEmbeddingOps);

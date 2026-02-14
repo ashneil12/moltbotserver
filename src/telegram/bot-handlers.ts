@@ -1176,8 +1176,185 @@ export const registerTelegramHandlers = ({
         dmPolicy,
       });
 
+<<<<<<< HEAD
       if (event.requireConfiguredGroup && (!groupConfig || groupConfig.enabled === false)) {
         logVerbose(`Blocked telegram channel ${event.chatId} (channel disabled)`);
+=======
+      if (isGroup) {
+        if (groupConfig?.enabled === false) {
+          logVerbose(`Blocked telegram group ${chatId} (group disabled)`);
+          return;
+        }
+        if (topicConfig?.enabled === false) {
+          logVerbose(
+            `Blocked telegram topic ${chatId} (${resolvedThreadId ?? "unknown"}) (topic disabled)`,
+          );
+          return;
+        }
+        if (hasGroupAllowOverride) {
+          const senderId = msg.from?.id;
+          const senderUsername = msg.from?.username ?? "";
+          const allowed =
+            senderId != null &&
+            isSenderAllowed({
+              allow: effectiveGroupAllow,
+              senderId: String(senderId),
+              senderUsername,
+            });
+          if (!allowed) {
+            logVerbose(
+              `Blocked telegram group sender ${senderId ?? "unknown"} (group allowFrom override)`,
+            );
+            return;
+          }
+        }
+        // Group policy filtering: controls how group messages are handled
+        // - "open": groups bypass allowFrom, only mention-gating applies
+        // - "disabled": block all group messages entirely
+        // - "allowlist": only allow group messages from senders in groupAllowFrom/allowFrom
+        const defaultGroupPolicy = cfg.channels?.defaults?.groupPolicy;
+        const groupPolicy = firstDefined(
+          topicConfig?.groupPolicy,
+          groupConfig?.groupPolicy,
+          telegramCfg.groupPolicy,
+          defaultGroupPolicy,
+          "open",
+        );
+        if (groupPolicy === "disabled") {
+          logVerbose(`Blocked telegram group message (groupPolicy: disabled)`);
+          return;
+        }
+        if (groupPolicy === "allowlist") {
+          // For allowlist mode, the sender (msg.from.id) must be in allowFrom
+          const senderId = msg.from?.id;
+          if (senderId == null) {
+            logVerbose(`Blocked telegram group message (no sender ID, groupPolicy: allowlist)`);
+            return;
+          }
+          if (!effectiveGroupAllow.hasEntries) {
+            logVerbose(
+              "Blocked telegram group message (groupPolicy: allowlist, no group allowlist entries)",
+            );
+            return;
+          }
+          const senderUsername = msg.from?.username ?? "";
+          if (
+            !isSenderAllowed({
+              allow: effectiveGroupAllow,
+              senderId: String(senderId),
+              senderUsername,
+            })
+          ) {
+            logVerbose(`Blocked telegram group message from ${senderId} (groupPolicy: allowlist)`);
+            return;
+          }
+        }
+
+        // Group allowlist based on configured group IDs.
+        const groupAllowlist = resolveGroupPolicy(chatId);
+        if (groupAllowlist.allowlistEnabled && !groupAllowlist.allowed) {
+          logger.info(
+            { chatId, title: msg.chat.title, reason: "not-allowed" },
+            "skipping group message",
+          );
+          return;
+        }
+      }
+
+      // Text fragment handling - Telegram splits long pastes into multiple inbound messages (~4096 chars).
+      // We buffer “near-limit” messages and append immediately-following parts.
+      const text = typeof msg.text === "string" ? msg.text : undefined;
+      const isCommandLike = (text ?? "").trim().startsWith("/");
+      if (text && !isCommandLike) {
+        const nowMs = Date.now();
+        const senderId = msg.from?.id != null ? String(msg.from.id) : "unknown";
+        const key = `text:${chatId}:${resolvedThreadId ?? "main"}:${senderId}`;
+        const existing = textFragmentBuffer.get(key);
+
+        if (existing) {
+          const last = existing.messages.at(-1);
+          const lastMsgId = last?.msg.message_id;
+          const lastReceivedAtMs = last?.receivedAtMs ?? nowMs;
+          const idGap = typeof lastMsgId === "number" ? msg.message_id - lastMsgId : Infinity;
+          const timeGapMs = nowMs - lastReceivedAtMs;
+          const canAppend =
+            idGap > 0 &&
+            idGap <= TELEGRAM_TEXT_FRAGMENT_MAX_ID_GAP &&
+            timeGapMs >= 0 &&
+            timeGapMs <= TELEGRAM_TEXT_FRAGMENT_MAX_GAP_MS;
+
+          if (canAppend) {
+            const currentTotalChars = existing.messages.reduce(
+              (sum, m) => sum + (m.msg.text?.length ?? 0),
+              0,
+            );
+            const nextTotalChars = currentTotalChars + text.length;
+            if (
+              existing.messages.length + 1 <= TELEGRAM_TEXT_FRAGMENT_MAX_PARTS &&
+              nextTotalChars <= TELEGRAM_TEXT_FRAGMENT_MAX_TOTAL_CHARS
+            ) {
+              existing.messages.push({ msg, ctx, receivedAtMs: nowMs });
+              scheduleTextFragmentFlush(existing);
+              return;
+            }
+          }
+
+          // Not appendable (or limits exceeded): flush buffered entry first, then continue normally.
+          clearTimeout(existing.timer);
+          textFragmentBuffer.delete(key);
+          textFragmentProcessing = textFragmentProcessing
+            .then(async () => {
+              await flushTextFragments(existing);
+            })
+            .catch(() => undefined);
+          await textFragmentProcessing;
+        }
+
+        const shouldStart = text.length >= TELEGRAM_TEXT_FRAGMENT_START_THRESHOLD_CHARS;
+        if (shouldStart) {
+          const entry: TextFragmentEntry = {
+            key,
+            messages: [{ msg, ctx, receivedAtMs: nowMs }],
+            timer: setTimeout(() => {}, TELEGRAM_TEXT_FRAGMENT_MAX_GAP_MS),
+          };
+          textFragmentBuffer.set(key, entry);
+          scheduleTextFragmentFlush(entry);
+          return;
+        }
+      }
+
+      // Media group handling - buffer multi-image messages
+      const mediaGroupId = msg.media_group_id;
+      if (mediaGroupId) {
+        const existing = mediaGroupBuffer.get(mediaGroupId);
+        if (existing) {
+          clearTimeout(existing.timer);
+          existing.messages.push({ msg, ctx });
+          existing.timer = setTimeout(async () => {
+            mediaGroupBuffer.delete(mediaGroupId);
+            mediaGroupProcessing = mediaGroupProcessing
+              .then(async () => {
+                await processMediaGroup(existing);
+              })
+              .catch(() => undefined);
+            await mediaGroupProcessing;
+          }, mediaGroupTimeoutMs);
+        } else {
+          const entry: MediaGroupEntry = {
+            messages: [{ msg, ctx }],
+            timer: setTimeout(async () => {
+              mediaGroupBuffer.delete(mediaGroupId);
+              mediaGroupProcessing = mediaGroupProcessing
+                .then(async () => {
+                  await processMediaGroup(entry);
+                })
+                .catch(() => undefined);
+              await mediaGroupProcessing;
+            }, mediaGroupTimeoutMs),
+          };
+          mediaGroupBuffer.set(mediaGroupId, entry);
+        }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         return;
       }
 

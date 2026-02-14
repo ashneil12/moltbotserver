@@ -9,8 +9,11 @@ export {
   applyCloudflareAiGatewayProviderConfig,
   applyHuggingfaceConfig,
   applyHuggingfaceProviderConfig,
+<<<<<<< HEAD
   applyKilocodeConfig,
   applyKilocodeProviderConfig,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   applyQianfanConfig,
   applyQianfanProviderConfig,
   applyKimiCodeConfig,

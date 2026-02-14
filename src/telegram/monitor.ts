@@ -162,7 +162,11 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
         config: cfg,
         path: opts.webhookPath,
         port: opts.webhookPort,
+<<<<<<< HEAD
         secret: opts.webhookSecret ?? account.config.webhookSecret,
+=======
+        secret: opts.webhookSecret,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         host: opts.webhookHost ?? account.config.webhookHost,
         runtime: opts.runtime as RuntimeEnv,
         fetch: proxyFetch,

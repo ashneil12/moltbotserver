@@ -1,5 +1,9 @@
 import os from "node:os";
 import path from "node:path";
+<<<<<<< HEAD
+=======
+import type { SubagentRunRecord } from "./subagent-registry.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveStateDir } from "../config/paths.js";
 import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
@@ -42,7 +46,11 @@ function resolveSubagentStateDir(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 export function resolveSubagentRegistryPath(): string {
+<<<<<<< HEAD
   return path.join(resolveSubagentStateDir(process.env), "subagents", "runs.json");
+=======
+  return path.join(resolveStateDir(), "subagents", "runs.json");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function loadSubagentRegistryFromDisk(): Map<string, SubagentRunRecord> {

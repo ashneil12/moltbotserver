@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+<<<<<<< HEAD
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
 import { loadConfig } from "./config.js";
@@ -38,6 +40,109 @@ describe("config identity defaults", () => {
   it("does not derive mention defaults and only sets ackReactionScope when identity is present", async () => {
     await withTempHome("openclaw-config-identity-", async (home) => {
       const cfg = await writeAndLoadConfig(home, configWithDefaultIdentity({}));
+=======
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
+import { loadConfig } from "./config.js";
+
+type HomeEnvSnapshot = {
+  home: string | undefined;
+  userProfile: string | undefined;
+  homeDrive: string | undefined;
+  homePath: string | undefined;
+  stateDir: string | undefined;
+};
+
+function snapshotHomeEnv(): HomeEnvSnapshot {
+  return {
+    home: process.env.HOME,
+    userProfile: process.env.USERPROFILE,
+    homeDrive: process.env.HOMEDRIVE,
+    homePath: process.env.HOMEPATH,
+    stateDir: process.env.OPENCLAW_STATE_DIR,
+  };
+}
+
+function restoreHomeEnv(snapshot: HomeEnvSnapshot) {
+  const restoreKey = (key: string, value: string | undefined) => {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  };
+  restoreKey("HOME", snapshot.home);
+  restoreKey("USERPROFILE", snapshot.userProfile);
+  restoreKey("HOMEDRIVE", snapshot.homeDrive);
+  restoreKey("HOMEPATH", snapshot.homePath);
+  restoreKey("OPENCLAW_STATE_DIR", snapshot.stateDir);
+}
+
+describe("config identity defaults", () => {
+  let fixtureRoot = "";
+  let fixtureCount = 0;
+
+  beforeAll(async () => {
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-identity-"));
+  });
+
+  afterAll(async () => {
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
+  });
+
+  const writeAndLoadConfig = async (home: string, config: Record<string, unknown>) => {
+    const configDir = path.join(home, ".openclaw");
+    await fs.mkdir(configDir, { recursive: true });
+    await fs.writeFile(
+      path.join(configDir, "openclaw.json"),
+      JSON.stringify(config, null, 2),
+      "utf-8",
+    );
+    return loadConfig();
+  };
+
+  const withTempHome = async <T>(fn: (home: string) => Promise<T>): Promise<T> => {
+    const home = path.join(fixtureRoot, `home-${fixtureCount++}`);
+    await fs.mkdir(path.join(home, ".openclaw"), { recursive: true });
+
+    const snapshot = snapshotHomeEnv();
+    process.env.HOME = home;
+    process.env.USERPROFILE = home;
+    process.env.OPENCLAW_STATE_DIR = path.join(home, ".openclaw");
+
+    if (process.platform === "win32") {
+      const match = home.match(/^([A-Za-z]:)(.*)$/);
+      if (match) {
+        process.env.HOMEDRIVE = match[1];
+        process.env.HOMEPATH = match[2] || "\\";
+      }
+    }
+
+    try {
+      return await fn(home);
+    } finally {
+      restoreHomeEnv(snapshot);
+    }
+  };
+
+  it("does not derive mention defaults and only sets ackReactionScope when identity is present", async () => {
+    await withTempHome(async (home) => {
+      const cfg = await writeAndLoadConfig(home, {
+        agents: {
+          list: [
+            {
+              id: "main",
+              identity: {
+                name: "Samantha",
+                theme: "helpful sloth",
+                emoji: "🦥",
+              },
+            },
+          ],
+        },
+        messages: {},
+      });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       expect(cfg.messages?.responsePrefix).toBeUndefined();
       expect(cfg.messages?.groupChat?.mentionPatterns).toBeUndefined();
@@ -47,7 +152,11 @@ describe("config identity defaults", () => {
   });
 
   it("keeps ackReaction unset and does not synthesize agent/session defaults when identity is missing", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-identity-", async (home) => {
+=======
+    await withTempHome(async (home) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const cfg = await writeAndLoadConfig(home, { messages: {} });
 
       expect(cfg.messages?.ackReaction).toBeUndefined();
@@ -62,7 +171,11 @@ describe("config identity defaults", () => {
   });
 
   it("does not override explicit values", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-identity-", async (home) => {
+=======
+    await withTempHome(async (home) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const cfg = await writeAndLoadConfig(home, {
         agents: {
           list: [
@@ -88,7 +201,11 @@ describe("config identity defaults", () => {
   });
 
   it("supports provider textChunkLimit config", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-identity-", async (home) => {
+=======
+    await withTempHome(async (home) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const cfg = await writeAndLoadConfig(home, {
         messages: {
           messagePrefix: "[openclaw]",
@@ -120,7 +237,11 @@ describe("config identity defaults", () => {
   });
 
   it("accepts blank model provider apiKey values", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-identity-", async (home) => {
+=======
+    await withTempHome(async (home) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const cfg = await writeAndLoadConfig(home, {
         models: {
           mode: "merge",
@@ -155,10 +276,54 @@ describe("config identity defaults", () => {
   });
 
   it("respects empty responsePrefix to disable identity defaults", async () => {
+<<<<<<< HEAD
     await withTempHome("openclaw-config-identity-", async (home) => {
       const cfg = await writeAndLoadConfig(home, configWithDefaultIdentity({ responsePrefix: "" }));
+=======
+    await withTempHome(async (home) => {
+      const cfg = await writeAndLoadConfig(home, {
+        agents: {
+          list: [
+            {
+              id: "main",
+              identity: {
+                name: "Samantha",
+                theme: "helpful sloth",
+                emoji: "🦥",
+              },
+            },
+          ],
+        },
+        messages: { responsePrefix: "" },
+      });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       expect(cfg.messages?.responsePrefix).toBe("");
     });
   });
+<<<<<<< HEAD
+=======
+
+  it("does not derive responsePrefix from identity emoji", async () => {
+    await withTempHome(async (home) => {
+      const cfg = await writeAndLoadConfig(home, {
+        agents: {
+          list: [
+            {
+              id: "main",
+              identity: {
+                name: "OpenClaw",
+                theme: "space lobster",
+                emoji: "🦞",
+              },
+            },
+          ],
+        },
+        messages: {},
+      });
+
+      expect(cfg.messages?.responsePrefix).toBeUndefined();
+    });
+  });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

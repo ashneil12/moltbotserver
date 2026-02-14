@@ -16,6 +16,16 @@ function stubPinnedHostname(hostname: string) {
   };
 }
 
+function stubPinnedHostname(hostname: string) {
+  const normalized = hostname.trim().toLowerCase().replace(/\.$/, "");
+  const addresses = [TEST_NET_IP];
+  return {
+    hostname: normalized,
+    addresses,
+    lookup: ssrf.createPinnedLookup({ hostname: normalized, addresses }),
+  };
+}
+
 describe("describeGeminiVideo", () => {
   let resolvePinnedHostnameWithPolicySpy: ReturnType<typeof vi.spyOn>;
   let resolvePinnedHostnameSpy: ReturnType<typeof vi.spyOn>;

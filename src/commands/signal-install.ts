@@ -4,7 +4,11 @@ import { request } from "node:https";
 import os from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
+<<<<<<< HEAD
 import { extractArchive } from "../infra/archive.js";
+=======
+import type { RuntimeEnv } from "../runtime.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveBrewExecutable } from "../infra/brew.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -33,6 +37,7 @@ export type SignalInstallResult = {
 };
 
 /** @internal Exported for testing. */
+<<<<<<< HEAD
 export async function extractSignalCliArchive(
   archivePath: string,
   installRoot: string,
@@ -42,6 +47,8 @@ export async function extractSignalCliArchive(
 }
 
 /** @internal Exported for testing. */
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function looksLikeArchive(name: string): boolean {
   return name.endsWith(".tar.gz") || name.endsWith(".tgz") || name.endsWith(".zip");
 }
@@ -251,6 +258,7 @@ async function installSignalCliFromRelease(runtime: RuntimeEnv): Promise<SignalI
   const installRoot = path.join(CONFIG_DIR, "tools", "signal-cli", version);
   await fs.mkdir(installRoot, { recursive: true });
 
+<<<<<<< HEAD
   if (!looksLikeArchive(asset.name.toLowerCase())) {
     return { ok: false, error: `Unsupported archive type: ${asset.name}` };
   }
@@ -262,6 +270,18 @@ async function installSignalCliFromRelease(runtime: RuntimeEnv): Promise<SignalI
       ok: false,
       error: `Failed to extract ${asset.name}: ${message}`,
     };
+=======
+  if (asset.name.endsWith(".zip")) {
+    await runCommandWithTimeout(["unzip", "-q", archivePath, "-d", installRoot], {
+      timeoutMs: 60_000,
+    });
+  } else if (asset.name.endsWith(".tar.gz") || asset.name.endsWith(".tgz")) {
+    await runCommandWithTimeout(["tar", "-xzf", archivePath, "-C", installRoot], {
+      timeoutMs: 60_000,
+    });
+  } else {
+    return { ok: false, error: `Unsupported archive type: ${asset.name}` };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   const cliPath = await findSignalCliBinary(installRoot);

@@ -20,8 +20,11 @@ class InvokeDispatcher(
   private val isForeground: () -> Boolean,
   private val cameraEnabled: () -> Boolean,
   private val locationEnabled: () -> Boolean,
+<<<<<<< HEAD
   private val onCanvasA2uiPush: () -> Unit,
   private val onCanvasA2uiReset: () -> Unit,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 ) {
   suspend fun handleInvoke(command: String, paramsJson: String?): GatewaySession.InvokeResult {
     // Check foreground requirement for canvas/camera/screen commands
@@ -119,7 +122,10 @@ class InvokeDispatcher(
           )
         }
         val res = canvas.eval(A2UIHandler.a2uiResetJS)
+<<<<<<< HEAD
         onCanvasA2uiReset()
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         GatewaySession.InvokeResult.ok(res)
       }
       OpenClawCanvasA2UICommand.Push.rawValue, OpenClawCanvasA2UICommand.PushJSONL.rawValue -> {
@@ -146,7 +152,10 @@ class InvokeDispatcher(
         }
         val js = A2UIHandler.a2uiApplyMessagesJS(messages)
         val res = canvas.eval(js)
+<<<<<<< HEAD
         onCanvasA2uiPush()
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         GatewaySession.InvokeResult.ok(res)
       }
 

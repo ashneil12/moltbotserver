@@ -1,6 +1,13 @@
 import { type Api, type Context, complete, type Model } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
+<<<<<<< HEAD
 import type { OpenClawConfig } from "../../config/config.js";
+=======
+import path from "node:path";
+import type { OpenClawConfig } from "../../config/config.js";
+import type { SandboxFsBridge } from "../sandbox/fs-bridge.js";
+import type { AnyAgentTool } from "./common.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveUserPath } from "../../utils.js";
 import { getDefaultLocalRoots, loadWebMedia } from "../../web/media.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
@@ -11,6 +18,7 @@ import { runWithImageModelFallback } from "../model-fallback.js";
 import { resolveConfiguredModelRef } from "../model-selection.js";
 import { ensureOpenClawModelsJson } from "../models-config.js";
 import { discoverAuthStorage, discoverModels } from "../pi-model-discovery.js";
+<<<<<<< HEAD
 import {
   resolveSandboxedBridgeMediaPath,
   type SandboxedBridgeMediaPathConfig,
@@ -19,6 +27,8 @@ import type { SandboxFsBridge } from "../sandbox/fs-bridge.js";
 import type { ToolFsPolicy } from "../tool-fs-policy.js";
 import { normalizeWorkspaceDir } from "../workspace-dir.js";
 import type { AnyAgentTool } from "./common.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   coerceImageAssistantText,
   coerceImageModelConfig,
@@ -212,6 +222,43 @@ type ImageSandboxConfig = {
   root: string;
   bridge: SandboxFsBridge;
 };
+<<<<<<< HEAD
+=======
+
+async function resolveSandboxedImagePath(params: {
+  sandbox: ImageSandboxConfig;
+  imagePath: string;
+}): Promise<{ resolved: string; rewrittenFrom?: string }> {
+  const normalize = (p: string) => (p.startsWith("file://") ? p.slice("file://".length) : p);
+  const filePath = normalize(params.imagePath);
+  try {
+    const resolved = params.sandbox.bridge.resolvePath({
+      filePath,
+      cwd: params.sandbox.root,
+    });
+    return { resolved: resolved.hostPath };
+  } catch (err) {
+    const name = path.basename(filePath);
+    const candidateRel = path.join("media", "inbound", name);
+    try {
+      const stat = await params.sandbox.bridge.stat({
+        filePath: candidateRel,
+        cwd: params.sandbox.root,
+      });
+      if (!stat) {
+        throw err;
+      }
+    } catch {
+      throw err;
+    }
+    const out = params.sandbox.bridge.resolvePath({
+      filePath: candidateRel,
+      cwd: params.sandbox.root,
+    });
+    return { resolved: out.hostPath, rewrittenFrom: filePath };
+  }
+}
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 async function runImagePrompt(params: {
   cfg?: OpenClawConfig;
@@ -304,9 +351,13 @@ async function runImagePrompt(params: {
 export function createImageTool(options?: {
   config?: OpenClawConfig;
   agentDir?: string;
+<<<<<<< HEAD
   workspaceDir?: string;
   sandbox?: ImageSandboxConfig;
   fsPolicy?: ToolFsPolicy;
+=======
+  sandbox?: ImageSandboxConfig;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   /** If true, the model has native vision capability and images in the prompt are auto-injected */
   modelHasVision?: boolean;
 }): AnyAgentTool | null {
@@ -413,6 +464,7 @@ export function createImageTool(options?: {
       const maxBytesMb = typeof record.maxBytesMb === "number" ? record.maxBytesMb : undefined;
       const maxBytes = pickMaxBytes(options?.config, maxBytesMb);
 
+<<<<<<< HEAD
       const sandboxConfig: SandboxedBridgeMediaPathConfig | null =
         options?.sandbox && options?.sandbox.root.trim()
           ? {
@@ -520,6 +572,51 @@ export function createImageTool(options?: {
             ? { rewrittenFrom: resolvedPathInfo.rewrittenFrom }
             : {}),
         });
+=======
+      const sandboxConfig =
+        options?.sandbox && options?.sandbox.root.trim()
+          ? { root: options.sandbox.root.trim(), bridge: options.sandbox.bridge }
+          : null;
+      const isUrl = isHttpUrl;
+      if (sandboxConfig && isUrl) {
+        throw new Error("Sandboxed image tool does not allow remote URLs.");
+      }
+
+      const resolvedImage = (() => {
+        if (sandboxConfig) {
+          return imageRaw;
+        }
+        if (imageRaw.startsWith("~")) {
+          return resolveUserPath(imageRaw);
+        }
+        return imageRaw;
+      })();
+      const resolvedPathInfo: { resolved: string; rewrittenFrom?: string } = isDataUrl
+        ? { resolved: "" }
+        : sandboxConfig
+          ? await resolveSandboxedImagePath({
+              sandbox: sandboxConfig,
+              imagePath: resolvedImage,
+            })
+          : {
+              resolved: resolvedImage.startsWith("file://")
+                ? resolvedImage.slice("file://".length)
+                : resolvedImage,
+            };
+      const resolvedPath = isDataUrl ? null : resolvedPathInfo.resolved;
+
+      const media = isDataUrl
+        ? decodeDataUrl(resolvedImage)
+        : sandboxConfig
+          ? await loadWebMedia(resolvedPath ?? resolvedImage, {
+              maxBytes,
+              readFile: (filePath) =>
+                sandboxConfig.bridge.readFile({ filePath, cwd: sandboxConfig.root }),
+            })
+          : await loadWebMedia(resolvedPath ?? resolvedImage, maxBytes);
+      if (media.kind !== "image") {
+        throw new Error(`Unsupported media type: ${media.kind}`);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
 
       // MARK: - Run image prompt with all loaded images

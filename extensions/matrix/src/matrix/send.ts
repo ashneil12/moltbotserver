@@ -79,6 +79,7 @@ export async function sendMessageMatrix(
         return eventId;
       };
 
+<<<<<<< HEAD
       let lastMessageId = "";
       if (opts.mediaUrl) {
         const maxBytes = resolveMediaMaxBytes(opts.accountId);
@@ -119,6 +120,68 @@ export async function sendMessageMatrix(
           isVoice: useVoice,
           imageInfo,
         });
+=======
+    let lastMessageId = "";
+    if (opts.mediaUrl) {
+      const maxBytes = resolveMediaMaxBytes(opts.accountId);
+      const media = await getCore().media.loadWebMedia(opts.mediaUrl, maxBytes);
+      const uploaded = await uploadMediaMaybeEncrypted(client, roomId, media.buffer, {
+        contentType: media.contentType,
+        filename: media.fileName,
+      });
+      const durationMs = await resolveMediaDurationMs({
+        buffer: media.buffer,
+        contentType: media.contentType,
+        fileName: media.fileName,
+        kind: media.kind,
+      });
+      const baseMsgType = resolveMatrixMsgType(media.contentType, media.fileName);
+      const { useVoice } = resolveMatrixVoiceDecision({
+        wantsVoice: opts.audioAsVoice === true,
+        contentType: media.contentType,
+        fileName: media.fileName,
+      });
+      const msgtype = useVoice ? MsgType.Audio : baseMsgType;
+      const isImage = msgtype === MsgType.Image;
+      const imageInfo = isImage
+        ? await prepareImageInfo({ buffer: media.buffer, client })
+        : undefined;
+      const [firstChunk, ...rest] = chunks;
+      const body = useVoice ? "Voice message" : (firstChunk ?? media.fileName ?? "(file)");
+      const content = buildMediaContent({
+        msgtype,
+        body,
+        url: uploaded.url,
+        file: uploaded.file,
+        filename: media.fileName,
+        mimetype: media.contentType,
+        size: media.buffer.byteLength,
+        durationMs,
+        relation,
+        isVoice: useVoice,
+        imageInfo,
+      });
+      const eventId = await sendContent(content);
+      lastMessageId = eventId ?? lastMessageId;
+      const textChunks = useVoice ? chunks : rest;
+      const followupRelation = threadId ? relation : undefined;
+      for (const chunk of textChunks) {
+        const text = chunk.trim();
+        if (!text) {
+          continue;
+        }
+        const followup = buildTextContent(text, followupRelation);
+        const followupEventId = await sendContent(followup);
+        lastMessageId = followupEventId ?? lastMessageId;
+      }
+    } else {
+      for (const chunk of chunks.length ? chunks : [""]) {
+        const text = chunk.trim();
+        if (!text) {
+          continue;
+        }
+        const content = buildTextContent(text, relation);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         const eventId = await sendContent(content);
         lastMessageId = eventId ?? lastMessageId;
         const textChunks = useVoice ? chunks : rest;

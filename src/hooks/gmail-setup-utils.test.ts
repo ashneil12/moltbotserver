@@ -2,7 +2,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
 import { withEnvAsync } from "../test-utils/env.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   ensureTailscaleEndpoint,
   resetGmailSetupUtilsCachesForTest,
@@ -17,7 +20,11 @@ vi.mock("../process/exec.js", () => ({
 }));
 
 beforeEach(() => {
+<<<<<<< HEAD
   runCommandWithTimeoutMock.mockClear();
+=======
+  runCommandWithTimeoutMock.mockReset();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   resetGmailSetupUtilsCachesForTest();
 });
 
@@ -46,6 +53,7 @@ describe("resolvePythonExecutablePath", () => {
             killed: false,
           });
 
+<<<<<<< HEAD
           const resolved = await resolvePythonExecutablePath();
           expect(resolved).toBe(realPython);
 
@@ -55,6 +63,23 @@ describe("resolvePythonExecutablePath", () => {
           });
           expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
         });
+=======
+        runCommandWithTimeoutMock.mockResolvedValue({
+          stdout: `${realPython}\n`,
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        });
+
+        const resolved = await resolvePythonExecutablePath();
+        expect(resolved).toBe(realPython);
+
+        process.env.PATH = "/bin";
+        const cached = await resolvePythonExecutablePath();
+        expect(cached).toBe(realPython);
+        expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       } finally {
         await fs.rm(tmp, { recursive: true, force: true });
       }

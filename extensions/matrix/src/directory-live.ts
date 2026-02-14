@@ -57,6 +57,7 @@ function normalizeQuery(value?: string | null): string {
   return value?.trim().toLowerCase() ?? "";
 }
 
+<<<<<<< HEAD
 function resolveMatrixDirectoryLimit(limit?: number | null): number {
   return typeof limit === "number" && limit > 0 ? limit : 20;
 }
@@ -64,6 +65,14 @@ function resolveMatrixDirectoryLimit(limit?: number | null): number {
 async function resolveMatrixDirectoryContext(
   params: MatrixDirectoryLiveParams,
 ): Promise<{ query: string; auth: MatrixResolvedAuth } | null> {
+=======
+export async function listMatrixDirectoryPeersLive(params: {
+  cfg: unknown;
+  accountId?: string | null;
+  query?: string | null;
+  limit?: number | null;
+}): Promise<ChannelDirectoryEntry[]> {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const query = normalizeQuery(params.query);
   if (!query) {
     return null;
@@ -92,7 +101,11 @@ export async function listMatrixDirectoryPeersLive(
   if (!context) {
     return [];
   }
+<<<<<<< HEAD
   const { query, auth } = context;
+=======
+  const auth = await resolveMatrixAuth({ cfg: params.cfg as never, accountId: params.accountId });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const res = await fetchMatrixJson<MatrixUserDirectoryResponse>({
     homeserver: auth.homeserver,
     accessToken: auth.accessToken,
@@ -155,6 +168,7 @@ async function fetchMatrixRoomName(
   }
 }
 
+<<<<<<< HEAD
 export async function listMatrixDirectoryGroupsLive(
   params: MatrixDirectoryLiveParams,
 ): Promise<ChannelDirectoryEntry[]> {
@@ -164,6 +178,20 @@ export async function listMatrixDirectoryGroupsLive(
   }
   const { query, auth } = context;
   const limit = resolveMatrixDirectoryLimit(params.limit);
+=======
+export async function listMatrixDirectoryGroupsLive(params: {
+  cfg: unknown;
+  accountId?: string | null;
+  query?: string | null;
+  limit?: number | null;
+}): Promise<ChannelDirectoryEntry[]> {
+  const query = normalizeQuery(params.query);
+  if (!query) {
+    return [];
+  }
+  const auth = await resolveMatrixAuth({ cfg: params.cfg as never, accountId: params.accountId });
+  const limit = typeof params.limit === "number" && params.limit > 0 ? params.limit : 20;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   if (query.startsWith("#")) {
     const roomId = await resolveMatrixRoomAlias(auth.homeserver, auth.accessToken, query);

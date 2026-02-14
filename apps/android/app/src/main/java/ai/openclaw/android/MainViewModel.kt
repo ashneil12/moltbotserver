@@ -59,7 +59,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   val manualPort: StateFlow<Int> = runtime.manualPort
   val manualTls: StateFlow<Boolean> = runtime.manualTls
   val gatewayToken: StateFlow<String> = runtime.gatewayToken
+<<<<<<< HEAD
   val onboardingCompleted: StateFlow<Boolean> = runtime.onboardingCompleted
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   val canvasDebugStatusEnabled: StateFlow<Boolean> = runtime.canvasDebugStatusEnabled
 
   val chatSessionKey: StateFlow<String> = runtime.chatSessionKey
@@ -117,6 +120,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     runtime.setGatewayToken(value)
   }
 
+<<<<<<< HEAD
   fun setGatewayPassword(value: String) {
     runtime.setGatewayPassword(value)
   }
@@ -125,6 +129,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     runtime.setOnboardingCompleted(value)
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   fun setCanvasDebugStatusEnabled(value: Boolean) {
     runtime.setCanvasDebugStatusEnabled(value)
   }

@@ -3,9 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
 import { resolveStateDir } from "../config/paths.js";
 import { sendVoiceMessageDiscord } from "../discord/send.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+=======
+import * as ssrf from "../infra/net/ssrf.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { optimizeImageToPng } from "../media/image-ops.js";
 import { mockPinnedHostnameResolution } from "../test-helpers/ssrf.js";
 import { captureEnv } from "../test-utils/env.js";
@@ -28,7 +32,10 @@ let alphaPngFile = "";
 let fallbackPngBuffer: Buffer;
 let fallbackPngFile = "";
 let fallbackPngCap = 0;
+<<<<<<< HEAD
 let stateDirSnapshot: ReturnType<typeof captureEnv>;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 async function writeTempFile(buffer: Buffer, ext: string): Promise<string> {
   const file = path.join(fixtureRoot, `media-${fixtureFileCount++}${ext}`);
@@ -50,6 +57,7 @@ async function createLargeTestJpeg(): Promise<{ buffer: Buffer; file: string }> 
   return { buffer: largeJpegBuffer, file: largeJpegFile };
 }
 
+<<<<<<< HEAD
 function cloneStatWithDev<T extends { dev: number | bigint }>(stat: T, dev: number | bigint): T {
   return Object.assign(Object.create(Object.getPrototypeOf(stat)), stat, { dev }) as T;
 }
@@ -62,6 +70,14 @@ beforeAll(async () => {
     create: {
       width: 400,
       height: 400,
+=======
+beforeAll(async () => {
+  fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-test-"));
+  largeJpegBuffer = await sharp({
+    create: {
+      width: 800,
+      height: 800,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       channels: 3,
       background: "#ff0000",
     },
@@ -87,8 +103,12 @@ beforeAll(async () => {
     .png()
     .toBuffer();
   alphaPngFile = await writeTempFile(alphaPngBuffer, ".png");
+<<<<<<< HEAD
   // Keep this small so the alpha-fallback test stays deterministic but fast.
   const size = 24;
+=======
+  const size = 72;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const raw = buildDeterministicBytes(size * size * 4);
   fallbackPngBuffer = await sharp(raw, { raw: { width: size, height: size, channels: 4 } })
     .png()
@@ -114,6 +134,7 @@ afterEach(() => {
 
 describe("web media loading", () => {
   beforeAll(() => {
+<<<<<<< HEAD
     // Ensure state dir is stable and not influenced by other tests that stub OPENCLAW_STATE_DIR.
     // Also keep it outside the OpenClaw temp root so default localRoots doesn't accidentally make all state readable.
     stateDirSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
@@ -139,6 +160,17 @@ describe("web media loading", () => {
       expect(result.kind).toBe("image");
       expect(result.buffer.length).toBeGreaterThan(0);
     }
+=======
+    vi.spyOn(ssrf, "resolvePinnedHostname").mockImplementation(async (hostname) => {
+      const normalized = hostname.trim().toLowerCase().replace(/\.$/, "");
+      const addresses = ["93.184.216.34"];
+      return {
+        hostname: normalized,
+        addresses,
+        lookup: ssrf.createPinnedLookup({ hostname: normalized, addresses }),
+      };
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("compresses large local images under the provided cap", async () => {
@@ -314,6 +346,7 @@ describe("web media loading", () => {
     expect(result.kind).toBe("image");
     expect(result.contentType).toBe("image/jpeg");
     expect(result.buffer.length).toBeLessThanOrEqual(fallbackPngCap);
+<<<<<<< HEAD
   });
 });
 
@@ -343,6 +376,8 @@ describe("Discord voice message input hardening", () => {
         testCase.name,
       ).rejects.toThrow(testCase.expectedMessage);
     }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });
 
@@ -351,6 +386,7 @@ describe("local media root guard", () => {
     // Explicit roots that don't contain the temp file.
     await expect(
       loadWebMedia(tinyPngFile, 1024 * 1024, { localRoots: ["/nonexistent-root"] }),
+<<<<<<< HEAD
     ).rejects.toMatchObject({ code: "path-not-allowed" });
   });
 
@@ -358,6 +394,13 @@ describe("local media root guard", () => {
     const result = await loadWebMedia(tinyPngFile, 1024 * 1024, {
       localRoots: [resolvePreferredOpenClawTmpDir()],
     });
+=======
+    ).rejects.toThrow(/not under an allowed directory/i);
+  });
+
+  it("allows local paths under an explicit root", async () => {
+    const result = await loadWebMedia(tinyPngFile, 1024 * 1024, { localRoots: [os.tmpdir()] });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(result.kind).toBe("image");
   });
 
@@ -401,11 +444,15 @@ describe("local media root guard", () => {
   });
 
   it("allows any path when localRoots is 'any'", async () => {
+<<<<<<< HEAD
     const result = await loadWebMedia(tinyPngFile, {
       maxBytes: 1024 * 1024,
       localRoots: "any",
       readFile: (filePath) => fs.readFile(filePath),
     });
+=======
+    const result = await loadWebMedia(tinyPngFile, 1024 * 1024, { localRoots: "any" });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(result.kind).toBe("image");
   });
 

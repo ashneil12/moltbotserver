@@ -1,7 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+<<<<<<< HEAD
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+=======
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { getMatrixRuntime } from "../runtime.js";
 
 export type MatrixStoredCredentials = {

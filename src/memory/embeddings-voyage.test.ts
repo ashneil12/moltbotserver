@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as authModule from "../agents/model-auth.js";
+<<<<<<< HEAD
 import { type FetchMock, withFetchPreconnect } from "../test-utils/fetch-mock.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { createVoyageEmbeddingProvider, normalizeVoyageModel } from "./embeddings-voyage.js";
 
 vi.mock("../agents/model-auth.js", async () => {
@@ -49,7 +52,24 @@ describe("voyage embedding provider", () => {
 
   it("configures client with correct defaults and headers", async () => {
     const fetchMock = createFetchMock();
+<<<<<<< HEAD
     const result = await createDefaultVoyageProvider("voyage-4-large", fetchMock);
+=======
+    vi.stubGlobal("fetch", fetchMock);
+
+    vi.mocked(authModule.resolveApiKeyForProvider).mockResolvedValue({
+      apiKey: "voyage-key-123",
+      mode: "api-key",
+      source: "test",
+    });
+
+    const result = await createVoyageEmbeddingProvider({
+      config: {} as never,
+      provider: "voyage",
+      model: "voyage-4-large",
+      fallback: "none",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await result.provider.embedQuery("test query");
 
@@ -103,6 +123,7 @@ describe("voyage embedding provider", () => {
   });
 
   it("passes input_type=document for embedBatch", async () => {
+<<<<<<< HEAD
     const fetchMock = withFetchPreconnect(
       vi.fn<FetchMock>(
         async (_input: RequestInfo | URL, _init?: RequestInit) =>
@@ -115,6 +136,29 @@ describe("voyage embedding provider", () => {
       ),
     );
     const result = await createDefaultVoyageProvider("voyage-4-large", fetchMock);
+=======
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{ embedding: [0.1, 0.2] }, { embedding: [0.3, 0.4] }],
+      }),
+    })) as unknown as typeof fetch;
+    vi.stubGlobal("fetch", fetchMock);
+
+    vi.mocked(authModule.resolveApiKeyForProvider).mockResolvedValue({
+      apiKey: "voyage-key-123",
+      mode: "api-key",
+      source: "test",
+    });
+
+    const result = await createVoyageEmbeddingProvider({
+      config: {} as never,
+      provider: "voyage",
+      model: "voyage-4-large",
+      fallback: "none",
+    });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await result.provider.embedBatch(["doc1", "doc2"]);
 

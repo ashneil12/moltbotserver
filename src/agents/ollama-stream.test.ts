@@ -104,6 +104,7 @@ describe("buildAssistantMessage", () => {
     expect(result.usage.totalTokens).toBe(15);
   });
 
+<<<<<<< HEAD
   it("falls back to reasoning when content is empty", () => {
     const response = {
       model: "qwen3:32b",
@@ -120,6 +121,8 @@ describe("buildAssistantMessage", () => {
     expect(result.content).toEqual([{ type: "text", text: "Reasoning output" }]);
   });
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("builds response with tool calls", () => {
     const response = {
       model: "qwen3:32b",
@@ -244,6 +247,7 @@ describe("parseNdjsonStream", () => {
     // Final done:true chunk has no tool_calls
     expect(chunks[2].message.tool_calls).toBeUndefined();
   });
+<<<<<<< HEAD
 
   it("preserves unsafe integer tool arguments as exact strings", async () => {
     const reader = mockNdjsonReader([
@@ -380,5 +384,65 @@ describe("createOllamaStreamFn", () => {
         expect(doneEvent.message.content).toEqual([{ type: "text", text: "reasoned output" }]);
       },
     );
+=======
+});
+
+describe("createOllamaStreamFn", () => {
+  it("normalizes /v1 baseUrl and maps maxTokens + signal", async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn(async () => {
+      const payload = [
+        '{"model":"m","created_at":"t","message":{"role":"assistant","content":"ok"},"done":false}',
+        '{"model":"m","created_at":"t","message":{"role":"assistant","content":""},"done":true,"prompt_eval_count":1,"eval_count":1}',
+      ].join("\n");
+      return new Response(`${payload}\n`, {
+        status: 200,
+        headers: { "Content-Type": "application/x-ndjson" },
+      });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      const streamFn = createOllamaStreamFn("http://ollama-host:11434/v1/");
+      const signal = new AbortController().signal;
+      const stream = streamFn(
+        {
+          id: "qwen3:32b",
+          api: "ollama",
+          provider: "custom-ollama",
+          contextWindow: 131072,
+        } as unknown as Parameters<typeof streamFn>[0],
+        {
+          messages: [{ role: "user", content: "hello" }],
+        } as unknown as Parameters<typeof streamFn>[1],
+        {
+          maxTokens: 123,
+          signal,
+        } as unknown as Parameters<typeof streamFn>[2],
+      );
+
+      const events = [];
+      for await (const event of stream) {
+        events.push(event);
+      }
+      expect(events.at(-1)?.type).toBe("done");
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe("http://ollama-host:11434/api/chat");
+      expect(requestInit.signal).toBe(signal);
+      if (typeof requestInit.body !== "string") {
+        throw new Error("Expected string request body");
+      }
+
+      const requestBody = JSON.parse(requestInit.body) as {
+        options: { num_ctx?: number; num_predict?: number };
+      };
+      expect(requestBody.options.num_ctx).toBe(131072);
+      expect(requestBody.options.num_predict).toBe(123);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

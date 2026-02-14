@@ -55,11 +55,18 @@ export async function sanitizeSessionMessagesImages(
     maxBytes: options?.maxBytes,
   };
   // We sanitize historical session messages because Anthropic can reject a request
+<<<<<<< HEAD
   // if the transcript contains oversized base64 images (default max side 1200px).
   const sanitizedIds =
     allowNonImageSanitization && options?.sanitizeToolCallIds
       ? sanitizeToolCallIdsForCloudCodeAssist(messages, options.toolCallIdMode)
       : messages;
+=======
+  // if the transcript contains oversized base64 images (see MAX_IMAGE_DIMENSION_PX).
+  const sanitizedIds = options?.sanitizeToolCallIds
+    ? sanitizeToolCallIdsForCloudCodeAssist(messages, options.toolCallIdMode)
+    : messages;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const out: AgentMessage[] = [];
   for (const msg of sanitizedIds) {
     if (!msg || typeof msg !== "object") {

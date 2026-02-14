@@ -1,4 +1,12 @@
+<<<<<<< HEAD
 import fs from "node:fs/promises";
+=======
+// @ts-nocheck
+// oxlint-disable eslint/no-unused-vars, typescript/no-explicit-any
+import fs from "node:fs/promises";
+import type { SessionFileEntry } from "./session-files.js";
+import type { MemorySource } from "./types.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runGeminiEmbeddingBatches, type GeminiBatchRequest } from "./batch-gemini.js";
 import {
@@ -17,9 +25,12 @@ import {
   type MemoryChunk,
   type MemoryFileEntry,
 } from "./internal.js";
+<<<<<<< HEAD
 import { MemoryManagerSyncOps } from "./manager-sync-ops.js";
 import type { SessionFileEntry } from "./session-files.js";
 import type { MemorySource } from "./types.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const VECTOR_TABLE = "chunks_vec";
 const FTS_TABLE = "chunks_fts";
@@ -40,12 +51,17 @@ const vectorToBlob = (embedding: number[]): Buffer =>
 
 const log = createSubsystemLogger("memory");
 
+<<<<<<< HEAD
 export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
   protected abstract batchFailureCount: number;
   protected abstract batchFailureLastError?: string;
   protected abstract batchFailureLastProvider?: string;
   protected abstract batchFailureLock: Promise<void>;
 
+=======
+class MemoryManagerEmbeddingOps {
+  [key: string]: any;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   private buildEmbeddingBatches(chunks: MemoryChunk[]): MemoryChunk[][] {
     const batches: MemoryChunk[][] = [];
     let current: MemoryChunk[] = [];
@@ -75,7 +91,11 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
   }
 
   private loadEmbeddingCache(hashes: string[]): Map<string, number[]> {
+<<<<<<< HEAD
     if (!this.cache.enabled || !this.provider) {
+=======
+    if (!this.cache.enabled) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       return new Map();
     }
     if (hashes.length === 0) {
@@ -117,7 +137,11 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
   }
 
   private upsertEmbeddingCache(entries: Array<{ hash: string; embedding: number[] }>): void {
+<<<<<<< HEAD
     if (!this.cache.enabled || !this.provider) {
+=======
+    if (!this.cache.enabled) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       return;
     }
     if (entries.length === 0) {
@@ -146,7 +170,11 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     }
   }
 
+<<<<<<< HEAD
   protected pruneEmbeddingCacheIfNeeded(): void {
+=======
+  private pruneEmbeddingCacheIfNeeded(): void {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (!this.cache.enabled) {
       return;
     }
@@ -178,7 +206,23 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     if (chunks.length === 0) {
       return [];
     }
+<<<<<<< HEAD
     const { embeddings, missing } = this.collectCachedEmbeddings(chunks);
+=======
+    const cached = this.loadEmbeddingCache(chunks.map((chunk) => chunk.hash));
+    const embeddings: number[][] = Array.from({ length: chunks.length }, () => []);
+    const missing: Array<{ index: number; chunk: MemoryChunk }> = [];
+
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunk = chunks[i];
+      const hit = chunk?.hash ? cached.get(chunk.hash) : undefined;
+      if (hit && hit.length > 0) {
+        embeddings[i] = hit;
+      } else if (chunk) {
+        missing.push({ index: i, chunk });
+      }
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     if (missing.length === 0) {
       return embeddings;
@@ -204,11 +248,15 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     return embeddings;
   }
 
+<<<<<<< HEAD
   protected computeProviderKey(): string {
     // FTS-only mode: no provider, use a constant key
     if (!this.provider) {
       return hashText(JSON.stringify({ provider: "none", model: "fts-only" }));
     }
+=======
+  private computeProviderKey(): string {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (this.provider.id === "openai" && this.openAi) {
       const entries = Object.entries(this.openAi.headers)
         .filter(([key]) => key.toLowerCase() !== "authorization")
@@ -248,9 +296,12 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     entry: MemoryFileEntry | SessionFileEntry,
     source: MemorySource,
   ): Promise<number[][]> {
+<<<<<<< HEAD
     if (!this.provider) {
       return this.embedChunksInBatches(chunks);
     }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (this.provider.id === "openai" && this.openAi) {
       return this.embedChunksWithOpenAiBatch(chunks, entry, source);
     }
@@ -263,10 +314,25 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     return this.embedChunksInBatches(chunks);
   }
 
+<<<<<<< HEAD
   private collectCachedEmbeddings(chunks: MemoryChunk[]): {
     embeddings: number[][];
     missing: Array<{ index: number; chunk: MemoryChunk }>;
   } {
+=======
+  private async embedChunksWithVoyageBatch(
+    chunks: MemoryChunk[],
+    entry: MemoryFileEntry | SessionFileEntry,
+    source: MemorySource,
+  ): Promise<number[][]> {
+    const voyage = this.voyage;
+    if (!voyage) {
+      return this.embedChunksInBatches(chunks);
+    }
+    if (chunks.length === 0) {
+      return [];
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const cached = this.loadEmbeddingCache(chunks.map((chunk) => chunk.hash));
     const embeddings: number[][] = Array.from({ length: chunks.length }, () => []);
     const missing: Array<{ index: number; chunk: MemoryChunk }> = [];
@@ -281,6 +347,7 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
       }
     }
 
+<<<<<<< HEAD
     return { embeddings, missing };
   }
 
@@ -390,10 +457,13 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
       return [];
     }
     const { embeddings, missing } = this.collectCachedEmbeddings(params.chunks);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (missing.length === 0) {
       return embeddings;
     }
 
+<<<<<<< HEAD
     const { requests, mapping } = this.buildBatchRequests<TRequest>({
       missing,
       entry: params.entry,
@@ -409,10 +479,42 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
       provider: params.provider,
       run: async () => await params.runBatch(runnerOptions),
       fallback: async () => await this.embedChunksInBatches(params.chunks),
+=======
+    const requests: VoyageBatchRequest[] = [];
+    const mapping = new Map<string, { index: number; hash: string }>();
+    for (const item of missing) {
+      const chunk = item.chunk;
+      const customId = hashText(
+        `${source}:${entry.path}:${chunk.startLine}:${chunk.endLine}:${chunk.hash}:${item.index}`,
+      );
+      mapping.set(customId, { index: item.index, hash: chunk.hash });
+      requests.push({
+        custom_id: customId,
+        body: {
+          input: chunk.text,
+        },
+      });
+    }
+    const batchResult = await this.runBatchWithFallback({
+      provider: "voyage",
+      run: async () =>
+        await runVoyageEmbeddingBatches({
+          client: voyage,
+          agentId: this.agentId,
+          requests,
+          wait: this.batch.wait,
+          concurrency: this.batch.concurrency,
+          pollIntervalMs: this.batch.pollIntervalMs,
+          timeoutMs: this.batch.timeoutMs,
+          debug: (message, data) => log.debug(message, { ...data, source, chunks: chunks.length }),
+        }),
+      fallback: async () => await this.embedChunksInBatches(chunks),
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
     if (Array.isArray(batchResult)) {
       return batchResult;
     }
+<<<<<<< HEAD
     this.applyBatchEmbeddings({ byCustomId: batchResult, mapping, embeddings });
     return embeddings;
   }
@@ -438,6 +540,21 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
           ...runnerOptions,
         }),
     });
+=======
+    const byCustomId = batchResult;
+
+    const toCache: Array<{ hash: string; embedding: number[] }> = [];
+    for (const [customId, embedding] of byCustomId.entries()) {
+      const mapped = mapping.get(customId);
+      if (!mapped) {
+        continue;
+      }
+      embeddings[mapped.index] = embedding;
+      toCache.push({ hash: mapped.hash, embedding });
+    }
+    this.upsertEmbeddingCache(toCache);
+    return embeddings;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   private async embedChunksWithOpenAiBatch(
@@ -446,6 +563,7 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     source: MemorySource,
   ): Promise<number[][]> {
     const openAi = this.openAi;
+<<<<<<< HEAD
     return await this.embedChunksWithProviderBatch<OpenAiBatchRequest>({
       chunks,
       entry,
@@ -466,6 +584,81 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
           ...runnerOptions,
         }),
     });
+=======
+    if (!openAi) {
+      return this.embedChunksInBatches(chunks);
+    }
+    if (chunks.length === 0) {
+      return [];
+    }
+    const cached = this.loadEmbeddingCache(chunks.map((chunk) => chunk.hash));
+    const embeddings: number[][] = Array.from({ length: chunks.length }, () => []);
+    const missing: Array<{ index: number; chunk: MemoryChunk }> = [];
+
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunk = chunks[i];
+      const hit = chunk?.hash ? cached.get(chunk.hash) : undefined;
+      if (hit && hit.length > 0) {
+        embeddings[i] = hit;
+      } else if (chunk) {
+        missing.push({ index: i, chunk });
+      }
+    }
+
+    if (missing.length === 0) {
+      return embeddings;
+    }
+
+    const requests: OpenAiBatchRequest[] = [];
+    const mapping = new Map<string, { index: number; hash: string }>();
+    for (const item of missing) {
+      const chunk = item.chunk;
+      const customId = hashText(
+        `${source}:${entry.path}:${chunk.startLine}:${chunk.endLine}:${chunk.hash}:${item.index}`,
+      );
+      mapping.set(customId, { index: item.index, hash: chunk.hash });
+      requests.push({
+        custom_id: customId,
+        method: "POST",
+        url: OPENAI_BATCH_ENDPOINT,
+        body: {
+          model: this.openAi?.model ?? this.provider.model,
+          input: chunk.text,
+        },
+      });
+    }
+    const batchResult = await this.runBatchWithFallback({
+      provider: "openai",
+      run: async () =>
+        await runOpenAiEmbeddingBatches({
+          openAi,
+          agentId: this.agentId,
+          requests,
+          wait: this.batch.wait,
+          concurrency: this.batch.concurrency,
+          pollIntervalMs: this.batch.pollIntervalMs,
+          timeoutMs: this.batch.timeoutMs,
+          debug: (message, data) => log.debug(message, { ...data, source, chunks: chunks.length }),
+        }),
+      fallback: async () => await this.embedChunksInBatches(chunks),
+    });
+    if (Array.isArray(batchResult)) {
+      return batchResult;
+    }
+    const byCustomId = batchResult;
+
+    const toCache: Array<{ hash: string; embedding: number[] }> = [];
+    for (const [customId, embedding] of byCustomId.entries()) {
+      const mapped = mapping.get(customId);
+      if (!mapped) {
+        continue;
+      }
+      embeddings[mapped.index] = embedding;
+      toCache.push({ hash: mapped.hash, embedding });
+    }
+    this.upsertEmbeddingCache(toCache);
+    return embeddings;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   private async embedChunksWithGeminiBatch(
@@ -474,6 +667,7 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     source: MemorySource,
   ): Promise<number[][]> {
     const gemini = this.gemini;
+<<<<<<< HEAD
     return await this.embedChunksWithProviderBatch<GeminiBatchRequest>({
       chunks,
       entry,
@@ -498,6 +692,83 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     }
     if (!this.provider) {
       throw new Error("Cannot embed batch in FTS-only mode (no embedding provider)");
+=======
+    if (!gemini) {
+      return this.embedChunksInBatches(chunks);
+    }
+    if (chunks.length === 0) {
+      return [];
+    }
+    const cached = this.loadEmbeddingCache(chunks.map((chunk) => chunk.hash));
+    const embeddings: number[][] = Array.from({ length: chunks.length }, () => []);
+    const missing: Array<{ index: number; chunk: MemoryChunk }> = [];
+
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunk = chunks[i];
+      const hit = chunk?.hash ? cached.get(chunk.hash) : undefined;
+      if (hit && hit.length > 0) {
+        embeddings[i] = hit;
+      } else if (chunk) {
+        missing.push({ index: i, chunk });
+      }
+    }
+
+    if (missing.length === 0) {
+      return embeddings;
+    }
+
+    const requests: GeminiBatchRequest[] = [];
+    const mapping = new Map<string, { index: number; hash: string }>();
+    for (const item of missing) {
+      const chunk = item.chunk;
+      const customId = hashText(
+        `${source}:${entry.path}:${chunk.startLine}:${chunk.endLine}:${chunk.hash}:${item.index}`,
+      );
+      mapping.set(customId, { index: item.index, hash: chunk.hash });
+      requests.push({
+        custom_id: customId,
+        content: { parts: [{ text: chunk.text }] },
+        taskType: "RETRIEVAL_DOCUMENT",
+      });
+    }
+
+    const batchResult = await this.runBatchWithFallback({
+      provider: "gemini",
+      run: async () =>
+        await runGeminiEmbeddingBatches({
+          gemini,
+          agentId: this.agentId,
+          requests,
+          wait: this.batch.wait,
+          concurrency: this.batch.concurrency,
+          pollIntervalMs: this.batch.pollIntervalMs,
+          timeoutMs: this.batch.timeoutMs,
+          debug: (message, data) => log.debug(message, { ...data, source, chunks: chunks.length }),
+        }),
+      fallback: async () => await this.embedChunksInBatches(chunks),
+    });
+    if (Array.isArray(batchResult)) {
+      return batchResult;
+    }
+    const byCustomId = batchResult;
+
+    const toCache: Array<{ hash: string; embedding: number[] }> = [];
+    for (const [customId, embedding] of byCustomId.entries()) {
+      const mapped = mapping.get(customId);
+      if (!mapped) {
+        continue;
+      }
+      embeddings[mapped.index] = embedding;
+      toCache.push({ hash: mapped.hash, embedding });
+    }
+    this.upsertEmbeddingCache(toCache);
+    return embeddings;
+  }
+
+  private async embedBatchWithRetry(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) {
+      return [];
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     let attempt = 0;
     let delayMs = EMBEDDING_RETRY_BASE_DELAY_MS;
@@ -538,17 +809,25 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
   }
 
   private resolveEmbeddingTimeout(kind: "query" | "batch"): number {
+<<<<<<< HEAD
     const isLocal = this.provider?.id === "local";
+=======
+    const isLocal = this.provider.id === "local";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (kind === "query") {
       return isLocal ? EMBEDDING_QUERY_TIMEOUT_LOCAL_MS : EMBEDDING_QUERY_TIMEOUT_REMOTE_MS;
     }
     return isLocal ? EMBEDDING_BATCH_TIMEOUT_LOCAL_MS : EMBEDDING_BATCH_TIMEOUT_REMOTE_MS;
   }
 
+<<<<<<< HEAD
   protected async embedQueryWithTimeout(text: string): Promise<number[]> {
     if (!this.provider) {
       throw new Error("Cannot embed query in FTS-only mode (no embedding provider)");
     }
+=======
+  private async embedQueryWithTimeout(text: string): Promise<number[]> {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const timeoutMs = this.resolveEmbeddingTimeout("query");
     log.debug("memory embeddings: query start", { provider: this.provider.id, timeoutMs });
     return await this.withTimeout(
@@ -558,7 +837,11 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     );
   }
 
+<<<<<<< HEAD
   protected async withTimeout<T>(
+=======
+  private async withTimeout<T>(
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     promise: Promise<T>,
     timeoutMs: number,
     message: string,
@@ -686,6 +969,7 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
     }
   }
 
+<<<<<<< HEAD
   protected getIndexConcurrency(): number {
     return this.batch.enabled ? this.batch.concurrency : EMBEDDING_INDEX_CONCURRENCY;
   }
@@ -703,13 +987,26 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
       return;
     }
 
+=======
+  private getIndexConcurrency(): number {
+    return this.batch.enabled ? this.batch.concurrency : EMBEDDING_INDEX_CONCURRENCY;
+  }
+
+  private async indexFile(
+    entry: MemoryFileEntry | SessionFileEntry,
+    options: { source: MemorySource; content?: string },
+  ) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const content = options.content ?? (await fs.readFile(entry.absPath, "utf-8"));
     const chunks = enforceEmbeddingMaxInputTokens(
       this.provider,
       chunkMarkdown(content, this.settings.chunking).filter(
         (chunk) => chunk.text.trim().length > 0,
       ),
+<<<<<<< HEAD
       EMBEDDING_BATCH_MAX_TOKENS,
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     );
     if (options.source === "sessions" && "lineMap" in entry) {
       remapChunkLines(chunks, entry.lineMap);
@@ -805,3 +1102,8 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
       .run(entry.path, options.source, entry.hash, entry.mtimeMs, entry.size);
   }
 }
+<<<<<<< HEAD
+=======
+
+export const memoryManagerEmbeddingOps = MemoryManagerEmbeddingOps.prototype;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

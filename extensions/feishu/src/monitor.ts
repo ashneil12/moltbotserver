@@ -1,11 +1,20 @@
+<<<<<<< HEAD
 import * as http from "http";
 import * as Lark from "@larksuiteoapi/node-sdk";
+=======
+import * as Lark from "@larksuiteoapi/node-sdk";
+import * as http from "http";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   type ClawdbotConfig,
   type RuntimeEnv,
   type HistoryEntry,
   installRequestBodyLimitGuard,
 } from "openclaw/plugin-sdk";
+<<<<<<< HEAD
+=======
+import type { ResolvedFeishuAccount } from "./types.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveFeishuAccount, listEnabledFeishuAccounts } from "./accounts.js";
 import { handleFeishuMessage, type FeishuMessageEvent, type FeishuBotAddedEvent } from "./bot.js";
 import { createFeishuWSClient, createEventDispatcher } from "./client.js";
@@ -25,6 +34,7 @@ const httpServers = new Map<string, http.Server>();
 const botOpenIds = new Map<string, string>();
 const FEISHU_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const FEISHU_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
+<<<<<<< HEAD
 const FEISHU_WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
 const FEISHU_WEBHOOK_RATE_LIMIT_MAX_REQUESTS = 120;
 const FEISHU_WEBHOOK_COUNTER_LOG_EVERY = 25;
@@ -71,6 +81,8 @@ function recordWebhookStatus(
     log(`feishu[${accountId}]: webhook anomaly path=${path} status=${statusCode} count=${next}`);
   }
 }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 async function fetchBotOpenId(account: ResolvedFeishuAccount): Promise<string | undefined> {
   try {
@@ -256,6 +268,7 @@ async function monitorWebhook({
   const server = http.createServer();
   const webhookHandler = Lark.adaptDefault(path, eventDispatcher, { autoChallenge: true });
   server.on("request", (req, res) => {
+<<<<<<< HEAD
     res.on("finish", () => {
       recordWebhookStatus(runtime, accountId, path, res.statusCode);
     });
@@ -273,6 +286,8 @@ async function monitorWebhook({
       return;
     }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const guard = installRequestBodyLimitGuard(req, res, {
       maxBytes: FEISHU_WEBHOOK_MAX_BODY_BYTES,
       timeoutMs: FEISHU_WEBHOOK_BODY_TIMEOUT_MS,

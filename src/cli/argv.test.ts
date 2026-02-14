@@ -240,6 +240,7 @@ describe("argv helpers", () => {
   });
 
   it("decides when to migrate state", () => {
+<<<<<<< HEAD
     const nonMutatingArgv = [
       ["node", "openclaw", "status"],
       ["node", "openclaw", "health"],
@@ -271,5 +272,25 @@ describe("argv helpers", () => {
     { path: ["agents", "list"], expected: true },
   ])("reuses command path for migrate state decisions: $path", ({ path, expected }) => {
     expect(shouldMigrateStateFromPath(path)).toBe(expected);
+=======
+    expect(shouldMigrateState(["node", "openclaw", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "health"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "sessions"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "config", "get", "update"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "config", "unset", "update"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "models", "list"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "models", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "memory", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "agent", "--message", "hi"])).toBe(false);
+    expect(shouldMigrateState(["node", "openclaw", "agents", "list"])).toBe(true);
+    expect(shouldMigrateState(["node", "openclaw", "message", "send"])).toBe(true);
+  });
+
+  it("reuses command path for migrate state decisions", () => {
+    expect(shouldMigrateStateFromPath(["status"])).toBe(false);
+    expect(shouldMigrateStateFromPath(["config", "get"])).toBe(false);
+    expect(shouldMigrateStateFromPath(["models", "status"])).toBe(false);
+    expect(shouldMigrateStateFromPath(["agents", "list"])).toBe(true);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

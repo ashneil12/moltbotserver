@@ -631,6 +631,7 @@ class GatewaySession(
     val scheme = parsed?.scheme?.trim().orEmpty().ifBlank { "http" }
     val suffix = buildUrlSuffix(parsed)
 
+<<<<<<< HEAD
     // If raw URL is a non-loopback address and this connection uses TLS,
     // normalize scheme/port to the endpoint we actually connected to.
     if (trimmed.isNotBlank() && host.isNotBlank() && !isLoopbackHost(host)) {
@@ -643,6 +644,19 @@ class GatewaySession(
             )
       if (needsTlsRewrite) {
         return buildCanvasUrl(host = host, scheme = "https", port = endpoint.port, suffix = suffix)
+=======
+    // Detect TLS reverse proxy: endpoint on port 443, or domain-based host
+    val tls = endpoint.port == 443 || endpoint.host.contains(".")
+
+    // If raw URL is a non-loopback address AND we're behind TLS reverse proxy,
+    // fix the port (gateway sends its internal port like 18789, but we need 443 via Caddy)
+    if (trimmed.isNotBlank() && !isLoopbackHost(host)) {
+      if (tls && port > 0 && port != 443) {
+        // Rewrite the URL to use the reverse proxy port instead of the raw gateway port
+        val fixedScheme = "https"
+        val formattedHost = if (host.contains(":")) "[${host}]" else host
+        return "$fixedScheme://$formattedHost"
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
       return trimmed
     }
@@ -653,6 +667,7 @@ class GatewaySession(
         ?: endpoint.host.trim()
     if (fallbackHost.isEmpty()) return trimmed.ifBlank { null }
 
+<<<<<<< HEAD
     // For TLS connections, use the connected endpoint's scheme/port instead of raw canvas metadata.
     val fallbackScheme = if (isTlsConnection) "https" else scheme
     // For TLS, always use the connected endpoint port.
@@ -673,6 +688,16 @@ class GatewaySession(
     val query = uri.rawQuery?.takeIf { it.isNotBlank() }?.let { "?$it" } ?: ""
     val fragment = uri.rawFragment?.takeIf { it.isNotBlank() }?.let { "#$it" } ?: ""
     return "$path$query$fragment"
+=======
+    // When connecting through a reverse proxy (TLS on standard port), use the
+    // connection endpoint's scheme and port instead of the raw canvas port.
+    val fallbackScheme = if (tls) "https" else scheme
+    // Behind reverse proxy, always use the proxy port (443), not the raw canvas port
+    val fallbackPort = if (tls) endpoint.port else (endpoint.canvasPort ?: endpoint.port)
+    val formattedHost = if (fallbackHost.contains(":")) "[${fallbackHost}]" else fallbackHost
+    val portSuffix = if ((fallbackScheme == "https" && fallbackPort == 443) || (fallbackScheme == "http" && fallbackPort == 80)) "" else ":$fallbackPort"
+    return "$fallbackScheme://$formattedHost$portSuffix"
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   private fun isLoopbackHost(raw: String?): Boolean {

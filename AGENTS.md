@@ -119,6 +119,7 @@
 ## Git Notes
 
 - If `git branch -d/-D <branch>` is policy-blocked, delete the local ref directly: `git update-ref -d refs/heads/<branch>`.
+<<<<<<< HEAD
 - Bulk PR close/reopen safety: if a close action would affect more than 5 PRs, first ask for explicit user confirmation with the exact PR count and target scope/query.
 
 ## GitHub Search (`gh`)
@@ -129,6 +130,8 @@
 - Issues: `gh search issues --repo openclaw/openclaw --match title,body --limit 50 -- "auto-update"`
 - Structured output example:
   `gh search issues --repo openclaw/openclaw --match title,body --limit 50 --json number,title,state,url,updatedAt -- "auto update" --jq '.[] | "\(.number) | \(.state) | \(.title) | \(.url)"'`
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 ## Security & Configuration Tips
 

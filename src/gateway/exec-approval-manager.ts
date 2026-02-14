@@ -87,7 +87,22 @@ export class ExecApprovalManager {
       promise,
     };
     entry.timer = setTimeout(() => {
+<<<<<<< HEAD
       this.expire(record.id);
+=======
+      // Update snapshot fields before resolving (mirror resolve()'s bookkeeping)
+      record.resolvedAtMs = Date.now();
+      record.decision = undefined;
+      record.resolvedBy = null;
+      resolvePromise(null);
+      // Keep entry briefly for in-flight awaitDecision calls
+      setTimeout(() => {
+        // Compare against captured entry instance, not re-fetched from map
+        if (this.pending.get(record.id) === entry) {
+          this.pending.delete(record.id);
+        }
+      }, RESOLVED_ENTRY_GRACE_MS);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }, timeoutMs);
     this.pending.set(record.id, entry);
     return promise;
@@ -125,6 +140,7 @@ export class ExecApprovalManager {
         this.pending.delete(recordId);
       }
     }, RESOLVED_ENTRY_GRACE_MS);
+<<<<<<< HEAD
     return true;
   }
 
@@ -146,6 +162,8 @@ export class ExecApprovalManager {
         this.pending.delete(recordId);
       }
     }, RESOLVED_ENTRY_GRACE_MS);
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return true;
   }
 
@@ -154,6 +172,7 @@ export class ExecApprovalManager {
     return entry?.record ?? null;
   }
 
+<<<<<<< HEAD
   consumeAllowOnce(recordId: string): boolean {
     const entry = this.pending.get(recordId);
     if (!entry) {
@@ -169,6 +188,8 @@ export class ExecApprovalManager {
     return true;
   }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   /**
    * Wait for decision on an already-registered approval.
    * Returns the decision promise if the ID is pending, null otherwise.

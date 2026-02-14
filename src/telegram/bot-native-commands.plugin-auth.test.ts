@@ -23,12 +23,22 @@ vi.mock("../pairing/pairing-store.js", () => ({
 }));
 
 describe("registerTelegramNativeCommands (plugin auth)", () => {
+<<<<<<< HEAD
   it("does not register plugin commands in menu when native=false but keeps handlers available", () => {
+=======
+  it("caps menu registration at 100 while leaving hidden plugin handlers available", () => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const specs = Array.from({ length: 101 }, (_, i) => ({
       name: `cmd_${i}`,
       description: `Command ${i}`,
     }));
     getPluginCommandSpecs.mockReturnValue(specs);
+<<<<<<< HEAD
+=======
+    matchPluginCommand.mockReset();
+    executePluginCommand.mockReset();
+    deliverReplies.mockReset();
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const handlers: Record<string, (ctx: unknown) => Promise<void>> = {};
     const setMyCommands = vi.fn().mockResolvedValue(undefined);
@@ -46,7 +56,11 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
     registerTelegramNativeCommands({
       bot: bot as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
       cfg: {} as OpenClawConfig,
+<<<<<<< HEAD
       runtime: { log } as unknown as RuntimeEnv,
+=======
+      runtime: { log } as RuntimeEnv,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       accountId: "default",
       telegramCfg: {} as TelegramAccountConfig,
       allowFrom: [],
@@ -70,8 +84,19 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
       opts: { token: "token" },
     });
 
+<<<<<<< HEAD
     expect(setMyCommands).not.toHaveBeenCalled();
     expect(log).not.toHaveBeenCalledWith(expect.stringContaining("registering first 100"));
+=======
+    const registered = setMyCommands.mock.calls[0]?.[0] as Array<{
+      command: string;
+      description: string;
+    }>;
+    expect(registered).toHaveLength(100);
+    expect(registered[0]).toEqual({ command: "cmd_0", description: "Command 0" });
+    expect(registered[99]).toEqual({ command: "cmd_99", description: "Command 99" });
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("registering first 100"));
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(Object.keys(handlers)).toHaveLength(101);
   });
 

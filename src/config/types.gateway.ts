@@ -142,11 +142,14 @@ export type GatewayAuthConfig = {
   allowTailscale?: boolean;
   /** Rate-limit configuration for failed authentication attempts. */
   rateLimit?: GatewayAuthRateLimitConfig;
+<<<<<<< HEAD
   /**
    * Configuration for trusted-proxy auth mode.
    * Required when mode is "trusted-proxy".
    */
   trustedProxy?: GatewayTrustedProxyConfig;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 };
 
 export type GatewayAuthRateLimitConfig = {
@@ -349,6 +352,7 @@ export type GatewayConfig = {
    * to determine the client IP for local pairing and HTTP checks.
    */
   trustedProxies?: string[];
+<<<<<<< HEAD
   /**
    * Allow `x-real-ip` as a fallback only when `x-forwarded-for` is missing.
    * Default: false (safer fail-closed behavior).
@@ -362,4 +366,8 @@ export type GatewayConfig = {
    * Set to 0 to disable. Default: 5.
    */
   channelHealthCheckMinutes?: number;
+=======
+  /** Tool access restrictions for HTTP /tools/invoke endpoint. */
+  tools?: GatewayToolsConfig;
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 };

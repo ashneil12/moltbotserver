@@ -154,10 +154,13 @@ describe("msteams media-helpers", () => {
       expect(isLocalPath("\\\\server\\share\\image.png")).toBe(true);
     });
 
+<<<<<<< HEAD
     it("returns true for Windows rooted paths", () => {
       expect(isLocalPath("\\tmp\\openclaw\\file.txt")).toBe(true);
     });
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     it("returns false for http URLs", () => {
       expect(isLocalPath("http://example.com/image.png")).toBe(false);
       expect(isLocalPath("https://example.com/image.png")).toBe(false);

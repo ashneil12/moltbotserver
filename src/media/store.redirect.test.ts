@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
 import { createPinnedLookup } from "../infra/net/ssrf.js";
 import { captureEnv } from "../test-utils/env.js";
 import { saveMediaSource, setMediaStoreNetworkDepsForTest } from "./store.js";
@@ -28,6 +29,14 @@ function createMockHttpExchange() {
   return { req, res };
 }
 
+=======
+import { saveMediaSource, setMediaStoreNetworkDepsForTest } from "./store.js";
+
+const HOME = path.join(os.tmpdir(), "openclaw-home-redirect");
+const previousStateDir = process.env.OPENCLAW_STATE_DIR;
+const mockRequest = vi.fn();
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 describe("media store redirects", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
@@ -38,6 +47,7 @@ describe("media store redirects", () => {
   });
 
   beforeEach(() => {
+<<<<<<< HEAD
     mockRequest.mockClear();
     setMediaStoreNetworkDepsForTest({
       httpRequest: (...args) => mockRequest(...args),
@@ -46,13 +56,29 @@ describe("media store redirects", () => {
         hostname,
         addresses: ["93.184.216.34"],
         lookup: createPinnedLookup({ hostname, addresses: ["93.184.216.34"] }),
+=======
+    mockRequest.mockReset();
+    setMediaStoreNetworkDepsForTest({
+      httpRequest: (...args) => mockRequest(...args),
+      httpsRequest: (...args) => mockRequest(...args),
+      resolvePinnedHostname: async () => ({
+        lookup: async () => [{ address: "93.184.216.34", family: 4 }],
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }),
     });
   });
 
   afterAll(async () => {
     await fs.rm(HOME, { recursive: true, force: true });
+<<<<<<< HEAD
     envSnapshot.restore();
+=======
+    if (previousStateDir === undefined) {
+      delete process.env.OPENCLAW_STATE_DIR;
+    } else {
+      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+    }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     setMediaStoreNetworkDepsForTest();
     vi.clearAllMocks();
   });
@@ -91,7 +117,11 @@ describe("media store redirects", () => {
     expect(await fs.readFile(saved.path, "utf8")).toBe("redirected");
   });
 
+<<<<<<< HEAD
   it("fails when redirect response omits location header", async () => {
+=======
+  it("sniffs xlsx from zip content when headers and url extension are missing", async () => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     mockRequest.mockImplementationOnce((_url, _opts, cb) => {
       const { req, res } = createMockHttpExchange();
       res.statusCode = 302;

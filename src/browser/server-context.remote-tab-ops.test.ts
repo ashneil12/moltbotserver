@@ -1,11 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
 import { withFetchPreconnect } from "../test-utils/fetch-mock.js";
 import * as cdpModule from "./cdp.js";
 import { InvalidBrowserNavigationUrlError } from "./navigation-guard.js";
 import * as pwAiModule from "./pw-ai-module.js";
 import type { BrowserServerState } from "./server-context.js";
 import "./server-context.chrome-test-harness.js";
+=======
+import type { BrowserServerState } from "./server-context.js";
+import * as cdpModule from "./cdp.js";
+import * as pwAiModule from "./pw-ai-module.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { createBrowserRouteContext } from "./server-context.js";
+
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+  vi.restoreAllMocks();
+});
 
 const originalFetch = globalThis.fetch;
 
@@ -112,9 +125,23 @@ describe("browser server-context remote profile tab operations", () => {
       listPagesViaPlaywright,
       createPageViaPlaywright,
       closePageByTargetIdViaPlaywright,
+<<<<<<< HEAD
     } as unknown as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
 
     const { state, remote, fetchMock } = createRemoteRouteHarness();
+=======
+    } as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
+
+    const fetchMock = vi.fn(async () => {
+      throw new Error("unexpected fetch");
+    });
+
+    global.fetch = fetchMock;
+
+    const state = makeState("remote");
+    const ctx = createBrowserRouteContext({ getState: () => state });
+    const remote = ctx.forProfile("remote");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const tabs = await remote.listTabs();
     expect(tabs.map((t) => t.targetId)).toEqual(["T1"]);
@@ -174,9 +201,23 @@ describe("browser server-context remote profile tab operations", () => {
       closePageByTargetIdViaPlaywright: vi.fn(async () => {
         throw new Error("unexpected close");
       }),
+<<<<<<< HEAD
     } as unknown as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
 
     const { remote } = createRemoteRouteHarness();
+=======
+    } as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
+
+    const fetchMock = vi.fn(async () => {
+      throw new Error("unexpected fetch");
+    });
+
+    global.fetch = fetchMock;
+
+    const state = makeState("remote");
+    const ctx = createBrowserRouteContext({ getState: () => state });
+    const remote = ctx.forProfile("remote");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const first = await remote.ensureTabAvailable();
     expect(first.targetId).toBe("A");
@@ -230,9 +271,23 @@ describe("browser server-context remote profile tab operations", () => {
     vi.spyOn(pwAiModule, "getPwAiModule").mockResolvedValue({
       listPagesViaPlaywright,
       focusPageByTargetIdViaPlaywright,
+<<<<<<< HEAD
     } as unknown as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
 
     const { state, remote, fetchMock } = createRemoteRouteHarness();
+=======
+    } as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
+
+    const fetchMock = vi.fn(async () => {
+      throw new Error("unexpected fetch");
+    });
+
+    global.fetch = fetchMock;
+
+    const state = makeState("remote");
+    const ctx = createBrowserRouteContext({ getState: () => state });
+    const remote = ctx.forProfile("remote");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await remote.focusTab("T1");
     expect(focusPageByTargetIdViaPlaywright).toHaveBeenCalledWith({
@@ -248,9 +303,23 @@ describe("browser server-context remote profile tab operations", () => {
       listPagesViaPlaywright: vi.fn(async () => {
         throw new Error("boom");
       }),
+<<<<<<< HEAD
     } as unknown as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
 
     const { remote, fetchMock } = createRemoteRouteHarness();
+=======
+    } as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
+
+    const fetchMock = vi.fn(async () => {
+      throw new Error("unexpected fetch");
+    });
+
+    global.fetch = fetchMock;
+
+    const state = makeState("remote");
+    const ctx = createBrowserRouteContext({ getState: () => state });
+    const remote = ctx.forProfile("remote");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await expect(remote.listTabs()).rejects.toThrow(/boom/);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -269,7 +338,15 @@ describe("browser server-context remote profile tab operations", () => {
       },
     ]);
 
+<<<<<<< HEAD
     const { remote } = createRemoteRouteHarness(fetchMock);
+=======
+    global.fetch = fetchMock;
+
+    const state = makeState("remote");
+    const ctx = createBrowserRouteContext({ getState: () => state });
+    const remote = ctx.forProfile("remote");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const tabs = await remote.listTabs();
     expect(tabs.map((t) => t.targetId)).toEqual(["T1"]);
@@ -279,9 +356,13 @@ describe("browser server-context remote profile tab operations", () => {
 
 describe("browser server-context tab selection state", () => {
   it("updates lastTargetId when openTab is created via CDP", async () => {
+<<<<<<< HEAD
     const createTargetViaCdp = vi
       .spyOn(cdpModule, "createTargetViaCdp")
       .mockResolvedValue({ targetId: "CREATED" });
+=======
+    vi.spyOn(cdpModule, "createTargetViaCdp").mockResolvedValue({ targetId: "CREATED" });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const fetchMock = createJsonListFetchMock([
       {

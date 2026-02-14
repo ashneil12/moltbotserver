@@ -1,6 +1,9 @@
 import type { AuthProfileStore } from "../agents/auth-profiles.js";
+<<<<<<< HEAD
 import { AUTH_CHOICE_LEGACY_ALIASES_FOR_CLI } from "./auth-choice-legacy.js";
 import { ONBOARD_PROVIDER_AUTH_FLAGS } from "./onboard-provider-auth-flags.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type { AuthChoice, AuthChoiceGroupId } from "./onboard-types.js";
 
 export type { AuthChoiceGroupId };
@@ -36,12 +39,15 @@ const AUTH_CHOICE_GROUP_DEFS: {
     choices: ["token", "apiKey"],
   },
   {
+<<<<<<< HEAD
     value: "chutes",
     label: "Chutes",
     hint: "OAuth",
     choices: ["chutes"],
   },
   {
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     value: "vllm",
     label: "vLLM",
     hint: "Local/self-hosted OpenAI-compatible",
@@ -323,7 +329,143 @@ export function buildAuthChoiceOptions(params: {
   includeSkip: boolean;
 }): AuthChoiceOption[] {
   void params.store;
+<<<<<<< HEAD
   const options: AuthChoiceOption[] = [...BASE_AUTH_CHOICE_OPTIONS];
+=======
+  const options: AuthChoiceOption[] = [];
+
+  options.push({
+    value: "token",
+    label: "Anthropic token (paste setup-token)",
+    hint: "run `claude setup-token` elsewhere, then paste the token here",
+  });
+
+  options.push({
+    value: "openai-codex",
+    label: "OpenAI Codex (ChatGPT OAuth)",
+  });
+  options.push({ value: "chutes", label: "Chutes (OAuth)" });
+  options.push({
+    value: "vllm",
+    label: "vLLM (custom URL + model)",
+    hint: "Local/self-hosted OpenAI-compatible server",
+  });
+  options.push({ value: "openai-api-key", label: "OpenAI API key" });
+  options.push({ value: "xai-api-key", label: "xAI (Grok) API key" });
+  options.push({
+    value: "qianfan-api-key",
+    label: "Qianfan API key",
+  });
+  options.push({ value: "openrouter-api-key", label: "OpenRouter API key" });
+  options.push({
+    value: "litellm-api-key",
+    label: "LiteLLM API key",
+    hint: "Unified gateway for 100+ LLM providers",
+  });
+  options.push({
+    value: "ai-gateway-api-key",
+    label: "Vercel AI Gateway API key",
+  });
+  options.push({
+    value: "cloudflare-ai-gateway-api-key",
+    label: "Cloudflare AI Gateway",
+    hint: "Account ID + Gateway ID + API key",
+  });
+  options.push({
+    value: "moonshot-api-key",
+    label: "Kimi API key (.ai)",
+  });
+  options.push({
+    value: "moonshot-api-key-cn",
+    label: "Kimi API key (.cn)",
+  });
+  options.push({
+    value: "kimi-code-api-key",
+    label: "Kimi Code API key (subscription)",
+  });
+  options.push({ value: "synthetic-api-key", label: "Synthetic API key" });
+  options.push({
+    value: "venice-api-key",
+    label: "Venice AI API key",
+    hint: "Privacy-focused inference (uncensored models)",
+  });
+  options.push({
+    value: "together-api-key",
+    label: "Together AI API key",
+    hint: "Access to Llama, DeepSeek, Qwen, and more open models",
+  });
+  options.push({
+    value: "huggingface-api-key",
+    label: "Hugging Face API key (HF token)",
+    hint: "Inference Providers — OpenAI-compatible chat",
+  });
+  options.push({
+    value: "github-copilot",
+    label: "GitHub Copilot (GitHub device login)",
+    hint: "Uses GitHub device flow",
+  });
+  options.push({ value: "gemini-api-key", label: "Google Gemini API key" });
+  options.push({
+    value: "google-antigravity",
+    label: "Google Antigravity OAuth",
+    hint: "Uses the bundled Antigravity auth plugin",
+  });
+  options.push({
+    value: "google-gemini-cli",
+    label: "Google Gemini CLI OAuth",
+    hint: "Uses the bundled Gemini CLI auth plugin",
+  });
+  options.push({ value: "zai-api-key", label: "Z.AI API key" });
+  options.push({
+    value: "zai-coding-global",
+    label: "Coding-Plan-Global",
+    hint: "GLM Coding Plan Global (api.z.ai)",
+  });
+  options.push({
+    value: "zai-coding-cn",
+    label: "Coding-Plan-CN",
+    hint: "GLM Coding Plan CN (open.bigmodel.cn)",
+  });
+  options.push({
+    value: "zai-global",
+    label: "Global",
+    hint: "Z.AI Global (api.z.ai)",
+  });
+  options.push({
+    value: "zai-cn",
+    label: "CN",
+    hint: "Z.AI CN (open.bigmodel.cn)",
+  });
+  options.push({
+    value: "xiaomi-api-key",
+    label: "Xiaomi API key",
+  });
+  options.push({
+    value: "minimax-portal",
+    label: "MiniMax OAuth",
+    hint: "Oauth plugin for MiniMax",
+  });
+  options.push({ value: "qwen-portal", label: "Qwen OAuth" });
+  options.push({
+    value: "copilot-proxy",
+    label: "Copilot Proxy (local)",
+    hint: "Local proxy for VS Code Copilot models",
+  });
+  options.push({ value: "apiKey", label: "Anthropic API key" });
+  // Token flow is currently Anthropic-only; use CLI for advanced providers.
+  options.push({
+    value: "opencode-zen",
+    label: "OpenCode Zen (multi-model proxy)",
+    hint: "Claude, GPT, Gemini via opencode.ai/zen",
+  });
+  options.push({ value: "minimax-api", label: "MiniMax M2.5" });
+  options.push({
+    value: "minimax-api-lightning",
+    label: "MiniMax M2.5 Lightning",
+    hint: "Faster, higher output cost",
+  });
+  options.push({ value: "custom-api-key", label: "Custom Provider" });
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   if (params.includeSkip) {
     options.push({ value: "skip", label: "Skip for now" });

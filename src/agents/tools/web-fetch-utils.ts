@@ -2,9 +2,12 @@ import { sanitizeHtml, stripInvisibleUnicode } from "./web-fetch-visibility.js";
 
 export type ExtractMode = "markdown" | "text";
 
+<<<<<<< HEAD
 const READABILITY_MAX_HTML_CHARS = 1_000_000;
 const READABILITY_MAX_ESTIMATED_NESTING_DEPTH = 3_000;
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 let readabilityDepsPromise:
   | Promise<{
       Readability: typeof import("@mozilla/readability").Readability;
@@ -230,7 +233,11 @@ export async function extractReadableContent(params: {
   }
   try {
     const { Readability, parseHTML } = await loadReadabilityDeps();
+<<<<<<< HEAD
     const { document } = parseHTML(cleanHtml);
+=======
+    const { document } = parseHTML(params.html);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     try {
       (document as { baseURI?: string }).baseURI = params.url;
     } catch {

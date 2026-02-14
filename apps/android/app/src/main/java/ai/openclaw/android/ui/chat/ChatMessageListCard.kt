@@ -39,6 +39,7 @@ fun ChatMessageListCard(
     listState.animateScrollToItem(index = 0)
   }
 
+<<<<<<< HEAD
   Box(modifier = modifier.fillMaxWidth()) {
     LazyColumn(
       modifier = Modifier.fillMaxSize(),
@@ -54,6 +55,49 @@ fun ChatMessageListCard(
       if (!stream.isNullOrEmpty()) {
         item(key = "stream") {
           ChatStreamingAssistantBubble(text = stream)
+=======
+  Card(
+    modifier = modifier.fillMaxWidth(),
+    shape = MaterialTheme.shapes.large,
+    colors =
+      CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+      ),
+    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+  ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+      LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        state = listState,
+        reverseLayout = true,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 12.dp, bottom = 12.dp, start = 12.dp, end = 12.dp),
+      ) {
+        // With reverseLayout = true, index 0 renders at the BOTTOM.
+        // So we emit newest items first: streaming → tools → typing → messages (newest→oldest).
+
+        val stream = streamingAssistantText?.trim()
+        if (!stream.isNullOrEmpty()) {
+          item(key = "stream") {
+            ChatStreamingAssistantBubble(text = stream)
+          }
+        }
+
+        if (pendingToolCalls.isNotEmpty()) {
+          item(key = "tools") {
+            ChatPendingToolsBubble(toolCalls = pendingToolCalls)
+          }
+        }
+
+        if (pendingRunCount > 0) {
+          item(key = "typing") {
+            ChatTypingIndicatorBubble()
+          }
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
+        }
+
+        items(count = messages.size, key = { idx -> messages[messages.size - 1 - idx].id }) { idx ->
+          ChatMessageBubble(message = messages[messages.size - 1 - idx])
         }
       }
 

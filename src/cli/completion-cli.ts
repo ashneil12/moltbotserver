@@ -4,8 +4,11 @@ import path from "node:path";
 import { Command, Option } from "commander";
 import { resolveStateDir } from "../config/paths.js";
 import { routeLogsToStderr } from "../logging/console.js";
+<<<<<<< HEAD
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { pathExists } from "../utils.js";
 import {
   buildFishOptionCompletionLine,

@@ -60,9 +60,50 @@ function resolveTaskUser(env: GatewayServiceEnv): string | null {
   return username;
 }
 
+<<<<<<< HEAD
 export async function readScheduledTaskCommand(
   env: GatewayServiceEnv,
 ): Promise<GatewayServiceCommandConfig | null> {
+=======
+function parseCommandLine(value: string): string[] {
+  const args: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    // `buildTaskScript` only escapes quotes (`\"`).
+    // Keep all other backslashes literal so drive and UNC paths are preserved.
+    if (char === "\\" && i + 1 < value.length && value[i + 1] === '"') {
+      current += value[i + 1];
+      i++;
+      continue;
+    }
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (!inQuotes && /\s/.test(char)) {
+      if (current) {
+        args.push(current);
+        current = "";
+      }
+      continue;
+    }
+    current += char;
+  }
+  if (current) {
+    args.push(current);
+  }
+  return args;
+}
+
+export async function readScheduledTaskCommand(env: Record<string, string | undefined>): Promise<{
+  programArguments: string[];
+  workingDirectory?: string;
+  environment?: Record<string, string>;
+} | null> {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const scriptPath = resolveTaskScriptPath(env);
   try {
     const content = await fs.readFile(scriptPath, "utf8");

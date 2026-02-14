@@ -1,10 +1,23 @@
 import type { MatrixClient } from "@vector-im/matrix-bot-sdk";
+<<<<<<< HEAD
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
 import { getMatrixRuntime } from "../../runtime.js";
 import type { CoreConfig } from "../../types.js";
 import { getActiveMatrixClient, getAnyActiveMatrixClient } from "../active-client.js";
 import { createPreparedMatrixClient } from "../client-bootstrap.js";
 import { isBunRuntime, resolveMatrixAuth, resolveSharedMatrixClient } from "../client.js";
+=======
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk";
+import type { CoreConfig } from "../../types.js";
+import { getMatrixRuntime } from "../../runtime.js";
+import { getActiveMatrixClient, getAnyActiveMatrixClient } from "../active-client.js";
+import {
+  createMatrixClient,
+  isBunRuntime,
+  resolveMatrixAuth,
+  resolveSharedMatrixClient,
+} from "../client.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const getCore = () => getMatrixRuntime();
 
@@ -88,9 +101,18 @@ export async function resolveMatrixClient(opts: {
     return { client, stopOnDone: false };
   }
   const auth = await resolveMatrixAuth({ accountId });
+<<<<<<< HEAD
   const client = await createPreparedMatrixClient({
     auth,
     timeoutMs: opts.timeoutMs,
+=======
+  const client = await createMatrixClient({
+    homeserver: auth.homeserver,
+    userId: auth.userId,
+    accessToken: auth.accessToken,
+    encryption: auth.encryption,
+    localTimeoutMs: opts.timeoutMs,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     accountId,
   });
   return { client, stopOnDone: true };

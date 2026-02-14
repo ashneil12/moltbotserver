@@ -51,6 +51,7 @@ async function withEnvOverrides(
   }
 }
 
+<<<<<<< HEAD
 async function withWrapperEnvContext(configPath: string, run: () => Promise<void>): Promise<void> {
   await withEnvOverrides(
     {
@@ -94,6 +95,17 @@ describe("env snapshot TOCTOU via createConfigIO", () => {
   it("restores env refs using read-time env even after env mutation", async () => {
     const env = createMutableApiKeyEnv();
     await withGatewayTokenTempConfig(async (configPath) => {
+=======
+describe("env snapshot TOCTOU via createConfigIO", () => {
+  it("restores env refs using read-time env even after env mutation", async () => {
+    const env: Record<string, string> = {
+      MY_API_KEY: "original-key-123",
+    };
+
+    const configJson = JSON.stringify({ gateway: { remote: { token: "${MY_API_KEY}" } } }, null, 2);
+
+    await withTempConfig(configJson, async (configPath) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       // Instance A: read config (captures env snapshot)
       const ioA = createConfigIO({ configPath, env: env as unknown as NodeJS.ProcessEnv });
       const firstRead = await ioA.readConfigFileSnapshotForWrite();
@@ -116,8 +128,18 @@ describe("env snapshot TOCTOU via createConfigIO", () => {
   });
 
   it("without snapshot bridging, mutated env causes incorrect restoration", async () => {
+<<<<<<< HEAD
     const env = createMutableApiKeyEnv();
     await withGatewayTokenTempConfig(async (configPath) => {
+=======
+    const env: Record<string, string> = {
+      MY_API_KEY: "original-key-123",
+    };
+
+    const configJson = JSON.stringify({ gateway: { remote: { token: "${MY_API_KEY}" } } }, null, 2);
+
+    await withTempConfig(configJson, async (configPath) => {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       // Instance A: read config
       const ioA = createConfigIO({ configPath, env: env as unknown as NodeJS.ProcessEnv });
       const snapshot = await ioA.readConfigFileSnapshot();
@@ -144,6 +166,7 @@ describe("env snapshot TOCTOU via createConfigIO", () => {
 
 describe("env snapshot TOCTOU via wrapper APIs", () => {
   it("uses explicit read context even if another read interleaves", async () => {
+<<<<<<< HEAD
     await withWrapperGatewayTokenContext(async (configPath) => {
       const firstRead = await readConfigFileSnapshotForWrite();
       expect(firstRead.snapshot.config.gateway?.remote?.token).toBe("original-key-123");
@@ -156,10 +179,37 @@ describe("env snapshot TOCTOU via wrapper APIs", () => {
       // Write using the first read's explicit context.
       await writeConfigFileViaWrapper(firstRead.snapshot.config, firstRead.writeOptions);
       expect(await readGatewayToken(configPath)).toBe("${MY_API_KEY}");
+=======
+    const configJson = JSON.stringify({ gateway: { remote: { token: "${MY_API_KEY}" } } }, null, 2);
+    await withTempConfig(configJson, async (configPath) => {
+      await withEnvOverrides(
+        {
+          OPENCLAW_CONFIG_PATH: configPath,
+          OPENCLAW_DISABLE_CONFIG_CACHE: "1",
+          MY_API_KEY: "original-key-123",
+        },
+        async () => {
+          const firstRead = await readConfigFileSnapshotForWrite();
+          expect(firstRead.snapshot.config.gateway?.remote?.token).toBe("original-key-123");
+
+          // Interleaving read from another request context with a different env value.
+          process.env.MY_API_KEY = "mutated-key-456";
+          const secondRead = await readConfigFileSnapshotForWrite();
+          expect(secondRead.snapshot.config.gateway?.remote?.token).toBe("mutated-key-456");
+
+          // Write using the first read's explicit context.
+          await writeConfigFileViaWrapper(firstRead.snapshot.config, firstRead.writeOptions);
+          const written = await fs.readFile(configPath, "utf-8");
+          const parsed = JSON.parse(written);
+          expect(parsed.gateway.remote.token).toBe("${MY_API_KEY}");
+        },
+      );
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   });
 
   it("ignores read context when expected config path does not match", async () => {
+<<<<<<< HEAD
     await withWrapperGatewayTokenContext(async (configPath) => {
       const firstRead = await readConfigFileSnapshotForWrite();
       expect(firstRead.snapshot.config.gateway?.remote?.token).toBe("original-key-123");
@@ -172,6 +222,32 @@ describe("env snapshot TOCTOU via wrapper APIs", () => {
       });
 
       expect(await readGatewayToken(configPath)).toBe("original-key-123");
+=======
+    const configJson = JSON.stringify({ gateway: { remote: { token: "${MY_API_KEY}" } } }, null, 2);
+    await withTempConfig(configJson, async (configPath) => {
+      await withEnvOverrides(
+        {
+          OPENCLAW_CONFIG_PATH: configPath,
+          OPENCLAW_DISABLE_CONFIG_CACHE: "1",
+          MY_API_KEY: "original-key-123",
+        },
+        async () => {
+          const firstRead = await readConfigFileSnapshotForWrite();
+          expect(firstRead.snapshot.config.gateway?.remote?.token).toBe("original-key-123");
+          expect(firstRead.writeOptions.expectedConfigPath).toBe(configPath);
+
+          process.env.MY_API_KEY = "mutated-key-456";
+          await writeConfigFileViaWrapper(firstRead.snapshot.config, {
+            ...firstRead.writeOptions,
+            expectedConfigPath: `${configPath}.different`,
+          });
+
+          const written = await fs.readFile(configPath, "utf-8");
+          const parsed = JSON.parse(written);
+          expect(parsed.gateway.remote.token).toBe("original-key-123");
+        },
+      );
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   });
 });

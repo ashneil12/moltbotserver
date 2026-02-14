@@ -16,7 +16,11 @@
  *   {@link createAuthRateLimiter} and pass it where needed.
  */
 
+<<<<<<< HEAD
 import { isLoopbackAddress, resolveClientIp } from "./net.js";
+=======
+import { isLoopbackAddress } from "./net.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,14 +35,20 @@ export interface RateLimitConfig {
   lockoutMs?: number;
   /** Exempt loopback (localhost) addresses from rate limiting.  @default true */
   exemptLoopback?: boolean;
+<<<<<<< HEAD
   /** Background prune interval in milliseconds; set <= 0 to disable auto-prune.  @default 60_000 */
   pruneIntervalMs?: number;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export const AUTH_RATE_LIMIT_SCOPE_DEFAULT = "default";
 export const AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET = "shared-secret";
 export const AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN = "device-token";
+<<<<<<< HEAD
 export const AUTH_RATE_LIMIT_SCOPE_HOOK_AUTH = "hook-auth";
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export interface RateLimitEntry {
   /** Timestamps (epoch ms) of recent failed attempts inside the window. */
@@ -84,6 +94,7 @@ const PRUNE_INTERVAL_MS = 60_000; // prune stale entries every minute
 // Implementation
 // ---------------------------------------------------------------------------
 
+<<<<<<< HEAD
 /**
  * Canonicalize client IPs used for auth throttling so all call sites
  * share one representation (including IPv4-mapped IPv6 forms).
@@ -92,19 +103,30 @@ export function normalizeRateLimitClientIp(ip: string | undefined): string {
   return resolveClientIp({ remoteAddr: ip }) ?? "unknown";
 }
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function createAuthRateLimiter(config?: RateLimitConfig): AuthRateLimiter {
   const maxAttempts = config?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
   const windowMs = config?.windowMs ?? DEFAULT_WINDOW_MS;
   const lockoutMs = config?.lockoutMs ?? DEFAULT_LOCKOUT_MS;
   const exemptLoopback = config?.exemptLoopback ?? true;
+<<<<<<< HEAD
   const pruneIntervalMs = config?.pruneIntervalMs ?? PRUNE_INTERVAL_MS;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const entries = new Map<string, RateLimitEntry>();
 
   // Periodic cleanup to avoid unbounded map growth.
+<<<<<<< HEAD
   const pruneTimer = pruneIntervalMs > 0 ? setInterval(() => prune(), pruneIntervalMs) : null;
   // Allow the Node.js process to exit even if the timer is still active.
   if (pruneTimer?.unref) {
+=======
+  const pruneTimer = setInterval(() => prune(), PRUNE_INTERVAL_MS);
+  // Allow the Node.js process to exit even if the timer is still active.
+  if (pruneTimer.unref) {
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     pruneTimer.unref();
   }
 
@@ -113,7 +135,11 @@ export function createAuthRateLimiter(config?: RateLimitConfig): AuthRateLimiter
   }
 
   function normalizeIp(ip: string | undefined): string {
+<<<<<<< HEAD
     return normalizeRateLimitClientIp(ip);
+=======
+    return (ip ?? "").trim() || "unknown";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   function resolveKey(
@@ -222,9 +248,13 @@ export function createAuthRateLimiter(config?: RateLimitConfig): AuthRateLimiter
   }
 
   function dispose(): void {
+<<<<<<< HEAD
     if (pruneTimer) {
       clearInterval(pruneTimer);
     }
+=======
+    clearInterval(pruneTimer);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     entries.clear();
   }
 

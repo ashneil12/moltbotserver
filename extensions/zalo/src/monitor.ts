@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+<<<<<<< HEAD
 import type { MarkdownTableMode, OpenClawConfig, OutboundReplyPayload } from "openclaw/plugin-sdk";
 import {
   createReplyPrefixOptions,
@@ -8,6 +9,13 @@ import {
   sendMediaWithLeadingCaption,
   resolveWebhookPath,
   warnMissingProviderGroupPolicyFallbackOnce,
+=======
+import type { OpenClawConfig, MarkdownTableMode } from "openclaw/plugin-sdk";
+import {
+  createReplyPrefixOptions,
+  readJsonBodyWithLimit,
+  requestBodyErrorToText,
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 } from "openclaw/plugin-sdk";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import {
@@ -68,14 +76,86 @@ function logVerbose(core: ZaloCoreRuntime, runtime: ZaloRuntimeEnv, message: str
   }
 }
 
+<<<<<<< HEAD
 export function registerZaloWebhookTarget(target: ZaloWebhookTarget): () => void {
   return registerZaloWebhookTargetInternal(target);
+=======
+function isSenderAllowed(senderId: string, allowFrom: string[]): boolean {
+  if (allowFrom.includes("*")) {
+    return true;
+  }
+  const normalizedSenderId = senderId.toLowerCase();
+  return allowFrom.some((entry) => {
+    const normalized = entry.toLowerCase().replace(/^(zalo|zl):/i, "");
+    return normalized === normalizedSenderId;
+  });
+}
+
+type WebhookTarget = {
+  token: string;
+  account: ResolvedZaloAccount;
+  config: OpenClawConfig;
+  runtime: ZaloRuntimeEnv;
+  core: ZaloCoreRuntime;
+  secret: string;
+  path: string;
+  mediaMaxMb: number;
+  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
+  fetcher?: ZaloFetch;
+};
+
+const webhookTargets = new Map<string, WebhookTarget[]>();
+
+function normalizeWebhookPath(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return "/";
+  }
+  const withSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  if (withSlash.length > 1 && withSlash.endsWith("/")) {
+    return withSlash.slice(0, -1);
+  }
+  return withSlash;
+}
+
+function resolveWebhookPath(webhookPath?: string, webhookUrl?: string): string | null {
+  const trimmedPath = webhookPath?.trim();
+  if (trimmedPath) {
+    return normalizeWebhookPath(trimmedPath);
+  }
+  if (webhookUrl?.trim()) {
+    try {
+      const parsed = new URL(webhookUrl);
+      return normalizeWebhookPath(parsed.pathname || "/");
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export function registerZaloWebhookTarget(target: WebhookTarget): () => void {
+  const key = normalizeWebhookPath(target.path);
+  const normalizedTarget = { ...target, path: key };
+  const existing = webhookTargets.get(key) ?? [];
+  const next = [...existing, normalizedTarget];
+  webhookTargets.set(key, next);
+  return () => {
+    const updated = (webhookTargets.get(key) ?? []).filter((entry) => entry !== normalizedTarget);
+    if (updated.length > 0) {
+      webhookTargets.set(key, updated);
+    } else {
+      webhookTargets.delete(key);
+    }
+  };
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function handleZaloWebhookRequest(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<boolean> {
+<<<<<<< HEAD
   return handleZaloWebhookRequestInternal(req, res, async ({ update, target }) => {
     await processUpdate(
       update,
@@ -88,6 +168,73 @@ export async function handleZaloWebhookRequest(
       target.statusSink,
       target.fetcher,
     );
+=======
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const path = normalizeWebhookPath(url.pathname);
+  const targets = webhookTargets.get(path);
+  if (!targets || targets.length === 0) {
+    return false;
+  }
+
+  if (req.method !== "POST") {
+    res.statusCode = 405;
+    res.setHeader("Allow", "POST");
+    res.end("Method Not Allowed");
+    return true;
+  }
+
+  const headerToken = String(req.headers["x-bot-api-secret-token"] ?? "");
+  const target = targets.find((entry) => entry.secret === headerToken);
+  if (!target) {
+    res.statusCode = 401;
+    res.end("unauthorized");
+    return true;
+  }
+
+  const body = await readJsonBodyWithLimit(req, {
+    maxBytes: 1024 * 1024,
+    timeoutMs: 30_000,
+    emptyObjectOnEmpty: false,
+  });
+  if (!body.ok) {
+    res.statusCode =
+      body.code === "PAYLOAD_TOO_LARGE" ? 413 : body.code === "REQUEST_BODY_TIMEOUT" ? 408 : 400;
+    res.end(
+      body.code === "REQUEST_BODY_TIMEOUT"
+        ? requestBodyErrorToText("REQUEST_BODY_TIMEOUT")
+        : body.error,
+    );
+    return true;
+  }
+
+  // Zalo sends updates directly as { event_name, message, ... }, not wrapped in { ok, result }
+  const raw = body.value;
+  const record = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+  const update: ZaloUpdate | undefined =
+    record && record.ok === true && record.result
+      ? (record.result as ZaloUpdate)
+      : ((record as ZaloUpdate | null) ?? undefined);
+
+  if (!update?.event_name) {
+    res.statusCode = 400;
+    res.end("invalid payload");
+    return true;
+  }
+
+  target.statusSink?.({ lastInboundAt: Date.now() });
+  processUpdate(
+    update,
+    target.token,
+    target.account,
+    target.config,
+    target.runtime,
+    target.core,
+    target.mediaMaxMb,
+    target.statusSink,
+    target.fetcher,
+  ).catch((err) => {
+    target.runtime.error?.(`[${target.account.accountId}] Zalo webhook failed: ${String(err)}`);
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 }
 

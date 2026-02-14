@@ -19,7 +19,10 @@ import { createTelegramBot } from "./bot.js";
 
 const TELEGRAM_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const TELEGRAM_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
+<<<<<<< HEAD
 const TELEGRAM_WEBHOOK_CALLBACK_TIMEOUT_MS = 10_000;
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export async function startTelegramWebhook(opts: {
   token: string;
@@ -39,6 +42,7 @@ export async function startTelegramWebhook(opts: {
   const healthPath = opts.healthPath ?? "/healthz";
   const port = opts.port ?? 8787;
   const host = opts.host ?? "127.0.0.1";
+<<<<<<< HEAD
   const secret = typeof opts.secret === "string" ? opts.secret.trim() : "";
   if (!secret) {
     throw new Error(
@@ -46,6 +50,8 @@ export async function startTelegramWebhook(opts: {
         "Set channels.telegram.webhookSecret in your config.",
     );
   }
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const runtime = opts.runtime ?? defaultRuntime;
   const diagnosticsEnabled = isDiagnosticsEnabled(opts.config);
   const bot = createTelegramBot({

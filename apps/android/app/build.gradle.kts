@@ -20,8 +20,13 @@ android {
     applicationId = "ai.openclaw.android"
     minSdk = 31
     targetSdk = 36
+<<<<<<< HEAD
     versionCode = 202602250
     versionName = "2026.2.25"
+=======
+    versionCode = 202602130
+    versionName = "2026.2.13"
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     ndk {
       // Support all major ABIs — native libs are tiny (~47 KB per ABI)
       abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
@@ -125,11 +130,14 @@ dependencies {
   implementation("androidx.exifinterface:exifinterface:1.4.2")
   implementation("com.squareup.okhttp3:okhttp:5.3.2")
   implementation("org.bouncycastle:bcprov-jdk18on:1.83")
+<<<<<<< HEAD
   implementation("org.commonmark:commonmark:0.27.1")
   implementation("org.commonmark:commonmark-ext-autolink:0.27.1")
   implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.27.1")
   implementation("org.commonmark:commonmark-ext-gfm-tables:0.27.1")
   implementation("org.commonmark:commonmark-ext-task-list-items:0.27.1")
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   // CameraX (for node.invoke camera.* parity)
   implementation("androidx.camera:camera-core:1.5.2")

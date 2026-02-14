@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { SafeOpenError, openFileWithinRoot, type SafeOpenResult } from "../infra/fs-safe.js";
 import { detectMime } from "../media/mime.js";
 import { resolveFileWithinRoot } from "./file-resolver.js";
 
@@ -78,6 +79,53 @@ async function resolveA2uiRootReal(): Promise<string | null> {
   return resolvingA2uiRoot;
 }
 
+<<<<<<< HEAD
+=======
+function normalizeUrlPath(rawPath: string): string {
+  const decoded = decodeURIComponent(rawPath || "/");
+  const normalized = path.posix.normalize(decoded);
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+}
+
+async function resolveA2uiFile(rootReal: string, urlPath: string): Promise<SafeOpenResult | null> {
+  const normalized = normalizeUrlPath(urlPath);
+  const rel = normalized.replace(/^\/+/, "");
+  if (rel.split("/").some((p) => p === "..")) {
+    return null;
+  }
+
+  const tryOpen = async (relative: string) => {
+    try {
+      return await openFileWithinRoot({ rootDir: rootReal, relativePath: relative });
+    } catch (err) {
+      if (err instanceof SafeOpenError) {
+        return null;
+      }
+      throw err;
+    }
+  };
+
+  if (normalized.endsWith("/")) {
+    return await tryOpen(path.posix.join(rel, "index.html"));
+  }
+
+  const candidate = path.join(rootReal, rel);
+  try {
+    const st = await fs.lstat(candidate);
+    if (st.isSymbolicLink()) {
+      return null;
+    }
+    if (st.isDirectory()) {
+      return await tryOpen(path.posix.join(rel, "index.html"));
+    }
+  } catch {
+    // ignore
+  }
+
+  return await tryOpen(rel);
+}
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function injectCanvasLiveReload(html: string): string {
   const snippet = `
 <script>
@@ -171,7 +219,11 @@ export async function handleA2uiHttpRequest(
   }
 
   const rel = url.pathname.slice(basePath.length);
+<<<<<<< HEAD
   const result = await resolveFileWithinRoot(a2uiRootReal, rel || "/");
+=======
+  const result = await resolveA2uiFile(a2uiRootReal, rel || "/");
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (!result) {
     res.statusCode = 404;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");

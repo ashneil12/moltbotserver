@@ -68,6 +68,27 @@ function parseDiscordChannelInput(raw: string): {
   return { guild: trimmed, guildOnly: true };
 }
 
+<<<<<<< HEAD
+=======
+async function listGuilds(token: string, fetcher: typeof fetch): Promise<DiscordGuildSummary[]> {
+  const raw = await fetchDiscord<Array<{ id?: string; name?: string }>>(
+    "/users/@me/guilds",
+    token,
+    fetcher,
+  );
+  return raw
+    .filter(
+      (guild): guild is { id: string; name: string } =>
+        typeof guild.id === "string" && typeof guild.name === "string",
+    )
+    .map((guild) => ({
+      id: guild.id,
+      name: guild.name,
+      slug: normalizeDiscordSlug(guild.name),
+    }));
+}
+
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 async function listGuildChannels(
   token: string,
   fetcher: typeof fetch,

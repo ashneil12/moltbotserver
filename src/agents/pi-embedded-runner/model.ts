@@ -24,8 +24,11 @@ type InlineProviderConfig = {
   models?: ModelDefinitionConfig[];
 };
 
+<<<<<<< HEAD
 export { buildModelAliasLines };
 
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function buildInlineProviderModels(
   providers: Record<string, InlineProviderConfig>,
 ): InlineModelEntry[] {
@@ -79,6 +82,7 @@ export function resolveModel(
     const forwardCompat = resolveForwardCompatModel(provider, modelId, modelRegistry);
     if (forwardCompat) {
       return { model: forwardCompat, authStorage, modelRegistry };
+<<<<<<< HEAD
     }
     // OpenRouter is a pass-through proxy — any model ID available on OpenRouter
     // should work without being pre-registered in the local catalog.
@@ -97,6 +101,8 @@ export function resolveModel(
         maxTokens: 8192,
       } as Model<Api>);
       return { model: fallbackModel, authStorage, modelRegistry };
+=======
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     const providerCfg = providers[provider];
     if (providerCfg || modelId.startsWith("mock-")) {

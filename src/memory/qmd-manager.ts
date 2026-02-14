@@ -23,6 +23,19 @@ import type {
   MemorySource,
   MemorySyncProgressUpdate,
 } from "./types.js";
+<<<<<<< HEAD
+=======
+import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import { resolveStateDir } from "../config/paths.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+import { deriveQmdScopeChannel, deriveQmdScopeChatType, isQmdScopeAllowed } from "./qmd-scope.js";
+import {
+  listSessionFilesForAgent,
+  buildSessionEntry,
+  type SessionFileEntry,
+} from "./session-files.js";
+import { requireNodeSqlite } from "./sqlite.js";
+>>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 type SqliteDatabase = import("node:sqlite").DatabaseSync;
 import type {
