@@ -81,7 +81,9 @@ export function stripThoughtSignatures<T>(
   }) as T;
 }
 
-export const DEFAULT_BOOTSTRAP_MAX_CHARS = 20_000;
+// No per-file truncation by default — inject full bootstrap files.
+// Override via config: agents.defaults.bootstrapMaxChars
+export const DEFAULT_BOOTSTRAP_MAX_CHARS = Infinity;
 const BOOTSTRAP_HEAD_RATIO = 0.7;
 const BOOTSTRAP_TAIL_RATIO = 0.2;
 

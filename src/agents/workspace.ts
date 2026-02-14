@@ -380,6 +380,13 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     name: WorkspaceBootstrapFileName;
     filePath: string;
   }> = [
+    // BOOTSTRAP.md MUST be first — it's a first-run ritual that takes priority
+    // over persona/voice files. Being buried after 35k+ of SOUL.md/AGENTS.md
+    // causes models to ignore its onboarding instructions.
+    {
+      name: DEFAULT_BOOTSTRAP_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_BOOTSTRAP_FILENAME),
+    },
     {
       name: DEFAULT_AGENTS_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_AGENTS_FILENAME),
@@ -403,10 +410,6 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     {
       name: DEFAULT_HEARTBEAT_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_HEARTBEAT_FILENAME),
-    },
-    {
-      name: DEFAULT_BOOTSTRAP_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_BOOTSTRAP_FILENAME),
     },
     {
       name: DEFAULT_HOWTOBEHUMAN_FILENAME,
