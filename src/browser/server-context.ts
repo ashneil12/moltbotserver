@@ -66,8 +66,6 @@ function normalizeWsUrl(raw: string | undefined, cdpBaseUrl: string): string | u
   }
 }
 
-
-
 /**
  * Create a profile-scoped context for browser operations.
  */

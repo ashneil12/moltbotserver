@@ -7,8 +7,15 @@ ENV PATH="/root/.bun/bin:${PATH}"
 # Install QMD (local hybrid search: BM25 + vector + reranking for memory)
 # GGUF models (~2GB) are auto-downloaded at runtime on first query, not at build time
 RUN bun install -g github:tobi/qmd
-# Copy qmd to a shared location so the non-root 'node' user can execute it
-RUN cp /root/.bun/bin/qmd /usr/local/bin/qmd && chmod 755 /usr/local/bin/qmd
+# Copy the FULL QMD package + Bun binary to shared locations so the non-root
+# 'node' user can execute them.  The old approach only copied the `qmd` bash
+# wrapper which then couldn't find its src/qmd.ts or the bun runtime.
+RUN cp -r /root/.bun/install/global/node_modules/qmd /opt/qmd \
+  && cd /opt/qmd && bun install sqlite-vec-linux-x64 \
+  && chmod -R a+rX /opt/qmd \
+  && ln -sf /opt/qmd/qmd /usr/local/bin/qmd \
+  && cp /root/.bun/bin/bun /usr/local/bin/bun \
+  && chmod 755 /usr/local/bin/bun /usr/local/bin/qmd
 
 RUN corepack enable
 
@@ -73,7 +80,7 @@ VOLUME /home/node/data
 VOLUME /home/node/workspace
 
 # Add pnpm bin to PATH so 'openclaw' command is available
-# qmd is in /usr/local/bin (copied during build), accessible to all users
+# qmd + bun are in /usr/local/bin (copied during build), accessible to all users
 ENV PATH="/app/node_modules/.bin:${PATH}"
 
 # Allow non-root user to write temp files during runtime/tests.

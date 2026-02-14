@@ -141,8 +141,9 @@ export function renderOverview(props: OverviewProps) {
           </label>
           <label class="field">
             <span>Gateway Token</span>
-            ${_tokenRevealStep === "revealed"
-              ? html`
+            ${
+              _tokenRevealStep === "revealed"
+                ? html`
                   <div style="display: flex; gap: 6px; align-items: center;">
                     <input
                       style="flex: 1;"
@@ -163,7 +164,7 @@ export function renderOverview(props: OverviewProps) {
                     >Hide</button>
                   </div>
                 `
-              : html`
+                : html`
                   <div style="display: flex; gap: 6px; align-items: center;">
                     <input
                       type="password"
@@ -184,9 +185,11 @@ export function renderOverview(props: OverviewProps) {
                       }}
                     >Reveal</button>
                   </div>
-                `}
-            ${_tokenRevealStep === "confirming"
-              ? html`
+                `
+            }
+            ${
+              _tokenRevealStep === "confirming"
+                ? html`
                   <div class="callout danger" style="margin-top: 10px; font-size: 12px;">
                     <strong>⚠ Sensitive Credential</strong>
                     <div style="margin-top: 6px; line-height: 1.5;">
@@ -220,7 +223,8 @@ export function renderOverview(props: OverviewProps) {
                     </div>
                   </div>
                 `
-              : nothing}
+                : nothing
+            }
           </label>
           <label class="field">
             <span>Password (not stored)</span>

@@ -748,7 +748,6 @@ async function runWebSearch(params: {
     data = (await res.json()) as BraveSearchResponse;
   }
 
-
   const results = Array.isArray(data.web?.results) ? (data.web?.results ?? []) : [];
   const mapped = results.map((entry) => {
     const description = entry.description ?? "";

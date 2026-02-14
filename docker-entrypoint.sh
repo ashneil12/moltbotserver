@@ -151,6 +151,20 @@ generate_config() {
       }'
     fi
 
+    # In credits mode, route builtin memory search embeddings through the
+    # gateway embedding proxy so the fallback works without direct API keys.
+    MEMORY_SEARCH_REMOTE=""
+    if [ -n "$AI_GATEWAY_URL" ]; then
+      MEMORY_SEARCH_REMOTE="
+        \"provider\": \"openai\",
+        \"model\": \"voyage/voyage-3.5\",
+        \"fallback\": \"none\",
+        \"remote\": {
+          \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
+          \"apiKey\": \"${GATEWAY_TOKEN}\"
+        },"
+    fi
+
     cat > "$CONFIG_FILE" << EOF
 {
   "gateway": {
@@ -177,12 +191,15 @@ generate_config() {
       "update": {
         "interval": "5m",
         "onBoot": true,
-        "waitForBootSync": false
+        "waitForBootSync": false,
+        "commandTimeoutMs": 120000,
+        "updateTimeoutMs": 300000,
+        "embedTimeoutMs": 300000
       },
       "limits": {
         "maxResults": 8,
         "maxSnippetChars": 700,
-        "timeoutMs": 5000
+        "timeoutMs": 120000
       }
     }
   },
@@ -207,6 +224,7 @@ generate_config() {
         "keepLastAssistants": 3
       },
       "memorySearch": {
+        ${MEMORY_SEARCH_REMOTE}
         "experimental": { "sessionMemory": true },
         "sources": ["memory", "sessions"]
       },
