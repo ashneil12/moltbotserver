@@ -49,6 +49,7 @@ git log main..upstream/main --pretty=format:"%s" --no-merges -n 50
 ```
 
 **Analyze and report**:
+
 1. Categorize commits: Features, Bug Fixes, Dependencies, Breaking Changes, Security
 2. Summarize in plain English what upstream changed
 3. Highlight anything that looks like it could affect security or core functionality
@@ -83,11 +84,13 @@ comm -12 <(sort /tmp/upstream_changes.txt) <(sort /tmp/local_changes.txt)
 ```
 
 **Categorize conflicts by risk**:
+
 - **HIGH**: Security-related files, docker configs, entrypoints
 - **MEDIUM**: Core source files in `src/`
 - **LOW**: Package files, configs, documentation
 
 For HIGH risk conflicts, show the specific diff:
+
 ```bash
 # Example for a specific conflicting file
 git diff main upstream/main -- <filename>
@@ -129,18 +132,21 @@ git rebase upstream/main
 ```
 
 When conflicts occur during rebase:
+
 1. Open the conflicting file
 2. Apply the approved resolution strategy
 3. Stage the resolved file: `git add <file>`
 4. Continue: `git rebase --continue`
 
 If rebase becomes too complex, abort and use merge instead:
+
 ```bash
 git rebase --abort
 git merge upstream/main
 ```
 
 After all conflicts resolved:
+
 ```bash
 # Rebuild to verify everything works
 npm install  # or pnpm install

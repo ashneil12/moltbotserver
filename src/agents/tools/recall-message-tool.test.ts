@@ -2,10 +2,10 @@
  * Tests for recall-message-tool.ts
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { createRecallMessageTool, type RecallResult } from "./recall-message-tool.js";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { createRecallMessageTool, type RecallResult } from "./recall-message-tool.js";
 
 // Mock fs module
 vi.mock("node:fs/promises", () => ({
@@ -30,7 +30,7 @@ vi.mock("node:child_process", () => ({
 
 describe("recall-message-tool", () => {
   const mockWorkspaceDir = "/test/workspace";
-  
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -42,7 +42,7 @@ describe("recall-message-tool", () => {
   describe("createRecallMessageTool", () => {
     it("creates a tool with correct metadata", () => {
       const tool = createRecallMessageTool({ workspaceDir: mockWorkspaceDir });
-      
+
       expect(tool.name).toBe("recall_message");
       expect(tool.label).toBe("Recall Message");
       expect(tool.description).toContain("conversation archive");
@@ -50,7 +50,7 @@ describe("recall-message-tool", () => {
 
     it("has query as required parameter", () => {
       const tool = createRecallMessageTool();
-      
+
       expect(tool.parameters.properties).toHaveProperty("query");
       expect(tool.parameters.properties).toHaveProperty("timeframe");
       expect(tool.parameters.properties).toHaveProperty("limit");
@@ -67,7 +67,7 @@ describe("recall-message-tool", () => {
       expect(result).toBeDefined();
       expect(result.content).toBeDefined();
       expect(result.content[0]).toHaveProperty("type", "text");
-      
+
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.found).toBe(0);
       expect(parsed.results).toEqual([]);
@@ -83,7 +83,7 @@ I want to discuss the API design for our project.
 Let's start with the REST endpoints.
 
 ---`;
-      
+
       vi.mocked(fs.readFile).mockImplementation(async (filepath) => {
         const pathStr = String(filepath);
         if (pathStr.includes("conversation_history.md")) {
@@ -113,9 +113,9 @@ Let's start with the REST endpoints.
       vi.mocked(fs.readFile).mockRejectedValue(new Error("File not found"));
 
       const tool = createRecallMessageTool({ workspaceDir: mockWorkspaceDir });
-      const result = await tool.execute("test-id", { 
-        query: "test query", 
-        timeframe: "last week" 
+      const result = await tool.execute("test-id", {
+        query: "test query",
+        timeframe: "last week",
       });
 
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
@@ -133,7 +133,7 @@ Recent discussion about API.
 Old discussion about API design.
 
 ---`;
-      
+
       vi.mocked(fs.readFile).mockImplementation(async (filepath) => {
         const pathStr = String(filepath);
         if (pathStr.includes("conversation_history.md")) {
@@ -143,9 +143,9 @@ Old discussion about API design.
       });
 
       const tool = createRecallMessageTool({ workspaceDir: mockWorkspaceDir });
-      const result = await tool.execute("test-id", { 
+      const result = await tool.execute("test-id", {
         query: "API",
-        timeframe: "last month"
+        timeframe: "last month",
       });
 
       expect(result).toBeDefined();
@@ -157,9 +157,9 @@ Old discussion about API design.
       vi.mocked(fs.readFile).mockRejectedValue(new Error("File not found"));
 
       const tool = createRecallMessageTool({ workspaceDir: mockWorkspaceDir });
-      const result = await tool.execute("test-id", { 
+      const result = await tool.execute("test-id", {
         query: "test",
-        timeframe: "today"
+        timeframe: "today",
       });
 
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
@@ -170,9 +170,9 @@ Old discussion about API design.
       vi.mocked(fs.readFile).mockRejectedValue(new Error("File not found"));
 
       const tool = createRecallMessageTool({ workspaceDir: mockWorkspaceDir });
-      const result = await tool.execute("test-id", { 
+      const result = await tool.execute("test-id", {
         query: "test",
-        timeframe: "yesterday"
+        timeframe: "yesterday",
       });
 
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
@@ -183,9 +183,9 @@ Old discussion about API design.
       vi.mocked(fs.readFile).mockRejectedValue(new Error("File not found"));
 
       const tool = createRecallMessageTool({ workspaceDir: mockWorkspaceDir });
-      const result = await tool.execute("test-id", { 
+      const result = await tool.execute("test-id", {
         query: "test",
-        timeframe: "January"
+        timeframe: "January",
       });
 
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
@@ -196,9 +196,9 @@ Old discussion about API design.
       vi.mocked(fs.readFile).mockRejectedValue(new Error("File not found"));
 
       const tool = createRecallMessageTool({ workspaceDir: mockWorkspaceDir });
-      const result = await tool.execute("test-id", { 
+      const result = await tool.execute("test-id", {
         query: "test",
-        timeframe: "2 weeks ago"
+        timeframe: "2 weeks ago",
       });
 
       const parsed = JSON.parse((result.content[0] as { text: string }).text);

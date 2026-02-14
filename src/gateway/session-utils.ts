@@ -635,7 +635,10 @@ export function getSessionDefaults(cfg: OpenClawConfig): GatewaySessionsDefaults
   let contextTokens = baseContextTokens;
   const envPercent = parseInt(process.env.OPENCLAW_CONTEXT_PERCENT || "", 10);
   if (envPercent > 0 && envPercent <= 100 && !cfg.agents?.defaults?.contextTokens) {
-    contextTokens = Math.max(20_000, Math.floor((baseContextTokens ?? DEFAULT_CONTEXT_TOKENS) * envPercent / 100));
+    contextTokens = Math.max(
+      20_000,
+      Math.floor(((baseContextTokens ?? DEFAULT_CONTEXT_TOKENS) * envPercent) / 100),
+    );
   }
 
   return {

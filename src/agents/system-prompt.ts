@@ -480,7 +480,7 @@ export function buildAgentSystemPrompt(params: {
           "",
           "### When to switch to Camoufox",
           "Switch ONLY when Chromium is actively blocked. Signs:",
-          "- CAPTCHA challenges, Cloudflare \"Verify you are human\" pages",
+          '- CAPTCHA challenges, Cloudflare "Verify you are human" pages',
           "- HTTP 403/429 with bot-detection messaging",
           "- Pages that load but show empty/different content than expected (cloaking)",
           "- Repeated redirects to verification pages",

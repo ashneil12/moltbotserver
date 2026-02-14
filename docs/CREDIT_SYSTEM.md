@@ -33,6 +33,7 @@ This document describes how the dashboard handles billing and routing for MoltBo
 The authoritative column list is defined in the Supabase types in `dashboard/src/lib/supabase.ts`.
 
 `user_balances`
+
 - `user_id` (uuid)
 - `balance_cents`
 - `total_topped_up_cents`
@@ -42,6 +43,7 @@ The authoritative column list is defined in the Supabase types in `dashboard/src
 - `updated_at`
 
 `usage_transactions`
+
 - `id`
 - `user_id`
 - `type` (`topup` or `usage`)

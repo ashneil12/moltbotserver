@@ -1,6 +1,7 @@
 ---
 description: Update from upstream openclaw/openclaw and preserve local changes
 ---
+
 # Sync with Upstream OpenClaw
 
 This workflow syncs your fork with the official `https://github.com/openclaw/openclaw` repository while preserving your local modifications.
@@ -10,27 +11,33 @@ This workflow syncs your fork with the official `https://github.com/openclaw/ope
 // turbo-all
 
 1. **Stash uncommitted changes** (if any):
+
    ```bash
    cd /Users/ash/Documents/MoltBotServers/moltbotserver-source
    git stash push -m "Auto-stash before upstream sync"
    ```
 
 2. **Fetch the latest from upstream**:
+
    ```bash
    git fetch upstream
    ```
 
 3. **Rebase your main branch onto upstream/main**:
+
    ```bash
    git rebase upstream/main
    ```
+
    > If conflicts occur, resolve them, then `git rebase --continue`.
    > If a conflict is unresolvable, you can `git rebase --abort` to undo.
 
 4. **Pop the stash** (if stashed in step 1):
+
    ```bash
    git stash pop
    ```
+
    > Resolve any file conflicts manually if they arise.
 
 5. **Push your updated branch to your fork**:
