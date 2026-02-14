@@ -241,7 +241,7 @@ export function buildAgentSystemPrompt(params: {
     ls: "List directory contents",
     exec: "Run shell commands (pty available for TTY-required CLIs)",
     process: "Manage background exec sessions",
-    web_search: "Search the web (Brave API)",
+    web_search: "Search the web (fast, structured results)",
     web_fetch: "Fetch and extract readable content from a URL",
     // Channel docking: add login tools here when a channel needs interactive linking.
     browser: "Control web browser",
@@ -468,6 +468,18 @@ export function buildAgentSystemPrompt(params: {
         ].join("\n")
       : "",
     hasGateway && !isMinimal ? "" : "",
+    "",
+    // ── Web Search vs Browser guidance ─────────────────────────────────
+    // Included when both web_search and browser tools are available.
+    availableTools.has("web_search") && availableTools.has("browser") && !isMinimal
+      ? [
+          "## Web Search Strategy",
+          "- Use `web_search` for quick factual queries, current events, recent information, price checks, documentation lookups, API references, and general knowledge.",
+          "- Use the browser sidecar for tasks that require: logging in, filling forms, multi-page navigation, interacting with dynamic content, CAPTCHA solving, or scraping specific page elements.",
+          "- Prefer `web_search` over the browser when possible — it's faster, lighter, and cheaper.",
+          "- When `web_search` results are insufficient or you need deeper detail from a specific page, escalate to `web_fetch` or the browser sidecar.",
+        ].join("\n")
+      : "",
     "",
     // ── Camoufox anti-detection browser ──────────────────────────────────
     // Conditionally included when the CAMOFOX_ENABLED env var is set.
