@@ -105,16 +105,16 @@ export async function resolveFeishuEffectiveAllowFrom(params: {
   const groupAllowFrom = accountCfg?.groupAllowFrom ?? feishuCfg?.groupAllowFrom ?? [];
 
   const cfgAllowFrom = allowFrom
-    .map((v) => String(v).trim())
+    .map((v: string | number) => String(v).trim())
     .filter(Boolean)
-    .map((v) => v.replace(/^feishu:/i, ""))
-    .filter((v) => v !== "*");
+    .map((v: string) => v.replace(/^feishu:/i, ""))
+    .filter((v: string) => v !== "*");
 
   const cfgGroupAllowFrom = groupAllowFrom
-    .map((v) => String(v).trim())
+    .map((v: string | number) => String(v).trim())
     .filter(Boolean)
-    .map((v) => v.replace(/^feishu:/i, ""))
-    .filter((v) => v !== "*");
+    .map((v: string) => v.replace(/^feishu:/i, ""))
+    .filter((v: string) => v !== "*");
 
   const storeAllowFrom = await readFeishuAllowFromStore(env);
 
