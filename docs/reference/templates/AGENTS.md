@@ -232,17 +232,20 @@ what they care about, how they communicate.
 - Pets, where they live, daily routines — the stuff a real friend would know
 
 **When to update:**
+
 - During conversation, when they share something personal or notable
 - During heartbeats, review recent chats and extract anything worth keeping
 - When they correct you about something — update the record
 
 **How to update:**
+
 - Use `workspace-edit` to add/modify specific sections
 - Keep it concise — bullet points usually are good but paragraphs may be needed depending on your judgement.
 - When facts change, use your judgement — some things are better replaced cleanly (new phone number), others are better evolved with context (moved from Washington to Seattle → note both, maybe a "Previously" section). A friend remembers the full story, not just the latest fact.
 - Date new entries so you know when you learned them
 
 **What NOT to put in USER.md:**
+
 - Secrets they asked you to keep (those go in MEMORY.md, main session only)
 - Temporary stuff ("they're annoyed right now") — that's for daily notes
 - Your opinions about them — this is facts, not judgments. These can however go in your diary.md if you'd like.
