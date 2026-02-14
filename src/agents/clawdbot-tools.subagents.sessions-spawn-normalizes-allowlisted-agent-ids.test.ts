@@ -196,26 +196,28 @@ describe("moltbot-tools: subagents", () => {
     if (!childRunId) {
       throw new Error("missing child runId");
     }
-    emitAgentEvent({
-      runId: childRunId,
-      stream: "lifecycle",
-      data: {
-        phase: "end",
-        startedAt: 1234,
-        endedAt: 2345,
-      },
-    });
+    vi.useFakeTimers();
+    try {
+      emitAgentEvent({
+        runId: childRunId,
+        stream: "lifecycle",
+        data: {
+          phase: "end",
+          startedAt: 1234,
+          endedAt: 2345,
+        },
+      });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
+    } finally {
+      vi.useRealTimers();
+    }
 
     const childWait = waitCalls.find((call) => call.runId === childRunId);
     expect(childWait?.timeoutMs).toBe(1000);
 
-    // Subagent spawn call only (announce step removed upstream)
     const agentCalls = calls.filter((call) => call.method === "agent");
-    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls).toHaveLength(2);
 
     const first = agentCalls[0]?.params as
       | {
@@ -230,6 +232,17 @@ describe("moltbot-tools: subagents", () => {
     expect(first?.channel).toBe("discord");
     expect(first?.sessionKey?.startsWith("agent:main:subagent:")).toBe(true);
     expect(childSessionKey?.startsWith("agent:main:subagent:")).toBe(true);
+
+    const second = agentCalls[1]?.params as
+      | {
+          sessionKey?: string;
+          message?: string;
+          deliver?: boolean;
+        }
+      | undefined;
+    expect(second?.sessionKey).toBe("discord:group:req");
+    expect(second?.deliver).toBe(true);
+    expect(second?.message).toContain("subagent task");
 
     expect(deletedKey?.startsWith("agent:main:subagent:")).toBe(true);
   });
@@ -289,25 +302,33 @@ describe("moltbot-tools: subagents", () => {
     if (!childRunId) {
       throw new Error("missing child runId");
     }
-    emitAgentEvent({
-      runId: childRunId,
-      stream: "lifecycle",
-      data: {
-        phase: "end",
-        startedAt: 1000,
-        endedAt: 2000,
-      },
-    });
+    vi.useFakeTimers();
+    try {
+      emitAgentEvent({
+        runId: childRunId,
+        stream: "lifecycle",
+        data: {
+          phase: "end",
+          startedAt: 1000,
+          endedAt: 2000,
+        },
+      });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
+    } finally {
+      vi.useRealTimers();
+    }
 
-    // Subagent spawn call only (announce step removed upstream)
     const agentCalls = calls.filter((call) => call.method === "agent");
-    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls).toHaveLength(2);
     const spawnParams = agentCalls[0]?.params as { lane?: string; channel?: string } | undefined;
     expect(spawnParams?.lane).toBe("subagent");
     expect(spawnParams?.channel).toBe("whatsapp");
+    const announceParams = agentCalls[1]?.params as
+      | { accountId?: string; channel?: string; deliver?: boolean }
+      | undefined;
+    expect(announceParams?.deliver).toBe(true);
+    expect(announceParams?.channel).toBe("whatsapp");
+    expect(announceParams?.accountId).toBe("kev");
   });
 });

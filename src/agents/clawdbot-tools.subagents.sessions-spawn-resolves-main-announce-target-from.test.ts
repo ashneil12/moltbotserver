@@ -89,6 +89,16 @@ describe("moltbot-tools: subagents", () => {
         patchParams = { key: params?.key, label: params?.label };
         return { ok: true };
       }
+      if (request.method === "chat.history") {
+        return {
+          messages: [
+            {
+              role: "assistant",
+              content: [{ type: "text", text: "done" }],
+            },
+          ],
+        };
+      }
       if (request.method === "sessions.delete") {
         return { ok: true };
       }
@@ -116,19 +126,22 @@ describe("moltbot-tools: subagents", () => {
     if (!childRunId) {
       throw new Error("missing child runId");
     }
-    emitAgentEvent({
-      runId: childRunId,
-      stream: "lifecycle",
-      data: {
-        phase: "end",
-        startedAt: 1000,
-        endedAt: 2000,
-      },
-    });
+    vi.useFakeTimers();
+    try {
+      emitAgentEvent({
+        runId: childRunId,
+        stream: "lifecycle",
+        data: {
+          phase: "end",
+          startedAt: 1000,
+          endedAt: 2000,
+        },
+      });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
+    } finally {
+      vi.useRealTimers();
+    }
 
     const childWait = waitCalls.find((call) => call.runId === childRunId);
     expect(childWait?.timeoutMs).toBe(1000);
@@ -136,13 +149,18 @@ describe("moltbot-tools: subagents", () => {
     expect(patchParams.key).toBe(childSessionKey);
     expect(patchParams.label).toBe("my-task");
 
-    // Subagent spawn call only (announce step removed upstream)
+    // Two agent calls: subagent spawn + main agent trigger
     const agentCalls = calls.filter((c) => c.method === "agent");
-    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls).toHaveLength(2);
 
     // First call: subagent spawn
     const first = agentCalls[0]?.params as { lane?: string } | undefined;
     expect(first?.lane).toBe("subagent");
+
+    // Second call: main agent trigger
+    const second = agentCalls[1]?.params as { sessionKey?: string; message?: string } | undefined;
+    expect(second?.sessionKey).toBe("main");
+    expect(second?.message).toContain("subagent task");
   });
 
   it("sessions_spawn only allows same-agent by default", async () => {

@@ -81,6 +81,16 @@ describe("moltbot-tools: subagents", () => {
           endedAt: 4000,
         };
       }
+      if (request.method === "chat.history") {
+        return {
+          messages: [
+            {
+              role: "assistant",
+              content: [{ type: "text", text: "done" }],
+            },
+          ],
+        };
+      }
       if (request.method === "sessions.delete") {
         const params = request.params as { key?: string } | undefined;
         deletedKey = params?.key;
@@ -107,21 +117,33 @@ describe("moltbot-tools: subagents", () => {
       runId: "run-1",
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    vi.useFakeTimers();
+    try {
+      await vi.runAllTimersAsync();
+    } finally {
+      vi.useRealTimers();
+    }
 
     const childWait = waitCalls.find((call) => call.runId === childRunId);
     expect(childWait?.timeoutMs).toBe(1000);
     expect(childSessionKey?.startsWith("agent:main:subagent:")).toBe(true);
 
-    // Subagent spawn call only (announce step removed upstream)
+    // Two agent calls: subagent spawn + main agent trigger
     const agentCalls = calls.filter((call) => call.method === "agent");
-    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls).toHaveLength(2);
 
     // First call: subagent spawn
     const first = agentCalls[0]?.params as { lane?: string } | undefined;
     expect(first?.lane).toBe("subagent");
+
+    // Second call: main agent trigger
+    const second = agentCalls[1]?.params as { sessionKey?: string; deliver?: boolean } | undefined;
+    expect(second?.sessionKey).toBe("discord:group:req");
+    expect(second?.deliver).toBe(true);
+
+    // No direct send to external channel (main agent handles delivery)
+    const sendCalls = calls.filter((c) => c.method === "send");
+    expect(sendCalls.length).toBe(0);
 
     // Session should be deleted
     expect(deletedKey?.startsWith("agent:main:subagent:")).toBe(true);
