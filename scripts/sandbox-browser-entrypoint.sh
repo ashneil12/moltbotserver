@@ -14,6 +14,13 @@ HEADLESS="${OPENCLAW_BROWSER_HEADLESS:-${CLAWDBOT_BROWSER_HEADLESS:-0}}"
 PROXY="${OPENCLAW_BROWSER_PROXY:-}"
 RESOLUTION="${OPENCLAW_BROWSER_RESOLUTION:-1280x800x24}"
 
+# noVNC web root (prefer GitHub release, fall back to Debian package)
+if [[ -d /opt/novnc ]]; then
+  NOVNC_WEB=/opt/novnc
+else
+  NOVNC_WEB=/usr/share/novnc
+fi
+
 mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
 Xvfb :1 -screen 0 "${RESOLUTION}" -ac -nolisten tcp &
@@ -34,7 +41,7 @@ else
 fi
 
 CHROME_ARGS+=(
-  "--remote-debugging-address=127.0.0.1"
+  "--remote-debugging-address=0.0.0.0"
   "--remote-debugging-port=${CHROME_CDP_PORT}"
   "--user-data-dir=${HOME}/.chrome"
   "--no-first-run"
@@ -55,20 +62,34 @@ fi
 
 chromium "${CHROME_ARGS[@]}" about:blank &
 
-for _ in $(seq 1 50); do
-  if curl -sS --max-time 1 "http://127.0.0.1:${CHROME_CDP_PORT}/json/version" >/dev/null; then
+# Wait for Chromium CDP to be ready (up to 10 seconds)
+echo "[browser] waiting for Chromium CDP on port ${CHROME_CDP_PORT}..."
+for i in $(seq 1 100); do
+  if curl -sS --max-time 1 "http://127.0.0.1:${CHROME_CDP_PORT}/json/version" >/dev/null 2>&1; then
+    echo "[browser] Chromium CDP ready after $((i * 100))ms"
     break
   fi
   sleep 0.1
 done
 
+# Expose CDP on all interfaces via socat (gateway connects from another container)
 socat \
   TCP-LISTEN:"${CDP_PORT}",fork,reuseaddr,bind=0.0.0.0 \
   TCP:127.0.0.1:"${CHROME_CDP_PORT}" &
 
-if [[ "${ENABLE_NOVNC}" == "1" && "${HEADLESS}" != "1" ]]; then
-  x11vnc -display :1 -rfbport "${VNC_PORT}" -shared -forever -nopw -localhost &
-  websockify --web /usr/share/novnc/ "${NOVNC_PORT}" "localhost:${VNC_PORT}" &
+# Verify socat is forwarding correctly
+sleep 0.5
+if curl -sS --max-time 2 "http://127.0.0.1:${CDP_PORT}/json/version" >/dev/null 2>&1; then
+  echo "[browser] CDP proxy ready on 0.0.0.0:${CDP_PORT}"
+else
+  echo "[browser] WARNING: CDP proxy not responding on port ${CDP_PORT}"
 fi
 
+if [[ "${ENABLE_NOVNC}" == "1" && "${HEADLESS}" != "1" ]]; then
+  x11vnc -display :1 -rfbport "${VNC_PORT}" -shared -forever -nopw -localhost &
+  websockify --web "${NOVNC_WEB}" "${NOVNC_PORT}" "localhost:${VNC_PORT}" &
+  echo "[browser] noVNC ready on port ${NOVNC_PORT} (serving from ${NOVNC_WEB})"
+fi
+
+echo "[browser] all services started"
 wait -n
