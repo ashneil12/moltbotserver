@@ -7,7 +7,7 @@ import type { ResolvedBrowserConfig, ResolvedBrowserProfile } from "./config.js"
 import { ensurePortAvailable } from "../infra/ports.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { CONFIG_DIR } from "../utils.js";
-import { appendCdpPath } from "./cdp.helpers.js";
+import { appendCdpPath, fetchJson } from "./cdp.helpers.js";
 import { getHeadersWithAuth, normalizeCdpWsUrl } from "./cdp.js";
 import {
   type BrowserExecutable,
@@ -79,26 +79,15 @@ type ChromeVersion = {
 };
 
 async function fetchChromeVersion(cdpUrl: string, timeoutMs = 500): Promise<ChromeVersion | null> {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const versionUrl = appendCdpPath(cdpUrl, "/json/version");
-    const res = await fetch(versionUrl, {
-      signal: ctrl.signal,
-      headers: getHeadersWithAuth(versionUrl),
-    });
-    if (!res.ok) {
-      return null;
-    }
-    const data = (await res.json()) as ChromeVersion;
+    const data = await fetchJson<ChromeVersion>(versionUrl, timeoutMs);
     if (!data || typeof data !== "object") {
       return null;
     }
     return data;
   } catch {
     return null;
-  } finally {
-    clearTimeout(t);
   }
 }
 

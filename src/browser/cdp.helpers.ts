@@ -123,9 +123,86 @@ function createCdpSender(ws: WebSocket) {
   return { send, closeWithError };
 }
 
+/**
+ * Low-level HTTP request that respects custom headers (including Host).
+ * Node.js fetch() (undici) auto-overwrites the Host header from the URL,
+ * so we fall back to http.request for non-loopback CDP URLs where Chrome
+ * rejects Docker service hostnames like "browser:9222".
+ */
+async function cdpHttpRequest(
+  url: string,
+  timeoutMs: number,
+  init?: { method?: string; body?: string },
+): Promise<{ status: number; body: string }> {
+  const http = await import("node:http");
+  const https = await import("node:https");
+  const parsed = new URL(url);
+  const headers = getHeadersWithAuth(url);
+  const isHttps = parsed.protocol === "https:";
+  const requester = isHttps ? https.request : http.request;
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      req.destroy();
+      reject(new Error("timeout"));
+    }, timeoutMs);
+
+    const req = requester(
+      url,
+      {
+        method: init?.method ?? "GET",
+        headers,
+        timeout: timeoutMs,
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk: Buffer) => {
+          data += chunk.toString();
+        });
+        res.on("end", () => {
+          clearTimeout(timer);
+          resolve({ status: res.statusCode ?? 0, body: data });
+        });
+      },
+    );
+
+    req.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
+    if (init?.body) {
+      req.write(init.body);
+    }
+    req.end();
+  });
+}
+
+/** Whether a URL needs Host header override (non-loopback CDP target). */
+function needsHostOverride(url: string): boolean {
+  try {
+    return !isLoopbackHost(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchJson<T>(url: string, timeoutMs = 1500, init?: RequestInit): Promise<T> {
+  // For non-loopback URLs, use http.request which respects Host header overrides.
+  // Node.js fetch() ignores custom Host headers (undici auto-sets from URL).
+  if (needsHostOverride(url)) {
+    const resp = await cdpHttpRequest(url, timeoutMs, {
+      method: (init?.method as string) ?? "GET",
+      body: init?.body as string | undefined,
+    });
+    if (resp.status < 200 || resp.status >= 300) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+    return JSON.parse(resp.body) as T;
+  }
+
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  const t = setTimeout(ctrl.abort.bind(ctrl), timeoutMs);
   try {
     const headers = getHeadersWithAuth(url, (init?.headers as Record<string, string>) || {});
     const res = await fetch(url, { ...init, headers, signal: ctrl.signal });
@@ -139,8 +216,20 @@ export async function fetchJson<T>(url: string, timeoutMs = 1500, init?: Request
 }
 
 export async function fetchOk(url: string, timeoutMs = 1500, init?: RequestInit): Promise<void> {
+  // For non-loopback URLs, use http.request which respects Host header overrides.
+  if (needsHostOverride(url)) {
+    const resp = await cdpHttpRequest(url, timeoutMs, {
+      method: (init?.method as string) ?? "GET",
+      body: init?.body as string | undefined,
+    });
+    if (resp.status < 200 || resp.status >= 300) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+    return;
+  }
+
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  const t = setTimeout(ctrl.abort.bind(ctrl), timeoutMs);
   try {
     const headers = getHeadersWithAuth(url, (init?.headers as Record<string, string>) || {});
     const res = await fetch(url, { ...init, headers, signal: ctrl.signal });
