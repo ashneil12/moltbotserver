@@ -33,9 +33,7 @@ export function getHeadersWithAuth(url: string, headers: Record<string, string> 
     // hostname (e.g. "browser"), which Chrome blocks.  Override Host to
     // "localhost" for non-loopback targets so Chrome accepts the request.
     // This is safe because socat/the proxy forwards TCP transparently.
-    const hasHostHeader = Object.keys(mergedHeaders).some(
-      (key) => key.toLowerCase() === "host",
-    );
+    const hasHostHeader = Object.keys(mergedHeaders).some((key) => key.toLowerCase() === "host");
     if (!hasHostHeader && !isLoopbackHost(parsed.hostname)) {
       mergedHeaders["Host"] = "localhost";
     }
