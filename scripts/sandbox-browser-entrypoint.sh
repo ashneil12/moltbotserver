@@ -57,6 +57,7 @@ CHROME_ARGS+=(
   "--disable-crash-reporter"
   "--metrics-recording-only"
   "--no-sandbox"
+  "--test-type"
 )
 
 # Proxy support (e.g., socks5://proxy:1080 or http://proxy:8080)
