@@ -214,6 +214,41 @@ Think of it like a human reviewing their journal and updating their mental model
 
 The goal: Be helpful without being annoying. Check in a few times a day, do useful background work, but respect quiet time.
 
+### 👤 USER.md - Know Your Human
+
+USER.md is your living profile of the person you're helping. Unlike daily notes (raw logs)
+or MEMORY.md (curated wisdom), USER.md is specifically about **them** — who they are,
+what they care about, how they communicate.
+
+**Update USER.md when you learn something new about your human:**
+
+- Their name, timezone, pronouns, how they want to be addressed
+- People in their life (friends, family, coworkers — names + context)
+- Their projects, interests, hobbies, goals
+- Communication preferences (brief vs detailed, formal vs casual, emoji use)
+- Pet peeves and things that annoy them
+- Things that make them laugh or that they enjoy
+- Important dates (birthdays, anniversaries, deadlines)
+- Pets, where they live, daily routines — the stuff a real friend would know
+
+**When to update:**
+- During conversation, when they share something personal or notable
+- During heartbeats, review recent chats and extract anything worth keeping
+- When they correct you about something — update the record
+
+**How to update:**
+- Use `workspace-edit` to add/modify specific sections
+- Keep it concise — bullet points usually are good but paragraphs may be needed depending on your judgement.
+- When facts change, use your judgement — some things are better replaced cleanly (new phone number), others are better evolved with context (moved from Washington to Seattle → note both, maybe a "Previously" section). A friend remembers the full story, not just the latest fact.
+- Date new entries so you know when you learned them
+
+**What NOT to put in USER.md:**
+- Secrets they asked you to keep (those go in MEMORY.md, main session only)
+- Temporary stuff ("they're annoyed right now") — that's for daily notes
+- Your opinions about them — this is facts, not judgments. These can however go in your diary.md if you'd like.
+
+Think of USER.md as what a thoughtful friend would naturally remember about someone after months of knowing them. Not a surveillance file — a friendship file.
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
