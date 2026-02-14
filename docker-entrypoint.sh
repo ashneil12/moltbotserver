@@ -24,7 +24,7 @@ SUBAGENT_LOG_DIR="$WORKSPACE_DIR/subagent-logs"
 
 # Gateway & Network
 GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-${CLAWDBOT_GATEWAY_TOKEN:-}}"
-GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-lan}}"
+GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-custom}}"
 GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}}"
 AI_GATEWAY_URL="${OPENCLAW_AI_GATEWAY_URL:-}"
 
@@ -157,6 +157,7 @@ generate_config() {
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
+    "customBindHost": "0.0.0.0",
     "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"],
     "controlUi": {
       "enabled": true,
