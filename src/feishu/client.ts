@@ -44,7 +44,7 @@ export function getFeishuClient(accountIdOrAppId?: string, explicitAppSecret?: s
   if (!appSecret && feishuCfg?.accounts) {
     if (isAppId) {
       // When given an appId, find the account with matching appId
-      for (const [, acc] of Object.entries(feishuCfg.accounts)) {
+      for (const [, acc] of Object.entries(feishuCfg.accounts) as [string, { appId?: string; appSecret?: string; appSecretFile?: string; domain?: string }][]) {
         if (acc.appId === accountIdOrAppId) {
           appId = acc.appId;
           appSecret = resolveAppSecret(acc);

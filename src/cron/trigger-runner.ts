@@ -12,7 +12,7 @@ export async function runTriggerScript(
   job: CronJob,
   workspaceDir: string,
 ): Promise<RunTriggerResult> {
-  const triggerScript = job.payload.kind === "agentTurn" ? job.payload.triggerScript : undefined;
+  const triggerScript = job.payload.kind === "agentTurn" ? (job.payload as Record<string, unknown>).triggerScript as string | undefined : undefined;
 
   if (!triggerScript?.trim()) {
     return { status: "ok" };

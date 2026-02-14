@@ -1,4 +1,4 @@
-import type { MoltbotConfig } from "../config/config.js";
+import type { OpenClawConfig } from "../config/config.js";
 import {
   addChannelAllowFromStoreEntry,
   approveChannelPairingCode,
@@ -95,20 +95,20 @@ export async function approveTelegramPairingCode(params: {
 }
 
 export async function resolveTelegramEffectiveAllowFrom(params: {
-  cfg: MoltbotConfig;
+  cfg: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<{ dm: string[]; group: string[] }> {
   const env = params.env ?? process.env;
   const cfgAllowFrom = (params.cfg.channels?.telegram?.allowFrom ?? [])
-    .map((v) => String(v).trim())
+    .map((v: string | number) => String(v).trim())
     .filter(Boolean)
-    .map((v) => v.replace(/^(telegram|tg):/i, ""))
-    .filter((v) => v !== "*");
+    .map((v: string) => v.replace(/^(telegram|tg):/i, ""))
+    .filter((v: string) => v !== "*");
   const cfgGroupAllowFrom = (params.cfg.channels?.telegram?.groupAllowFrom ?? [])
-    .map((v) => String(v).trim())
+    .map((v: string | number) => String(v).trim())
     .filter(Boolean)
-    .map((v) => v.replace(/^(telegram|tg):/i, ""))
-    .filter((v) => v !== "*");
+    .map((v: string) => v.replace(/^(telegram|tg):/i, ""))
+    .filter((v: string) => v !== "*");
   const storeAllowFrom = await readTelegramAllowFromStore(env);
 
   const dm = Array.from(new Set([...cfgAllowFrom, ...storeAllowFrom]));
