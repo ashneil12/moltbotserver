@@ -454,3 +454,6 @@ export function createOpenClawCodingTools(options?: {
   // on the wire and maps them back for tool dispatch.
   return withAbort;
 }
+
+/** @deprecated Use {@link createOpenClawCodingTools} instead. Alias kept for backwards compatibility. */
+export const createMoltbotCodingTools = createOpenClawCodingTools;

@@ -213,8 +213,9 @@ describe("moltbot-tools: subagents", () => {
     const childWait = waitCalls.find((call) => call.runId === childRunId);
     expect(childWait?.timeoutMs).toBe(1000);
 
+    // Subagent spawn call only (announce step removed upstream)
     const agentCalls = calls.filter((call) => call.method === "agent");
-    expect(agentCalls).toHaveLength(2);
+    expect(agentCalls).toHaveLength(1);
 
     const first = agentCalls[0]?.params as
       | {
@@ -229,20 +230,6 @@ describe("moltbot-tools: subagents", () => {
     expect(first?.channel).toBe("discord");
     expect(first?.sessionKey?.startsWith("agent:main:subagent:")).toBe(true);
     expect(childSessionKey?.startsWith("agent:main:subagent:")).toBe(true);
-
-    const second = agentCalls[1]?.params as
-      | {
-          sessionKey?: string;
-          message?: string;
-          deliver?: boolean;
-        }
-      | undefined;
-    expect(second?.sessionKey).toBe("discord:group:req");
-    expect(second?.deliver).toBe(true);
-    expect(second?.message).toContain("background task");
-
-    const sendCalls = calls.filter((c) => c.method === "send");
-    expect(sendCalls.length).toBe(0);
 
     expect(deletedKey?.startsWith("agent:main:subagent:")).toBe(true);
   });
@@ -316,13 +303,11 @@ describe("moltbot-tools: subagents", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await new Promise((resolve) => setTimeout(resolve, 0));
 
+    // Subagent spawn call only (announce step removed upstream)
     const agentCalls = calls.filter((call) => call.method === "agent");
-    expect(agentCalls).toHaveLength(2);
-    const announceParams = agentCalls[1]?.params as
-      | { accountId?: string; channel?: string; deliver?: boolean }
-      | undefined;
-    expect(announceParams?.deliver).toBe(true);
-    expect(announceParams?.channel).toBe("whatsapp");
-    expect(announceParams?.accountId).toBe("kev");
+    expect(agentCalls).toHaveLength(1);
+    const spawnParams = agentCalls[0]?.params as { lane?: string; channel?: string } | undefined;
+    expect(spawnParams?.lane).toBe("subagent");
+    expect(spawnParams?.channel).toBe("whatsapp");
   });
 });

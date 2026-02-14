@@ -115,22 +115,13 @@ describe("moltbot-tools: subagents", () => {
     expect(childWait?.timeoutMs).toBe(1000);
     expect(childSessionKey?.startsWith("agent:main:subagent:")).toBe(true);
 
-    // Two agent calls: subagent spawn + main agent trigger
+    // Subagent spawn call only (announce step removed upstream)
     const agentCalls = calls.filter((call) => call.method === "agent");
-    expect(agentCalls).toHaveLength(2);
+    expect(agentCalls).toHaveLength(1);
 
     // First call: subagent spawn
     const first = agentCalls[0]?.params as { lane?: string } | undefined;
     expect(first?.lane).toBe("subagent");
-
-    // Second call: main agent trigger
-    const second = agentCalls[1]?.params as { sessionKey?: string; deliver?: boolean } | undefined;
-    expect(second?.sessionKey).toBe("discord:group:req");
-    expect(second?.deliver).toBe(true);
-
-    // No direct send to external channel (main agent handles delivery)
-    const sendCalls = calls.filter((c) => c.method === "send");
-    expect(sendCalls.length).toBe(0);
 
     // Session should be deleted
     expect(deletedKey?.startsWith("agent:main:subagent:")).toBe(true);
