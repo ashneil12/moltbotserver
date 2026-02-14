@@ -60,8 +60,8 @@ async function searchMemoryFiles(
     const files = await fs.readdir(memoryDir);
     const mdFiles = files
       .filter((f) => f.endsWith(".md"))
-      .sort()
-      .reverse(); // Newest first
+      .toSorted()
+      .toReversed(); // Newest first
 
     for (const file of mdFiles.slice(0, 30)) {
       // Check last 30 days
@@ -71,7 +71,9 @@ async function searchMemoryFiles(
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line.startsWith("-")) continue;
+        if (!line.startsWith("-")) {
+          continue;
+        }
 
         const lower = line.toLowerCase();
         const matches = keywords.some((kw) => lower.includes(kw));
@@ -187,7 +189,9 @@ export const handleForgetCommand: CommandHandler = async (params, allowTextComma
             result.file,
             result.lineNum - removed, // Adjust for removed lines
           );
-          if (success) removed++;
+          if (success) {
+            removed++;
+          }
         }
         pendingForget.delete(params.sessionKey);
         return {
@@ -205,7 +209,7 @@ export const handleForgetCommand: CommandHandler = async (params, allowTextComma
       if (nums.length > 0) {
         const removed: string[] = [];
         // Sort descending to remove from end first (line numbers stay valid)
-        for (const num of nums.sort((a, b) => b - a)) {
+        for (const num of nums.toSorted((a, b) => b - a)) {
           const result = pending[num - 1];
           const success = await removeMemoryFromFile(
             params.workspaceDir,

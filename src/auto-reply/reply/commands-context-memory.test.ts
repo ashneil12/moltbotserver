@@ -3,13 +3,8 @@
  */
 
 import fs from "node:fs/promises";
-import path from "node:path";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type {
-  HandleCommandsParams,
-  CommandContext,
-  CommandHandlerResult,
-} from "./commands-types.js";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { HandleCommandsParams, CommandContext } from "./commands-types.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import {
   handleFreshCommand,

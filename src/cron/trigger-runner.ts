@@ -51,10 +51,10 @@ export async function runTriggerScript(
     }
     return { status: "ok", output: stdout };
   } catch (err) {
-    logWarn(`[cron:${job.id}] Trigger script failed: ${err}`);
+    logWarn(`[cron:${job.id}] Trigger script failed: ${String(err)}`);
     return {
       status: "error",
-      error: `Trigger script failed: ${err}`,
+      error: `Trigger script failed: ${String(err)}`,
     };
   }
 }

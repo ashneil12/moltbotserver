@@ -3,9 +3,8 @@
  */
 
 import fs from "node:fs/promises";
-import path from "node:path";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { createRecallMessageTool, type RecallResult } from "./recall-message-tool.js";
+import { createRecallMessageTool } from "./recall-message-tool.js";
 
 // Mock fs module
 vi.mock("node:fs/promises", () => ({
@@ -85,7 +84,7 @@ Let's start with the REST endpoints.
 ---`;
 
       vi.mocked(fs.readFile).mockImplementation(async (filepath) => {
-        const pathStr = String(filepath);
+        const pathStr = filepath as string;
         if (pathStr.includes("conversation_history.md")) {
           return mockHistory;
         }
@@ -135,7 +134,7 @@ Old discussion about API design.
 ---`;
 
       vi.mocked(fs.readFile).mockImplementation(async (filepath) => {
-        const pathStr = String(filepath);
+        const pathStr = filepath as string;
         if (pathStr.includes("conversation_history.md")) {
           return mockHistory;
         }
