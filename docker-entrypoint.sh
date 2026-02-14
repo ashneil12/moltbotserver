@@ -484,6 +484,7 @@ check_sudo
 prepare_fallback_json
 check_heartbeat_model
 generate_config
+seed_bootstrap_file
 run_auto_onboard
 
 # Post-onboard enforcements (critical if onboard overwrites config)
@@ -491,7 +492,6 @@ enforce_model_settings
 enforce_gateway_token
 enforce_trusted_proxies
 
-seed_bootstrap_file
 setup_security_files
 run_doctor
 
