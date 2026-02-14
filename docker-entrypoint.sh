@@ -430,6 +430,22 @@ setup_security_files() {
   fi
 }
 
+seed_bootstrap_file() {
+  # Mirror ensureAgentWorkspace's isBrandNewWorkspace check:
+  # only seed BOOTSTRAP.md when NO core workspace files exist yet.
+  # This MUST run BEFORE setup_security_files() which creates SOUL.md/IDENTITY.md
+  # and would make isBrandNewWorkspace return false.
+  for f in AGENTS.md SOUL.md TOOLS.md IDENTITY.md USER.md; do
+    if [ -f "$WORKSPACE_DIR/$f" ]; then return 0; fi
+  done
+  if [ -f "/app/BOOTSTRAP.md" ]; then
+    mkdir -p "$WORKSPACE_DIR"
+    cp "/app/BOOTSTRAP.md" "$WORKSPACE_DIR/BOOTSTRAP.md"
+    chmod 644 "$WORKSPACE_DIR/BOOTSTRAP.md"
+    log_info "Seeded BOOTSTRAP.md for new workspace"
+  fi
+}
+
 run_doctor() {
   local script="/app/openclaw.mjs"
   if [ -f "$script" ]; then
@@ -457,6 +473,7 @@ enforce_model_settings
 enforce_gateway_token
 enforce_trusted_proxies
 
+seed_bootstrap_file
 setup_security_files
 run_doctor
 
