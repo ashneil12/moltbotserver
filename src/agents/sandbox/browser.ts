@@ -122,6 +122,9 @@ export async function ensureSandboxBrowser(params: {
         `${params.agentWorkspaceDir}:${SANDBOX_AGENT_WORKSPACE_MOUNT}${agentMountSuffix}`,
       );
     }
+    // Persist Chrome profile (cookies, logins, localStorage) across container restarts
+    const profileVolume = `${containerName}-profile`;
+    args.push("-v", `${profileVolume}:/tmp/openclaw-home/.chrome`);
     args.push("-p", `127.0.0.1::${params.cfg.browser.cdpPort}`);
     if (params.cfg.browser.enableNoVnc && !params.cfg.browser.headless) {
       args.push("-p", `127.0.0.1::${params.cfg.browser.noVncPort}`);
