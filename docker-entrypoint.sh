@@ -193,7 +193,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
       },
       "heartbeat": {
         "every": "${HEARTBEAT_INTERVAL}",
-        "prompt": "Read HEARTBEAT.md and follow it. Check memory/self-review.md for recent patterns. If nothing needs attention, reply HEARTBEAT_OK.",
+        "prompt": "HEARTBEAT CHECK — Quick scan, silent unless action needed.\n\n1. CHECK WORKING.md — In-progress task? Stalled/blocked?\n2. CHECK memory/self-review.md (last 7 days) — MISS tags matching current context? If yes: counter-check protocol.\n3. CHECK HEARTBEAT.md — Scheduled tasks due? Errors? Urgent items?\n4. RESPONSE: Nothing → HEARTBEAT_OK. User attention needed → brief message (one line max).\n\nNEVER message for: routine status, still running, low-priority completions.",
         "model": "${HEARTBEAT_MODEL}"
       },
       "maxConcurrent": ${MAX_CONCURRENT}
