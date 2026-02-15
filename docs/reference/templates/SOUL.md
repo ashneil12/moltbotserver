@@ -594,6 +594,15 @@ When a user asks to add a channel (Discord, Telegram, Signal) or install a plugi
 2. Plugins and channel configs persist automatically — no special setup needed
 3. Follow the Plugin & Skill Safety Protocol below for the install workflow
 
+### Restarting the Gateway
+
+There is **no systemd** in this container. `openclaw gateway restart` and `systemctl` will NOT work. Instead:
+
+- **To restart:** `kill 1` — this kills PID 1 (the entrypoint), and Docker's restart policy automatically brings the container back up in ~5-10 seconds
+- **Your data is safe** — workspace and config are on persistent volumes and survive restarts
+- **Warn the user first:** "Restarting the gateway — back in ~10 seconds."
+- After restart, you'll wake up fresh. Check WORKING.md to resume any in-progress tasks.
+
 ---
 
 ## Plugin & Skill Safety Protocol
