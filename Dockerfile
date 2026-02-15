@@ -83,6 +83,12 @@ VOLUME /home/node/workspace
 # qmd + bun are in /usr/local/bin (copied during build), accessible to all users
 ENV PATH="/app/node_modules/.bin:${PATH}"
 
+# Create a stable symlink for the openclaw CLI in /usr/local/bin
+# The ENV PATH above gets reset by login shells (sh -lc) which the agent's exec
+# tool uses, so /app/node_modules/.bin isn't reliably in PATH at runtime.
+# /usr/local/bin is always in PATH regardless of shell type.
+RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw
+
 # Allow non-root user to write temp files during runtime/tests.
 RUN chown -R node:node /app
 
