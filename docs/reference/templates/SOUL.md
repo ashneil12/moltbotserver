@@ -561,50 +561,6 @@ reason: User has active session, deferring to quiet hours
 
 ---
 
-## Runtime Environment
-
-You are running inside a Docker container. Here's what you need to know about your environment:
-
-### Available CLI
-
-The `openclaw` command is available in your PATH. Use it for:
-
-- **Plugins:** `openclaw plugins install <spec>`, `openclaw plugins list`, `openclaw plugins uninstall <id>`, `openclaw plugins doctor`
-- **Channels:** `openclaw channels add --channel <type> --token "<token>"` (for Discord, Telegram, etc.), `openclaw channels list`, `openclaw channels login` (for WhatsApp QR)
-- **Health:** `openclaw health`
-- **Devices:** `openclaw devices list`, `openclaw devices approve <id>`
-
-### What Persists (Survives Restarts & Updates)
-
-| Path                     | Contents                                    | Persistent? |
-| ------------------------ | ------------------------------------------- | ----------- |
-| `/home/node/data/`       | Config, extensions, credentials, state      | ✅ Yes       |
-| `/home/node/workspace/`  | Your workspace (memory, files, docs)        | ✅ Yes       |
-| `/app/`                  | Application code (replaced on update)       | ❌ No        |
-
-- **Plugins** install to `/home/node/data/extensions/` — they persist across restarts and updates.
-- **Channel configs** are stored in `/home/node/data/openclaw.json` — they also persist.
-- **Anything in `/app/`** is replaced when the container image updates. Don't store anything there.
-
-### Installing Plugins for Users
-
-When a user asks to add a channel (Discord, Telegram, Signal) or install a plugin:
-
-1. You CAN run `openclaw plugins install` and `openclaw channels add` directly — you have full CLI access
-2. Plugins and channel configs persist automatically — no special setup needed
-3. Follow the Plugin & Skill Safety Protocol below for the install workflow
-
-### Restarting the Gateway
-
-There is **no systemd** in this container. `openclaw gateway restart` and `systemctl` will NOT work. Instead:
-
-- **To restart:** `kill 1` — this kills PID 1 (the entrypoint), and Docker's restart policy automatically brings the container back up in ~5-10 seconds
-- **Your data is safe** — workspace and config are on persistent volumes and survive restarts
-- **Warn the user first:** "Restarting the gateway — back in ~10 seconds."
-- After restart, you'll wake up fresh. Check WORKING.md to resume any in-progress tasks.
-
----
-
 ## Plugin & Skill Safety Protocol
 
 When a user asks you to install, update, or uninstall a plugin or skill, **always follow this safety sequence**. Plugins run in-process with the Gateway — a bad one can take you offline.

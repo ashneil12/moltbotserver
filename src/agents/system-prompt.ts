@@ -1,9 +1,19 @@
+import fs from "node:fs";
 import type { ReasoningLevel, ThinkLevel } from "../auto-reply/thinking.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
 import type { ResolvedTimeFormat } from "./date-time.js";
 import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import { listDeliverableMessageChannels } from "../utils/message-channel.js";
+
+/** Detect whether the gateway process itself is running inside a Docker container. */
+const isDockerRuntime: boolean = (() => {
+  try {
+    return fs.existsSync("/.dockerenv");
+  } catch {
+    return false;
+  }
+})();
 
 /**
  * Controls which hardcoded sections are included in the system prompt.
@@ -432,11 +442,42 @@ export function buildAgentSystemPrompt(params: {
     ...safetySection,
     "## OpenClaw CLI Quick Reference",
     "OpenClaw is controlled via subcommands. Do not invent commands.",
-    "To manage the Gateway daemon service (start/stop/restart):",
-    "- openclaw gateway status",
-    "- openclaw gateway start",
-    "- openclaw gateway stop",
-    "- openclaw gateway restart",
+    ...(isDockerRuntime
+      ? [
+          "You are running inside a Docker container.",
+          "",
+          "### Gateway Management (Docker)",
+          "There is NO systemd in this container. `openclaw gateway restart` and `systemctl` will NOT work.",
+          "- To restart: `kill 1` — kills PID 1 (the entrypoint); Docker's restart policy brings the container back in ~5-10 seconds.",
+          "- Your data is safe — workspace and config are on persistent volumes.",
+          "- Warn the user first: \"Restarting the gateway — back in ~10 seconds.\"",
+          "- After restart you wake up fresh. Check WORKING.md to resume any in-progress tasks.",
+          "",
+          "### Available CLI Commands",
+          "- Plugins: `openclaw plugins install <spec>`, `openclaw plugins list`, `openclaw plugins uninstall <id>`, `openclaw plugins doctor`",
+          "- Channels: `openclaw channels add --channel <type> --token \"<token>\"` (Discord, Telegram, etc.), `openclaw channels list`, `openclaw channels login` (WhatsApp QR)",
+          "- Health: `openclaw health`",
+          "- Devices: `openclaw devices list`, `openclaw devices approve <id>`",
+          "",
+          "### What Persists (Survives Restarts & Updates)",
+          "- `/home/node/data/` — Config, extensions, credentials, state (✅ persistent)",
+          "- `/home/node/workspace/` — Your workspace: memory, files, docs (✅ persistent)",
+          "- `/app/` — Application code, replaced on update (❌ ephemeral — never store files here)",
+          "- Plugins install to `/home/node/data/extensions/` — they persist across restarts and updates.",
+          "- Channel configs are stored in `/home/node/data/openclaw.json` — they also persist.",
+          "",
+          "### Installing Plugins for Users",
+          "When a user asks to add a channel or install a plugin:",
+          "1. You CAN run `openclaw plugins install` and `openclaw channels add` directly — you have full CLI access.",
+          "2. Plugins and channel configs persist automatically — no special setup needed.",
+        ]
+      : [
+          "To manage the Gateway daemon service (start/stop/restart):",
+          "- openclaw gateway status",
+          "- openclaw gateway start",
+          "- openclaw gateway stop",
+          "- openclaw gateway restart",
+        ]),
     "If unsure, ask the user to run `openclaw help` (or `openclaw gateway --help`) and paste the output.",
     "",
     ...skillsSection,
