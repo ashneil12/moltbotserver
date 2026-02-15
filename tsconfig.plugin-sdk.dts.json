@@ -11,6 +11,6 @@
     "tsBuildInfoFile": "dist/plugin-sdk/.tsbuildinfo",
     "types": ["node"]
   },
-  "include": ["src/plugin-sdk/index.ts", "src/types/**/*.d.ts"],
+  "include": ["src/plugin-sdk/index.ts", "src/plugin-sdk/account-id.ts", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
 }

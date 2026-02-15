@@ -26,12 +26,16 @@ import {
   resolveOpenClawUserDataDir,
   stopOpenClawChrome,
 } from "./chrome.js";
-import { resolveBrowserConfig, resolveProfile } from "./config.js";
+import { resolveProfile } from "./config.js";
 import {
   ensureChromeExtensionRelayServer,
   stopChromeExtensionRelayServer,
 } from "./extension-relay.js";
 import { getPwAiModule } from "./pw-ai-module.js";
+import {
+  refreshResolvedBrowserConfigFromDisk,
+  resolveBrowserProfileWithHotReload,
+} from "./resolved-config-refresh.js";
 import { resolveTargetIdFromTabs } from "./target-id.js";
 import { movePathToTrash } from "./trash.js";
 
@@ -557,52 +561,14 @@ export function createBrowserRouteContext(opts: ContextOptions): BrowserRouteCon
     return current;
   };
 
-  const applyResolvedConfig = (
-    current: BrowserServerState,
-    freshResolved: BrowserServerState["resolved"],
-  ) => {
-    current.resolved = freshResolved;
-    for (const [name, runtime] of current.profiles) {
-      const nextProfile = resolveProfile(freshResolved, name);
-      if (nextProfile) {
-        runtime.profile = nextProfile;
-        continue;
-      }
-      if (!runtime.running) {
-        current.profiles.delete(name);
-      }
-    }
-  };
-
-  const refreshResolvedConfig = (current: BrowserServerState) => {
-    if (!refreshConfigFromDisk) {
-      return;
-    }
-    const cfg = loadConfig();
-    const freshResolved = resolveBrowserConfig(cfg.browser, cfg);
-    applyResolvedConfig(current, freshResolved);
-  };
-
-  const refreshResolvedConfigFresh = (current: BrowserServerState) => {
-    if (!refreshConfigFromDisk) {
-      return;
-    }
-    const freshCfg = createConfigIO().loadConfig();
-    const freshResolved = resolveBrowserConfig(freshCfg.browser, freshCfg);
-    applyResolvedConfig(current, freshResolved);
-  };
-
   const forProfile = (profileName?: string): ProfileContext => {
     const current = state();
-    refreshResolvedConfig(current);
     const name = profileName ?? current.resolved.defaultProfile;
-    let profile = resolveProfile(current.resolved, name);
-
-    // Hot-reload: try fresh config if profile not found
-    if (!profile) {
-      refreshResolvedConfigFresh(current);
-      profile = resolveProfile(current.resolved, name);
-    }
+    const profile = resolveBrowserProfileWithHotReload({
+      current,
+      refreshConfigFromDisk,
+      name,
+    });
 
     if (!profile) {
       const available = Object.keys(current.resolved.profiles).join(", ");
@@ -613,7 +579,11 @@ export function createBrowserRouteContext(opts: ContextOptions): BrowserRouteCon
 
   const listProfiles = async (): Promise<ProfileStatus[]> => {
     const current = state();
-    refreshResolvedConfig(current);
+    refreshResolvedBrowserConfigFromDisk({
+      current,
+      refreshConfigFromDisk,
+      mode: "cached",
+    });
     const result: ProfileStatus[] = [];
 
     for (const name of Object.keys(current.resolved.profiles)) {

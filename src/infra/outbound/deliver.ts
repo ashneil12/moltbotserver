@@ -6,6 +6,7 @@ import type { sendMessageIMessage } from "../../imessage/send.js";
 import type { sendMessageSlack } from "../../slack/send.js";
 import type { sendMessageTelegram } from "../../telegram/send.js";
 import type { sendMessageWhatsApp } from "../../web/outbound.js";
+import type { OutboundIdentity } from "./identity.js";
 import type { NormalizedOutboundPayload } from "./payloads.js";
 import type { OutboundChannel } from "./targets.js";
 import {
@@ -21,6 +22,7 @@ import {
   appendAssistantMessageToSessionTranscript,
   resolveMirroredTranscriptText,
 } from "../../config/sessions.js";
+import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { markdownToSignalTextChunks, type SignalTextStyleRange } from "../../signal/format.js";
 import { sendMessageSignal } from "../../signal/send.js";
@@ -85,9 +87,11 @@ async function createChannelHandler(params: {
   accountId?: string;
   replyToId?: string | null;
   threadId?: string | number | null;
+  identity?: OutboundIdentity;
   deps?: OutboundSendDeps;
   gifPlayback?: boolean;
   silent?: boolean;
+  mediaLocalRoots?: readonly string[];
 }): Promise<ChannelHandler> {
   const outbound = await loadChannelOutboundAdapter(params.channel);
   if (!outbound?.sendText || !outbound?.sendMedia) {
@@ -101,9 +105,11 @@ async function createChannelHandler(params: {
     accountId: params.accountId,
     replyToId: params.replyToId,
     threadId: params.threadId,
+    identity: params.identity,
     deps: params.deps,
     gifPlayback: params.gifPlayback,
     silent: params.silent,
+    mediaLocalRoots: params.mediaLocalRoots,
   });
   if (!handler) {
     throw new Error(`Outbound not configured for channel: ${params.channel}`);
@@ -119,9 +125,11 @@ function createPluginHandler(params: {
   accountId?: string;
   replyToId?: string | null;
   threadId?: string | number | null;
+  identity?: OutboundIdentity;
   deps?: OutboundSendDeps;
   gifPlayback?: boolean;
   silent?: boolean;
+  mediaLocalRoots?: readonly string[];
 }): ChannelHandler | null {
   const outbound = params.outbound;
   if (!outbound?.sendText || !outbound?.sendMedia) {
@@ -145,9 +153,11 @@ function createPluginHandler(params: {
             accountId: params.accountId,
             replyToId: params.replyToId,
             threadId: params.threadId,
+            identity: params.identity,
             gifPlayback: params.gifPlayback,
             deps: params.deps,
             silent: params.silent,
+            mediaLocalRoots: params.mediaLocalRoots,
             payload,
           })
       : undefined,
@@ -159,9 +169,11 @@ function createPluginHandler(params: {
         accountId: params.accountId,
         replyToId: params.replyToId,
         threadId: params.threadId,
+        identity: params.identity,
         gifPlayback: params.gifPlayback,
         deps: params.deps,
         silent: params.silent,
+        mediaLocalRoots: params.mediaLocalRoots,
       }),
     sendMedia: async (caption, mediaUrl) =>
       sendMedia({
@@ -172,16 +184,18 @@ function createPluginHandler(params: {
         accountId: params.accountId,
         replyToId: params.replyToId,
         threadId: params.threadId,
+        identity: params.identity,
         gifPlayback: params.gifPlayback,
         deps: params.deps,
         silent: params.silent,
+        mediaLocalRoots: params.mediaLocalRoots,
       }),
   };
 }
 
 const isAbortError = (err: unknown): boolean => err instanceof Error && err.name === "AbortError";
 
-export async function deliverOutboundPayloads(params: {
+type DeliverOutboundPayloadsCoreParams = {
   cfg: OpenClawConfig;
   channel: Exclude<OutboundChannel, "none">;
   to: string;
@@ -189,12 +203,15 @@ export async function deliverOutboundPayloads(params: {
   payloads: ReplyPayload[];
   replyToId?: string | null;
   threadId?: string | number | null;
+  identity?: OutboundIdentity;
   deps?: OutboundSendDeps;
   gifPlayback?: boolean;
   abortSignal?: AbortSignal;
   bestEffort?: boolean;
   onError?: (err: unknown, payload: NormalizedOutboundPayload) => void;
   onPayload?: (payload: NormalizedOutboundPayload) => void;
+  /** Active agent id for media local-root scoping. */
+  agentId?: string;
   mirror?: {
     sessionKey: string;
     agentId?: string;
@@ -202,9 +219,16 @@ export async function deliverOutboundPayloads(params: {
     mediaUrls?: string[];
   };
   silent?: boolean;
+};
+
+type DeliverOutboundPayloadsParams = DeliverOutboundPayloadsCoreParams & {
   /** @internal Skip write-ahead queue (used by crash-recovery to avoid re-enqueueing). */
   skipQueue?: boolean;
-}): Promise<OutboundDeliveryResult[]> {
+};
+
+export async function deliverOutboundPayloads(
+  params: DeliverOutboundPayloadsParams,
+): Promise<OutboundDeliveryResult[]> {
   const { channel, to, payloads } = params;
 
   // Write-ahead delivery queue: persist before sending, remove after success.
@@ -263,33 +287,18 @@ export async function deliverOutboundPayloads(params: {
 }
 
 /** Core delivery logic (extracted for queue wrapper). */
-async function deliverOutboundPayloadsCore(params: {
-  cfg: OpenClawConfig;
-  channel: Exclude<OutboundChannel, "none">;
-  to: string;
-  accountId?: string;
-  payloads: ReplyPayload[];
-  replyToId?: string | null;
-  threadId?: string | number | null;
-  deps?: OutboundSendDeps;
-  gifPlayback?: boolean;
-  abortSignal?: AbortSignal;
-  bestEffort?: boolean;
-  onError?: (err: unknown, payload: NormalizedOutboundPayload) => void;
-  onPayload?: (payload: NormalizedOutboundPayload) => void;
-  mirror?: {
-    sessionKey: string;
-    agentId?: string;
-    text?: string;
-    mediaUrls?: string[];
-  };
-  silent?: boolean;
-}): Promise<OutboundDeliveryResult[]> {
+async function deliverOutboundPayloadsCore(
+  params: DeliverOutboundPayloadsCoreParams,
+): Promise<OutboundDeliveryResult[]> {
   const { cfg, channel, to, payloads } = params;
   const accountId = params.accountId;
   const deps = params.deps;
   const abortSignal = params.abortSignal;
   const sendSignal = params.deps?.sendSignal ?? sendMessageSignal;
+  const mediaLocalRoots = getAgentScopedMediaLocalRoots(
+    cfg,
+    params.agentId ?? params.mirror?.agentId,
+  );
   const results: OutboundDeliveryResult[] = [];
   const handler = await createChannelHandler({
     cfg,
@@ -299,8 +308,10 @@ async function deliverOutboundPayloadsCore(params: {
     accountId,
     replyToId: params.replyToId,
     threadId: params.threadId,
+    identity: params.identity,
     gifPlayback: params.gifPlayback,
     silent: params.silent,
+    mediaLocalRoots,
   });
   const textLimit = handler.chunker
     ? resolveTextChunkLimit(cfg, channel, accountId, {
@@ -403,6 +414,7 @@ async function deliverOutboundPayloadsCore(params: {
         accountId: accountId ?? undefined,
         textMode: "plain",
         textStyles: formatted.styles,
+        mediaLocalRoots,
       })),
     };
   };

@@ -83,6 +83,7 @@ USER.md
 .agent/*.json
 !.agent/workflows/
 local/
+/local/
 
 
 # Temp/junk files (macOS copy artifacts, logs, scratch docs)
