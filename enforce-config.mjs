@@ -175,6 +175,9 @@ function enforceCore(configPath) {
   // Compaction + memory flush
   const defaults = ensure(config, "agents", "defaults");
   const compaction = ensure(defaults, "compaction");
+  // System prompt is ~34K tokens; reserve enough so the SDK auto-compacts
+  // before the provider's context window is exceeded.
+  compaction.reserveTokensFloor = 50000;
   compaction.memoryFlush = {
     enabled: true,
     softThresholdTokens: 4000,
