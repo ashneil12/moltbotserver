@@ -105,20 +105,8 @@ generate_config() {
     log_info "Generating openclaw.json configuration..."
     
     MODELS_SECTION=""
-    if [ -n "$AI_GATEWAY_URL" ]; then
-      log_info "Credits mode detected - configuring moltbot-gateway via: $AI_GATEWAY_URL"
-      MODELS_SECTION=",
-      \"models\": {
-        \"mode\": \"merge\",
-        \"providers\": {
-          \"moltbot-gateway\": {
-            \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
-            \"apiKey\": \"${GATEWAY_TOKEN}\",
-            \"models\": []
-          }
-        }
-      }"
-    fi
+    # Note: In BYOK mode, instances connect directly to providers using
+    # the user's own API key (e.g. MINIMAX_API_KEY). No gateway proxy needed.
 
     HUMAN_DELAY_SECTION=""
     if [ "$HUMAN_DELAY_ENABLED" = "true" ] || [ "$HUMAN_DELAY_ENABLED" = "1" ]; then
@@ -151,19 +139,8 @@ generate_config() {
       }'
     fi
 
-    # In credits mode, route builtin memory search embeddings through the
-    # gateway embedding proxy so the fallback works without direct API keys.
+    # Memory search uses local embeddings or the provider's key directly.
     MEMORY_SEARCH_REMOTE=""
-    if [ -n "$AI_GATEWAY_URL" ]; then
-      MEMORY_SEARCH_REMOTE="
-        \"provider\": \"openai\",
-        \"model\": \"voyage/voyage-3.5\",
-        \"fallback\": \"none\",
-        \"remote\": {
-          \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
-          \"apiKey\": \"${GATEWAY_TOKEN}\"
-        },"
-    fi
 
     cat > "$CONFIG_FILE" << EOF
 {
@@ -476,44 +453,8 @@ run_doctor() {
   fi
 }
 
-scrub_secrets() {
-  if [ ! -s "$CONFIG_FILE" ]; then return; fi
-  
-  # Only scrub when running in gateway/credits mode (gateway URL is set)
-  if [ -z "$AI_GATEWAY_URL" ]; then return; fi
-  
-  log_info "Scrubbing sensitive environment variables (gateway mode)..."
-  
-  # Redirect the minimax provider to route through the dashboard gateway.
-  # The gateway's /v1/messages endpoint is multi-provider aware and uses
-  # server-side API keys. The GATEWAY_TOKEN authenticates with the gateway.
-  # We keep the anthropic-messages API format so OpenClaw sends the right payload.
-  node -e "
-    const fs = require('fs');
-    const cfg = JSON.parse(fs.readFileSync('$CONFIG_FILE','utf8'));
-    cfg.models = cfg.models || {};
-    cfg.models.providers = cfg.models.providers || {};
-    const mm = cfg.models.providers.minimax || {};
-    // Point baseUrl to gateway — the /v1/messages route routes to MiniMax upstream
-    mm.baseUrl = '${AI_GATEWAY_URL}/api/gateway';
-    mm.apiKey = '${GATEWAY_TOKEN}';
-    // Schema requires models (array) — keep existing or default to empty
-    if (!Array.isArray(mm.models)) mm.models = [];
-    cfg.models.providers.minimax = mm;
-    fs.writeFileSync('$CONFIG_FILE', JSON.stringify(cfg, null, 2));
-  "
-  
-  # Scrub all sensitive env vars BEFORE exec replaces this process.
-  # After exec, /proc/<pid>/environ will be clean.
-  unset MINIMAX_API_KEY 2>/dev/null || true
-  unset DEEPSEEK_API_KEY 2>/dev/null || true
-  unset MOLTBOT_CRON_SECRET 2>/dev/null || true
-  
-  # Re-enforce config file permissions (only the node user should read it)
-  chmod 600 "$CONFIG_FILE"
-  
-  log_info "Secrets scrubbed — API keys removed from environment"
-}
+# scrub_secrets() removed — no longer needed in BYOK mode.
+# Instances use the user's own API key directly; no gateway proxy secrets to scrub.
 
 # -----------------------------------------------------------------------------
 # Main Execution
@@ -533,10 +474,6 @@ enforce_trusted_proxies
 
 setup_security_files
 run_doctor
-
-# Scrub secrets from env AFTER all config is generated but BEFORE exec.
-# This ensures /proc/1/environ is clean for the Node process.
-scrub_secrets
 
 # Execute Command
 exec "$@"
