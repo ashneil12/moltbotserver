@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -227,37 +226,11 @@ export class QmdMemoryManager implements MemorySearchManager {
     this.xdgCacheHome = path.join(this.qmdDir, "xdg-cache");
     this.indexPath = path.join(this.xdgCacheHome, "qmd", "index.sqlite");
 
-    // Ensure NODE_PATH includes the app's node_modules so that when qmd
-    // spawns `node --import tsx`, Node can resolve tsx regardless of CWD.
-    // Without this, running qmd with cwd=workspaceDir fails because tsx
-    // is only installed under the app root (e.g. /app/node_modules).
-    // Walk up from the entry script (e.g. /app/dist/entry.js) to find
-    // the nearest node_modules directory — works regardless of bundling.
-    const appNodeModules = (() => {
-      const entryDir = path.dirname(process.argv[1] ?? process.cwd());
-      for (let dir = entryDir; dir !== path.dirname(dir); dir = path.dirname(dir)) {
-        const candidate = path.join(dir, "node_modules");
-        try {
-          if (fsSync.statSync(candidate).isDirectory()) {
-            return candidate;
-          }
-        } catch {
-          // not found, keep walking
-        }
-      }
-      return path.join(process.cwd(), "node_modules");
-    })();
-    const existingNodePath = process.env.NODE_PATH ?? "";
-    const nodePath = existingNodePath
-      ? `${appNodeModules}${path.delimiter}${existingNodePath}`
-      : appNodeModules;
-
     this.env = {
       ...process.env,
       XDG_CONFIG_HOME: this.xdgConfigHome,
       XDG_CACHE_HOME: this.xdgCacheHome,
       NO_COLOR: "1",
-      NODE_PATH: nodePath,
     };
     this.sessionExporter = this.qmd.sessions.enabled
       ? {
