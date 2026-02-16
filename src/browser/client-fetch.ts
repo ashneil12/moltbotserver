@@ -9,6 +9,22 @@ import {
 } from "./control-service.js";
 import { createBrowserRouteDispatcher } from "./routes/dispatcher.js";
 
+/**
+ * Thrown when the browser control service IS reachable but returned an
+ * HTTP 4xx/5xx error (e.g. validation failure, missing fields).
+ * Distinguished from connection errors so the AI gets the real error
+ * message and can self-correct instead of assuming the service is down.
+ */
+class BrowserRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "BrowserRequestError";
+  }
+}
+
 type LoopbackBrowserAuthDeps = {
   loadConfig: typeof loadConfig;
   resolveBrowserControlAuth: typeof resolveBrowserControlAuth;
@@ -140,7 +156,7 @@ async function fetchHttpJson<T>(
     const res = await fetch(url, { ...init, signal: ctrl.signal });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(text || `HTTP ${res.status}`);
+      throw new BrowserRequestError(text || `HTTP ${res.status}`, res.status);
     }
     return (await res.json()) as T;
   } finally {
@@ -235,10 +251,16 @@ export async function fetchBrowserJson<T>(
         result.body && typeof result.body === "object" && "error" in result.body
           ? String((result.body as { error?: unknown }).error)
           : `HTTP ${result.status}`;
-      throw new Error(message);
+      throw new BrowserRequestError(message, result.status);
     }
     return result.body as T;
   } catch (err) {
+    // BrowserRequestError means the service IS reachable but rejected the
+    // request (4xx/5xx). Pass the real error through so the AI can self-correct.
+    if (err instanceof BrowserRequestError) {
+      throw err;
+    }
+    // Actual connection failures get the "can't reach" wrapper.
     throw enhanceBrowserFetchError(url, err, timeoutMs);
   }
 }
