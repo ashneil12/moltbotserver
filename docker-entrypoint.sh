@@ -106,12 +106,12 @@ generate_config() {
     
     MODELS_SECTION=""
     if [ -n "$AI_GATEWAY_URL" ]; then
-      log_info "Credits mode detected - configuring vercel-ai-gateway via: $AI_GATEWAY_URL"
+      log_info "Credits mode detected - configuring moltbot-gateway via: $AI_GATEWAY_URL"
       MODELS_SECTION=",
       \"models\": {
         \"mode\": \"merge\",
         \"providers\": {
-          \"vercel-ai-gateway\": {
+          \"moltbot-gateway\": {
             \"baseUrl\": \"${AI_GATEWAY_URL}/api/gateway\",
             \"apiKey\": \"${GATEWAY_TOKEN}\",
             \"models\": []
