@@ -484,19 +484,20 @@ scrub_secrets() {
   
   log_info "Scrubbing sensitive environment variables (gateway mode)..."
   
-  # Inject a placeholder minimax provider config so resolveApiKeyForProvider
-  # finds a "key" during media understanding auto-detection.
-  # The actual API call is proxied through the gateway (real key stays server-side).
-  # Must include baseUrl + models to satisfy OpenClaw's schema validator.
+  # Redirect the minimax provider to route through the dashboard gateway.
+  # The gateway's /v1/messages endpoint is multi-provider aware and uses
+  # server-side API keys. The GATEWAY_TOKEN authenticates with the gateway.
+  # We keep the anthropic-messages API format so OpenClaw sends the right payload.
   node -e "
     const fs = require('fs');
     const cfg = JSON.parse(fs.readFileSync('$CONFIG_FILE','utf8'));
     cfg.models = cfg.models || {};
     cfg.models.providers = cfg.models.providers || {};
     const mm = cfg.models.providers.minimax || {};
-    mm.apiKey = 'gateway-proxied';
-    // Schema requires baseUrl (string) and models (array)
-    if (!mm.baseUrl) mm.baseUrl = 'https://api.minimax.io/anthropic';
+    // Point baseUrl to gateway — the /v1/messages route routes to MiniMax upstream
+    mm.baseUrl = '${AI_GATEWAY_URL}/api/gateway';
+    mm.apiKey = '${GATEWAY_TOKEN}';
+    // Schema requires models (array) — keep existing or default to empty
     if (!Array.isArray(mm.models)) mm.models = [];
     cfg.models.providers.minimax = mm;
     fs.writeFileSync('$CONFIG_FILE', JSON.stringify(cfg, null, 2));
