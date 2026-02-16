@@ -487,15 +487,18 @@ scrub_secrets() {
   # Inject a placeholder minimax provider config so resolveApiKeyForProvider
   # finds a "key" during media understanding auto-detection.
   # The actual API call is proxied through the gateway (real key stays server-side).
+  # Must include baseUrl + models to satisfy OpenClaw's schema validator.
   node -e "
     const fs = require('fs');
     const cfg = JSON.parse(fs.readFileSync('$CONFIG_FILE','utf8'));
     cfg.models = cfg.models || {};
     cfg.models.providers = cfg.models.providers || {};
-    if (!cfg.models.providers.minimax) {
-      cfg.models.providers.minimax = {};
-    }
-    cfg.models.providers.minimax.apiKey = 'gateway-proxied';
+    const mm = cfg.models.providers.minimax || {};
+    mm.apiKey = 'gateway-proxied';
+    // Schema requires baseUrl (string) and models (array)
+    if (!mm.baseUrl) mm.baseUrl = 'https://api.minimax.io/anthropic';
+    if (!Array.isArray(mm.models)) mm.models = [];
+    cfg.models.providers.minimax = mm;
     fs.writeFileSync('$CONFIG_FILE', JSON.stringify(cfg, null, 2));
   "
   
