@@ -96,6 +96,9 @@ RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw
 # Allow non-root user to write temp files during runtime/tests.
 RUN chown -R node:node /app
 
+# Pre-install ClawdHub CLI so the agent doesn't need to install at runtime
+RUN npm i -g clawdhub
+
 # Security note: Run as non-root user with sudo access
 # The node user (uid 1000) can escalate to root via sudo when needed
 # This is a trade-off: more agent capability vs. increased attack surface within the container
