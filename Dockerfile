@@ -10,7 +10,9 @@ RUN bun install -g github:tobi/qmd
 # Copy the FULL QMD package + Bun binary to shared locations so the non-root
 # 'node' user can execute them.  The old approach only copied the `qmd` bash
 # wrapper which then couldn't find its src/qmd.ts or the bun runtime.
-RUN cp -r /root/.bun/install/global/node_modules/qmd /opt/qmd \
+RUN QMD_SRC="/root/.bun/install/global/node_modules/@tobilu/qmd" \
+  && if [ ! -d "$QMD_SRC" ]; then QMD_SRC="/root/.bun/install/global/node_modules/qmd"; fi \
+  && cp -r "$QMD_SRC" /opt/qmd \
   && cd /opt/qmd && bun install sqlite-vec-linux-x64 \
   && chmod -R a+rX /opt/qmd \
   && ln -sf /opt/qmd/qmd /usr/local/bin/qmd \
