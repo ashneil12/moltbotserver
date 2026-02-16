@@ -476,6 +476,41 @@ run_doctor() {
   fi
 }
 
+scrub_secrets() {
+  if [ ! -s "$CONFIG_FILE" ]; then return; fi
+  
+  # Only scrub when running in gateway/credits mode (gateway URL is set)
+  if [ -z "$AI_GATEWAY_URL" ]; then return; fi
+  
+  log_info "Scrubbing sensitive environment variables (gateway mode)..."
+  
+  # Inject a placeholder minimax provider config so resolveApiKeyForProvider
+  # finds a "key" during media understanding auto-detection.
+  # The actual API call is proxied through the gateway (real key stays server-side).
+  node -e "
+    const fs = require('fs');
+    const cfg = JSON.parse(fs.readFileSync('$CONFIG_FILE','utf8'));
+    cfg.models = cfg.models || {};
+    cfg.models.providers = cfg.models.providers || {};
+    if (!cfg.models.providers.minimax) {
+      cfg.models.providers.minimax = {};
+    }
+    cfg.models.providers.minimax.apiKey = 'gateway-proxied';
+    fs.writeFileSync('$CONFIG_FILE', JSON.stringify(cfg, null, 2));
+  "
+  
+  # Scrub all sensitive env vars BEFORE exec replaces this process.
+  # After exec, /proc/<pid>/environ will be clean.
+  unset MINIMAX_API_KEY 2>/dev/null || true
+  unset DEEPSEEK_API_KEY 2>/dev/null || true
+  unset MOLTBOT_CRON_SECRET 2>/dev/null || true
+  
+  # Re-enforce config file permissions (only the node user should read it)
+  chmod 600 "$CONFIG_FILE"
+  
+  log_info "Secrets scrubbed — API keys removed from environment"
+}
+
 # -----------------------------------------------------------------------------
 # Main Execution
 # -----------------------------------------------------------------------------
@@ -494,6 +529,10 @@ enforce_trusted_proxies
 
 setup_security_files
 run_doctor
+
+# Scrub secrets from env AFTER all config is generated but BEFORE exec.
+# This ensures /proc/1/environ is clean for the Node process.
+scrub_secrets
 
 # Execute Command
 exec "$@"

@@ -42,11 +42,11 @@ export async function minimaxUnderstandImage(params: {
   imageDataUrl: string;
   apiHost?: string;
   modelBaseUrl?: string;
+  /** When set, proxy through the MoltBot dashboard gateway instead of calling MiniMax directly. */
+  gatewayUrl?: string;
+  /** Gateway auth token (required when gatewayUrl is set). */
+  gatewayToken?: string;
 }): Promise<string> {
-  const apiKey = normalizeSecretInput(params.apiKey);
-  if (!apiKey) {
-    throw new Error("MiniMax VLM: apiKey required");
-  }
   const prompt = params.prompt.trim();
   if (!prompt) {
     throw new Error("MiniMax VLM: prompt required");
@@ -57,6 +57,45 @@ export async function minimaxUnderstandImage(params: {
   }
   if (!/^data:image\/(png|jpeg|webp);base64,/i.test(imageDataUrl)) {
     throw new Error("MiniMax VLM: imageDataUrl must be a base64 data:image/(png|jpeg|webp) URL");
+  }
+
+  // ── Gateway proxy path (API key stays server-side) ──────────────────
+  if (params.gatewayUrl && params.gatewayToken) {
+    const gwUrl = `${params.gatewayUrl.replace(/\/+$/, "")}/api/gateway/vlm`;
+    const gwRes = await fetch(gwUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.gatewayToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt, image_url: imageDataUrl }),
+    });
+
+    if (!gwRes.ok) {
+      const body = await gwRes.text().catch(() => "");
+      throw new Error(
+        `MiniMax VLM gateway request failed (${gwRes.status} ${gwRes.statusText}).${
+          body ? ` Body: ${body.slice(0, 400)}` : ""
+        }`,
+      );
+    }
+
+    const gwJson = (await gwRes.json().catch(() => null)) as unknown;
+    if (!isRecord(gwJson)) {
+      throw new Error("MiniMax VLM gateway response was not JSON.");
+    }
+
+    const gwContent = pickString(gwJson, "content").trim();
+    if (!gwContent) {
+      throw new Error("MiniMax VLM gateway returned no content.");
+    }
+    return gwContent;
+  }
+
+  // ── Direct MiniMax path (original, requires apiKey) ─────────────────
+  const apiKey = normalizeSecretInput(params.apiKey);
+  if (!apiKey) {
+    throw new Error("MiniMax VLM: apiKey required");
   }
 
   const host = coerceApiHost({

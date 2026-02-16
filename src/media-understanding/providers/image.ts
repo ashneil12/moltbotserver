@@ -37,6 +37,8 @@ export async function describeImageWithModel(
       prompt: params.prompt ?? "Describe the image.",
       imageDataUrl: `data:${params.mime ?? "image/jpeg"};base64,${base64}`,
       modelBaseUrl: model.baseUrl,
+      gatewayUrl: process.env.OPENCLAW_AI_GATEWAY_URL,
+      gatewayToken: process.env.AI_GATEWAY_API_KEY,
     });
     return { text, model: model.id };
   }

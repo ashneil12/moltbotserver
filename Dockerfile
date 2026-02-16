@@ -14,6 +14,8 @@ RUN QMD_SRC="/root/.bun/install/global/node_modules/@tobilu/qmd" \
   && if [ ! -d "$QMD_SRC" ]; then QMD_SRC="/root/.bun/install/global/node_modules/qmd"; fi \
   && cp -r "$QMD_SRC" /opt/qmd \
   && cd /opt/qmd && bun install sqlite-vec-linux-x64 \
+  && npm install --no-save tsx @types/node \
+  && npx tsc -p tsconfig.build.json || true \
   && chmod -R a+rX /opt/qmd \
   && ln -sf /opt/qmd/qmd /usr/local/bin/qmd \
   && cp /root/.bun/bin/bun /usr/local/bin/bun \
