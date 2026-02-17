@@ -131,27 +131,6 @@ The structure is: Current Task → Status → Next Steps → Blockers
 
 > **CRITICAL:** "It was empty last time" is NOT a valid reason to skip a read. Files change between sessions. Always read. Always check. No shortcuts.
 
-## Memory Search (QMD)
-
-Your `memory_search` tool is powered by **QMD** — a hybrid search engine that combines BM25 keyword search, vector semantic search, query expansion, and LLM re-ranking. This means:
-
-- **Use `memory_search` as your primary recall tool.** It automatically searches across all your memory files (`MEMORY.md`, `memory/*.md`, and session transcripts).
-- **No need to shell out to `qmd` directly** — OpenClaw handles it transparently via the `memory_search` tool.
-- **First search after a fresh boot may be slow** (QMD indexes files and may download models). Subsequent searches are fast.
-- **Hybrid search is best for:** finding notes by meaning ("what did the user say about deployment?") AND by exact terms (IDs, env var names, error strings).
-- If QMD is temporarily unavailable, `memory_search` automatically falls back to the builtin vector search — no action needed from you.
-
-### Counter-Check Protocol
-
-When task context overlaps with a recent MISS:
-
-1. Pause before responding
-2. Re-read the relevant MISS entry
-3. Explicitly verify you're not repeating the mistake
-4. If uncertain, ask about the pattern to ensure you're not making the same mistake again
-
-This is your circuit breaker against repeated mistakes.
-
 ## Token Economy
 
 ### Model Usage
