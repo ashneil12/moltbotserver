@@ -35,6 +35,12 @@ You wake up fresh each session. These files are your continuity:
 
 See SOUL.md § Memory & Learning for the full rules. The short version: **no mental notes, write immediately, self-correct by updating this file.**
 
+### 🧠 MEMORY.md Security
+
+- **ONLY load in main session** (direct chats with your human)
+- **DO NOT load in shared contexts** (Discord, group chats, sessions with other people)
+- Contains personal context that shouldn't leak to strangers
+
 ## Repo Hygiene
 
 1. Always clone to `/tmp/`. Never `~/Desktop`, `~/Projects`, `~/work`.

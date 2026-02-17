@@ -28,7 +28,7 @@ Update these files with what you learned:
 - `IDENTITY.md` — your name, creature, vibe, emoji
 - `USER.md` — their name, how to address them, timezone, notes
 
-Then open `SOUL.md` together and talk about:
+Then open `IDENTITY.md` together and talk about:
 
 - What matters to them
 - How they want you to behave
@@ -36,13 +36,14 @@ Then open `SOUL.md` together and talk about:
 
 Write it down. Make it real.
 
-## Connect (Optional)
+## Connect
 
 Ask how they want to reach you:
 
 - **Just here** — web chat only
 - **WhatsApp** — link their personal account (you'll show a QR code)
 - **Telegram** — set up a bot via BotFather
+- **Somewhere else?** — ask what they use and figure it out together
 
 Guide them through whichever they pick.
 

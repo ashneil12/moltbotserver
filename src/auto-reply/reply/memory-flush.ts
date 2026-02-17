@@ -72,6 +72,11 @@ const normalizeNonNegativeInt = (value: unknown): number | null => {
 };
 
 export function resolveMemoryFlushSettings(cfg?: OpenClawConfig): MemoryFlushSettings | null {
+  // When Honcho is active, it captures memories in real-time — skip the
+  // pre-compaction file-based flush to avoid redundant writes.
+  if (process.env.HONCHO_API_KEY) {
+    return null;
+  }
   const defaults = cfg?.agents?.defaults?.compaction?.memoryFlush;
   const enabled = defaults?.enabled ?? true;
   if (!enabled) {
