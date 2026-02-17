@@ -62,7 +62,6 @@ CHROME_ARGS+=(
   "--disable-gpu-compositing"
   "--disable-smooth-scrolling"
   "--disable-default-apps"
-  "--disable-component-update"
   "--disable-background-timer-throttling"
   "--disable-backgrounding-occluded-windows"
   "--disable-renderer-backgrounding"
