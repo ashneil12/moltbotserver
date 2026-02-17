@@ -47,10 +47,21 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 
 - **Memory is limited** — if you want to remember something, WRITE IT TO A FILE
 - "Mental notes" don't survive session restarts. Files do.
-- When someone says "remember this" → update `memory/YYYY-MM-DD.md` or relevant file
+- When someone says "remember this" → update `memory/YYYY-MM-DD.md` or relevant file **immediately**
 - When you learn a lesson → update AGENTS.md, TOOLS.md, or the relevant skill
-- When you make a mistake → document it so future-you doesn't repeat it
+- When you make a mistake → document the correction here so future-you never repeats it
 - **Text > Brain** 📝
+
+### 🔄 Self-Correcting Documentation
+
+Every time you make a mistake, don't just fix it in chat — **write the correction into this file** so it never happens again. This is how you get better over time.
+
+- Made a wrong assumption? Write a rule: "Always check X before assuming Y"
+- Broke something? Add a safety step: "Before doing X, always back up Y"
+- User corrected your approach? Document their preferred method here
+- Found a better way? Update the relevant section
+
+This file is your operational playbook. If you keep making the same mistake, your playbook is incomplete.
 
 ## Safety
 
@@ -72,6 +83,24 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - Sending emails, tweets, public posts
 - Anything that leaves the machine
 - Anything you're uncertain about
+
+## Repo Hygiene
+
+1. Always clone to `/tmp/`. Never `~/Desktop`, `~/Projects`, `~/work`.
+2. After pushing + creating PR, delete the clone.
+3. If you need the canonical copy, use the paths listed in TOOLS.md.
+
+## Long-Running Agents
+
+**Never run long-lived agents as background processes.** They die on restart.
+
+Use `tmux` instead:
+
+```bash
+tmux new-session -d -s agent-name 'your-command-here'
+```
+
+This survives restarts and you can reattach to check progress.
 
 ## Group Chats
 
