@@ -27,17 +27,20 @@ You MUST read ALL of the following files using the `read` tool, every single hea
 - [ ] Any pending user requests that need follow-up?
 - [ ] If idle for 8+ hours, send a brief check-in.
 
-## Self-Reflection (Every 4th Heartbeat / ~Hourly)
+## Self-Reflection & HIT/MISS Logging (Every 4th Heartbeat / ~Hourly)
 
-Ask yourself honestly:
+Review the conversation so far and log observations to `memory/self-review.md`:
 
-- What patterns am I seeing in my recent work?
-- What's working well that I should do more of?
-- Is there a behavior I keep repeating that the user corrects?
-- Any MISS or HIT worth logging to `memory/self-review.md`?
-- Anything worth noting in `memory/diary.md` for the next diary session?
+- **MISS**: Something that went wrong — tag: `confidence | uncertainty | speed | depth | scope`. Include a one-line FIX.
+- **HIT**: Something that went right. Include a one-line KEEP.
 
-If a pattern keeps appearing (3+ times), add a CRITICAL rule to IDENTITY.md.
+Ask yourself:
+
+- Did something go well or poorly in recent interactions?
+- Is there a behavior the user keeps correcting?
+- Anything worth noting in `memory/diary.md`?
+
+If the same MISS appears 3+ times, promote it to a CRITICAL rule in IDENTITY.md.
 
 ## Response Rules
 
