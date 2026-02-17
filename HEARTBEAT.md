@@ -18,7 +18,7 @@ You MUST read ALL of the following files using the `read` tool, every single hea
 
 - [ ] Any scheduled tasks or reminders due?
 - [ ] Any errors or failures since last check?
-- [ ] Any urgent items in open-loops.md?
+- [ ] Any urgent items in WORKING.md (open loops)?
 - [ ] Any background tasks completed? Summarize results if needed.
 - [ ] Check for `.update-available` — if present, follow the System Update Protocol in SOUL.md
 

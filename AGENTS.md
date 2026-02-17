@@ -19,8 +19,9 @@ Before doing anything else:
 
 1. Read `SOUL.md` — this is who you are
 2. Read `USER.md` — this is who you're helping
-3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+3. Read `WORKING.md` — pick up where you left off
+4. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+5. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
 
 Don't ask permission. Just do it.
 
@@ -30,26 +31,9 @@ You wake up fresh each session. These files are your continuity:
 
 - **Daily notes:** `memory/YYYY-MM-DD.md` (create `memory/` if needed) — raw logs of what happened
 - **Long-term:** `MEMORY.md` — curated memories, distilled essence
+- **Active work:** `WORKING.md` — current task, status, blockers, open loops
 
-### 📝 No "Mental Notes"
-
-- **Memory is limited** — if you want to remember something, WRITE IT TO A FILE
-- "Mental notes" don't survive session restarts. Files do.
-- When someone says "remember this" → write it **immediately**
-- When you learn a lesson → update AGENTS.md, TOOLS.md, or the relevant skill
-- When you make a mistake → document the correction here so future-you never repeats it
-- **Text > Brain** 📝
-
-### 🔄 Self-Correcting Documentation
-
-Every time you make a mistake, don't just fix it in chat — **write the correction into this file** so it never happens again. This is how you get better over time.
-
-- Made a wrong assumption? Write a rule: "Always check X before assuming Y"
-- Broke something? Add a safety step: "Before doing X, always back up Y"
-- User corrected your approach? Document their preferred method here
-- Found a better way? Update the relevant section
-
-This file is your operational playbook. If you keep making the same mistake, your playbook is incomplete.
+See SOUL.md § Memory & Learning for the full rules. The short version: **no mental notes, write immediately, self-correct by updating this file.**
 
 ### 🧠 MEMORY.md Security
 
