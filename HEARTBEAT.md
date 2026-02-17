@@ -3,6 +3,17 @@
 > Silent by default. Only message if action needed.
 > Deterministic tasks (scripts, audits) run on **cron jobs**, not here.
 
+## MANDATORY File Reads (Every Heartbeat — NO EXCEPTIONS)
+
+You MUST read ALL of the following files using the `read` tool, every single heartbeat.
+**"It was empty last time" is NOT a reason to skip.** Files change between heartbeats.
+
+- [ ] **READ** `~/workspace/WORKING.md` — In-progress tasks? Stalled/blocked?
+- [ ] **READ** `~/workspace/memory/self-review.md` — MISS patterns in last 7 days? Counter-check if overlap.
+- [ ] **READ** `~/workspace/HEARTBEAT.md` (this file) — Scheduled tasks? Errors? Urgent items?
+
+**If you respond HEARTBEAT_OK without reading all 3 files above, you are violating your operating rules.**
+
 ## Quick Checks (Every Heartbeat)
 
 - [ ] Any scheduled tasks or reminders due?
@@ -37,4 +48,4 @@ If a pattern keeps appearing (3+ times), add a CRITICAL rule to IDENTITY.md.
 
 ---
 
-Last reviewed: 2026-02-12
+Last reviewed: 2026-02-17

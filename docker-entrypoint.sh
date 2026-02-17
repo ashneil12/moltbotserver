@@ -193,7 +193,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
       },
       "heartbeat": {
         "every": "${HEARTBEAT_INTERVAL}",
-        "prompt": "HEARTBEAT CHECK — Quick scan, silent unless action needed.\n\n1. CHECK WORKING.md — In-progress task? Stalled/blocked?\n2. CHECK memory/self-review.md (last 7 days) — MISS tags matching current context? If yes: counter-check protocol.\n3. CHECK HEARTBEAT.md — Scheduled tasks due? Errors? Urgent items?\n4. RESPONSE: Nothing → HEARTBEAT_OK. User attention needed → brief message (one line max).\n\nNEVER message for: routine status, still running, low-priority completions.",
+        "prompt": "HEARTBEAT CHECK — You MUST complete ALL steps below. DO NOT SKIP ANY STEP.\n\nMANDATORY FILE READS (use the read tool for EACH of these, every single heartbeat):\n\nSTEP 1: READ ~/workspace/WORKING.md — In-progress task? Continue it. Stalled/blocked?\nSTEP 2: READ ~/workspace/memory/self-review.md — Check last 7 days for MISS tags. If match: counter-check protocol.\nSTEP 3: READ ~/workspace/HEARTBEAT.md — Scheduled tasks due? Errors? Urgent items?\n\nCRITICAL: Even if a file was empty last time, you MUST read it again. Files change between heartbeats. Skipping reads means missing information. You are REQUIRED to make 3 separate read calls before responding.\n\nSTEP 4: CHECK for .update-available file\nSTEP 5: RESPONSE (only after steps 1-4): Nothing → HEARTBEAT_OK. User attention needed → brief message (one line max).\n\nNEVER message for: routine status, still running, low-priority completions.",
         "model": "${HEARTBEAT_MODEL}"
       },
       "maxConcurrent": ${MAX_CONCURRENT}
