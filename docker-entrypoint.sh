@@ -15,7 +15,6 @@ log_error() { echo "[entrypoint] ERROR: $*"; }
 # -----------------------------------------------------------------------------
 # Configuration & Environment
 # -----------------------------------------------------------------------------
-DISABLE_SUDO="${OPENCLAW_DISABLE_SUDO:-false}"
 CONFIG_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/workspace}}"
@@ -53,20 +52,8 @@ HUMAN_DELAY_ENABLED="${OPENCLAW_HUMAN_DELAY_ENABLED:-false}"
 HUMAN_DELAY_MIN="${OPENCLAW_HUMAN_DELAY_MIN:-800}"
 HUMAN_DELAY_MAX="${OPENCLAW_HUMAN_DELAY_MAX:-2500}"
 
-# -----------------------------------------------------------------------------
-# Functions
-# -----------------------------------------------------------------------------
 
-check_sudo() {
-  if [ "$DISABLE_SUDO" = "true" ] || [ "$DISABLE_SUDO" = "1" ]; then
-    if [ -f /etc/sudoers.d/node ]; then
-      log_info "Sudo access DISABLED (OPENCLAW_DISABLE_SUDO=true)"
-      sudo rm -f /etc/sudoers.d/node 2>/dev/null || true
-    fi
-  else
-    log_info "Sudo access ENABLED"
-  fi
-}
+
 
 prepare_fallback_json() {
   FALLBACK_JSON="[]"
@@ -445,22 +432,115 @@ run_doctor() {
   local script="/app/openclaw.mjs"
   if [ -f "$script" ]; then
     log_info "Running openclaw doctor --fix..."
-    if node "$script" doctor --fix 2>&1 | head -20; then
+    local doctor_output exit_code=0
+    doctor_output=$(node "$script" doctor --fix 2>&1) || exit_code=$?
+    # Log last 30 lines (full output can be very verbose)
+    echo "$doctor_output" | tail -30
+    if [ $exit_code -eq 0 ]; then
       log_info "openclaw doctor completed successfully"
     else
-      log_warn "openclaw doctor returned errors (non-fatal)"
+      log_warn "openclaw doctor returned exit code $exit_code (non-fatal)"
     fi
   fi
+}
+
+sanitize_config() {
+  # Prevent crash loops from stale plugin entries in openclaw.json.
+  # If plugins.entries references plugins that aren't installed in this image,
+  # the gateway will refuse to start (config-guard.ts exits with code 1).
+  # This function removes those entries before the gateway sees the config.
+  if [ ! -s "$CONFIG_FILE" ]; then return; fi
+
+  node -e "
+    const fs = require('fs');
+    const configPath = '$CONFIG_FILE';
+
+    let config;
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (e) {
+      console.error('[entrypoint] WARN: Could not parse config for sanitization:', e.message);
+      process.exit(0); // non-fatal
+    }
+
+    const entries = config?.plugins?.entries;
+    if (!entries || typeof entries !== 'object' || Object.keys(entries).length === 0) {
+      process.exit(0); // nothing to sanitize
+    }
+
+    // Discover installed plugins using OpenClaw's own discovery
+    let knownIds;
+    try {
+      const { discoverOpenClawPlugins } = require('./dist/plugins/discovery.js');
+      const workspaceDir = config?.agents?.defaults?.workspace || '/home/node/workspace';
+      const extraPaths = config?.plugins?.load?.paths || [];
+      const result = discoverOpenClawPlugins({ workspaceDir, extraPaths });
+
+      // Build set of known plugin IDs from candidates
+      knownIds = new Set();
+      for (const candidate of result.candidates) {
+        knownIds.add(candidate.idHint);
+      }
+    } catch (e) {
+      // Fallback: if discovery fails, check for manifest files directly
+      console.error('[entrypoint] WARN: Plugin discovery failed, using filesystem fallback:', e.message);
+      knownIds = new Set();
+      const pluginDirs = ['/app/dist/plugins', '/app/plugins'];
+      for (const dir of pluginDirs) {
+        try {
+          if (fs.existsSync(dir)) {
+            for (const item of fs.readdirSync(dir)) {
+              const manifestPath = require('path').join(dir, item, 'manifest.json');
+              if (fs.existsSync(manifestPath)) {
+                try {
+                  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                  if (manifest.id) knownIds.add(manifest.id);
+                } catch {}
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+
+    // Remove unknown plugin entries
+    const removed = [];
+    for (const pluginId of Object.keys(entries)) {
+      if (!knownIds.has(pluginId)) {
+        removed.push(pluginId);
+        delete entries[pluginId];
+      }
+    }
+
+    if (removed.length === 0) {
+      process.exit(0);
+    }
+
+    // Write sanitized config back
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    for (const id of removed) {
+      console.log('[entrypoint] WARN: Removed unknown plugin entry: ' + id + ' (not installed in this image)');
+    }
+  " 2>&1 || log_warn "Config sanitization script encountered an error (non-fatal)"
 }
 
 # scrub_secrets() removed — no longer needed in BYOK mode.
 # Instances use the user's own API key directly; no gateway proxy secrets to scrub.
 
+seed_cron_jobs() {
+  local enforcer="/app/enforce-config.mjs"
+  if [ ! -f "$enforcer" ]; then
+    log_warn "enforce-config.mjs not found — skipping cron seed"
+    return 0
+  fi
+  log_info "Seeding default cron jobs (if needed)..."
+  node "$enforcer" cron-seed 2>&1 || log_warn "Cron seed returned error (non-fatal)"
+}
+
 # -----------------------------------------------------------------------------
 # Main Execution
 # -----------------------------------------------------------------------------
 
-check_sudo
 prepare_fallback_json
 check_heartbeat_model
 generate_config
@@ -474,6 +554,8 @@ enforce_trusted_proxies
 
 setup_security_files
 run_doctor
+sanitize_config
+seed_cron_jobs
 
 # Execute Command
 exec "$@"
