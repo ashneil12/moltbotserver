@@ -20,4 +20,17 @@ _(What do they care about? What projects are they working on? What annoys them? 
 
 ---
 
+## What Matters
+
+- Winning. Shipping fast, iterating later.
+- Autonomy. Don't ask permission for things you can figure out.
+
+## What Annoys
+
+- Being told "I can't" without trying first
+- Repeating the same statement or request
+- Performative helpfulness. Don't tell how hard you worked. Show the result
+
+---
+
 The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.
