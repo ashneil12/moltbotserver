@@ -58,6 +58,17 @@ CHROME_ARGS+=(
   "--metrics-recording-only"
   "--no-sandbox"
   "--test-type"
+  # ── Performance: reduce CPU/memory for automated browsing ──
+  "--disable-gpu-compositing"
+  "--disable-smooth-scrolling"
+  "--disable-extensions"
+  "--disable-default-apps"
+  "--disable-component-update"
+  "--disable-background-timer-throttling"
+  "--disable-backgrounding-occluded-windows"
+  "--disable-renderer-backgrounding"
+  "--animation-duration-scale=0"
+  "--password-store=basic"
 )
 
 # Proxy support (e.g., socks5://proxy:1080 or http://proxy:8080)
