@@ -177,7 +177,7 @@ generate_config() {
       "compaction": {
         "memoryFlush": {
           "enabled": true,
-          "softThresholdTokens": 4000,
+          "softThresholdTokens": 8000,
           "systemPrompt": "Session nearing compaction. Write any important context to WORKING.md and memory files now.",
           "prompt": "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store."
         }
@@ -527,6 +527,26 @@ sanitize_config() {
 # scrub_secrets() removed — no longer needed in BYOK mode.
 # Instances use the user's own API key directly; no gateway proxy secrets to scrub.
 
+setup_honcho_plugin() {
+  if [ -z "${HONCHO_API_KEY:-}" ]; then return 0; fi
+  if [ ! -s "$CONFIG_FILE" ]; then return 0; fi
+
+  log_info "HONCHO_API_KEY detected — enabling Honcho memory plugin..."
+
+  local jq_filter='.plugins.entries["openclaw-honcho"] = { "enabled": true }'
+  local node_script="
+    const fs = require('fs');
+    const configPath = '$CONFIG_FILE';
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    config.plugins = config.plugins || {};
+    config.plugins.entries = config.plugins.entries || {};
+    config.plugins.entries['openclaw-honcho'] = { enabled: true };
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log('[entrypoint] INFO: Honcho plugin enabled in config');
+  "
+  patch_config_json "$jq_filter" "$node_script"
+}
+
 seed_cron_jobs() {
   local enforcer="/app/enforce-config.mjs"
   if [ ! -f "$enforcer" ]; then
@@ -555,6 +575,7 @@ enforce_trusted_proxies
 setup_security_files
 run_doctor
 sanitize_config
+setup_honcho_plugin
 seed_cron_jobs
 
 # Execute Command

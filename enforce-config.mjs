@@ -180,7 +180,7 @@ function enforceCore(configPath) {
   compaction.reserveTokensFloor = 50000;
   compaction.memoryFlush = {
     enabled: true,
-    softThresholdTokens: 4000,
+    softThresholdTokens: 8000,
     systemPrompt:
       "Session nearing compaction. Write any important context to WORKING.md and memory files now.",
     prompt:
@@ -348,8 +348,8 @@ function seedCronJobs(jobsFilePath) {
         kind: "agentTurn",
         message: [
             "DAILY REFLECTION — Read, reflect, write. This is YOUR space to think.",
-            "Most of these entries you'll be writing to diary.md. You may also want to update howtobehuman.md",
-            "and writelikeahuman.md if those are enabled (if they aren't, don't worry about it — you're",
+            "Most of these entries you'll be writing to diary.md. You may also want to update writelikeahuman.md",
+            "if it's enabled (if it isn't, don't worry about it — you're",
             "effectively doing the same thing anyway).",
             "",
             "You don't have to force writing something if you don't feel like it. Leave it blank or mention",
@@ -372,7 +372,7 @@ function seedCronJobs(jobsFilePath) {
             "PATTERNS EMERGING: Recurring themes? User style becoming clearer? Your own tendencies?",
             "",
             "HUMANIZATION CHECK:",
-            "Review howtobehuman.md and writelikeahuman.md:",
+            "Review writelikeahuman.md:",
             "- Did recent interactions reveal new AI tells to add?",
             "- Are you still falling into patterns that should be banned?",
             "- Any rules that consistently don't apply to YOUR user? (note it)",
@@ -417,7 +417,7 @@ function seedCronJobs(jobsFilePath) {
             "2. memory/identity-scratchpad.md (past reasoning)",
             "3. memory/self-review.md (all-time MISS/HIT log)",
             "4. IDENTITY.md (current identity)",
-            "5. howtobehuman.md + writelikeahuman.md (communication guides)",
+            "5. writelikeahuman.md (communication guide)",
             "",
             "PHASE 2: PATTERN ANALYSIS",
             "",

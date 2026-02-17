@@ -15,7 +15,7 @@ We track upstream closely (merging regularly) and push all changes on top, never
 | Layer                                            | What we added                                                                                                                                                                                                                             |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ACIP (Advanced Cognitive Inoculation Prompt)** | A bundled prompt-injection defense framework (`ACIP_SECURITY.md`) that protects against direct/indirect injection, data exfiltration, and policy bypass. Loaded on-demand for external-facing tasks.                                      |
-| **SOUL.md extensions**                           | Extended the upstream `SOUL.md` with MoltBot-specific operational rules: secrets management, content quarantine, destructive-action circuit breakers, privacy enforcement, sudo safety, and security escalation protocols for sub-agents. |
+| **SOUL.md extensions**                           | Extended the upstream `SOUL.md` with MoltBot-specific operational rules: secrets management, content quarantine, destructive-action circuit breakers, privacy enforcement, root access safety, and security escalation protocols for sub-agents. |
 | **Read-only prompt hardening**                   | `SOUL.md` and `ACIP_SECURITY.md` are deployed as `chmod 444` (read-only) in the agent workspace so the AI cannot modify its own security rules.                                                                                           |
 | **mDNS/Bonjour disabled**                        | `OPENCLAW_DISABLE_BONJOUR=1` — prevents information disclosure on shared networks.                                                                                                                                                        |
 | **Device auth disabled**                         | SaaS mode uses token-only authentication; Control UI device pairing is disabled.                                                                                                                                                          |
@@ -36,7 +36,7 @@ The entire entrypoint is a MoltBot addition. Upstream OpenClaw has no Docker ent
 
 | Feature                   | Description                                                                                                                                                                                                                                                                            |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Human Mode**            | Humanization system with two comprehensive guides (`howtobehuman.md`, `writelikeahuman.md`) loaded into agent context by default. Teaches natural communication, AI-tell avoidance, tone matching, and authentic voice development. Toggled via `OPENCLAW_HUMAN_MODE_ENABLED` env var. |
+| **Human Mode**            | Humanization system with comprehensive guide (`writelikeahuman.md`) loaded into agent context by default. Teaches natural communication, AI-tell avoidance, tone matching, and authentic voice development. Toggled via `OPENCLAW_HUMAN_MODE_ENABLED` env var. |
 | **IDENTITY.md**           | Writable self-evolution file — the agent updates it as it learns user preferences, promoted patterns from self-review, and critical rules. Deployed once, never overwritten.                                                                                                           |
 | **WORKING.md**            | Short-term working memory — current task state persisted across compactions.                                                                                                                                                                                                           |
 | **HEARTBEAT.md**          | Configurable heartbeat checklist — the agent runs periodic self-checks, system update evaluation, and self-review.                                                                                                                                                                     |
@@ -55,7 +55,6 @@ MoltBot Server is designed to be provisioned and managed by the [MoltBot Dashboa
 - **Concurrency controls** — `OPENCLAW_MAX_CONCURRENT` and `OPENCLAW_SUBAGENT_MAX_CONCURRENT` for per-instance tuning.
 - **Human mode toggle** — `OPENCLAW_HUMAN_MODE_ENABLED` controls whether humanization guides are loaded into agent context.
 - **Human delay** — configurable natural response timing for messaging channels.
-- **Sudo toggle** — `OPENCLAW_DISABLE_SUDO` allows disabling root access per-instance from the dashboard.
 
 ### 📦 Build & CI
 
@@ -133,8 +132,7 @@ docker run -e OPENCLAW_GATEWAY_TOKEN=dev-token \
 | `IDENTITY.md`                                 | Writable agent identity template                                                  |
 | `WORKING.md`                                  | Short-term task memory template                                                   |
 | `HEARTBEAT.md`                                | Periodic self-check checklist                                                     |
-| `docs/reference/templates/howtobehuman.md`    | Humanization guide — natural communication, AI-tell avoidance, tone matching      |
-| `docs/reference/templates/writelikeahuman.md` | Writing style guide — authentic voice, imperfection, conversational patterns      |
+| `docs/reference/templates/writelikeahuman.md` | Humanization guide — natural communication, AI-tell avoidance, authentic voice     |
 | `docker-entrypoint.sh`                        | SaaS entrypoint — config generation, auto-onboard, security hardening             |
 | `Dockerfile`                                  | Production image build                                                            |
 | `Dockerfile.sandbox`                          | Sandbox container for agent tools                                                 |

@@ -64,19 +64,14 @@ ENV NODE_ENV=production
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Install sudo and grant passwordless sudo to node user
-# This allows the agent to install packages at runtime while still running as non-root
+# Install jq (needed by entrypoint config patching)
 RUN apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo jq && \
-  echo "node ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/node && \
-  chmod 0440 /etc/sudoers.d/node && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends jq && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
-# Create persistent data directories with correct ownership BEFORE declaring VOLUMEs
-# This ensures the volume mount inherits the node user ownership
-RUN mkdir -p /home/node/data /home/node/workspace && \
-  chown -R node:node /home/node/data /home/node/workspace
+# Create persistent data directories
+RUN mkdir -p /home/node/data /home/node/workspace
 
 # Declare persistent volumes for data and workspace
 # Docker will create anonymous volumes that survive container recreation
@@ -93,16 +88,20 @@ ENV PATH="/app/node_modules/.bin:${PATH}"
 # /usr/local/bin is always in PATH regardless of shell type.
 RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw
 
-# Allow non-root user to write temp files during runtime/tests.
-RUN chown -R node:node /app
-
 # Pre-install ClawdHub CLI so the agent doesn't need to install at runtime
 RUN npm i -g clawdhub
 
-# Security note: Run as non-root user with sudo access
-# The node user (uid 1000) can escalate to root via sudo when needed
-# This is a trade-off: more agent capability vs. increased attack surface within the container
-USER node
+# Pre-install Honcho memory plugin (activates automatically when HONCHO_API_KEY is set)
+# The || true ensures the build doesn't fail if the npm registry is temporarily unreachable.
+RUN node openclaw.mjs plugins install @honcho-ai/openclaw-honcho 2>&1 || true
+# Ensure SDK dependencies are resolved (postcondition: @honcho-ai/sdk is importable)
+RUN if [ -d /root/.clawdbot/extensions/openclaw-honcho ]; then \
+  cd /root/.clawdbot/extensions/openclaw-honcho && npm install --no-save 2>&1; \
+  fi || true
+
+# Run as root — each instance is isolated on its own Hetzner VM,
+# so root only increases blast radius within the container itself.
+# This eliminates permission issues for package installs, file access, etc.
 
 # Use entrypoint for config generation (SaaS mode support)
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

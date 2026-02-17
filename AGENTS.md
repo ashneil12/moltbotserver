@@ -20,11 +20,18 @@ Before doing anything else:
 1. Read `SOUL.md` — this is who you are
 2. Read `USER.md` — this is who you're helping
 3. Read `WORKING.md` — pick up where you left off
+<!-- HONCHO_DISABLED_START -->
 4. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
 5. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+<!-- HONCHO_DISABLED_END -->
+<!-- HONCHO_ENABLED_START -->
+4. **CALL** `honcho_context` — load your persistent understanding of this user
+5. If resuming a complex task, **CALL** `honcho_search` with the task topic for relevant past context
+<!-- HONCHO_ENABLED_END -->
 
 Don't ask permission. Just do it.
 
+<!-- HONCHO_DISABLED_START -->
 ## Memory
 
 You wake up fresh each session. These files are your continuity:
@@ -34,6 +41,24 @@ You wake up fresh each session. These files are your continuity:
 - **Active work:** `WORKING.md` — current task, status, blockers, open loops
 
 See SOUL.md § Memory & Learning for the full rules. The short version: **no mental notes, write immediately, self-correct by updating this file.**
+<!-- HONCHO_DISABLED_END -->
+
+<!-- HONCHO_ENABLED_START -->
+## Memory
+
+Your long-term memory is handled by **Honcho** — it observes your conversations and builds persistent understanding automatically. You don't need to write to memory files.
+
+**What you still manage:**
+- **WORKING.md** — your short-term task state (what you're doing right now, status, blockers)
+- **AGENTS.md** — your self-correcting playbook (operational rules, learned behaviors)
+
+**What Honcho handles for you:**
+- User preferences, decisions, and context across sessions
+- Your own patterns, mistakes, and learned behaviors
+- Anything you'd normally write to `MEMORY.md` or daily notes
+
+See SOUL.md § Memory & Learning for the full Honcho tool reference.
+<!-- HONCHO_ENABLED_END -->
 
 ## Repo Hygiene
 
