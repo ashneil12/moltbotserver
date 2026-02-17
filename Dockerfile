@@ -91,13 +91,10 @@ RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw
 # Pre-install ClawdHub CLI so the agent doesn't need to install at runtime
 RUN npm i -g clawdhub
 
-# Pre-install Honcho memory plugin (activates automatically when HONCHO_API_KEY is set)
-# The || true ensures the build doesn't fail if the npm registry is temporarily unreachable.
-RUN node openclaw.mjs plugins install @honcho-ai/openclaw-honcho 2>&1 || true
-# Ensure SDK dependencies are resolved (postcondition: @honcho-ai/sdk is importable)
-RUN if [ -d /root/.clawdbot/extensions/openclaw-honcho ]; then \
-  cd /root/.clawdbot/extensions/openclaw-honcho && npm install --no-save 2>&1; \
-  fi || true
+# Honcho memory plugin is installed at runtime by the entrypoint when HONCHO_API_KEY
+# is set. Build-time install was removed because the plugin installs to /root/.clawdbot/
+# during build, but runtime discovery uses OPENCLAW_STATE_DIR (/home/node/data/),
+# creating a path mismatch that causes gateway crash loops.
 
 # Run as root — each instance is isolated on its own Hetzner VM,
 # so root only increases blast radius within the container itself.

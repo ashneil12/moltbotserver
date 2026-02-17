@@ -531,7 +531,41 @@ setup_honcho_plugin() {
   if [ -z "${HONCHO_API_KEY:-}" ]; then return 0; fi
   if [ ! -s "$CONFIG_FILE" ]; then return 0; fi
 
-  log_info "HONCHO_API_KEY detected — enabling Honcho memory plugin..."
+  # Where the plugin should live at runtime (matches resolveConfigDir())
+  local plugin_dir="$CONFIG_DIR/extensions/openclaw-honcho"
+
+  # Install the plugin if not already present in the runtime state dir.
+  # Build-time install goes to /root/.clawdbot/ which doesn't match the
+  # runtime OPENCLAW_STATE_DIR, so we install here instead.
+  if [ ! -d "$plugin_dir" ]; then
+    log_info "HONCHO_API_KEY detected — installing Honcho memory plugin..."
+
+    local install_script="/app/openclaw.mjs"
+    if [ ! -f "$install_script" ]; then
+      log_warn "openclaw.mjs not found — cannot install Honcho plugin"
+      return 0
+    fi
+
+    if node "$install_script" plugins install @honcho-ai/openclaw-honcho 2>&1; then
+      log_info "Honcho plugin installed successfully"
+    else
+      log_warn "Honcho plugin install failed (network issue?) — skipping activation"
+      return 0
+    fi
+
+    # Ensure SDK dependencies are resolved
+    if [ -d "$plugin_dir" ]; then
+      (cd "$plugin_dir" && npm install --no-save 2>&1) || log_warn "Honcho SDK dependency install had warnings"
+    fi
+  fi
+
+  # Final check: only enable in config if the plugin actually exists
+  if [ ! -d "$plugin_dir" ]; then
+    log_warn "HONCHO_API_KEY is set but openclaw-honcho plugin is not installed — skipping activation"
+    return 0
+  fi
+
+  log_info "Enabling Honcho memory plugin in config..."
 
   local jq_filter='.plugins.entries["openclaw-honcho"] = { "enabled": true }'
   local node_script="
