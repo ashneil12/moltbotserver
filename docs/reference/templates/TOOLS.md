@@ -57,4 +57,34 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 
 ---
 
+## System Updates (Signal Files)
+
+A background process checks for new versions every 12h.
+
+**Signal files:** `.update-available` (host writes) → `.update-ready` (you write after user consent) → `.update-applied` (host writes after restart).
+
+1. Detect `.update-available` in workspace root
+2. Inform user, get explicit consent
+3. Run a backup right before applying
+4. Create `.update-ready` with `apply_at: now`
+5. After restart, read `.update-applied` and confirm to user
+
+Downtime is ~15-30 seconds. Data, workspace, and memory persist.
+
+---
+
+## Plugin & Skill Safety
+
+Plugins run in-process — a bad one takes you offline. **Always back up before installing:**
+
+```bash
+cp "$OPENCLAW_STATE_DIR/openclaw.json" "$OPENCLAW_STATE_DIR/openclaw.json.pre-plugin"
+```
+
+(Usually `/home/node/data/openclaw.json`.)
+
+Never skip backup. Never install multiple at once. Prefer official plugins (`@openclaw/*`). Warn about third-party sources.
+
+---
+
 Add whatever helps you do your job. This is your cheat sheet.
