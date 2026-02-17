@@ -61,7 +61,6 @@ CHROME_ARGS+=(
   # ── Performance: reduce CPU/memory for automated browsing ──
   "--disable-gpu-compositing"
   "--disable-smooth-scrolling"
-  "--disable-extensions"
   "--disable-default-apps"
   "--disable-component-update"
   "--disable-background-timer-throttling"
