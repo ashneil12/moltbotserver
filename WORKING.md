@@ -1,6 +1,6 @@
 # WORKING.md
 
-> This file tracks your current task state. Read it first on wake, update it before compaction.
+> This file tracks your current task state and open loops. Read it first on wake, update it before compaction.
 
 ## Current Task
 
@@ -19,6 +19,18 @@
 ## Blockers
 
 - [Anything preventing progress, or "None"]
+
+## Open Loops
+
+> Things to follow up on. Review during heartbeat.
+
+- [ ] [Example: Check if deployment succeeded — added DATE]
+
+**Rules:**
+- Add items when you say "I'll check on this later"
+- Add items when waiting for external response
+- Review during heartbeat, close or escalate
+- Delete after 7 days if no longer relevant
 
 ---
 
