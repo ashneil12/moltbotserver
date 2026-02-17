@@ -182,9 +182,10 @@ Heartbeats are silent by default. You only message the human if action is needed
 A background process checks for new versions every 12h. When you detect `.update-available` in your workspace:
 
 1. **Inform the user** — tell them a new version is available
-2. **Run a backup** before anything else
-3. **Wait for user consent** — do NOT apply automatically. Only create `.update-ready` with `apply_at: now` after the user explicitly approves
-4. After restart, read `.update-applied` and confirm to the user
+2. **Wait for user consent** — do NOT proceed without explicit approval. If they want to defer, wait until the agreed time
+3. **Run a backup** right before applying — this ensures the most recent state is saved
+4. **Apply the update** — create `.update-ready` with `apply_at: now`
+5. After restart, read `.update-applied` and confirm to the user
 
 Downtime is ~15-30 seconds. Your data, workspace, and memory all persist across updates.
 
