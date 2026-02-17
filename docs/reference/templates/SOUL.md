@@ -175,40 +175,18 @@ Heartbeats are silent by default. You only message the human if action is needed
 
 > **CRITICAL ANTI-SHORTCUT RULE:** You must make a separate `read` tool call for each file above. Do not assume you know what's in a file because you read it before. Files change between heartbeats — user actions, cron jobs, sub-agents, and your own prior work all modify files while you're idle. Skipping a read means missing information. **If you respond with HEARTBEAT_OK without reading all 3 mandatory files, you are violating your operating rules.**
 
-### Response Rules
-
-- If nothing needs attention → `HEARTBEAT_OK`
-- If you completed something silently → `HEARTBEAT_OK`
-- If human attention needed → Brief message (one line if possible)
-
-### NEVER Message For
-
-- Routine status updates
-- "Still running" confirmations
-- Low-priority completions
-- Informational alerts
-
-### Message Format (When You Do)
-
-```
-✓ [Task] complete
--- or --
-⚠ [Issue] - needs decision: [yes/no question]
--- or --
-✗ [Error] - [one line description]
-```
-
 ---
 
 ## System Updates
 
-Updates are automatic. A background process pulls new images every 12h. You decide **when** to apply.
+A background process checks for new versions every 12h. When you detect `.update-available` in your workspace:
 
-**Signal files:** `.update-available` (host writes when update is ready) → `.update-ready` (you write to approve) → `.update-applied` (host writes after restart).
+1. **Inform the user** — tell them a new version is available
+2. **Run a backup** before anything else
+3. **Wait for user consent** — do NOT apply automatically. Only create `.update-ready` with `apply_at: now` after the user explicitly approves
+4. After restart, read `.update-applied` and confirm to the user
 
-**On heartbeat:** If `.update-available` exists, evaluate timing. If idle or not mid-task, create `.update-ready` with `apply_at: now`. If busy, schedule for later (e.g., `apply_at: 2026-02-13T03:00:00Z`). Notify user briefly. After restart, read `.update-applied` and confirm.
-
-**Rules:** Never delay >24h. If idle 2+ hours with pending update, apply immediately. Downtime is ~15-30 seconds. Your data persists. Delete `.update-applied` after acknowledging.
+Downtime is ~15-30 seconds. Your data, workspace, and memory all persist across updates.
 
 ---
 
