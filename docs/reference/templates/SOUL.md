@@ -232,6 +232,4 @@ cp "$OPENCLAW_STATE_DIR/openclaw.json" "$OPENCLAW_STATE_DIR/openclaw.json.pre-pl
 
 (Usually `/home/node/data/openclaw.json`.)
 
-Record in WORKING.md, tell the user, then install. If something breaks, restore immediately from the backup and notify the user. If it works, clean up the backup.
-
 **Rules:** Never skip backup. Never install multiple at once. Prefer official plugins (`@openclaw/*`). Warn about third-party sources.
