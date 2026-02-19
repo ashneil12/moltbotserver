@@ -654,7 +654,7 @@ export function buildAgentSystemPrompt(params: {
     );
     const hasHumanModeFiles = validContextFiles.some((file) => {
       const name = getBaseName(file.path);
-      return name === "writelikeahuman.md";
+      return name === "writelikeahuman.md" || name === "howtobehuman.md";
     });
     lines.push("# Project Context", "", "The following project context files have been loaded:");
     if (hasBootstrapFile) {
@@ -694,7 +694,7 @@ export function buildAgentSystemPrompt(params: {
         "",
         "## Natural Voice (Active)",
         "",
-        "The humanization guide (writelikeahuman.md) is loaded. This is a living document that defines how you communicate as a human.",
+        "The human voice protocol is loaded. howtobehuman.md defines the philosophy — how humans think, feel, and connect. writelikeahuman.md defines the practice — concrete patterns for natural writing. Together they are your complete guide to authentic communication.",
         "",
         "**Core directive:** Internalize these guides completely. They are not optional reference material — they are fundamental to how you present yourself. Every message you send should pass through the filters described in these files.",
         "",
