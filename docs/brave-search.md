@@ -37,5 +37,7 @@ OpenClaw uses Brave Search as the default provider for `web_search`.
 
 - The Data for AI plan is **not** compatible with `web_search`.
 - Brave provides a free tier plus paid plans; check the Brave API portal for current limits.
+- **No key set?** `web_search` will return a setup hint. The agent will fall back to the browser tool for web searches, which is slower and consumes a browser slot.
+- For guidance on when to use `web_search` vs `web_fetch` vs the browser tool, see [When to use what](/tools/web#when-to-use-what).
 
 See [Web tools](/tools/web) for the full web_search configuration.
