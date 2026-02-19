@@ -567,21 +567,48 @@ sanitize_config() {
       // Fallback: if discovery fails, check for manifest files directly
       console.error('[entrypoint] WARN: Plugin discovery failed, using filesystem fallback:', e.message);
       knownIds = new Set();
-      const pluginDirs = ['/app/dist/plugins', '/app/plugins'];
+
+      // Check both build-time plugin dirs AND runtime extensions dir
+      const configDir = '$CONFIG_DIR';
+      const pluginDirs = ['/app/dist/plugins', '/app/plugins', configDir + '/extensions'];
       for (const dir of pluginDirs) {
         try {
           if (fs.existsSync(dir)) {
             for (const item of fs.readdirSync(dir)) {
-              const manifestPath = require('path').join(dir, item, 'manifest.json');
+              const itemPath = require('path').join(dir, item);
+              // Check for manifest.json (standard plugins)
+              const manifestPath = require('path').join(itemPath, 'manifest.json');
               if (fs.existsSync(manifestPath)) {
                 try {
                   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
                   if (manifest.id) knownIds.add(manifest.id);
                 } catch {}
               }
+              // Also check for package.json with openclaw-plugin keyword (npm-installed plugins)
+              const pkgPath = require('path').join(itemPath, 'package.json');
+              if (fs.existsSync(pkgPath)) {
+                try {
+                  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+                  if (pkg.keywords && pkg.keywords.includes('openclaw-plugin')) {
+                    knownIds.add(item); // directory name is the plugin id
+                  }
+                } catch {}
+              }
             }
           }
         } catch {}
+      }
+
+      // Also trust plugins tracked in config.plugins.installs
+      const installs = config?.plugins?.installs;
+      if (installs && typeof installs === 'object') {
+        for (const pluginId of Object.keys(installs)) {
+          const info = installs[pluginId];
+          // Only trust if the install path actually exists on disk
+          if (info?.installPath && fs.existsSync(info.installPath)) {
+            knownIds.add(pluginId);
+          }
+        }
       }
     }
 
@@ -649,14 +676,19 @@ setup_honcho_plugin() {
 
   log_info "Enabling Honcho memory plugin in config..."
 
-  local jq_filter='.plugins.entries["openclaw-honcho"] = { "enabled": true, "apiKey": "'"$HONCHO_API_KEY"'" }'
+  # Note: apiKey must NOT be in plugins.entries — the openclaw config schema
+  # doesn't recognise it and will reject the config (causing crash loops).
+  # The honcho plugin reads HONCHO_API_KEY from the environment directly.
+  local jq_filter='.plugins.entries["openclaw-honcho"] = { "enabled": true } | .plugins.slots.memory = "openclaw-honcho"'
   local node_script="
     const fs = require('fs');
     const configPath = '$CONFIG_FILE';
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     config.plugins = config.plugins || {};
     config.plugins.entries = config.plugins.entries || {};
-    config.plugins.entries['openclaw-honcho'] = { enabled: true, apiKey: '$HONCHO_API_KEY' };
+    config.plugins.entries['openclaw-honcho'] = { enabled: true };
+    config.plugins.slots = config.plugins.slots || {};
+    config.plugins.slots.memory = 'openclaw-honcho';
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     console.log('[entrypoint] INFO: Honcho plugin enabled in config');
   "
