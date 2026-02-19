@@ -9,6 +9,14 @@ describe("stripEnvelope", () => {
   it("returns text unchanged when no envelope header", () => {
     expect(stripEnvelope("hello world")).toBe("hello world");
   });
+
+  it("strips injected agent timestamp (DOW YYYY-MM-DD HH:MM TZ format)", () => {
+    expect(stripEnvelope("[Thu 2026-02-19 11:29 UTC] hi")).toBe("hi");
+  });
+
+  it("strips injected agent timestamp with non-UTC timezone", () => {
+    expect(stripEnvelope("[Mon 2026-01-15 14:30 EST] hello there")).toBe("hello there");
+  });
 });
 
 describe("stripMessageIdHints", () => {

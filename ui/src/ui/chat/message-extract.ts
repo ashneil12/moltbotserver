@@ -16,11 +16,12 @@ export function extractText(message: unknown): string | null {
     return processed;
   }
   if (Array.isArray(content)) {
+    const isUser = role !== "assistant";
     const parts = content
       .map((p) => {
         const item = p as Record<string, unknown>;
         if (item.type === "text" && typeof item.text === "string") {
-          return item.text;
+          return isUser ? stripEnvelope(item.text) : item.text;
         }
         return null;
       })
@@ -28,9 +29,7 @@ export function extractText(message: unknown): string | null {
     if (parts.length > 0) {
       const joined = parts.join("\n");
       const processed =
-        role === "assistant"
-          ? stripThinkingTags(joined)
-          : stripUntrustedMetaBlocks(stripEnvelope(joined));
+        role === "assistant" ? stripThinkingTags(joined) : stripUntrustedMetaBlocks(joined);
       return processed;
     }
   }
