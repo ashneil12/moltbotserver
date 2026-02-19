@@ -638,31 +638,10 @@ sanitize_config() {
 
 setup_honcho_plugin() {
   if [ -z "${HONCHO_API_KEY:-}" ]; then
-    # If key is missing but plugin is enabled in config (zombie state from previous run), disable it.
-    if [ -s "$CONFIG_FILE" ]; then
-      local jq_filter='del(.plugins.entries["openclaw-honcho"]) | if .plugins.slots.memory == "openclaw-honcho" then del(.plugins.slots.memory) else . end'
-      local node_script="
-        const fs = require('fs');
-        const configPath = '$CONFIG_FILE';
-        let config;
-        try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch(e) { process.exit(0); }
-        
-        let changed = false;
-        if (config.plugins?.entries?.['openclaw-honcho']) {
-          delete config.plugins.entries['openclaw-honcho'];
-          changed = true;
-        }
-        if (config.plugins?.slots?.memory === 'openclaw-honcho') {
-          delete config.plugins.slots.memory;
-          changed = true;
-        }
-        if (changed) {
-          fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-          console.log('[entrypoint] INFO: Honcho API key missing — disabled Honcho plugin in config');
-        }
-      "
-      patch_config_json "$jq_filter" "$node_script"
-    fi
+    # Key is not in env — leave plugin config alone so it's ready when the
+    # key reappears (e.g. after a dashboard rebuild that re-injects it).
+    # The plugin will log auth errors but won't crash the gateway.
+    log_warn "HONCHO_API_KEY not set — Honcho plugin will be inactive until key is provided"
     return 0
   fi
   if [ ! -s "$CONFIG_FILE" ]; then return 0; fi
