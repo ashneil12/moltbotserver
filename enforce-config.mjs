@@ -62,6 +62,62 @@ function isTruthy(value) {
   return value === "true" || value === "1";
 }
 
+// ── Model ID Normalization ──────────────────────────────────────────────────
+
+/**
+ * Canonical model IDs keyed by their lowercase equivalents.
+ * When an env var provides a model ID with wrong casing (e.g. "minimax-m2.5"
+ * instead of "MiniMax-M2.5"), this map corrects it before it reaches the
+ * config file and the model registry (which does case-sensitive matching).
+ *
+ * Format: { "lowercased-model-id": "Canonical-Model-ID" }
+ * Only the model portion (after the provider/ prefix) is matched.
+ */
+const CANONICAL_MODEL_IDS = {
+  // MiniMax
+  "minimax-m2.5": "MiniMax-M2.5",
+  "minimax-m2.5-lightning": "MiniMax-M2.5-Lightning",
+  "minimax-m1": "MiniMax-M1",
+  // DeepSeek
+  "deepseek-chat": "deepseek-chat",
+  "deepseek-reasoner": "deepseek-reasoner",
+  // OpenAI
+  "gpt-4o": "gpt-4o",
+  "gpt-4o-mini": "gpt-4o-mini",
+  "gpt-4.1": "gpt-4.1",
+  "o3-mini": "o3-mini",
+  // Anthropic
+  "claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
+  "claude-3.5-sonnet": "claude-3.5-sonnet",
+  // Google
+  "gemini-2.0-flash": "gemini-2.0-flash",
+  "gemini-2.5-pro": "gemini-2.5-pro",
+};
+
+/**
+ * Normalize a full model reference (e.g. "minimax/minimax-m2.5") to use
+ * canonical casing. If the model ID isn't in the known map, returns as-is.
+ */
+function normalizeModelId(modelRef) {
+  if (!modelRef || typeof modelRef !== "string") {
+    return modelRef;
+  }
+  const slashIdx = modelRef.indexOf("/");
+  if (slashIdx < 0) {
+    return modelRef;
+  }
+
+  const provider = modelRef.slice(0, slashIdx);
+  const modelId = modelRef.slice(slashIdx + 1);
+  const canonical = CANONICAL_MODEL_IDS[modelId.toLowerCase()];
+
+  if (canonical && canonical !== modelId) {
+    console.log(`[enforce-config] Normalized model ID: ${modelRef} → ${provider}/${canonical}`);
+    return `${provider}/${canonical}`;
+  }
+  return modelRef;
+}
+
 // ── Enforcement Commands ────────────────────────────────────────────────────
 
 function enforceModels(configPath) {
@@ -69,9 +125,13 @@ function enforceModels(configPath) {
   const defaults = ensure(config, "agents", "defaults");
   defaults.model = defaults.model || {};
 
-  const defaultModel = env("OPENCLAW_DEFAULT_MODEL") || env("DEFAULT_MODEL");
-  const heartbeatModel = env("OPENCLAW_HEARTBEAT_MODEL") || env("HEARTBEAT_MODEL");
-  const subagentModel = env("OPENCLAW_SUBAGENT_MODEL", "deepseek/deepseek-reasoner");
+  const defaultModel = normalizeModelId(env("OPENCLAW_DEFAULT_MODEL") || env("DEFAULT_MODEL"));
+  const heartbeatModel = normalizeModelId(
+    env("OPENCLAW_HEARTBEAT_MODEL") || env("HEARTBEAT_MODEL"),
+  );
+  const subagentModel = normalizeModelId(
+    env("OPENCLAW_SUBAGENT_MODEL", "deepseek/deepseek-reasoner"),
+  );
 
   if (defaultModel) {
     defaults.model.primary = defaultModel;
@@ -90,7 +150,7 @@ function enforceModels(configPath) {
   if (fallbacksRaw) {
     const fallbacks = fallbacksRaw
       .split(",")
-      .map((s) => s.trim())
+      .map((s) => normalizeModelId(s.trim()))
       .filter(Boolean);
     if (fallbacks.length > 0) {
       defaults.model.fallbacks = fallbacks;
