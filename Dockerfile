@@ -38,6 +38,9 @@ COPY ui/package.json ./ui/package.json
 COPY patches ./patches
 COPY scripts ./scripts
 COPY SOUL.md ./SOUL.md
+COPY OPERATIONS.md ./OPERATIONS.md
+COPY PRACTICAL.md ./PRACTICAL.md
+COPY memory-hygiene.md ./memory-hygiene.md
 COPY ACIP_SECURITY.md ./ACIP_SECURITY.md
 COPY HEARTBEAT.md ./HEARTBEAT.md
 COPY IDENTITY.md ./IDENTITY.md

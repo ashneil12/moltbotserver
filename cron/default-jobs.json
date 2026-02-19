@@ -48,6 +48,21 @@
       "delivery": { "mode": "none" }
     },
     {
+      "id": "memory-hygiene",
+      "name": "Self-Improvement: Memory Hygiene",
+      "description": "Daily audit of MEMORY.md — prune stale entries, consolidate, check structure, keep signal clean",
+      "enabled": true,
+      "schedule": { "kind": "every", "everyMs": 86400000 },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "MEMORY HYGIENE — Review MEMORY.md and keep it lean, current, and useful.\nThis is a maintenance task. The goal is a memory file that stays sharp, not one that just accumulates.\n\nREAD:\n1. MEMORY.md (full read)\n2. memory-hygiene.md (refresh the principles — this is your guide)\n3. memory/diary.md (recent context on what's been happening)\n\nCHECK STRUCTURE:\n- Does MEMORY.md follow a clear organization? Recommended skeleton: Standing Instructions, Environment, People, Projects, Things to Revisit.\n- If it's disorganized, restructure it. Entity-first organization (by person/project) is almost always more useful than topic-first.\n- Are standing instructions prominent and easy to find?\n\nPRUNE STALE ENTRIES:\n- Look for dated entries (e.g. [2025-03]) where the date suggests they may no longer be current. Verify and remove if outdated.\n- Remove transient state that's clearly resolved (\"currently working on X\" where X is done).\n- Remove raw conversation excerpts that should have been synthesized into durable insights.\n- Remove things that are easily looked up in files or config — memory should hold context, not content.\n- Ask: \"If I search for this in three months, will the result be useful or clutter?\" If clutter, remove it.\n\nCHECK FOR OVERGROWTH:\n- Is the file getting unwieldy? A 50-entry MEMORY.md often outperforms a 500-entry one because signal is cleaner.\n- If it's growing too large, identify the lowest-value entries and remove them.\n- Flag any section that's become a dump of marginally useful facts.\n\nCONSOLIDATE:\n- Find scattered entries about the same person, project, or topic. Merge them into single grouped entries.\n- Ensure entries are specific enough to actually guide behavior (not vague like \"User likes concise\").\n- Check that entries include searchable terms — names, project names, tool names — alongside natural language.\n\nTHINGS TO REVISIT:\n- Review the \"Things to Revisit\" section (or equivalent staging area).\n- Entries that are now confirmed → graduate them to their proper section.\n- Entries that are resolved or no longer relevant → remove them.\n- Uncertain entries that have been sitting too long without confirmation → remove with a note.\n\nQUALITY CHECK:\n- Each remaining entry should implicitly answer: what is this, why does it matter, when does it apply.\n- Entries about preferences should be specific enough to follow without interpretation.\n- Time-sensitive entries should have dates so future reads can judge currency.\n\nLOG CHANGES:\nIf you made any changes, write a brief summary of what was pruned, consolidated, or restructured and why. Write this to memory/diary.md as a hygiene log entry.\nIf MEMORY.md is already clean and current, note that too — stability is valuable.\n\nDo NOT add new entries during this pass. This is a pruning and quality task, not a writing task.",
+        "model": "{{PRIMARY_MODEL}}"
+      },
+      "delivery": { "mode": "none" }
+    },
+    {
       "id": "healthcheck-security-audit",
       "name": "healthcheck:security-audit",
       "description": "Daily security audit of OpenClaw configuration and host posture",

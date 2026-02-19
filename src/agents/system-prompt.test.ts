@@ -311,8 +311,31 @@ describe("buildAgentSystemPrompt", () => {
     });
 
     expect(prompt).toContain(
-      "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
+      "SOUL.md is your philosophical core",
     );
+    expect(prompt).toContain(
+      "SOUL.md is your morals; IDENTITY.md is your personality",
+    );
+  });
+
+  it("adds PRACTICAL guidance when a practical file is present", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [{ path: "./PRACTICAL.md", content: "How to operate" }],
+    });
+
+    expect(prompt).toContain("PRACTICAL.md is your operational philosophy");
+    expect(prompt).toContain("bridges your values (SOUL.md) with your procedures (OPERATIONS.md)");
+  });
+
+  it("adds memory-hygiene guidance when memory-hygiene file is present", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [{ path: "./memory-hygiene.md", content: "Memory curation" }],
+    });
+
+    expect(prompt).toContain("memory-hygiene.md is your guide to memory curation");
+    expect(prompt).toContain("discipline of pruning");
   });
 
   it("summarizes the message tool when available", () => {

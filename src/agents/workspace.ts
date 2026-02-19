@@ -26,6 +26,8 @@ export function resolveDefaultAgentWorkspaceDir(
 export const DEFAULT_AGENT_WORKSPACE_DIR = resolveDefaultAgentWorkspaceDir();
 export const DEFAULT_AGENTS_FILENAME = "AGENTS.md";
 export const DEFAULT_SOUL_FILENAME = "SOUL.md";
+export const DEFAULT_PRACTICAL_FILENAME = "PRACTICAL.md";
+export const DEFAULT_OPERATIONS_FILENAME = "OPERATIONS.md";
 export const DEFAULT_TOOLS_FILENAME = "TOOLS.md";
 export const DEFAULT_IDENTITY_FILENAME = "IDENTITY.md";
 export const DEFAULT_USER_FILENAME = "USER.md";
@@ -34,13 +36,15 @@ export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
 export const DEFAULT_WRITELIKEAHUMAN_FILENAME = "writelikeahuman.md";
+export const DEFAULT_MEMORY_HYGIENE_FILENAME = "memory-hygiene.md";
+export const DEFAULT_ACIP_SECURITY_FILENAME = "ACIP_SECURITY.md";
 
 /** Filenames that are only loaded when human mode is enabled. */
 export const HUMAN_MODE_FILENAMES: ReadonlySet<string> = new Set([
   DEFAULT_WRITELIKEAHUMAN_FILENAME,
 ]);
 
-/** Markers used to identify the Human Mode section in SOUL.md for programmatic removal. */
+/** Markers used to identify the Human Mode section in OPERATIONS.md for programmatic removal. */
 const HUMAN_MODE_SOUL_START = "<!-- HUMAN_MODE_START -->";
 const HUMAN_MODE_SOUL_END = "<!-- HUMAN_MODE_END -->";
 
@@ -126,6 +130,8 @@ async function loadTemplate(name: string): Promise<string> {
 export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_AGENTS_FILENAME
   | typeof DEFAULT_SOUL_FILENAME
+  | typeof DEFAULT_PRACTICAL_FILENAME
+  | typeof DEFAULT_OPERATIONS_FILENAME
   | typeof DEFAULT_TOOLS_FILENAME
   | typeof DEFAULT_IDENTITY_FILENAME
   | typeof DEFAULT_USER_FILENAME
@@ -133,7 +139,9 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_BOOTSTRAP_FILENAME
   | typeof DEFAULT_MEMORY_FILENAME
   | typeof DEFAULT_MEMORY_ALT_FILENAME
-  | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME;
+  | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME
+  | typeof DEFAULT_MEMORY_HYGIENE_FILENAME
+  | typeof DEFAULT_ACIP_SECURITY_FILENAME;
 
 export type WorkspaceBootstrapFile = {
   name: WorkspaceBootstrapFileName;
@@ -152,6 +160,7 @@ type WorkspaceOnboardingState = {
 const VALID_BOOTSTRAP_NAMES: ReadonlySet<string> = new Set([
   DEFAULT_AGENTS_FILENAME,
   DEFAULT_SOUL_FILENAME,
+  DEFAULT_OPERATIONS_FILENAME,
   DEFAULT_TOOLS_FILENAME,
   DEFAULT_IDENTITY_FILENAME,
   DEFAULT_USER_FILENAME,
@@ -298,8 +307,8 @@ async function removeHumanModeSectionFromSoul(soulPath: string): Promise<void> {
 
 /**
  * Strip conditional Honcho markers from a workspace doc.
- * When `honchoEnabled` is true: remove HONCHO_DISABLED blocks entirely,
- * keep content of HONCHO_ENABLED blocks (strip markers only).
+ * When `honchoEnabled` is true: keep content of BOTH blocks (unwrap all markers)
+ * so that file-based memory and Honcho tools work together.
  * When false: remove HONCHO_ENABLED blocks entirely,
  * keep content of HONCHO_DISABLED blocks (strip markers only).
  */
@@ -311,26 +320,27 @@ async function stripHonchoConditionals(filePath: string, honchoEnabled: boolean)
     return; // File doesn't exist — nothing to clean
   }
 
-  // Determine which markers to strip (remove block entirely) and which to unwrap (keep content)
-  const stripStart = honchoEnabled ? HONCHO_DISABLED_START : HONCHO_ENABLED_START;
-  const stripEnd = honchoEnabled ? HONCHO_DISABLED_END : HONCHO_ENABLED_END;
-  const unwrapStart = honchoEnabled ? HONCHO_ENABLED_START : HONCHO_DISABLED_START;
-  const unwrapEnd = honchoEnabled ? HONCHO_ENABLED_END : HONCHO_DISABLED_END;
-
   let result = content;
 
-  // Remove blocks that should be stripped entirely (including their content)
-  while (true) {
-    const startIdx = result.indexOf(stripStart);
-    const endIdx = result.indexOf(stripEnd);
-    if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) break;
-    const before = result.slice(0, startIdx);
-    const after = result.slice(endIdx + stripEnd.length);
-    result = before + after;
+  if (honchoEnabled) {
+    // Keep both blocks — unwrap all markers so both memory systems coexist
+    result = result
+      .replaceAll(HONCHO_DISABLED_START, "")
+      .replaceAll(HONCHO_DISABLED_END, "")
+      .replaceAll(HONCHO_ENABLED_START, "")
+      .replaceAll(HONCHO_ENABLED_END, "");
+  } else {
+    // Honcho off: strip HONCHO_ENABLED blocks entirely, unwrap HONCHO_DISABLED blocks
+    while (true) {
+      const startIdx = result.indexOf(HONCHO_ENABLED_START);
+      const endIdx = result.indexOf(HONCHO_ENABLED_END);
+      if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) break;
+      const before = result.slice(0, startIdx);
+      const after = result.slice(endIdx + HONCHO_ENABLED_END.length);
+      result = before + after;
+    }
+    result = result.replaceAll(HONCHO_DISABLED_START, "").replaceAll(HONCHO_DISABLED_END, "");
   }
-
-  // Unwrap blocks that should be kept (remove markers, keep content)
-  result = result.replaceAll(unwrapStart, "").replaceAll(unwrapEnd, "");
 
   // Clean up: collapse any resulting triple+ blank lines into double
   result = result.replace(/\n{3,}/g, "\n\n");
@@ -392,6 +402,7 @@ export async function ensureAgentWorkspace(params?: {
   dir: string;
   agentsPath?: string;
   soulPath?: string;
+  operationsPath?: string;
   toolsPath?: string;
   identityPath?: string;
   userPath?: string;
@@ -408,6 +419,7 @@ export async function ensureAgentWorkspace(params?: {
 
   const agentsPath = path.join(dir, DEFAULT_AGENTS_FILENAME);
   const soulPath = path.join(dir, DEFAULT_SOUL_FILENAME);
+  const operationsPath = path.join(dir, DEFAULT_OPERATIONS_FILENAME);
   const toolsPath = path.join(dir, DEFAULT_TOOLS_FILENAME);
   const identityPath = path.join(dir, DEFAULT_IDENTITY_FILENAME);
   const userPath = path.join(dir, DEFAULT_USER_FILENAME);
@@ -417,7 +429,7 @@ export async function ensureAgentWorkspace(params?: {
   const statePath = resolveWorkspaceStatePath(dir);
 
   const isBrandNewWorkspace = await (async () => {
-    const paths = [agentsPath, soulPath, toolsPath, identityPath, userPath, heartbeatPath];
+    const paths = [agentsPath, soulPath, operationsPath, toolsPath, identityPath, userPath, heartbeatPath];
     const existing = await Promise.all(
       paths.map(async (p) => {
         try {
@@ -433,16 +445,27 @@ export async function ensureAgentWorkspace(params?: {
 
   const agentsTemplate = await loadTemplate(DEFAULT_AGENTS_FILENAME);
   const soulTemplate = await loadTemplate(DEFAULT_SOUL_FILENAME);
+  const operationsTemplate = await loadTemplate(DEFAULT_OPERATIONS_FILENAME);
   const toolsTemplate = await loadTemplate(DEFAULT_TOOLS_FILENAME);
   const identityTemplate = await loadTemplate(DEFAULT_IDENTITY_FILENAME);
   const userTemplate = await loadTemplate(DEFAULT_USER_FILENAME);
   const heartbeatTemplate = await loadTemplate(DEFAULT_HEARTBEAT_FILENAME);
   await writeFileIfMissing(agentsPath, agentsTemplate);
   await writeFileIfMissing(soulPath, soulTemplate);
+  await writeFileIfMissing(operationsPath, operationsTemplate);
   await writeFileIfMissing(toolsPath, toolsTemplate);
   await writeFileIfMissing(identityPath, identityTemplate);
   await writeFileIfMissing(userPath, userTemplate);
   await writeFileIfMissing(heartbeatPath, heartbeatTemplate);
+
+  // ACIP Security: always seed — it's loaded only for subagents (not the main prompt)
+  try {
+    const acipTemplate = await loadTemplate(DEFAULT_ACIP_SECURITY_FILENAME);
+    const acipPath = path.join(dir, DEFAULT_ACIP_SECURITY_FILENAME);
+    await writeFileIfMissing(acipPath, acipTemplate);
+  } catch {
+    /* template not packaged */
+  }
 
   // Human mode files: conditionally create or destroy based on env var
   const humanModeOn = resolveHumanModeEnabled();
@@ -462,13 +485,13 @@ export async function ensureAgentWorkspace(params?: {
     // Delete guide file when human mode is disabled
     await deleteIfExists(writelikeahumanPath);
     await deleteIfExists(path.join(dir, "howtobehuman.md")); // legacy cleanup
-    // Remove the Human Mode section from SOUL.md
-    await removeHumanModeSectionFromSoul(soulPath);
+    // Remove the Human Mode section from OPERATIONS.md
+    await removeHumanModeSectionFromSoul(operationsPath);
   }
 
   // Honcho memory: strip conditional markers based on HONCHO_API_KEY
   const honchoEnabled = resolveHonchoEnabled();
-  await stripHonchoConditionals(soulPath, honchoEnabled);
+  await stripHonchoConditionals(operationsPath, honchoEnabled);
   await stripHonchoConditionals(agentsPath, honchoEnabled);
 
   let state = await readWorkspaceOnboardingState(statePath);
@@ -522,6 +545,7 @@ export async function ensureAgentWorkspace(params?: {
     dir,
     agentsPath,
     soulPath,
+    operationsPath,
     toolsPath,
     identityPath,
     userPath,
@@ -590,12 +614,20 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
       filePath: path.join(resolvedDir, DEFAULT_SOUL_FILENAME),
     },
     {
-      name: DEFAULT_TOOLS_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_TOOLS_FILENAME),
-    },
-    {
       name: DEFAULT_IDENTITY_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_IDENTITY_FILENAME),
+    },
+    {
+      name: DEFAULT_PRACTICAL_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_PRACTICAL_FILENAME),
+    },
+    {
+      name: DEFAULT_OPERATIONS_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_OPERATIONS_FILENAME),
+    },
+    {
+      name: DEFAULT_TOOLS_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_TOOLS_FILENAME),
     },
     {
       name: DEFAULT_USER_FILENAME,
@@ -608,6 +640,14 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     {
       name: DEFAULT_WRITELIKEAHUMAN_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_WRITELIKEAHUMAN_FILENAME),
+    },
+    {
+      name: DEFAULT_MEMORY_HYGIENE_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_MEMORY_HYGIENE_FILENAME),
+    },
+    {
+      name: DEFAULT_ACIP_SECURITY_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_ACIP_SECURITY_FILENAME),
     },
   ];
 
@@ -632,14 +672,25 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
   return result;
 }
 
-const MINIMAL_BOOTSTRAP_ALLOWLIST = new Set([DEFAULT_AGENTS_FILENAME, DEFAULT_TOOLS_FILENAME]);
+const MINIMAL_BOOTSTRAP_ALLOWLIST = new Set([
+  DEFAULT_AGENTS_FILENAME,
+  DEFAULT_TOOLS_FILENAME,
+  DEFAULT_OPERATIONS_FILENAME,
+  DEFAULT_PRACTICAL_FILENAME,
+  DEFAULT_MEMORY_HYGIENE_FILENAME,
+  DEFAULT_ACIP_SECURITY_FILENAME,
+]);
+
+/** Files that should ONLY appear in subagent/cron sessions, never the main agent prompt. */
+const SUBAGENT_ONLY_FILES = new Set([DEFAULT_ACIP_SECURITY_FILENAME]);
 
 export function filterBootstrapFilesForSession(
   files: WorkspaceBootstrapFile[],
   sessionKey?: string,
 ): WorkspaceBootstrapFile[] {
   if (!sessionKey || (!isSubagentSessionKey(sessionKey) && !isCronSessionKey(sessionKey))) {
-    return files;
+    // Main agent: exclude subagent-only files
+    return files.filter((file) => !SUBAGENT_ONLY_FILES.has(file.name));
   }
   return files.filter((file) => MINIMAL_BOOTSTRAP_ALLOWLIST.has(file.name));
 }

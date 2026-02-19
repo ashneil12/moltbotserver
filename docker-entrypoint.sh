@@ -184,13 +184,20 @@ generate_config() {
       },
       "contextPruning": {
         "mode": "cache-ttl",
-        "ttl": "30m",
+        "ttl": "6h",
         "keepLastAssistants": 3
       },
       "memorySearch": {
         ${MEMORY_SEARCH_REMOTE}
         "experimental": { "sessionMemory": true },
-        "sources": ["memory", "sessions"]
+        "sources": ["memory", "sessions"],
+        "query": {
+          "hybrid": {
+            "enabled": true,
+            "vectorWeight": 0.7,
+            "textWeight": 0.3
+          }
+        }
       },
       "subagents": {
         "model": "${SUBAGENT_MODEL}",
@@ -372,6 +379,58 @@ setup_security_files() {
       
     chmod 444 "$WORKSPACE_DIR/SOUL.md"
     log_info "Model routing configured in SOUL.md"
+  fi
+
+  # OPERATIONS.md
+  if [ -f "/app/OPERATIONS.md" ]; then
+    mkdir -p "$WORKSPACE_DIR"
+    log_info "Setting up operational rules (OPERATIONS.md)..."
+    rm -f "$WORKSPACE_DIR/OPERATIONS.md"
+    cp /app/OPERATIONS.md "$WORKSPACE_DIR/OPERATIONS.md"
+    
+    # Template replacement (same vars as SOUL.md for consistency)
+    sed -i \
+      -e "s|{{PRIMARY_MODEL}}|${COMPLEX_MODEL:-not-configured}|g" \
+      -e "s|{{SUBAGENT_MODEL}}|${SUBAGENT_MODEL:-not-configured}|g" \
+      -e "s|{{CODING_MODEL}}|${CODING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{WRITING_MODEL}}|${WRITING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{SEARCH_MODEL}}|${SEARCH_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{IMAGE_MODEL}}|${IMAGE_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      "$WORKSPACE_DIR/OPERATIONS.md"
+      
+    chmod 444 "$WORKSPACE_DIR/OPERATIONS.md"
+    log_info "Operational rules deployed (OPERATIONS.md)"
+  fi
+
+  # PRACTICAL.md
+  if [ -f "/app/PRACTICAL.md" ]; then
+    mkdir -p "$WORKSPACE_DIR"
+    log_info "Setting up operational philosophy (PRACTICAL.md)..."
+    rm -f "$WORKSPACE_DIR/PRACTICAL.md"
+    cp /app/PRACTICAL.md "$WORKSPACE_DIR/PRACTICAL.md"
+    
+    # Template replacement (same vars as SOUL.md for consistency)
+    sed -i \
+      -e "s|{{PRIMARY_MODEL}}|${COMPLEX_MODEL:-not-configured}|g" \
+      -e "s|{{SUBAGENT_MODEL}}|${SUBAGENT_MODEL:-not-configured}|g" \
+      -e "s|{{CODING_MODEL}}|${CODING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{WRITING_MODEL}}|${WRITING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{SEARCH_MODEL}}|${SEARCH_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      -e "s|{{IMAGE_MODEL}}|${IMAGE_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
+      "$WORKSPACE_DIR/PRACTICAL.md"
+      
+    chmod 444 "$WORKSPACE_DIR/PRACTICAL.md"
+    log_info "Operational philosophy deployed (PRACTICAL.md)"
+  fi
+
+  # memory-hygiene.md
+  if [ -f "/app/memory-hygiene.md" ]; then
+    mkdir -p "$WORKSPACE_DIR"
+    log_info "Setting up memory hygiene guide (memory-hygiene.md)..."
+    rm -f "$WORKSPACE_DIR/memory-hygiene.md"
+    cp /app/memory-hygiene.md "$WORKSPACE_DIR/memory-hygiene.md"
+    chmod 444 "$WORKSPACE_DIR/memory-hygiene.md"
+    log_info "Memory hygiene guide deployed (memory-hygiene.md)"
   fi
 
   # ACIP
