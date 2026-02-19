@@ -32,18 +32,33 @@ DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AU
 ACIP_ENABLED="${OPENCLAW_ACIP_ENABLED:-true}"
 export OPENCLAW_DISABLE_BONJOUR=1
 
-# Models
-DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${OPENCLAW_ONBOARD_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}}"
-COMPLEX_MODEL="${OPENCLAW_COMPLEX_MODEL:-${DEFAULT_MODEL}}"
-SUBAGENT_MODEL="${OPENCLAW_SUBAGENT_MODEL:-deepseek/deepseek-reasoner}"
-HEARTBEAT_MODEL="${OPENCLAW_HEARTBEAT_MODEL:-${HEARTBEAT_MODEL:-}}"
+# Models — normalize known model IDs to canonical casing.
+# The model registry does case-sensitive matching, so "minimax-m2.5" ≠ "MiniMax-M2.5".
+normalize_model_id() {
+  local ref="$1"
+  [ -z "$ref" ] && return
+  local provider="${ref%%/*}"
+  local model="${ref#*/}"
+  case "$(echo "$model" | tr '[:upper:]' '[:lower:]')" in
+    minimax-m2.5)           model="MiniMax-M2.5" ;;
+    minimax-m2.5-lightning) model="MiniMax-M2.5-Lightning" ;;
+    minimax-m1)             model="MiniMax-M1" ;;
+  esac
+  echo "${provider}/${model}"
+}
+
+DEFAULT_MODEL_RAW="${OPENCLAW_DEFAULT_MODEL:-${OPENCLAW_ONBOARD_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}}"
+DEFAULT_MODEL="$(normalize_model_id "$DEFAULT_MODEL_RAW")"
+COMPLEX_MODEL="$(normalize_model_id "${OPENCLAW_COMPLEX_MODEL:-${DEFAULT_MODEL}}")"
+SUBAGENT_MODEL="$(normalize_model_id "${OPENCLAW_SUBAGENT_MODEL:-deepseek/deepseek-reasoner}")"
+HEARTBEAT_MODEL="$(normalize_model_id "${OPENCLAW_HEARTBEAT_MODEL:-${HEARTBEAT_MODEL:-}}")"
 HEARTBEAT_INTERVAL="${OPENCLAW_HEARTBEAT_INTERVAL:-15m}"
 FALLBACK_MODELS_RAW="${OPENCLAW_FALLBACK_MODELS:-}"
 
-CODING_MODEL="${OPENCLAW_CODING_MODEL:-${DEFAULT_MODEL}}"
-WRITING_MODEL="${OPENCLAW_WRITING_MODEL:-${DEFAULT_MODEL}}"
-SEARCH_MODEL="${OPENCLAW_SEARCH_MODEL:-${DEFAULT_MODEL}}"
-IMAGE_MODEL="${OPENCLAW_IMAGE_MODEL:-${DEFAULT_MODEL}}"
+CODING_MODEL="$(normalize_model_id "${OPENCLAW_CODING_MODEL:-${DEFAULT_MODEL}}")"
+WRITING_MODEL="$(normalize_model_id "${OPENCLAW_WRITING_MODEL:-${DEFAULT_MODEL}}")"
+SEARCH_MODEL="$(normalize_model_id "${OPENCLAW_SEARCH_MODEL:-${DEFAULT_MODEL}}")"
+IMAGE_MODEL="$(normalize_model_id "${OPENCLAW_IMAGE_MODEL:-${DEFAULT_MODEL}}")"
 
 # Concurrency & Delays
 MAX_CONCURRENT="${OPENCLAW_MAX_CONCURRENT:-4}"
@@ -538,7 +553,7 @@ sanitize_config() {
     // Discover installed plugins using OpenClaw's own discovery
     let knownIds;
     try {
-      const { discoverOpenClawPlugins } = require('./dist/plugins/discovery.js');
+      const { discoverOpenClawPlugins } = require('/app/dist/plugins/discovery.js');
       const workspaceDir = config?.agents?.defaults?.workspace || '/home/node/workspace';
       const extraPaths = config?.plugins?.load?.paths || [];
       const result = discoverOpenClawPlugins({ workspaceDir, extraPaths });
@@ -634,14 +649,14 @@ setup_honcho_plugin() {
 
   log_info "Enabling Honcho memory plugin in config..."
 
-  local jq_filter='.plugins.entries["openclaw-honcho"] = { "enabled": true }'
+  local jq_filter='.plugins.entries["openclaw-honcho"] = { "enabled": true, "apiKey": "'"$HONCHO_API_KEY"'" }'
   local node_script="
     const fs = require('fs');
     const configPath = '$CONFIG_FILE';
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     config.plugins = config.plugins || {};
     config.plugins.entries = config.plugins.entries || {};
-    config.plugins.entries['openclaw-honcho'] = { enabled: true };
+    config.plugins.entries['openclaw-honcho'] = { enabled: true, apiKey: '$HONCHO_API_KEY' };
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     console.log('[entrypoint] INFO: Honcho plugin enabled in config');
   "
