@@ -23,7 +23,7 @@ SUBAGENT_LOG_DIR="$WORKSPACE_DIR/subagent-logs"
 
 # Gateway & Network
 GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-${CLAWDBOT_GATEWAY_TOKEN:-}}"
-GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-custom}}"
+GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-lan}}"
 GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}}"
 AI_GATEWAY_URL="${OPENCLAW_AI_GATEWAY_URL:-}"
 
@@ -134,8 +134,7 @@ generate_config() {
   "gateway": {
     "mode": "local",
     "port": ${GATEWAY_PORT},
-    "bind": "${GATEWAY_BIND}",
-    "customBindHost": "0.0.0.0",
+    "bind": "lan",
     "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"],
     "controlUi": {
       "enabled": true,
@@ -522,8 +521,17 @@ sanitize_config() {
       process.exit(0); // non-fatal
     }
 
+    // Remove deprecated customBindHost key (causes crash in newer openclaw)
+    let changed = false;
+    if (config?.gateway?.customBindHost !== undefined) {
+      delete config.gateway.customBindHost;
+      if (config.gateway.bind === 'custom') config.gateway.bind = 'lan';
+      changed = true;
+      console.log('[entrypoint] INFO: Removed deprecated gateway.customBindHost from config');
+    }
+
     const entries = config?.plugins?.entries;
-    if (!entries || typeof entries !== 'object' || Object.keys(entries).length === 0) {
+    if ((!entries || typeof entries !== 'object' || Object.keys(entries).length === 0) && !changed) {
       process.exit(0); // nothing to sanitize
     }
 
@@ -564,14 +572,14 @@ sanitize_config() {
 
     // Remove unknown plugin entries
     const removed = [];
-    for (const pluginId of Object.keys(entries)) {
+    for (const pluginId of Object.keys(entries || {})) {
       if (!knownIds.has(pluginId)) {
         removed.push(pluginId);
         delete entries[pluginId];
       }
     }
 
-    if (removed.length === 0) {
+    if (removed.length === 0 && !changed) {
       process.exit(0);
     }
 
