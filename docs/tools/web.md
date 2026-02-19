@@ -18,6 +18,21 @@ OpenClaw ships two lightweight web tools:
 These are **not** browser automation. For JS-heavy sites or logins, use the
 [Browser tool](/tools/browser).
 
+## When to use what
+
+| I need to…                                           | Use                                                 |
+| ---------------------------------------------------- | --------------------------------------------------- |
+| Find pages/info on a topic                           | `web_search`                                        |
+| Read a specific URL (static page, docs, article)     | `web_fetch`                                         |
+| Get a quick list of URLs, then dig into the best one | `web_search` → `web_fetch`                          |
+| Read a JS-rendered or SPA page                       | Browser tool                                        |
+| Log in, click a button, fill a form                  | Browser tool                                        |
+| Scrape a page that actively blocks bots              | Browser tool (or Firecrawl fallback in `web_fetch`) |
+
+**Rule of thumb:** `web_search` is your index, `web_fetch` is your reader, the browser tool is your last resort.
+Prefer `web_search` + `web_fetch` whenever you can — they're faster, cheaper, and don't consume a browser slot.
+Only reach for the browser when the page genuinely requires JavaScript execution or interaction.
+
 ## How it works
 
 - `web_search` calls your configured provider and returns results.
