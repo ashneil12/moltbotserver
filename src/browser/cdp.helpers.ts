@@ -193,7 +193,9 @@ function needsHostOverride(url: string): boolean {
 
 export async function fetchJson<T>(url: string, timeoutMs = 1500, init?: RequestInit): Promise<T> {
   // For non-loopback URLs, use http.request which respects Host header overrides.
-  // Node.js fetch() ignores custom Host headers (undici auto-sets from URL).
+  // Node.js fetch() (undici) auto-overwrites the Host header from the URL,
+  // so we fall back to http.request for non-loopback CDP URLs where Chrome
+  // rejects Docker service hostnames like "browser:9222".
   if (needsHostOverride(url)) {
     const resp = await cdpHttpRequest(url, timeoutMs, {
       method: (init?.method as string) ?? "GET",
@@ -204,7 +206,11 @@ export async function fetchJson<T>(url: string, timeoutMs = 1500, init?: Request
     }
     return JSON.parse(resp.body) as T;
   }
+  const res = await fetchChecked(url, timeoutMs, init);
+  return (await res.json()) as T;
+}
 
+async function fetchChecked(url: string, timeoutMs = 1500, init?: RequestInit): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(ctrl.abort.bind(ctrl), timeoutMs);
   try {
@@ -213,7 +219,7 @@ export async function fetchJson<T>(url: string, timeoutMs = 1500, init?: Request
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }
-    return (await res.json()) as T;
+    return res;
   } finally {
     clearTimeout(t);
   }
@@ -231,18 +237,7 @@ export async function fetchOk(url: string, timeoutMs = 1500, init?: RequestInit)
     }
     return;
   }
-
-  const ctrl = new AbortController();
-  const t = setTimeout(ctrl.abort.bind(ctrl), timeoutMs);
-  try {
-    const headers = getHeadersWithAuth(url, (init?.headers as Record<string, string>) || {});
-    const res = await fetch(url, { ...init, headers, signal: ctrl.signal });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-  } finally {
-    clearTimeout(t);
-  }
+  await fetchChecked(url, timeoutMs, init);
 }
 
 export async function withCdpSocket<T>(

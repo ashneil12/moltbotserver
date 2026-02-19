@@ -588,10 +588,18 @@ async function runGatewayBraveSearch(params: {
     query: params.query,
     count: params.count,
   };
-  if (params.country) body.country = params.country;
-  if (params.search_lang) body.search_lang = params.search_lang;
-  if (params.ui_lang) body.ui_lang = params.ui_lang;
-  if (params.freshness) body.freshness = params.freshness;
+  if (params.country) {
+    body.country = params.country;
+  }
+  if (params.search_lang) {
+    body.search_lang = params.search_lang;
+  }
+  if (params.ui_lang) {
+    body.ui_lang = params.ui_lang;
+  }
+  if (params.freshness) {
+    body.freshness = params.freshness;
+  }
 
   const res = await fetch(gatewayUrl, {
     method: "POST",
@@ -604,7 +612,8 @@ async function runGatewayBraveSearch(params: {
   });
 
   if (!res.ok) {
-    const detail = await readResponseText(res);
+    const detailResult = await readResponseText(res, { maxBytes: 64_000 });
+    const detail = detailResult.text;
     throw new Error(`Gateway search error (${res.status}): ${detail || res.statusText}`);
   }
 
@@ -743,13 +752,13 @@ async function runWebSearch(params: {
     });
 
     if (!res.ok) {
-      const detail = await readResponseText(res);
+      const detailResult = await readResponseText(res, { maxBytes: 64_000 });
+      const detail = detailResult.text;
       throw new Error(`Brave Search API error (${res.status}): ${detail || res.statusText}`);
     }
 
     data = (await res.json()) as BraveSearchResponse;
   }
-
 
   const results = Array.isArray(data.web?.results) ? (data.web?.results ?? []) : [];
   const mapped = results.map((entry) => {
