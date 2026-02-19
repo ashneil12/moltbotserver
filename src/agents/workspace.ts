@@ -36,12 +36,14 @@ export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
 export const DEFAULT_WRITELIKEAHUMAN_FILENAME = "writelikeahuman.md";
+export const DEFAULT_HOWTOBEHUMAN_FILENAME = "howtobehuman.md";
 export const DEFAULT_MEMORY_HYGIENE_FILENAME = "memory-hygiene.md";
 export const DEFAULT_ACIP_SECURITY_FILENAME = "ACIP_SECURITY.md";
 
 /** Filenames that are only loaded when human mode is enabled. */
 export const HUMAN_MODE_FILENAMES: ReadonlySet<string> = new Set([
   DEFAULT_WRITELIKEAHUMAN_FILENAME,
+  DEFAULT_HOWTOBEHUMAN_FILENAME,
 ]);
 
 /** Markers used to identify the Human Mode section in OPERATIONS.md for programmatic removal. */
@@ -140,6 +142,7 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_MEMORY_FILENAME
   | typeof DEFAULT_MEMORY_ALT_FILENAME
   | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME
+  | typeof DEFAULT_HOWTOBEHUMAN_FILENAME
   | typeof DEFAULT_MEMORY_HYGIENE_FILENAME
   | typeof DEFAULT_ACIP_SECURITY_FILENAME;
 
@@ -334,7 +337,9 @@ async function stripHonchoConditionals(filePath: string, honchoEnabled: boolean)
     while (true) {
       const startIdx = result.indexOf(HONCHO_ENABLED_START);
       const endIdx = result.indexOf(HONCHO_ENABLED_END);
-      if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) break;
+      if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) {
+        break;
+      }
       const before = result.slice(0, startIdx);
       const after = result.slice(endIdx + HONCHO_ENABLED_END.length);
       result = before + after;
@@ -348,7 +353,9 @@ async function stripHonchoConditionals(filePath: string, honchoEnabled: boolean)
   if (result !== content) {
     await fs.writeFile(filePath, result, "utf-8");
     const basename = filePath.split("/").pop() ?? filePath;
-    log.info(`honcho: processed conditional markers in ${basename} (honcho=${honchoEnabled ? "on" : "off"})`);
+    log.info(
+      `honcho: processed conditional markers in ${basename} (honcho=${honchoEnabled ? "on" : "off"})`,
+    );
   }
 }
 
@@ -426,10 +433,19 @@ export async function ensureAgentWorkspace(params?: {
   const heartbeatPath = path.join(dir, DEFAULT_HEARTBEAT_FILENAME);
   const bootstrapPath = path.join(dir, DEFAULT_BOOTSTRAP_FILENAME);
   const writelikeahumanPath = path.join(dir, DEFAULT_WRITELIKEAHUMAN_FILENAME);
+  const howtobehuman_path = path.join(dir, DEFAULT_HOWTOBEHUMAN_FILENAME);
   const statePath = resolveWorkspaceStatePath(dir);
 
   const isBrandNewWorkspace = await (async () => {
-    const paths = [agentsPath, soulPath, operationsPath, toolsPath, identityPath, userPath, heartbeatPath];
+    const paths = [
+      agentsPath,
+      soulPath,
+      operationsPath,
+      toolsPath,
+      identityPath,
+      userPath,
+      heartbeatPath,
+    ];
     const existing = await Promise.all(
       paths.map(async (p) => {
         try {
@@ -479,12 +495,16 @@ export async function ensureAgentWorkspace(params?: {
     } catch {
       /* template not packaged */
     }
-    // Clean up legacy howtobehuman.md if it still exists
-    await deleteIfExists(path.join(dir, "howtobehuman.md"));
+    try {
+      const howtobehumanTemplate = await loadTemplate(DEFAULT_HOWTOBEHUMAN_FILENAME);
+      await writeFileIfMissing(howtobehuman_path, howtobehumanTemplate);
+    } catch {
+      /* template not packaged */
+    }
   } else {
-    // Delete guide file when human mode is disabled
+    // Delete guide files when human mode is disabled
     await deleteIfExists(writelikeahumanPath);
-    await deleteIfExists(path.join(dir, "howtobehuman.md")); // legacy cleanup
+    await deleteIfExists(howtobehuman_path);
     // Remove the Human Mode section from OPERATIONS.md
     await removeHumanModeSectionFromSoul(operationsPath);
   }
@@ -554,43 +574,6 @@ export async function ensureAgentWorkspace(params?: {
   };
 }
 
-async function resolveMemoryBootstrapEntries(
-  resolvedDir: string,
-): Promise<Array<{ name: WorkspaceBootstrapFileName; filePath: string }>> {
-  const candidates: WorkspaceBootstrapFileName[] = [
-    DEFAULT_MEMORY_FILENAME,
-    DEFAULT_MEMORY_ALT_FILENAME,
-  ];
-  const entries: Array<{ name: WorkspaceBootstrapFileName; filePath: string }> = [];
-  for (const name of candidates) {
-    const filePath = path.join(resolvedDir, name);
-    try {
-      await fs.access(filePath);
-      entries.push({ name, filePath });
-    } catch {
-      // optional
-    }
-  }
-  if (entries.length <= 1) {
-    return entries;
-  }
-
-  const seen = new Set<string>();
-  const deduped: Array<{ name: WorkspaceBootstrapFileName; filePath: string }> = [];
-  for (const entry of entries) {
-    let key = entry.filePath;
-    try {
-      key = await fs.realpath(entry.filePath);
-    } catch {}
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    deduped.push(entry);
-  }
-  return deduped;
-}
-
 export async function loadWorkspaceBootstrapFiles(dir: string): Promise<WorkspaceBootstrapFile[]> {
   const resolvedDir = resolveUserPath(dir);
 
@@ -640,6 +623,10 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     {
       name: DEFAULT_WRITELIKEAHUMAN_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_WRITELIKEAHUMAN_FILENAME),
+    },
+    {
+      name: DEFAULT_HOWTOBEHUMAN_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_HOWTOBEHUMAN_FILENAME),
     },
     {
       name: DEFAULT_MEMORY_HYGIENE_FILENAME,
