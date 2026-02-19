@@ -29,6 +29,50 @@ export const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
+<<<<<<< HEAD
+=======
+export const DEFAULT_WRITELIKEAHUMAN_FILENAME = "writelikeahuman.md";
+
+/** Filenames that are only loaded when human mode is enabled. */
+export const HUMAN_MODE_FILENAMES: ReadonlySet<string> = new Set([
+  DEFAULT_WRITELIKEAHUMAN_FILENAME,
+]);
+
+/** Markers used to identify the Human Mode section in SOUL.md for programmatic removal. */
+const HUMAN_MODE_SOUL_START = "<!-- HUMAN_MODE_START -->";
+const HUMAN_MODE_SOUL_END = "<!-- HUMAN_MODE_END -->";
+
+/** Markers for Honcho conditional content in workspace docs. */
+const HONCHO_DISABLED_START = "<!-- HONCHO_DISABLED_START -->";
+const HONCHO_DISABLED_END = "<!-- HONCHO_DISABLED_END -->";
+const HONCHO_ENABLED_START = "<!-- HONCHO_ENABLED_START -->";
+const HONCHO_ENABLED_END = "<!-- HONCHO_ENABLED_END -->";
+
+/**
+ * Resolves whether human mode is enabled from the environment.
+ * Returns `true` unless `OPENCLAW_HUMAN_MODE_ENABLED` is explicitly set to a falsy value
+ * ("false", "0", "no", "off"). Unset or unrecognized values default to enabled.
+ */
+export function resolveHumanModeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const raw = env.OPENCLAW_HUMAN_MODE_ENABLED;
+  if (raw == null || raw.trim() === "") {
+    return true;
+  } // default on
+  const parsed = parseBooleanValue(raw);
+  // Explicitly false → disabled. Everything else (true, undefined/unrecognized) → enabled.
+  return parsed !== false;
+}
+
+/**
+ * Resolves whether Honcho memory is active from the environment.
+ * Returns `true` when `HONCHO_API_KEY` is set (non-empty).
+ */
+export function resolveHonchoEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const key = env.HONCHO_API_KEY;
+  return key != null && key.trim() !== "";
+}
+
+>>>>>>> 862786945 (feat: deep honcho integration, SOUL.md overhaul, memory flush, compaction events, and config enforcement updates)
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;
@@ -119,7 +163,12 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_HEARTBEAT_FILENAME
   | typeof DEFAULT_BOOTSTRAP_FILENAME
   | typeof DEFAULT_MEMORY_FILENAME
+<<<<<<< HEAD
   | typeof DEFAULT_MEMORY_ALT_FILENAME;
+=======
+  | typeof DEFAULT_MEMORY_ALT_FILENAME
+  | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME;
+>>>>>>> 862786945 (feat: deep honcho integration, SOUL.md overhaul, memory flush, compaction events, and config enforcement updates)
 
 export type WorkspaceBootstrapFile = {
   name: WorkspaceBootstrapFileName;
@@ -251,6 +300,93 @@ async function writeWorkspaceOnboardingState(
   }
 }
 
+<<<<<<< HEAD
+=======
+/** Silently delete a file if it exists. */
+async function deleteIfExists(filePath: string): Promise<void> {
+  try {
+    await fs.unlink(filePath);
+    log.info(`human-mode: deleted ${path.basename(filePath)}`);
+  } catch (err) {
+    const anyErr = err as { code?: string };
+    if (anyErr.code !== "ENOENT") {
+      log.warn(`human-mode: failed to delete ${path.basename(filePath)}: ${String(err)}`);
+    }
+  }
+}
+
+/**
+ * Remove the Human Mode section from SOUL.md by stripping everything between
+ * the `<!-- HUMAN_MODE_START -->` and `<!-- HUMAN_MODE_END -->` markers (inclusive).
+ * If markers aren't found, the file is left unchanged.
+ */
+async function removeHumanModeSectionFromSoul(soulPath: string): Promise<void> {
+  let content: string;
+  try {
+    content = await fs.readFile(soulPath, "utf-8");
+  } catch {
+    return; // File doesn't exist yet — nothing to clean
+  }
+  const startIdx = content.indexOf(HUMAN_MODE_SOUL_START);
+  const endIdx = content.indexOf(HUMAN_MODE_SOUL_END);
+  if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) {
+    return; // Markers not found or malformed — leave unchanged
+  }
+  const before = content.slice(0, startIdx);
+  const after = content.slice(endIdx + HUMAN_MODE_SOUL_END.length);
+  // Clean up: collapse any resulting double-blank-lines into one
+  const cleaned = (before + after).replace(/\n{3,}/g, "\n\n");
+  await fs.writeFile(soulPath, cleaned, "utf-8");
+  log.info("human-mode: removed Human Mode section from SOUL.md");
+}
+
+/**
+ * Strip conditional Honcho markers from a workspace doc.
+ * When `honchoEnabled` is true: remove HONCHO_DISABLED blocks entirely,
+ * keep content of HONCHO_ENABLED blocks (strip markers only).
+ * When false: remove HONCHO_ENABLED blocks entirely,
+ * keep content of HONCHO_DISABLED blocks (strip markers only).
+ */
+async function stripHonchoConditionals(filePath: string, honchoEnabled: boolean): Promise<void> {
+  let content: string;
+  try {
+    content = await fs.readFile(filePath, "utf-8");
+  } catch {
+    return; // File doesn't exist — nothing to clean
+  }
+
+  // Determine which markers to strip (remove block entirely) and which to unwrap (keep content)
+  const stripStart = honchoEnabled ? HONCHO_DISABLED_START : HONCHO_ENABLED_START;
+  const stripEnd = honchoEnabled ? HONCHO_DISABLED_END : HONCHO_ENABLED_END;
+  const unwrapStart = honchoEnabled ? HONCHO_ENABLED_START : HONCHO_DISABLED_START;
+  const unwrapEnd = honchoEnabled ? HONCHO_ENABLED_END : HONCHO_DISABLED_END;
+
+  let result = content;
+
+  // Remove blocks that should be stripped entirely (including their content)
+  while (true) {
+    const startIdx = result.indexOf(stripStart);
+    const endIdx = result.indexOf(stripEnd);
+    if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) break;
+    const before = result.slice(0, startIdx);
+    const after = result.slice(endIdx + stripEnd.length);
+    result = before + after;
+  }
+
+  // Unwrap blocks that should be kept (remove markers, keep content)
+  result = result.replaceAll(unwrapStart, "").replaceAll(unwrapEnd, "");
+
+  // Clean up: collapse any resulting triple+ blank lines into double
+  result = result.replace(/\n{3,}/g, "\n\n");
+
+  if (result !== content) {
+    await fs.writeFile(filePath, result, "utf-8");
+    const basename = filePath.split("/").pop() ?? filePath;
+    log.info(`honcho: processed conditional markers in ${basename} (honcho=${honchoEnabled ? "on" : "off"})`);
+  }
+}
+
+>>>>>>> 862786945 (feat: deep honcho integration, SOUL.md overhaul, memory flush, compaction events, and config enforcement updates)
 async function hasGitRepo(dir: string): Promise<boolean> {
   try {
     await fs.stat(path.join(dir, ".git"));
@@ -323,6 +459,10 @@ export async function ensureAgentWorkspace(params?: {
   // Per docs: "If the file is missing, the heartbeat still runs and the model decides what to do."
   // Creating it from template (which is effectively empty) would cause heartbeat to be skipped.
   const bootstrapPath = path.join(dir, DEFAULT_BOOTSTRAP_FILENAME);
+<<<<<<< HEAD
+=======
+  const writelikeahumanPath = path.join(dir, DEFAULT_WRITELIKEAHUMAN_FILENAME);
+>>>>>>> 862786945 (feat: deep honcho integration, SOUL.md overhaul, memory flush, compaction events, and config enforcement updates)
   const statePath = resolveWorkspaceStatePath(dir);
 
   const isBrandNewWorkspace = await (async () => {
@@ -356,6 +496,37 @@ export async function ensureAgentWorkspace(params?: {
   await writeFileIfMissing(toolsPath, toolsTemplate);
   await writeFileIfMissing(identityPath, identityTemplate);
   await writeFileIfMissing(userPath, userTemplate);
+<<<<<<< HEAD
+=======
+  await writeFileIfMissing(heartbeatPath, heartbeatTemplate);
+
+  // Human mode files: conditionally create or destroy based on env var
+  const humanModeOn = resolveHumanModeEnabled();
+
+  // Only load human-mode templates when needed to avoid wasted disk I/O
+  if (humanModeOn) {
+    // Template is optional – skip silently if not packaged
+    try {
+      const writelikeahumanTemplate = await loadTemplate(DEFAULT_WRITELIKEAHUMAN_FILENAME);
+      await writeFileIfMissing(writelikeahumanPath, writelikeahumanTemplate);
+    } catch {
+      /* template not packaged */
+    }
+    // Clean up legacy howtobehuman.md if it still exists
+    await deleteIfExists(path.join(dir, "howtobehuman.md"));
+  } else {
+    // Delete guide file when human mode is disabled
+    await deleteIfExists(writelikeahumanPath);
+    await deleteIfExists(path.join(dir, "howtobehuman.md")); // legacy cleanup
+    // Remove the Human Mode section from SOUL.md
+    await removeHumanModeSectionFromSoul(soulPath);
+  }
+>>>>>>> 862786945 (feat: deep honcho integration, SOUL.md overhaul, memory flush, compaction events, and config enforcement updates)
+
+  // Honcho memory: strip conditional markers based on HONCHO_API_KEY
+  const honchoEnabled = resolveHonchoEnabled();
+  await stripHonchoConditionals(soulPath, honchoEnabled);
+  await stripHonchoConditionals(agentsPath, honchoEnabled);
 
   let state = await readWorkspaceOnboardingState(statePath);
   let stateDirty = false;
@@ -490,12 +661,19 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
       filePath: path.join(resolvedDir, DEFAULT_HEARTBEAT_FILENAME),
     },
     {
+<<<<<<< HEAD
       name: DEFAULT_BOOTSTRAP_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_BOOTSTRAP_FILENAME),
+=======
+      name: DEFAULT_WRITELIKEAHUMAN_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_WRITELIKEAHUMAN_FILENAME),
+>>>>>>> 862786945 (feat: deep honcho integration, SOUL.md overhaul, memory flush, compaction events, and config enforcement updates)
     },
   ];
 
-  entries.push(...(await resolveMemoryBootstrapEntries(resolvedDir)));
+  // NOTE: MEMORY.md / memory.md are NOT loaded into context.
+  // They can grow very large and should be accessed via memory_search (QMD),
+  // not injected into the system prompt on every message.
 
   const result: WorkspaceBootstrapFile[] = [];
   for (const entry of entries) {
