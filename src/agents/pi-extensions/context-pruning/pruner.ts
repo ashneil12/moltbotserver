@@ -246,7 +246,7 @@ export function pruneContextMessages(params: {
   }
 
   // Bootstrap safety: never prune anything before the first user message. This protects initial
-  // "identity" reads (SOUL.md, USER.md, etc.) which typically happen before the first inbound user
+  // "identity" reads (SOUL.md, OPERATIONS.md, USER.md, etc.) which typically happen before the first inbound user
   // message exists in the session transcript.
   const firstUserIndex = findFirstUserIndex(messages);
   const pruneStartIndex = firstUserIndex === null ? messages.length : firstUserIndex;

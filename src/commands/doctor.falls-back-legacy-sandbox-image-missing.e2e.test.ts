@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -423,4 +424,19 @@ afterEach(() => {
     fs.rmSync(tempStateDir, { recursive: true, force: true });
     tempStateDir = undefined;
   }
+=======
+import { describe, expect, it } from "vitest";
+import { arrangeLegacyStateMigrationTest, confirm } from "./doctor.e2e-harness.js";
+
+describe("doctor command", () => {
+  it("runs legacy state migrations in non-interactive mode without prompting", async () => {
+    const { doctorCommand, runtime, runLegacyStateMigrations } =
+      await arrangeLegacyStateMigrationTest();
+
+    await doctorCommand(runtime, { nonInteractive: true });
+
+    expect(runLegacyStateMigrations).toHaveBeenCalledTimes(1);
+    expect(confirm).not.toHaveBeenCalled();
+  }, 30_000);
+>>>>>>> 862786945 (feat: deep honcho integration, SOUL.md overhaul, memory flush, compaction events, and config enforcement updates)
 });

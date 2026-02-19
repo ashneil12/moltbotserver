@@ -424,7 +424,8 @@ export function applyContextPruningDefaults(cfg: OpenClawConfig): OpenClawConfig
     nextDefaults.contextPruning = {
       ...contextPruning,
       mode: "cache-ttl",
-      ttl: defaults.contextPruning?.ttl ?? "1h",
+      ttl: defaults.contextPruning?.ttl ?? "6h",
+      keepLastAssistants: defaults.contextPruning?.keepLastAssistants ?? 3,
     };
     mutated = true;
   }

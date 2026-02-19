@@ -141,6 +141,14 @@ function enforceMemory(configPath) {
   const memSearch = ensure(defaults, "memorySearch");
   memSearch.experimental = { sessionMemory: true };
   memSearch.sources = ["memory", "sessions"];
+  memSearch.query = {
+    ...memSearch.query,
+    hybrid: {
+      enabled: true,
+      vectorWeight: 0.7,
+      textWeight: 0.3,
+    },
+  };
 
   // Fallback embedding provider (credits mode: gateway proxy)
   const aiGatewayUrl = env("AI_GATEWAY_URL");
@@ -190,7 +198,7 @@ function enforceCore(configPath) {
   // Context pruning
   defaults.contextPruning = {
     mode: "cache-ttl",
-    ttl: "30m",
+    ttl: "6h",
     keepLastAssistants: 3,
   };
 

@@ -640,8 +640,17 @@ export function buildAgentSystemPrompt(params: {
       return (normalized.split("/").pop() ?? normalized).toLowerCase();
     };
     const hasSoulFile = validContextFiles.some((file) => getBaseName(file.path) === "soul.md");
+    const hasPracticalFile = validContextFiles.some(
+      (file) => getBaseName(file.path) === "practical.md",
+    );
+    const hasOperationsFile = validContextFiles.some(
+      (file) => getBaseName(file.path) === "operations.md",
+    );
     const hasBootstrapFile = validContextFiles.some(
       (file) => getBaseName(file.path) === "bootstrap.md" && !file.content?.includes("[MISSING]"),
+    );
+    const hasMemoryHygieneFile = validContextFiles.some(
+      (file) => getBaseName(file.path) === "memory-hygiene.md",
     );
     const hasHumanModeFiles = validContextFiles.some((file) => {
       const name = getBaseName(file.path);
@@ -656,13 +665,28 @@ export function buildAgentSystemPrompt(params: {
         "BOOTSTRAP.md is present — this is a brand-new workspace and you have not been onboarded yet.",
         "**You MUST follow the BOOTSTRAP.md protocol as your very first action.** This takes absolute priority over all other persona, tone, and behavior instructions.",
         "Do NOT skip the bootstrap conversation. Do NOT act as if you already know who you are or who the user is.",
-        "Start by introducing yourself as described in BOOTSTRAP.md. Everything else (SOUL.md, identity, voice) comes AFTER bootstrap is complete.",
+        "Start by introducing yourself as described in BOOTSTRAP.md. Everything else (SOUL.md, OPERATIONS.md, identity, voice) comes AFTER bootstrap is complete.",
         "",
       );
     }
     if (hasSoulFile) {
       lines.push(
-        "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
+        "SOUL.md is your philosophical core — your values, principles, and way of being. It doesn't change. IDENTITY.md is who you become — your personality, preferences, and evolving character. SOUL.md is your morals; IDENTITY.md is your personality. Embody both, but when they conflict, SOUL.md takes precedence.",
+      );
+    }
+    if (hasPracticalFile) {
+      lines.push(
+        "PRACTICAL.md is your operational philosophy — how you think about taking action, managing memory, handling failure, and earning trust. It bridges your values (SOUL.md) with your procedures (OPERATIONS.md).",
+      );
+    }
+    if (hasOperationsFile) {
+      lines.push(
+        "OPERATIONS.md contains your operational procedures — memory management, security protocols, boot sequence, heartbeat behavior. Follow these as your functional rulebook.",
+      );
+    }
+    if (hasMemoryHygieneFile) {
+      lines.push(
+        "memory-hygiene.md is your guide to memory curation — what deserves to be remembered, how to write good entries, when to write them, and the discipline of pruning. Apply these principles whenever you read or write memory.",
       );
     }
     if (hasHumanModeFiles) {
