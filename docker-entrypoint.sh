@@ -637,7 +637,34 @@ sanitize_config() {
 # Instances use the user's own API key directly; no gateway proxy secrets to scrub.
 
 setup_honcho_plugin() {
-  if [ -z "${HONCHO_API_KEY:-}" ]; then return 0; fi
+  if [ -z "${HONCHO_API_KEY:-}" ]; then
+    # If key is missing but plugin is enabled in config (zombie state from previous run), disable it.
+    if [ -s "$CONFIG_FILE" ]; then
+      local jq_filter='del(.plugins.entries["openclaw-honcho"]) | if .plugins.slots.memory == "openclaw-honcho" then del(.plugins.slots.memory) else . end'
+      local node_script="
+        const fs = require('fs');
+        const configPath = '$CONFIG_FILE';
+        let config;
+        try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch(e) { process.exit(0); }
+        
+        let changed = false;
+        if (config.plugins?.entries?.['openclaw-honcho']) {
+          delete config.plugins.entries['openclaw-honcho'];
+          changed = true;
+        }
+        if (config.plugins?.slots?.memory === 'openclaw-honcho') {
+          delete config.plugins.slots.memory;
+          changed = true;
+        }
+        if (changed) {
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+          console.log('[entrypoint] INFO: Honcho API key missing — disabled Honcho plugin in config');
+        }
+      "
+      patch_config_json "$jq_filter" "$node_script"
+    fi
+    return 0
+  fi
   if [ ! -s "$CONFIG_FILE" ]; then return 0; fi
 
   # Where the plugin should live at runtime (matches resolveConfigDir())
@@ -705,6 +732,48 @@ seed_cron_jobs() {
   node "$enforcer" cron-seed 2>&1 || log_warn "Cron seed returned error (non-fatal)"
 }
 
+enforce_channel_policies() {
+  if [ ! -s "$CONFIG_FILE" ]; then return; fi
+  
+  log_info "Enforcing channel policies..."
+  
+  # Check for invalid Telegram config: dmPolicy=open requires allowFrom=["*"]
+  # The gateway crashes if this is missing.
+  local node_script="
+    const fs = require('fs');
+    const configPath = '$CONFIG_FILE';
+    let config;
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (e) {
+      process.exit(0);
+    }
+    
+    let changed = false;
+    
+    const channelsToCheck = ['telegram', 'discord', 'slack', 'signal', 'imessage', 'whatsapp'];
+    
+    if (config.channels) {
+      for (const ch of channelsToCheck) {
+        if (config.channels[ch]?.enabled && config.channels[ch].dmPolicy === 'open') {
+          const allowFrom = config.channels[ch].allowFrom;
+          if (!Array.isArray(allowFrom) || !allowFrom.includes('*')) {
+            config.channels[ch].allowFrom = ['*'];
+            changed = true;
+            console.log(`[entrypoint] INFO: Fixed invalid ${ch} config: added allowFrom=["*"] for dmPolicy=open`);
+          }
+        }
+      }
+    }
+    
+    if (changed) {
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    }
+  "
+  
+  node -e "$node_script" 2>&1 | while read -r line; do echo "$line"; done
+}
+
 # -----------------------------------------------------------------------------
 # Main Execution
 # -----------------------------------------------------------------------------
@@ -718,6 +787,7 @@ run_auto_onboard
 # Post-onboard enforcements (critical if onboard overwrites config)
 enforce_model_settings
 enforce_gateway_token
+enforce_channel_policies
 enforce_trusted_proxies
 
 setup_security_files
