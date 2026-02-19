@@ -12,16 +12,15 @@ export function extractText(message: unknown): string | null {
     const processed =
       role === "assistant"
         ? stripThinkingTags(content)
-        : stripUntrustedMetaBlocks(stripEnvelope(content));
+        : stripEnvelope(stripUntrustedMetaBlocks(content));
     return processed;
   }
   if (Array.isArray(content)) {
-    const isUser = role !== "assistant";
     const parts = content
       .map((p) => {
         const item = p as Record<string, unknown>;
         if (item.type === "text" && typeof item.text === "string") {
-          return isUser ? stripEnvelope(item.text) : item.text;
+          return item.text;
         }
         return null;
       })
@@ -29,7 +28,9 @@ export function extractText(message: unknown): string | null {
     if (parts.length > 0) {
       const joined = parts.join("\n");
       const processed =
-        role === "assistant" ? stripThinkingTags(joined) : stripUntrustedMetaBlocks(joined);
+        role === "assistant"
+          ? stripThinkingTags(joined)
+          : stripEnvelope(stripUntrustedMetaBlocks(joined));
       return processed;
     }
   }
@@ -37,7 +38,7 @@ export function extractText(message: unknown): string | null {
     const processed =
       role === "assistant"
         ? stripThinkingTags(m.text)
-        : stripUntrustedMetaBlocks(stripEnvelope(m.text));
+        : stripEnvelope(stripUntrustedMetaBlocks(m.text));
     return processed;
   }
   return null;
