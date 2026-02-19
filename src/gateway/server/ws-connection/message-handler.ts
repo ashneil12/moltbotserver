@@ -614,6 +614,14 @@ export function attachGatewayWsMessageHandler(params: {
           return;
         }
 
+        // Internal gateway clients (e.g. browser tool) that have already authenticated
+        // via shared secret should auto-approve pairing. They connect from Docker bridge
+        // IPs (172.x) which aren't loopback, so isLocalClient is false and normal
+        // silent auto-approval doesn't trigger.
+        const isInternalGatewayClient =
+          connectParams.client.id === GATEWAY_CLIENT_IDS.GATEWAY_CLIENT &&
+          authOk &&
+          (authMethod === "token" || authMethod === "password");
         const skipPairing = allowControlUiBypass && sharedAuthOk;
         if (device && devicePublicKey && !skipPairing) {
           const requirePairing = async (reason: string, _paired?: { deviceId: string }) => {
@@ -627,7 +635,7 @@ export function attachGatewayWsMessageHandler(params: {
               role,
               scopes,
               remoteIp: reportedClientIp,
-              silent: isLocalClient,
+              silent: isLocalClient || isInternalGatewayClient,
             });
             const context = buildRequestContext();
             if (pairing.request.silent === true) {
