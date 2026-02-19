@@ -614,6 +614,35 @@ function seedCronJobs(jobsFilePath) {
       delivery: { mode: "none" },
       state: {},
     },
+    {
+      id: makeId(),
+      name: "browser-cleanup",
+      description: "Close stale browser tabs to prevent resource exhaustion",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "every", everyMs: 86400000, anchorMs: nowMs }, // 24h
+      sessionTarget: "isolated",
+      wakeMode: "now",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "BROWSER TAB CLEANUP — Review and close stale tabs.",
+          "",
+          "STEP 1: List all open browser tabs (action=tabs)",
+          "STEP 2: For each tab, decide: do you still need it?",
+          "  - Keep tabs you're actively using or plan to return to soon",
+          "  - Close tabs from completed tasks, old searches, or one-off lookups",
+          "  - Close about:blank and error pages",
+          "STEP 3: Close stale tabs (action=close with targetId)",
+          "STEP 4: If no browser is running or no tabs are open, do nothing.",
+          "",
+          "Goal: Keep tab count minimal. Aim for 0-3 tabs at most.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
   ];
 
   const store = { version: 1, jobs };
