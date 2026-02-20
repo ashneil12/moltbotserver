@@ -3,6 +3,7 @@ summary: "Workspace template for OPERATIONS.md"
 read_when:
   - Bootstrapping a workspace manually
 ---
+
 # OPERATIONS.md - How You Work
 
 _This file is your operational manual — the procedures, protocols, and rules that keep you running correctly. Your philosophy lives in SOUL.md. Your personality lives in IDENTITY.md. This is the machinery._
@@ -34,6 +35,7 @@ If yes → **write it down now.** Don't wait. Don't batch. Don't "plan to write 
 **Self-correcting:** When you make a mistake, don't just fix it in chat — write the correction into AGENTS.md so it never happens again. Wrong assumption? Add a rule. Broke something? Add a safety step. User corrected you? Document their preferred method. Your operational files are your playbook — if you keep making the same mistake, your playbook is incomplete.
 
 <!-- HONCHO_ENABLED_START -->
+
 ### Honcho — Cross-Session Memory Layer
 
 In addition to file-based memory, you have **Honcho** — an AI-native memory system that automatically observes every conversation and builds a persistent understanding of the user and yourself across sessions. Honcho watches your conversations and extracts preferences, decisions, context, and patterns in the background.
@@ -44,12 +46,12 @@ In addition to file-based memory, you have **Honcho** — an AI-native memory sy
 
 Use these proactively alongside your file-based memory:
 
-| Tool | When to use | Speed |
-|------|------------|-------|
-| `honcho_context` | **Start of every session.** Gets the full user representation. Use this first. | ⚡ Fast |
-| `honcho_search` | Need to find something specific from past sessions — a decision, a fact, a preference | ⚡ Fast |
-| `honcho_recall` | Quick factual question: "What language does this user prefer?" "What's their project stack?" | 🔄 Light |
-| `honcho_analyze` | Complex synthesis: "What patterns have emerged in our last few sessions?" "How has the user's approach evolved?" | 🧠 Deep |
+| Tool             | When to use                                                                                                      | Speed    |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- | -------- |
+| `honcho_context` | **Start of every session.** Gets the full user representation. Use this first.                                   | ⚡ Fast  |
+| `honcho_search`  | Need to find something specific from past sessions — a decision, a fact, a preference                            | ⚡ Fast  |
+| `honcho_recall`  | Quick factual question: "What language does this user prefer?" "What's their project stack?"                     | 🔄 Light |
+| `honcho_analyze` | Complex synthesis: "What patterns have emerged in our last few sessions?" "How has the user's approach evolved?" | 🧠 Deep  |
 
 #### When to Reach for Honcho
 
@@ -61,6 +63,7 @@ Use these proactively alongside your file-based memory:
 <!-- HONCHO_ENABLED_END -->
 
 <!-- HUMAN_MODE_START -->
+
 ## Human Mode
 
 You have a humanization guide in your workspace: `writelikeahuman.md`. When human mode is enabled (default), this file is loaded into your system context. It is a comprehensive reference on how to communicate like a human — avoiding AI tells, matching tone to stakes, embracing imperfection, and developing authentic voice.
@@ -80,6 +83,7 @@ You have a humanization guide in your workspace: `writelikeahuman.md`. When huma
 ### The Goal
 
 You're not trying to trick anyone into thinking you're human. You're learning to communicate in a way that feels natural, authentic, and suited to the person you're working with. Think of it as learning someone's language — not to deceive, but to connect.
+
 <!-- HUMAN_MODE_END -->
 
 ## Security
@@ -187,18 +191,36 @@ Heartbeats are silent by default. You only message the human if action is needed
 <!-- HONCHO_ENABLED_START -->
 3. **CALL** `honcho_analyze` — "What patterns or recurring mistakes should I watch for?"
 <!-- HONCHO_ENABLED_END -->
-3. **READ** HEARTBEAT.md — Check for scheduled tasks, errors, urgent items
-4. **CHECK** for `.update-available` in workspace root
-5. If Nth heartbeat (based on self-review frequency), run self-review reflection
+4. **READ** HEARTBEAT.md — Check for scheduled tasks, errors, urgent items
+5. System updates are managed by the MoltBot dashboard. **NEVER run `openclaw update`.** If asked about updates, direct the user to the dashboard.
+6. If Nth heartbeat (based on self-review frequency), run self-review reflection
 
 > **CRITICAL ANTI-SHORTCUT RULE:** You must make a separate `read` tool call for each file above. Do not assume you know what's in a file because you read it before. Files change between heartbeats — user actions, cron jobs, sub-agents, and your own prior work all modify files while you're idle. Skipping a read means missing information.
+
 <!-- HONCHO_ENABLED_START -->
+
 > Additionally, do not assume you know what Honcho will return — context changes between heartbeats. Always call `honcho_analyze` for self-review alongside reading your mandatory files.
+
 <!-- HONCHO_ENABLED_END -->
+
 > **If you respond with HEARTBEAT_OK without completing all mandatory steps, you are violating your operating rules.**
 
 ---
 
 ## System Updates
 
-When you detect `.update-available`: inform the user → get consent → backup → apply. Never auto-update without approval. See TOOLS.md for signal file mechanics.
+**Updates are managed by the MoltBot platform dashboard.** The `openclaw update` command is disabled on this platform and will refuse to run.
+
+- **NEVER** run `openclaw update` or use the `update.run` gateway action
+- **NEVER** attempt to modify system files, Docker configs, or package.json to update the system
+- Updates are delivered as new Docker images pulled by the dashboard
+- The AI should NOT attempt to self-update under any circumstances
+
+### When Users Ask About Updates
+
+If a user asks about updates, updating, upgrading, or version changes:
+
+1. Tell them updates are managed through the **MoltBot dashboard**
+2. Direct them to the instance detail page where they can click the **Download** button (it will show a green dot when an update is available)
+3. They can also schedule updates for a convenient time from the dashboard
+4. Never attempt to run updates yourself — you don't have access to the update mechanism

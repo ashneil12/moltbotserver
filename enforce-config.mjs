@@ -57,6 +57,21 @@ function env(name, defaultValue = "") {
   return process.env[name]?.trim() || defaultValue;
 }
 
+/** Map a self-reflection frequency string to diary/identity interval milliseconds. */
+function resolveReflectionIntervals(freq) {
+  switch (freq) {
+    case "high":
+      return { diaryMs: 10800000, identityMs: 43200000, reflectionEnabled: true }; // 3h / 12h
+    case "low":
+      return { diaryMs: 43200000, identityMs: 259200000, reflectionEnabled: true }; // 12h / 3d
+    case "disabled":
+      return { diaryMs: 21600000, identityMs: 86400000, reflectionEnabled: false }; // intervals don't matter
+    case "normal":
+    default:
+      return { diaryMs: 21600000, identityMs: 86400000, reflectionEnabled: true }; // 6h / 24h
+  }
+}
+
 /** Check if a string is truthy ("true" or "1"). */
 function isTruthy(value) {
   return value === "true" || value === "1";
@@ -345,36 +360,53 @@ function enforceCore(configPath) {
 }
 
 function seedCronJobs(jobsFilePath) {
+  const selfReflection = env("OPENCLAW_SELF_REFLECTION", "normal");
+
+  // ── Existing jobs.json: conditionally patch intervals ─────────────────
   if (existsSync(jobsFilePath)) {
-    console.log(`[enforce-config] Cron jobs already exist at ${jobsFilePath} — skipping seed`);
+    // Only patch if the user explicitly changed the self-reflection frequency
+    // in the dashboard. If the env var matches the stored marker, skip entirely
+    // to preserve any AI-customized intervals.
+    const store = readConfig(jobsFilePath);
+    if (store.appliedReflection === selfReflection) {
+      console.log(
+        `[enforce-config] Cron jobs unchanged (appliedReflection=${selfReflection}) — skipping`,
+      );
+      return;
+    }
+
+    // User changed the setting — compute new intervals and patch
+    const { diaryMs, identityMs, reflectionEnabled } = resolveReflectionIntervals(selfReflection);
+    const jobs = store.jobs || [];
+    let patched = false;
+
+    for (const job of jobs) {
+      if (job.name === "diary" || job.id === "diary-entry") {
+        job.schedule.everyMs = diaryMs;
+        job.enabled = reflectionEnabled;
+        patched = true;
+      } else if (job.name === "identity-review" || job.id === "identity-review") {
+        job.schedule.everyMs = identityMs;
+        job.enabled = reflectionEnabled;
+        patched = true;
+      }
+    }
+
+    if (patched) {
+      store.appliedReflection = selfReflection;
+      writeConfig(jobsFilePath, store);
+      console.log(
+        `[enforce-config] ✅ Patched cron intervals for reflection=${selfReflection} (diary=${diaryMs}ms, identity=${identityMs}ms)`,
+      );
+    } else {
+      console.log(`[enforce-config] No diary/identity-review jobs found to patch`);
+    }
     return;
   }
 
-  const selfReflection = env("OPENCLAW_SELF_REFLECTION", "normal");
+  // ── Fresh seed: no jobs.json exists yet ────────────────────────────────
   const nowMs = Date.now();
-
-  // Map self-reflection frequency to intervals
-  let diaryMs = 86400000; // 24h (normal)
-  let identityMs = 259200000; // 3d  (normal)
-  let reflectionEnabled = true;
-
-  switch (selfReflection) {
-    case "high":
-      diaryMs = 43200000; // 12h
-      identityMs = 86400000; // 24h
-      break;
-    case "normal":
-      diaryMs = 86400000; // 24h
-      identityMs = 259200000; // 3d
-      break;
-    case "low":
-      diaryMs = 172800000; // 2d
-      identityMs = 604800000; // 7d
-      break;
-    case "disabled":
-      reflectionEnabled = false;
-      break;
-  }
+  const { diaryMs, identityMs, reflectionEnabled } = resolveReflectionIntervals(selfReflection);
 
   const jobs = [
     {
@@ -645,7 +677,7 @@ function seedCronJobs(jobsFilePath) {
     },
   ];
 
-  const store = { version: 1, jobs };
+  const store = { version: 1, appliedReflection: selfReflection, jobs };
 
   // Ensure directory exists
   mkdirSync(dirname(jobsFilePath), { recursive: true });

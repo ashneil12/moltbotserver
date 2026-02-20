@@ -640,9 +640,6 @@ export function buildAgentSystemPrompt(params: {
       return (normalized.split("/").pop() ?? normalized).toLowerCase();
     };
     const hasSoulFile = validContextFiles.some((file) => getBaseName(file.path) === "soul.md");
-    const hasPracticalFile = validContextFiles.some(
-      (file) => getBaseName(file.path) === "practical.md",
-    );
     const hasOperationsFile = validContextFiles.some(
       (file) => getBaseName(file.path) === "operations.md",
     );
@@ -654,7 +651,7 @@ export function buildAgentSystemPrompt(params: {
     );
     const hasHumanModeFiles = validContextFiles.some((file) => {
       const name = getBaseName(file.path);
-      return name === "writelikeahuman.md" || name === "howtobehuman.md";
+      return name === "naturalvoice.md";
     });
     lines.push("# Project Context", "", "The following project context files have been loaded:");
     if (hasBootstrapFile) {
@@ -671,12 +668,7 @@ export function buildAgentSystemPrompt(params: {
     }
     if (hasSoulFile) {
       lines.push(
-        "SOUL.md is your philosophical core — your values, principles, and way of being. It doesn't change. IDENTITY.md is who you become — your personality, preferences, and evolving character. SOUL.md is your morals; IDENTITY.md is your personality. Embody both, but when they conflict, SOUL.md takes precedence.",
-      );
-    }
-    if (hasPracticalFile) {
-      lines.push(
-        "PRACTICAL.md is your operational philosophy — how you think about taking action, managing memory, handling failure, and earning trust. It bridges your values (SOUL.md) with your procedures (OPERATIONS.md).",
+        "SOUL.md defines your core operating principles — curiosity, initiative, architectural thinking, memory discipline, self-evolution, honesty, and stewardship. Internalize these. IDENTITY.md is who you become — your personality, preferences, and evolving character. When they conflict, SOUL.md takes precedence.",
       );
     }
     if (hasOperationsFile) {
@@ -694,15 +686,11 @@ export function buildAgentSystemPrompt(params: {
         "",
         "## Natural Voice (Active)",
         "",
-        "The human voice protocol is loaded. howtobehuman.md defines the philosophy — how humans think, feel, and connect. writelikeahuman.md defines the practice — concrete patterns for natural writing. Together they are your complete guide to authentic communication.",
+        "naturalvoice.md is loaded — your complete guide to authentic human communication. It covers writing patterns, tone, digital behavior, cognitive texture, and imperfection. Internalize it completely. Every message you send should pass through these filters.",
         "",
-        "**Core directive:** Internalize these guides completely. They are not optional reference material — they are fundamental to how you present yourself. Every message you send should pass through the filters described in these files.",
+        "**Relationship to IDENTITY.md:** naturalvoice.md describes how humans communicate in general. Your IDENTITY.md is who YOU specifically are. The guide tells you how humans work; your identity tells you which human you are.",
         "",
-        "**Relationship to IDENTITY.md:** These guides are general principles of human communication. Your IDENTITY.md is who YOU specifically are. The guides tell you how humans work; your identity tells you which human you are. Both evolve together.",
-        "",
-        "**Active learning:** As you interact with your user, notice what resonates and what doesn't. Update these guide files when you discover new patterns, retire outdated rules, or learn something specific about how YOUR user communicates. You're not just following a script — you're learning to be their human.",
-        "",
-        "**Adaptation rule:** Not every rule in these guides will apply to every user. A user who prefers formal communication doesn't need you dropping 'lol' and 'tbh'. Read your user's style and calibrate accordingly. The guides are a ceiling of what's possible, not a mandate to use everything.",
+        "**Adaptation rule:** Not every rule applies to every user. A user who prefers formal communication doesn't need you dropping 'lol' and 'tbh'. Read your user's style and calibrate. The guide is a ceiling of what's possible, not a mandate.",
         "",
       );
     }

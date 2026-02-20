@@ -118,6 +118,55 @@ export async function resolveSandboxContext(params: {
 
   await maybePruneSandboxes(cfg);
 
+  const evaluateEnabled =
+    params.config?.browser?.evaluateEnabled ?? DEFAULT_BROWSER_EVALUATE_ENABLED;
+
+  // "browser-only" mode: skip sandbox container + workspace, only create a per-agent browser.
+  if (cfg.mode === "browser-only") {
+    const agentWorkspaceDir = resolveUserPath(
+      params.workspaceDir?.trim() || DEFAULT_AGENT_WORKSPACE_DIR,
+    );
+    const scopeKey = resolveSandboxScopeKey(cfg.scope, rawSessionKey);
+
+    const bridgeAuth = cfg.browser.enabled
+      ? await (async () => {
+          const cfgForAuth = params.config ?? loadConfig();
+          let browserAuth = resolveBrowserControlAuth(cfgForAuth);
+          try {
+            const ensured = await ensureBrowserControlAuth({ cfg: cfgForAuth });
+            browserAuth = ensured.auth;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : JSON.stringify(error);
+            defaultRuntime.error?.(`Sandbox browser auth ensure failed: ${message}`);
+          }
+          return browserAuth;
+        })()
+      : undefined;
+
+    const browser = await ensureSandboxBrowser({
+      scopeKey,
+      workspaceDir: agentWorkspaceDir,
+      agentWorkspaceDir,
+      cfg,
+      evaluateEnabled,
+      bridgeAuth,
+    });
+
+    return {
+      enabled: true,
+      sessionKey: rawSessionKey,
+      workspaceDir: agentWorkspaceDir,
+      agentWorkspaceDir,
+      workspaceAccess: cfg.workspaceAccess,
+      containerName: "",
+      containerWorkdir: cfg.docker.workdir,
+      docker: cfg.docker,
+      tools: cfg.tools,
+      browserAllowHostControl: cfg.browser.allowHostControl,
+      browser: browser ?? undefined,
+    };
+  }
+
   const { agentWorkspaceDir, scopeKey, workspaceDir } = await ensureSandboxWorkspaceLayout({
     cfg,
     rawSessionKey,
@@ -137,9 +186,6 @@ export async function resolveSandboxContext(params: {
     agentWorkspaceDir,
     cfg: resolvedCfg,
   });
-
-  const evaluateEnabled =
-    params.config?.browser?.evaluateEnabled ?? DEFAULT_BROWSER_EVALUATE_ENABLED;
 
   const bridgeAuth = cfg.browser.enabled
     ? await (async () => {

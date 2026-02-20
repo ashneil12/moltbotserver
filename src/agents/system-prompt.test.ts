@@ -310,22 +310,17 @@ describe("buildAgentSystemPrompt", () => {
       ],
     });
 
-    expect(prompt).toContain(
-      "SOUL.md is your philosophical core",
-    );
-    expect(prompt).toContain(
-      "SOUL.md is your morals; IDENTITY.md is your personality",
-    );
+    expect(prompt).toContain("SOUL.md defines your core operating principles");
+    expect(prompt).toContain("When they conflict, SOUL.md takes precedence");
   });
 
-  it("adds PRACTICAL guidance when a practical file is present", () => {
+  it("does not add PRACTICAL guidance (file removed)", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",
       contextFiles: [{ path: "./PRACTICAL.md", content: "How to operate" }],
     });
 
-    expect(prompt).toContain("PRACTICAL.md is your operational philosophy");
-    expect(prompt).toContain("bridges your values (SOUL.md) with your procedures (OPERATIONS.md)");
+    expect(prompt).not.toContain("PRACTICAL.md is your operational philosophy");
   });
 
   it("adds memory-hygiene guidance when memory-hygiene file is present", () => {

@@ -17,6 +17,21 @@ import { assertValidParams } from "./validation.js";
 
 export const updateHandlers: GatewayRequestHandlers = {
   "update.run": async ({ params, respond, client, context }) => {
+    // MoltBot managed platform: block upstream updates — updates are delivered
+    // via Docker image pull from the platform dashboard, not git/npm.
+    if (process.env.OPENCLAW_MANAGED_PLATFORM === "1") {
+      respond(
+        false,
+        {
+          ok: false,
+          error:
+            "Updates are managed by the MoltBot platform. Use the dashboard to update your instance.",
+        },
+        undefined,
+      );
+      return;
+    }
+
     if (!assertValidParams(params, validateUpdateRunParams, "update.run", respond)) {
       return;
     }

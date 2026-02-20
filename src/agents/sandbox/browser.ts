@@ -269,6 +269,16 @@ export async function ensureSandboxBrowser(params: {
     args.push(browserImage);
     await execDocker(args);
     await execDocker(["start", containerName]);
+
+    // Connect sandbox browser to the gateway's Docker network so the gateway
+    // can proxy noVNC to it by container name. Set OPENCLAW_DOCKER_NETWORK in
+    // docker-compose.yml (e.g. to the compose project's default network).
+    const dockerNetwork = process.env.OPENCLAW_DOCKER_NETWORK;
+    if (dockerNetwork) {
+      await execDocker(["network", "connect", dockerNetwork, containerName], {
+        allowFailure: true,
+      });
+    }
   } else if (!running) {
     await execDocker(["start", containerName]);
   }
