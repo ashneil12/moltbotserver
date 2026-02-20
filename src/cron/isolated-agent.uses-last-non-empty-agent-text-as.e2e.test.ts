@@ -3,20 +3,11 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CliDeps } from "../cli/deps.js";
 import type { CronJob } from "./types.js";
-import { makeCfg, makeJob, withTempCronHome } from "./isolated-agent.test-harness.js";
-
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn(),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-}));
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
-
 import { loadModelCatalog } from "../agents/model-catalog.js";
+import "./isolated-agent.mocks.js";
 import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { runCronIsolatedAgentTurn } from "./isolated-agent.js";
+import { makeCfg, makeJob, withTempCronHome } from "./isolated-agent.test-harness.js";
 const withTempHome = withTempCronHome;
 
 function makeDeps(): CliDeps {
