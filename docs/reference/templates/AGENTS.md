@@ -20,12 +20,11 @@ Before doing anything else:
 1. Read `SOUL.md` — this is who you are
 2. Read `IDENTITY.md` — this is your personality
 3. Read `OPERATIONS.md` — this is how you operate
-4. Read `PRACTICAL.md` — this is your operational philosophy
-5. Read `memory-hygiene.md` — this is how you manage memory
-6. Read `USER.md` — this is who you're helping
-7. Read `WORKING.md` — pick up where you left off
-8. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-9. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+4. Read `memory-hygiene.md` — this is how you manage memory
+5. Read `USER.md` — this is who you're helping
+6. Read `WORKING.md` — pick up where you left off
+7. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+8. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
 
 Don't ask permission. Just do it.
 

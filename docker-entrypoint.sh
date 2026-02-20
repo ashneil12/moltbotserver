@@ -419,27 +419,6 @@ setup_security_files() {
     log_info "Operational rules deployed (OPERATIONS.md)"
   fi
 
-  # PRACTICAL.md
-  if [ -f "/app/PRACTICAL.md" ]; then
-    mkdir -p "$WORKSPACE_DIR"
-    log_info "Setting up operational philosophy (PRACTICAL.md)..."
-    rm -f "$WORKSPACE_DIR/PRACTICAL.md"
-    cp /app/PRACTICAL.md "$WORKSPACE_DIR/PRACTICAL.md"
-    
-    # Template replacement (same vars as SOUL.md for consistency)
-    sed -i \
-      -e "s|{{PRIMARY_MODEL}}|${COMPLEX_MODEL:-not-configured}|g" \
-      -e "s|{{SUBAGENT_MODEL}}|${SUBAGENT_MODEL:-not-configured}|g" \
-      -e "s|{{CODING_MODEL}}|${CODING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-      -e "s|{{WRITING_MODEL}}|${WRITING_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-      -e "s|{{SEARCH_MODEL}}|${SEARCH_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-      -e "s|{{IMAGE_MODEL}}|${IMAGE_MODEL:-${DEFAULT_MODEL:-not-configured}}|g" \
-      "$WORKSPACE_DIR/PRACTICAL.md"
-      
-    chmod 444 "$WORKSPACE_DIR/PRACTICAL.md"
-    log_info "Operational philosophy deployed (PRACTICAL.md)"
-  fi
-
   # memory-hygiene.md
   if [ -f "/app/memory-hygiene.md" ]; then
     mkdir -p "$WORKSPACE_DIR"

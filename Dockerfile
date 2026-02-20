@@ -39,7 +39,6 @@ COPY patches ./patches
 COPY scripts ./scripts
 COPY SOUL.md ./SOUL.md
 COPY OPERATIONS.md ./OPERATIONS.md
-COPY PRACTICAL.md ./PRACTICAL.md
 COPY memory-hygiene.md ./memory-hygiene.md
 COPY ACIP_SECURITY.md ./ACIP_SECURITY.md
 COPY HEARTBEAT.md ./HEARTBEAT.md
@@ -58,12 +57,12 @@ RUN pnpm install --frozen-lockfile
 # Must run after pnpm install so playwright-core is available in node_modules.
 ARG OPENCLAW_INSTALL_BROWSER=""
 RUN if [ -n "$OPENCLAW_INSTALL_BROWSER" ]; then \
-      apt-get update && \
-      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb && \
-      node /app/node_modules/playwright-core/cli.js install --with-deps chromium && \
-      apt-get clean && \
-      rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
-    fi
+  apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb && \
+  node /app/node_modules/playwright-core/cli.js install --with-deps chromium && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
+  fi
 
 COPY . .
 RUN pnpm build
