@@ -150,6 +150,17 @@ const NVIDIA_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
+const SANSA_BASE_URL = "https://api.sansaml.com/v1";
+const SANSA_DEFAULT_MODEL_ID = "sansa-auto";
+const SANSA_DEFAULT_CONTEXT_WINDOW = 131072;
+const SANSA_DEFAULT_MAX_TOKENS = 32768;
+const SANSA_DEFAULT_COST = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};
+
 interface OllamaModel {
   name: string;
   modified_at: string;
@@ -656,6 +667,24 @@ export function buildNvidiaProvider(): ProviderConfig {
   };
 }
 
+function buildSansaProvider(): ProviderConfig {
+  return {
+    baseUrl: SANSA_BASE_URL,
+    api: "openai-completions",
+    models: [
+      {
+        id: SANSA_DEFAULT_MODEL_ID,
+        name: "Sansa Auto",
+        reasoning: true,
+        input: ["text"],
+        cost: SANSA_DEFAULT_COST,
+        contextWindow: SANSA_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: SANSA_DEFAULT_MAX_TOKENS,
+      },
+    ],
+  };
+}
+
 export async function resolveImplicitProviders(params: {
   agentDir: string;
   explicitProviders?: Record<string, ProviderConfig> | null;
@@ -805,6 +834,13 @@ export async function resolveImplicitProviders(params: {
     resolveApiKeyFromProfiles({ provider: "nvidia", store: authStore });
   if (nvidiaKey) {
     providers.nvidia = { ...buildNvidiaProvider(), apiKey: nvidiaKey };
+  }
+
+  const sansaKey =
+    resolveEnvApiKeyVarName("sansa") ??
+    resolveApiKeyFromProfiles({ provider: "sansa", store: authStore });
+  if (sansaKey) {
+    providers.sansa = { ...buildSansaProvider(), apiKey: sansaKey };
   }
 
   return providers;
