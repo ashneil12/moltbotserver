@@ -26,7 +26,7 @@ export function resolveDefaultAgentWorkspaceDir(
 export const DEFAULT_AGENT_WORKSPACE_DIR = resolveDefaultAgentWorkspaceDir();
 export const DEFAULT_AGENTS_FILENAME = "AGENTS.md";
 export const DEFAULT_SOUL_FILENAME = "SOUL.md";
-export const DEFAULT_PRACTICAL_FILENAME = "PRACTICAL.md";
+
 export const DEFAULT_OPERATIONS_FILENAME = "OPERATIONS.md";
 export const DEFAULT_TOOLS_FILENAME = "TOOLS.md";
 export const DEFAULT_IDENTITY_FILENAME = "IDENTITY.md";
@@ -35,16 +35,12 @@ export const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
-export const DEFAULT_WRITELIKEAHUMAN_FILENAME = "writelikeahuman.md";
-export const DEFAULT_HOWTOBEHUMAN_FILENAME = "howtobehuman.md";
+export const DEFAULT_NATURALVOICE_FILENAME = "naturalvoice.md";
 export const DEFAULT_MEMORY_HYGIENE_FILENAME = "memory-hygiene.md";
 export const DEFAULT_ACIP_SECURITY_FILENAME = "ACIP_SECURITY.md";
 
 /** Filenames that are only loaded when human mode is enabled. */
-export const HUMAN_MODE_FILENAMES: ReadonlySet<string> = new Set([
-  DEFAULT_WRITELIKEAHUMAN_FILENAME,
-  DEFAULT_HOWTOBEHUMAN_FILENAME,
-]);
+export const HUMAN_MODE_FILENAMES: ReadonlySet<string> = new Set([DEFAULT_NATURALVOICE_FILENAME]);
 
 /** Markers used to identify the Human Mode section in OPERATIONS.md for programmatic removal. */
 const HUMAN_MODE_SOUL_START = "<!-- HUMAN_MODE_START -->";
@@ -132,7 +128,6 @@ async function loadTemplate(name: string): Promise<string> {
 export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_AGENTS_FILENAME
   | typeof DEFAULT_SOUL_FILENAME
-  | typeof DEFAULT_PRACTICAL_FILENAME
   | typeof DEFAULT_OPERATIONS_FILENAME
   | typeof DEFAULT_TOOLS_FILENAME
   | typeof DEFAULT_IDENTITY_FILENAME
@@ -141,8 +136,7 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_BOOTSTRAP_FILENAME
   | typeof DEFAULT_MEMORY_FILENAME
   | typeof DEFAULT_MEMORY_ALT_FILENAME
-  | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME
-  | typeof DEFAULT_HOWTOBEHUMAN_FILENAME
+  | typeof DEFAULT_NATURALVOICE_FILENAME
   | typeof DEFAULT_MEMORY_HYGIENE_FILENAME
   | typeof DEFAULT_ACIP_SECURITY_FILENAME;
 
@@ -432,8 +426,7 @@ export async function ensureAgentWorkspace(params?: {
   const userPath = path.join(dir, DEFAULT_USER_FILENAME);
   const heartbeatPath = path.join(dir, DEFAULT_HEARTBEAT_FILENAME);
   const bootstrapPath = path.join(dir, DEFAULT_BOOTSTRAP_FILENAME);
-  const writelikeahumanPath = path.join(dir, DEFAULT_WRITELIKEAHUMAN_FILENAME);
-  const howtobehuman_path = path.join(dir, DEFAULT_HOWTOBEHUMAN_FILENAME);
+  const naturalvoicePath = path.join(dir, DEFAULT_NATURALVOICE_FILENAME);
   const statePath = resolveWorkspaceStatePath(dir);
 
   const isBrandNewWorkspace = await (async () => {
@@ -490,21 +483,14 @@ export async function ensureAgentWorkspace(params?: {
   if (humanModeOn) {
     // Template is optional – skip silently if not packaged
     try {
-      const writelikeahumanTemplate = await loadTemplate(DEFAULT_WRITELIKEAHUMAN_FILENAME);
-      await writeFileIfMissing(writelikeahumanPath, writelikeahumanTemplate);
-    } catch {
-      /* template not packaged */
-    }
-    try {
-      const howtobehumanTemplate = await loadTemplate(DEFAULT_HOWTOBEHUMAN_FILENAME);
-      await writeFileIfMissing(howtobehuman_path, howtobehumanTemplate);
+      const naturalvoiceTemplate = await loadTemplate(DEFAULT_NATURALVOICE_FILENAME);
+      await writeFileIfMissing(naturalvoicePath, naturalvoiceTemplate);
     } catch {
       /* template not packaged */
     }
   } else {
-    // Delete guide files when human mode is disabled
-    await deleteIfExists(writelikeahumanPath);
-    await deleteIfExists(howtobehuman_path);
+    // Delete guide file when human mode is disabled
+    await deleteIfExists(naturalvoicePath);
     // Remove the Human Mode section from OPERATIONS.md
     await removeHumanModeSectionFromSoul(operationsPath);
   }
@@ -601,10 +587,6 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
       filePath: path.join(resolvedDir, DEFAULT_IDENTITY_FILENAME),
     },
     {
-      name: DEFAULT_PRACTICAL_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_PRACTICAL_FILENAME),
-    },
-    {
       name: DEFAULT_OPERATIONS_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_OPERATIONS_FILENAME),
     },
@@ -621,12 +603,8 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
       filePath: path.join(resolvedDir, DEFAULT_HEARTBEAT_FILENAME),
     },
     {
-      name: DEFAULT_WRITELIKEAHUMAN_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_WRITELIKEAHUMAN_FILENAME),
-    },
-    {
-      name: DEFAULT_HOWTOBEHUMAN_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_HOWTOBEHUMAN_FILENAME),
+      name: DEFAULT_NATURALVOICE_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_NATURALVOICE_FILENAME),
     },
     {
       name: DEFAULT_MEMORY_HYGIENE_FILENAME,
@@ -663,7 +641,6 @@ const MINIMAL_BOOTSTRAP_ALLOWLIST = new Set([
   DEFAULT_AGENTS_FILENAME,
   DEFAULT_TOOLS_FILENAME,
   DEFAULT_OPERATIONS_FILENAME,
-  DEFAULT_PRACTICAL_FILENAME,
   DEFAULT_MEMORY_HYGIENE_FILENAME,
   DEFAULT_ACIP_SECURITY_FILENAME,
 ]);

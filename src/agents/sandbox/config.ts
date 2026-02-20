@@ -162,8 +162,21 @@ export function resolveSandboxConfigForAgent(
 
   const toolPolicy = resolveSandboxToolPolicyForAgent(cfg, agentId);
 
+  const mode = agentSandbox?.mode ?? agent?.mode ?? "off";
+
+  const browser = resolveSandboxBrowserConfig({
+    scope,
+    globalBrowser: agent?.browser,
+    agentBrowser: agentSandbox?.browser,
+  });
+
+  // "browser-only" mode is meaningless without browser enabled — auto-enable it.
+  if (mode === "browser-only") {
+    browser.enabled = true;
+  }
+
   return {
-    mode: agentSandbox?.mode ?? agent?.mode ?? "off",
+    mode,
     scope,
     workspaceAccess: agentSandbox?.workspaceAccess ?? agent?.workspaceAccess ?? "none",
     workspaceRoot:
@@ -173,11 +186,7 @@ export function resolveSandboxConfigForAgent(
       globalDocker: agent?.docker,
       agentDocker: agentSandbox?.docker,
     }),
-    browser: resolveSandboxBrowserConfig({
-      scope,
-      globalBrowser: agent?.browser,
-      agentBrowser: agentSandbox?.browser,
-    }),
+    browser,
     tools: {
       allow: toolPolicy.allow,
       deny: toolPolicy.deny,

@@ -55,6 +55,7 @@ import { getBearerToken } from "./http-utils.js";
 import { handleOpenAiHttpRequest } from "./openai-http.js";
 import { handleOpenResponsesHttpRequest } from "./openresponses-http.js";
 import { GATEWAY_CLIENT_MODES, normalizeGatewayClientMode } from "./protocol/client-info.js";
+import { handleSandboxBrowserRequest, handleSandboxBrowserUpgrade } from "./sandbox-browsers.js";
 import { handleToolsInvokeHttpRequest } from "./tools-invoke-http.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
@@ -521,6 +522,14 @@ export function createGatewayHttpServer(opts: {
       if (await handleSlackHttpRequest(req, res)) {
         return;
       }
+      if (
+        await handleSandboxBrowserRequest(req, res, {
+          auth: resolvedAuth,
+          rateLimiter,
+        })
+      ) {
+        return;
+      }
       if (handlePluginRequest) {
         // Channel HTTP endpoints are gateway-auth protected by default.
         // Non-channel plugin routes remain plugin-owned and must enforce
@@ -667,6 +676,15 @@ export function attachGatewayUpgradeHandler(opts: {
           return;
         }
       }
+      // Sandbox browser noVNC WebSocket proxy
+      const sbxHandled = await handleSandboxBrowserUpgrade(req, socket, head, {
+        auth: resolvedAuth,
+        rateLimiter,
+      });
+      if (sbxHandled) {
+        return;
+      }
+
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit("connection", ws, req);
       });

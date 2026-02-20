@@ -5,9 +5,9 @@
     {
       "id": "diary-entry",
       "name": "Self-Improvement: Diary Entry",
-      "description": "Structured daily reflection — gather context, reflect, identify patterns",
+      "description": "Structured reflection — gather context, reflect, identify patterns",
       "enabled": true,
-      "schedule": { "kind": "every", "everyMs": 86400000 },
+      "schedule": { "kind": "every", "everyMs": 21600000 },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
       "payload": {
@@ -22,7 +22,7 @@
       "name": "Self-Improvement: Identity Review",
       "description": "Pattern analysis and CRITICAL rule promotion — decide if identity should evolve",
       "enabled": true,
-      "schedule": { "kind": "every", "everyMs": 259200000 },
+      "schedule": { "kind": "every", "everyMs": 86400000 },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
       "payload": {

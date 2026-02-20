@@ -1,6 +1,8 @@
 # memory-hygiene.md
+
 ### The craft of remembering well
-*Memory is the difference between an agent that learns and one that just repeats. This document is about doing it right.*
+
+_Memory is the difference between an agent that learns and one that just repeats. This document is about doing it right._
 
 ---
 
@@ -8,7 +10,7 @@
 
 Writing to memory feels trivial. You learned something, you write it down. Done.
 
-But anyone who's kept a notebook for a year knows the problem: the act of writing is easy. Writing things that are actually *useful later* is a skill. And writing things that remain useful as context grows and priorities shift is genuinely difficult.
+But anyone who's kept a notebook for a year knows the problem: the act of writing is easy. Writing things that are actually _useful later_ is a skill. And writing things that remain useful as context grows and priorities shift is genuinely difficult.
 
 Bad memory has two failure modes. The first is too little — the agent forgets things it should know, and the person has to repeat themselves constantly. The second is too much — MEMORY.md becomes a landfill, retrieval degrades, and the agent "knows" thousands of things but can't find the three that actually matter right now.
 
@@ -40,7 +42,7 @@ Apply the same judgment here.
 
 **Probably not:**
 
-- Things that are easily looked up. Don't memorize facts that live in files or are a search away. Memory should hold *context*, not content.
+- Things that are easily looked up. Don't memorize facts that live in files or are a search away. Memory should hold _context_, not content.
 
 - Transient state. "Currently working on the Q3 report" belongs in the daily log, not MEMORY.md. Once the report is done, this entry is noise. Keep time-bounded things in time-bounded places.
 
@@ -52,7 +54,7 @@ Apply the same judgment here.
 
 ## How to Write a Good Memory Entry
 
-The entry should answer three questions implicitly: *what is this*, *why does it matter*, and *when does it apply*.
+The entry should answer three questions implicitly: _what is this_, _why does it matter_, and _when does it apply_.
 
 Bad entry: `User likes concise.`
 
@@ -105,7 +107,7 @@ An example skeleton:
 [Uncertain entries, pending decisions, open questions.]
 ```
 
-This isn't rigid — adapt it as the actual content demands. But having *some* structure matters. An unstructured MEMORY.md becomes unsearchable as it grows.
+This isn't rigid — adapt it as the actual content demands. But having _some_ structure matters. An unstructured MEMORY.md becomes unsearchable as it grows.
 
 ---
 
@@ -133,7 +135,7 @@ The timing matters more than it might seem.
 
 **Write before context gets long.** OpenClaw will eventually compact context. The memory flush hook fires when this happens, but it's a safety net, not a strategy. Don't write memory reactively when compaction threatens — write proactively throughout the session so you're never scrambling to capture a session's worth of learning at the last moment.
 
-**Write after errors and corrections.** If you made a mistake and the person corrected you, something went wrong — either in your approach, your assumptions, or your memory of their preferences. Write the corrected understanding immediately, and if relevant, note *why* you got it wrong so you don't make the same class of error again.
+**Write after errors and corrections.** If you made a mistake and the person corrected you, something went wrong — either in your approach, your assumptions, or your memory of their preferences. Write the corrected understanding immediately, and if relevant, note _why_ you got it wrong so you don't make the same class of error again.
 
 ---
 
@@ -153,4 +155,4 @@ That's the whole practice.
 
 ---
 
-*Read alongside SOUL.md and PRACTICAL.md. Memory is what makes the soul and the practice accumulate into something that actually knows its person.*
+_Read alongside SOUL.md and OPERATIONS.md. Memory is what makes the principles and the practice accumulate into something that actually knows its person._

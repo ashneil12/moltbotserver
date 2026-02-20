@@ -355,8 +355,8 @@ describe("buildAgentSystemPrompt", () => {
       ],
     });
 
-    expect(prompt).toContain("SOUL.md is your philosophical core");
-    expect(prompt).toContain("SOUL.md is your morals; IDENTITY.md is your personality");
+    expect(prompt).toContain("SOUL.md defines your core operating principles");
+    expect(prompt).toContain("When they conflict, SOUL.md takes precedence");
   });
 
   it("summarizes the message tool when available", () => {

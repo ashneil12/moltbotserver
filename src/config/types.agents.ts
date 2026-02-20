@@ -41,7 +41,7 @@ export type AgentConfig = {
     model?: string | { primary?: string; fallbacks?: string[] };
   };
   sandbox?: {
-    mode?: "off" | "non-main" | "all";
+    mode?: "off" | "non-main" | "all" | "browser-only";
     /** Agent workspace access inside the sandbox. */
     workspaceAccess?: "none" | "ro" | "rw";
     /**

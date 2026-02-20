@@ -115,6 +115,11 @@ export async function runGatewayUpdateCheck(params: {
   if (params.isNixMode) {
     return;
   }
+  // MoltBot managed platform: skip npm registry check — updates are managed
+  // by the platform dashboard via Docker image pulls, not npm.
+  if (process.env.OPENCLAW_MANAGED_PLATFORM === "1") {
+    return;
+  }
   if (params.cfg.update?.checkOnStart === false) {
     return;
   }

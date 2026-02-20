@@ -51,7 +51,7 @@ export type SandboxPruneConfig = {
 export type SandboxScope = "session" | "agent" | "shared";
 
 export type SandboxConfig = {
-  mode: "off" | "non-main" | "all";
+  mode: "off" | "non-main" | "all" | "browser-only";
   scope: SandboxScope;
   workspaceAccess: SandboxWorkspaceAccess;
   workspaceRoot: string;

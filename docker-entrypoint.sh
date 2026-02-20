@@ -31,6 +31,9 @@ AI_GATEWAY_URL="${OPENCLAW_AI_GATEWAY_URL:-}"
 DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AUTH:-false}}"
 ACIP_ENABLED="${OPENCLAW_ACIP_ENABLED:-true}"
 export OPENCLAW_DISABLE_BONJOUR=1
+# MoltBot managed platform: block upstream openclaw update CLI and RPC.
+# Updates are delivered via Docker image pull from the dashboard.
+export OPENCLAW_MANAGED_PLATFORM=1
 
 # Models — normalize known model IDs to canonical casing.
 # The model registry does case-sensitive matching, so "minimax-m2.5" ≠ "MiniMax-M2.5".
@@ -219,7 +222,7 @@ generate_config() {
       },
       "heartbeat": {
         "every": "${HEARTBEAT_INTERVAL}",
-        "prompt": "HEARTBEAT CHECK — You MUST complete ALL steps below. DO NOT SKIP ANY STEP.\n\nMANDATORY FILE READS (use the read tool for EACH of these, every single heartbeat):\n\nSTEP 1: READ ~/workspace/WORKING.md — In-progress task? Continue it. Stalled/blocked?\nSTEP 2: READ ~/workspace/memory/self-review.md — Check last 7 days for MISS tags. If match: counter-check protocol.\nSTEP 3: READ ~/workspace/HEARTBEAT.md — Scheduled tasks due? Errors? Urgent items?\n\nCRITICAL: Even if a file was empty last time, you MUST read it again. Files change between heartbeats. Skipping reads means missing information. You are REQUIRED to make 3 separate read calls before responding.\n\nSTEP 4: CHECK for .update-available file\nSTEP 5: RESPONSE (only after steps 1-4): Nothing → HEARTBEAT_OK. User attention needed → brief message (one line max).\n\nNEVER message for: routine status, still running, low-priority completions.",
+        "prompt": "HEARTBEAT CHECK — You MUST complete ALL steps below. DO NOT SKIP ANY STEP.\n\nMANDATORY FILE READS (use the read tool for EACH of these, every single heartbeat):\n\nSTEP 1: READ ~/workspace/WORKING.md — In-progress task? Continue it. Stalled/blocked?\nSTEP 2: READ ~/workspace/memory/self-review.md — Check last 7 days for MISS tags. If match: counter-check protocol.\nSTEP 3: READ ~/workspace/HEARTBEAT.md — Scheduled tasks due? Errors? Urgent items?\n\nCRITICAL: Even if a file was empty last time, you MUST read it again. Files change between heartbeats. Skipping reads means missing information. You are REQUIRED to make 3 separate read calls before responding.\n\nSTEP 4: System updates are managed by the MoltBot dashboard. NEVER run 'openclaw update'. If asked about updates, tell the user to check the dashboard.\nSTEP 5: RESPONSE (only after steps 1-4): Nothing → HEARTBEAT_OK. User attention needed → brief message (one line max).\n\nNEVER message for: routine status, still running, low-priority completions.",
         "model": "${HEARTBEAT_MODEL}"
       },
       "maxConcurrent": ${MAX_CONCURRENT}

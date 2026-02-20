@@ -14,6 +14,7 @@ function shouldSandboxSession(cfg: SandboxConfig, sessionKey: string, mainSessio
   if (cfg.mode === "all") {
     return true;
   }
+  // "non-main" and "browser-only" both skip main agent sessions
   return sessionKey.trim() !== mainSessionKey.trim();
 }
 
@@ -127,7 +128,7 @@ export function formatSandboxToolPolicyBlockedMessage(params: {
   for (const fix of fixes) {
     lines.push(`- ${fix}`);
   }
-  if (runtime.mode === "non-main") {
+  if (runtime.mode === "non-main" || runtime.mode === "browser-only") {
     lines.push(`- Use main session key (direct): ${runtime.mainSessionKey}`);
   }
   lines.push(
