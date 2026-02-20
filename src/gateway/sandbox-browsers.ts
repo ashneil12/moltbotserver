@@ -1,4 +1,3 @@
-import type { Duplex } from "node:stream";
 /**
  * Gateway handler for sandbox browser management:
  *   - GET  /api/sandbox-browsers   → list active sandbox browser containers
@@ -6,9 +5,13 @@ import type { Duplex } from "node:stream";
  *
  * Auth: requires a valid gateway token (Bearer or ?token= query param).
  */
+import type { Duplex } from "node:stream";
 import { request as httpRequest, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
-import { readBrowserRegistry } from "../agents/sandbox/registry.js";
+import {
+  readBrowserRegistry,
+  type SandboxBrowserRegistryEntry,
+} from "../agents/sandbox/registry.js";
 import { loadConfig } from "../config/config.js";
 import {
   authorizeGatewayConnect,
@@ -24,11 +27,15 @@ const API_PATH = "/api/sandbox-browsers";
 const PROXY_PREFIX = "/sbx-browser/";
 /** Default noVNC port inside sandbox browser containers. */
 const NOVNC_INTERNAL_PORT = 6080;
+/** Maximum allowed agent ID length to prevent abuse. */
+const MAX_AGENT_ID_LENGTH = 64;
+/** Characters allowed in agent IDs (alphanumeric + hyphens). */
+const VALID_AGENT_ID_RE = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export interface SandboxBrowserEntry {
-  /** Unique identifier (e.g. agent scope key or "main") */
+export interface SandboxBrowserInfo {
+  /** Unique short identifier derived from the container name */
   id: string;
   /** Human-readable label */
   label: string;
@@ -36,8 +43,6 @@ export interface SandboxBrowserEntry {
   type: "host" | "sandbox";
   /** URL path prefix for noVNC access */
   path: string;
-  /** Docker container name (sandbox only) */
-  containerName?: string;
 }
 
 // ── Auth helper ────────────────────────────────────────────────────────
@@ -68,31 +73,72 @@ async function authorizeRequest(
   });
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────
+// ── ID derivation (single source of truth) ─────────────────────────────
 
-function deriveLabel(sessionKey: string): string {
-  // Session keys are often like "agent:dan" or just "dan"
-  const name = sessionKey.includes(":") ? sessionKey.split(":").pop()! : sessionKey;
-  return name.charAt(0).toUpperCase() + name.slice(1);
+/**
+ * Derive a short, URL-safe identifier from a registry entry.
+ * Container names follow the pattern `openclaw-sbx-browser-{agentId}`.
+ * Falls back to the session key for non-standard names.
+ */
+function deriveShortId(entry: SandboxBrowserRegistryEntry): string {
+  const parts = entry.containerName.split("-");
+  // "openclaw-sbx-browser-dan" → ["openclaw", "sbx", "browser", "dan"]
+  if (parts.length > 3) {
+    return parts.slice(3).join("-");
+  }
+  // Fallback: use session key, strip "agent:" prefix if present
+  const key = entry.sessionKey;
+  return key.startsWith("agent:") ? key.slice(6) : key;
 }
 
 /**
+ * Derive a human-readable label from a session key.
+ */
+function deriveLabel(sessionKey: string): string {
+  const name = sessionKey.startsWith("agent:") ? sessionKey.slice(6) : sessionKey;
+  if (!name) {
+    return "Unknown";
+  }
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+// ── Path parsing ───────────────────────────────────────────────────────
+
+/**
  * Parse "/sbx-browser/{id}/some/path" into { id, subPath }.
- * Returns null if the URL doesn't match the prefix.
+ * Returns null if the URL doesn't match the prefix or if the id is invalid.
  */
 function parseSbxBrowserPath(pathname: string): { id: string; subPath: string } | null {
   if (!pathname.startsWith(PROXY_PREFIX)) {
     return null;
   }
   const rest = pathname.slice(PROXY_PREFIX.length);
-  const slashIdx = rest.indexOf("/");
-  if (slashIdx === -1) {
-    return { id: rest, subPath: "/" };
+  if (!rest) {
+    return null;
   }
-  return {
-    id: rest.slice(0, slashIdx),
-    subPath: rest.slice(slashIdx) || "/",
-  };
+
+  const slashIdx = rest.indexOf("/");
+  const id = slashIdx === -1 ? rest : rest.slice(0, slashIdx);
+  const subPath = slashIdx === -1 ? "/" : rest.slice(slashIdx) || "/";
+
+  // Validate ID to prevent path traversal and injection
+  if (!id || id.length > MAX_AGENT_ID_LENGTH || !VALID_AGENT_ID_RE.test(id)) {
+    return null;
+  }
+
+  return { id, subPath };
+}
+
+// ── Registry lookup ────────────────────────────────────────────────────
+
+/**
+ * Find a registry entry by short ID. Uses `deriveShortId` for consistent matching.
+ */
+function findEntryByShortId(
+  entries: SandboxBrowserRegistryEntry[],
+  targetId: string,
+): SandboxBrowserRegistryEntry | undefined {
+  return entries.find((e) => deriveShortId(e) === targetId);
 }
 
 // ── API: list browsers ─────────────────────────────────────────────────
@@ -100,27 +146,19 @@ function parseSbxBrowserPath(pathname: string): { id: string; subPath: string } 
 async function handleListBrowsers(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   const registry = await readBrowserRegistry();
 
-  const browsers: SandboxBrowserEntry[] = [
+  const browsers: SandboxBrowserInfo[] = [
     // Main/host browser is always first
-    {
-      id: "main",
-      label: "Main",
-      type: "host",
-      path: "/browser",
-    },
+    { id: "main", label: "Main", type: "host", path: "/browser" },
   ];
 
   for (const entry of registry.entries) {
-    // Derive a short id from the container name (e.g. "openclaw-sbx-browser-dan" → "dan")
-    const parts = entry.containerName.split("-");
-    const shortId = parts.length > 3 ? parts.slice(3).join("-") : entry.sessionKey;
-
+    const shortId = deriveShortId(entry);
     browsers.push({
       id: shortId,
       label: deriveLabel(entry.sessionKey),
       type: "sandbox",
       path: `${PROXY_PREFIX}${shortId}`,
-      containerName: entry.containerName,
+      // containerName intentionally omitted — no need to expose Docker internals
     });
   }
 
@@ -137,6 +175,14 @@ function proxyHttpToContainer(
   req: IncomingMessage,
   res: ServerResponse,
 ): void {
+  // Strip hop-by-hop headers that shouldn't be forwarded
+  const {
+    connection: _connection,
+    upgrade: _upgrade,
+    "keep-alive": _ka,
+    ...forwardHeaders
+  } = req.headers;
+
   const proxyReq = httpRequest(
     {
       hostname: containerName,
@@ -144,15 +190,25 @@ function proxyHttpToContainer(
       path: subPath,
       method: req.method,
       headers: {
-        ...req.headers,
+        ...forwardHeaders,
         host: `${containerName}:${NOVNC_INTERNAL_PORT}`,
       },
+      timeout: 10_000,
     },
     (proxyRes) => {
       res.writeHead(proxyRes.statusCode ?? 502, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
     },
   );
+
+  proxyReq.on("timeout", () => {
+    proxyReq.destroy();
+    if (!res.headersSent) {
+      res.statusCode = 504;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ error: "Browser proxy timeout" }));
+    }
+  });
 
   proxyReq.on("error", (err) => {
     if (!res.headersSent) {
@@ -183,16 +239,18 @@ function proxyWsToContainer(
       ...req.headers,
       host: `${containerName}:${NOVNC_INTERNAL_PORT}`,
     },
+    timeout: 10_000,
   });
 
-  proxyReq.on("upgrade", (_proxyRes, proxySocket, proxyHead) => {
-    // Write upgrade response back to original client
-    socket.write(
-      "HTTP/1.1 101 Switching Protocols\r\n" +
-        "Upgrade: websocket\r\n" +
-        "Connection: Upgrade\r\n" +
-        "\r\n",
-    );
+  proxyReq.on("upgrade", (proxyRes, proxySocket, proxyHead) => {
+    // Relay the upstream 101 response including any extra headers from noVNC
+    const headerLines = [`HTTP/1.1 101 ${proxyRes.statusMessage ?? "Switching Protocols"}`];
+    const rawHeaders = proxyRes.rawHeaders;
+    for (let i = 0; i < rawHeaders.length; i += 2) {
+      headerLines.push(`${rawHeaders[i]}: ${rawHeaders[i + 1]}`);
+    }
+    headerLines.push("", "");
+    socket.write(headerLines.join("\r\n"));
 
     if (proxyHead.length > 0) {
       socket.write(proxyHead);
@@ -205,14 +263,34 @@ function proxyWsToContainer(
     proxySocket.pipe(socket);
     socket.pipe(proxySocket);
 
-    proxySocket.on("error", () => socket.destroy());
-    socket.on("error", () => proxySocket.destroy());
+    const cleanup = () => {
+      proxySocket.destroy();
+      socket.destroy();
+    };
+    proxySocket.on("error", cleanup);
+    socket.on("error", cleanup);
     proxySocket.on("end", () => socket.end());
     socket.on("end", () => proxySocket.end());
   });
 
+  proxyReq.on("timeout", () => {
+    proxyReq.destroy();
+    socket.destroy();
+  });
+
   proxyReq.on("error", () => {
     socket.destroy();
+  });
+
+  // If the upstream responds with a non-upgrade HTTP response (e.g. 400/404),
+  // relay it back and close
+  proxyReq.on("response", (proxyRes) => {
+    const status = proxyRes.statusCode ?? 502;
+    socket.write(
+      `HTTP/1.1 ${status} ${proxyRes.statusMessage ?? "Error"}\r\nConnection: close\r\n\r\n`,
+    );
+    socket.destroy();
+    proxyRes.resume(); // Drain to avoid backpressure
   });
 
   proxyReq.end();
@@ -258,13 +336,8 @@ export async function handleSandboxBrowserRequest(
     return true;
   }
 
-  // Resolve container name from the id
   const registry = await readBrowserRegistry();
-  const entry = registry.entries.find((e) => {
-    const parts = e.containerName.split("-");
-    const shortId = parts.length > 3 ? parts.slice(3).join("-") : e.sessionKey;
-    return shortId === parsed.id;
-  });
+  const entry = findEntryByShortId(registry.entries, parsed.id);
 
   if (!entry) {
     res.statusCode = 404;
@@ -304,11 +377,7 @@ export async function handleSandboxBrowserUpgrade(
   }
 
   const registry = await readBrowserRegistry();
-  const entry = registry.entries.find((e) => {
-    const parts = e.containerName.split("-");
-    const shortId = parts.length > 3 ? parts.slice(3).join("-") : e.sessionKey;
-    return shortId === parsed.id;
-  });
+  const entry = findEntryByShortId(registry.entries, parsed.id);
 
   if (!entry) {
     socket.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
