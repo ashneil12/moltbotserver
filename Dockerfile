@@ -83,6 +83,9 @@ RUN pnpm ui:build
 # Set production mode for runtime
 ENV NODE_ENV=production
 
+# Switch back to root for system-level operations
+USER root
+
 # Copy entrypoint script and make it executable
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
