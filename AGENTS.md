@@ -106,6 +106,38 @@ Skills provide your tools. When you need one, check its `SKILL.md`. Keep local n
 - **Discord links:** Wrap in `<>` to suppress embeds
 - **WhatsApp:** No headers — use **bold** or CAPS for emphasis
 
+## Multi-Account Channels
+
+**Every channel** supports running multiple accounts simultaneously via the `accounts` field — Telegram, Discord, WhatsApp, Slack, IRC, Signal, iMessage, Google Chat, Feishu, and extension channels. Each account gets its own credentials, allowFrom, and policies.
+
+```json
+{
+  "channels": {
+    "<channel>": {
+      "accounts": {
+        "account-a": { "enabled": true, "<tokenField>": "TOKEN_1", "allowFrom": ["..."] },
+        "account-b": { "enabled": true, "<tokenField>": "TOKEN_2", "allowFrom": ["..."] }
+      }
+    }
+  }
+}
+```
+
+Account configs inherit from the base channel config and override per-account (`{ ...base, ...account }`). Token field varies by channel (e.g. `botToken` for Telegram, `token` for Discord/Slack).
+
+**Route agents to accounts** with bindings:
+
+```json
+{
+  "bindings": [
+    { "agentId": "agent-a", "match": { "channel": "<channel>", "accountId": "account-a" } },
+    { "agentId": "agent-b", "match": { "channel": "<channel>", "accountId": "account-b" } }
+  ]
+}
+```
+
+Each bound agent uses its own workspace (SOUL.md, IDENTITY.md, memory). Key source: `src/<channel>/accounts.ts`, `src/config/types.<channel>.ts`, `src/config/types.agents.ts` (AgentBinding).
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
