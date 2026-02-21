@@ -1,4 +1,4 @@
-FROM node:22-bookworm
+FROM node:22-bookworm@sha256:cd7bcd2e7a1e6f72052feb023c7f6b722205d3fcab7bbcbd2d1bfdab10b1e935
 
 # Install Bun (required for build scripts and QMD)
 RUN curl -fsSL https://bun.sh/install | bash
@@ -24,6 +24,7 @@ RUN QMD_SRC="/root/.bun/install/global/node_modules/@tobilu/qmd" \
 RUN corepack enable
 
 WORKDIR /app
+RUN chown node:node /app
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
@@ -33,38 +34,45 @@ RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
   fi
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY ui/package.json ./ui/package.json
-COPY patches ./patches
-COPY scripts ./scripts
-COPY SOUL.md ./SOUL.md
-COPY OPERATIONS.md ./OPERATIONS.md
-COPY memory-hygiene.md ./memory-hygiene.md
-COPY ACIP_SECURITY.md ./ACIP_SECURITY.md
-COPY HEARTBEAT.md ./HEARTBEAT.md
-COPY IDENTITY.md ./IDENTITY.md
-COPY BOOTSTRAP.md ./BOOTSTRAP.md
-COPY WORKING.md ./WORKING.md
-COPY templates/ ./templates/
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY --chown=node:node ui/package.json ./ui/package.json
+COPY --chown=node:node patches ./patches
+COPY --chown=node:node scripts ./scripts
+COPY --chown=node:node SOUL.md ./SOUL.md
+COPY --chown=node:node OPERATIONS.md ./OPERATIONS.md
+COPY --chown=node:node memory-hygiene.md ./memory-hygiene.md
+COPY --chown=node:node ACIP_SECURITY.md ./ACIP_SECURITY.md
+COPY --chown=node:node HEARTBEAT.md ./HEARTBEAT.md
+COPY --chown=node:node IDENTITY.md ./IDENTITY.md
+COPY --chown=node:node BOOTSTRAP.md ./BOOTSTRAP.md
+COPY --chown=node:node WORKING.md ./WORKING.md
+COPY --chown=node:node templates/ ./templates/
 
 # Ensure devDependencies are installed during build (ignore any NODE_ENV=production from build args)
 ENV NODE_ENV=development
+
+USER node
 RUN pnpm install --frozen-lockfile
 
 # Optionally install Chromium and Xvfb for browser automation.
 # Build with: docker build --build-arg OPENCLAW_INSTALL_BROWSER=1 ...
 # Adds ~300MB but eliminates the 60-90s Playwright install on every container start.
 # Must run after pnpm install so playwright-core is available in node_modules.
+USER root
 ARG OPENCLAW_INSTALL_BROWSER=""
 RUN if [ -n "$OPENCLAW_INSTALL_BROWSER" ]; then \
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb && \
+  mkdir -p /home/node/.cache/ms-playwright && \
+  PLAYWRIGHT_BROWSERS_PATH=/home/node/.cache/ms-playwright \
   node /app/node_modules/playwright-core/cli.js install --with-deps chromium && \
+  chown -R node:node /home/node/.cache/ms-playwright && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
   fi
 
-COPY . .
+USER node
+COPY --chown=node:node . .
 RUN pnpm build
 # Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
 ENV OPENCLAW_PREFER_PNPM=1
