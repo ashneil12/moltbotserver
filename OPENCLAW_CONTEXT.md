@@ -116,3 +116,30 @@ When merging upstream changes:
 - Dashboard files are fully custom (not from upstream)
 - Server `docker-compose.yml` and `Caddyfile` are deployment artifacts, not in upstream
 - The `browser.ts` volume mount (`${containerName}-profile`) must be preserved on sync
+
+---
+
+## CI Runner Replacement (Blacksmith → GitHub-hosted)
+
+**Purpose:** Upstream OpenClaw uses Blacksmith third-party CI runners (`blacksmith-16vcpu-ubuntu-2404`, `blacksmith-16vcpu-ubuntu-2404-arm`, `blacksmith-16vcpu-windows-2025`) which require a paid subscription. Without it, all GitHub Actions jobs queue indefinitely.
+
+### Files Modified
+
+| File                                         | Change                                              |
+| -------------------------------------------- | --------------------------------------------------- |
+| `.github/workflows/ci.yml`                   | `blacksmith-*` → `ubuntu-latest` / `windows-latest` |
+| `.github/workflows/docker-release.yml`       | `blacksmith-*` → `ubuntu-latest`                    |
+| `.github/workflows/install-smoke.yml`        | `blacksmith-*` → `ubuntu-latest`                    |
+| `.github/workflows/workflow-sanity.yml`      | `blacksmith-*` → `ubuntu-latest`                    |
+| `.github/workflows/sandbox-common-smoke.yml` | `blacksmith-*` → `ubuntu-latest`                    |
+| `.github/workflows/labeler.yml`              | `blacksmith-*` → `ubuntu-latest`                    |
+| `.github/workflows/stale.yml`                | `blacksmith-*` → `ubuntu-latest`                    |
+| `.github/workflows/auto-response.yml`        | `blacksmith-*` → `ubuntu-latest`                    |
+
+### Upstream Sync Notes
+
+When merging upstream changes:
+
+1. Any new or modified workflow files may re-introduce Blacksmith runners
+2. Run `grep -r "blacksmith" .github/workflows/` after sync to catch them
+3. Replace all `blacksmith-*-ubuntu-*` with `ubuntu-latest` and `blacksmith-*-windows-*` with `windows-latest`
