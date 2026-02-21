@@ -8,15 +8,15 @@
  */
 
 import type { OpenClawConfig } from "../config/config.js";
+import type { RunCronAgentTurnResult } from "./isolated-agent.js";
 import type { CronJob } from "./types.js";
+import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import {
   loadSessionStore,
   updateSessionStoreEntry,
   type SessionEntry,
 } from "../config/sessions.js";
 import { DEFAULT_RESET_AT_HOUR } from "../config/sessions/reset.js";
-import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
-import type { RunCronAgentTurnResult } from "./isolated-agent.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -62,8 +62,8 @@ export function computeNextPreResetFlushMs(
 
   // Compute flush hour and minute: e.g. atHour=4, lead=20 → 3:40 AM
   const totalMinutes = normalizedHour * 60 - leadMinutes;
-  const flushHour = Math.floor(((totalMinutes % 1440) + 1440) % 1440 / 60);
-  const flushMinute = ((totalMinutes % 1440) + 1440) % 1440 % 60;
+  const flushHour = Math.floor((((totalMinutes % 1440) + 1440) % 1440) / 60);
+  const flushMinute = (((totalMinutes % 1440) + 1440) % 1440) % 60;
 
   flushDate.setHours(flushHour, flushMinute, 0, 0);
 
@@ -150,9 +150,7 @@ export type PreResetFlushDeps = {
  * Sweep all sessions in the store and run pre-reset memory flush turns
  * on eligible ones.
  */
-export async function runPreResetFlushSweep(
-  deps: PreResetFlushDeps,
-): Promise<PreResetFlushResult> {
+export async function runPreResetFlushSweep(deps: PreResetFlushDeps): Promise<PreResetFlushResult> {
   const nowMs = Date.now();
   const store = loadSessionStore(deps.sessionStorePath, { skipCache: true });
   const eligible: Array<{ key: string; entry: SessionEntry }> = [];
@@ -229,7 +227,7 @@ export async function runPreResetFlushSweep(
 // Synthetic job builder
 // ---------------------------------------------------------------------------
 
-function buildPreResetFlushJob(sessionKey: string, entry: SessionEntry): CronJob {
+function buildPreResetFlushJob(sessionKey: string, _entry: SessionEntry): CronJob {
   const now = Date.now();
   return {
     id: `__pre-reset-flush:${sessionKey}`,
@@ -286,10 +284,7 @@ export function startPreResetFlushTimer(deps: PreResetFlushTimerDeps): void {
         "pre-reset-flush: timer firing — starting sweep",
       );
       void runPreResetFlushSweep(deps).catch((err) => {
-        deps.log.warn(
-          { err: String(err) },
-          "pre-reset-flush: sweep failed unexpectedly",
-        );
+        deps.log.warn({ err: String(err) }, "pre-reset-flush: sweep failed unexpectedly");
       });
     }
   };

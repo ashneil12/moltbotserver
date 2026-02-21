@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { SessionEntry } from "../config/sessions/types.js";
+import type { RunCronAgentTurnResult } from "./isolated-agent.js";
 import {
   computeNextPreResetFlushMs,
-  DEFAULT_PRE_RESET_LEAD_MINUTES,
   isEligibleForPreResetFlush,
   msUntilNextPreResetFlush,
   runPreResetFlushSweep,
@@ -9,7 +10,6 @@ import {
   stopPreResetFlushTimer,
   type PreResetFlushDeps,
 } from "./pre-reset-flush.js";
-import type { SessionEntry } from "../config/sessions/types.js";
 
 // ---------------------------------------------------------------------------
 // computeNextPreResetFlushMs
@@ -107,9 +107,9 @@ describe("isEligibleForPreResetFlush", () => {
   });
 
   it("returns false for cron run sessions", () => {
-    expect(
-      isEligibleForPreResetFlush("agent:main:cron:job1:run:abc-123", baseEntry, now),
-    ).toBe(false);
+    expect(isEligibleForPreResetFlush("agent:main:cron:job1:run:abc-123", baseEntry, now)).toBe(
+      false,
+    );
   });
 
   it("returns false for sessions already flushed recently", () => {
@@ -132,7 +132,9 @@ describe("runPreResetFlushSweep", () => {
   let mockLog: PreResetFlushDeps["log"];
 
   beforeEach(() => {
-    mockRunIsolatedAgentJob = vi.fn<PreResetFlushDeps["runIsolatedAgentJob"]>().mockResolvedValue({ status: "ok" } as any);
+    mockRunIsolatedAgentJob = vi
+      .fn<PreResetFlushDeps["runIsolatedAgentJob"]>()
+      .mockResolvedValue({ status: "ok" } as unknown as RunCronAgentTurnResult);
     mockLog = {
       info: vi.fn<PreResetFlushDeps["log"]["info"]>(),
       warn: vi.fn<PreResetFlushDeps["log"]["warn"]>(),
@@ -140,8 +142,6 @@ describe("runPreResetFlushSweep", () => {
   });
 
   it("skips sweep when no eligible sessions", async () => {
-    // Mock loadSessionStore to return empty
-    const mockLoadSessionStore = vi.fn().mockReturnValue({});
     const { runPreResetFlushSweep: sweep } = await import("./pre-reset-flush.js");
 
     // We'll test indirectly through the log calls
@@ -192,7 +192,9 @@ describe("pre-reset flush timer", () => {
     const deps = {
       cfg: {} as PreResetFlushDeps["cfg"],
       sessionStorePath: "/nonexistent/sessions.json",
-      runIsolatedAgentJob: vi.fn<PreResetFlushDeps["runIsolatedAgentJob"]>().mockResolvedValue({ status: "ok" } as any),
+      runIsolatedAgentJob: vi
+        .fn<PreResetFlushDeps["runIsolatedAgentJob"]>()
+        .mockResolvedValue({ status: "ok" } as unknown as RunCronAgentTurnResult),
       log,
       resetAtHour: 4,
     };
