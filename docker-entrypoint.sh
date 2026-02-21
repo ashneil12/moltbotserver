@@ -508,6 +508,20 @@ setup_security_files() {
     fi
   done
   
+  # Default skills (seeded once, user can modify)
+  if [ -d "/app/skills" ]; then
+    for skill_dir in /app/skills/*/; do
+      skill_name=$(basename "$skill_dir")
+      target_dir="$WORKSPACE_DIR/skills/$skill_name"
+      if [ ! -d "$target_dir" ]; then
+        log_info "Seeding skill: $skill_name"
+        mkdir -p "$target_dir"
+        cp -r "$skill_dir"* "$target_dir/" 2>/dev/null
+        chmod -R 644 "$target_dir"
+      fi
+    done
+  fi
+
   # Subagent logs
   if [ ! -d "$SUBAGENT_LOG_DIR" ]; then
     mkdir -p "$SUBAGENT_LOG_DIR"
