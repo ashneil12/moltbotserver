@@ -126,6 +126,7 @@ generate_config() {
     if [ "${OPENCLAW_BROWSER_ENABLED:-}" = "true" ] || [ "${OPENCLAW_BROWSER_ENABLED:-}" = "1" ]; then
       BROWSER_CDP_HOST="${OPENCLAW_BROWSER_CDP_HOST:-browser}"
       BROWSER_CDP_PORT="${OPENCLAW_BROWSER_CDP_PORT:-9222}"
+      SANDBOX_BROWSER_IMAGE="${OPENCLAW_SANDBOX_BROWSER_IMAGE:-ghcr.io/ashneil12/moltbotserver-browser:main}"
       log_info "Browser sidecar enabled — CDP at ${BROWSER_CDP_HOST}:${BROWSER_CDP_PORT}"
       BROWSER_SECTION=',
       "browser": {
@@ -140,6 +141,23 @@ generate_config() {
             "cdpUrl": "http://'"${BROWSER_CDP_HOST}"':'"${BROWSER_CDP_PORT}"'",
             "color": "#FF4500"
           }
+        }
+      }'
+    fi
+
+    # Per-agent sandbox browsers: lazy-loaded per-agent Chromium containers
+    # with persistent profiles and noVNC for individual browser views.
+    SANDBOX_SECTION=""
+    if [ "${OPENCLAW_BROWSER_ENABLED:-}" = "true" ] || [ "${OPENCLAW_BROWSER_ENABLED:-}" = "1" ]; then
+      SANDBOX_BROWSER_IMAGE="${OPENCLAW_SANDBOX_BROWSER_IMAGE:-ghcr.io/ashneil12/moltbotserver-browser:main}"
+      SANDBOX_SECTION=',
+      "sandbox": {
+        "mode": "browser-only",
+        "browser": {
+          "enabled": true,
+          "image": "'"${SANDBOX_BROWSER_IMAGE}"'",
+          "enableNoVnc": true,
+          "headless": false
         }
       }'
     fi
@@ -225,7 +243,7 @@ generate_config() {
         "prompt": "HEARTBEAT CHECK — You MUST complete ALL steps below. DO NOT SKIP ANY STEP.\n\nMANDATORY FILE READS (use the read tool for EACH of these, every single heartbeat):\n\nSTEP 1: READ ~/workspace/WORKING.md — In-progress task? Continue it. Stalled/blocked?\nSTEP 2: READ ~/workspace/memory/self-review.md — Check last 7 days for MISS tags. If match: counter-check protocol.\nSTEP 3: READ ~/workspace/HEARTBEAT.md — Scheduled tasks due? Errors? Urgent items?\n\nCRITICAL: Even if a file was empty last time, you MUST read it again. Files change between heartbeats. Skipping reads means missing information. You are REQUIRED to make 3 separate read calls before responding.\n\nSTEP 4: System updates are managed by the MoltBot dashboard. NEVER run 'openclaw update'. If asked about updates, tell the user to check the dashboard.\nSTEP 5: RESPONSE (only after steps 1-4): Nothing → HEARTBEAT_OK. User attention needed → brief message (one line max).\n\nNEVER message for: routine status, still running, low-priority completions.",
         "model": "${HEARTBEAT_MODEL}"
       },
-      "maxConcurrent": ${MAX_CONCURRENT}
+      "maxConcurrent": ${MAX_CONCURRENT}${SANDBOX_SECTION}
     }
   },
   "messages": {
@@ -378,6 +396,32 @@ enforce_trusted_proxies() {
     fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
   "
   patch_config_json "$jq_filter" "$node_script"
+}
+
+enforce_sandbox_settings() {
+  if [ ! -s "$CONFIG_FILE" ]; then return; fi
+  # Only enforce sandbox browser when the host browser sidecar is enabled
+  if [ "${OPENCLAW_BROWSER_ENABLED:-}" != "true" ] && [ "${OPENCLAW_BROWSER_ENABLED:-}" != "1" ]; then return; fi
+
+  log_info "Enforcing per-agent sandbox browser settings..."
+  local sbx_image="${OPENCLAW_SANDBOX_BROWSER_IMAGE:-ghcr.io/ashneil12/moltbotserver-browser:main}"
+  local node_script="
+    const fs = require('fs');
+    const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+    config.agents = config.agents || {};
+    config.agents.defaults = config.agents.defaults || {};
+    const sandbox = config.agents.defaults.sandbox || {};
+    sandbox.mode = sandbox.mode || 'browser-only';
+    sandbox.browser = sandbox.browser || {};
+    sandbox.browser.enabled = true;
+    sandbox.browser.image = sandbox.browser.image || '$sbx_image';
+    if (sandbox.browser.enableNoVnc === undefined) sandbox.browser.enableNoVnc = true;
+    if (sandbox.browser.headless === undefined) sandbox.browser.headless = false;
+    config.agents.defaults.sandbox = sandbox;
+    fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+    console.log('[entrypoint] INFO: Sandbox browser settings enforced (mode=' + sandbox.mode + ', image=' + sandbox.browser.image + ')');
+  "
+  node -e "$node_script" 2>&1 || log_warn "Sandbox settings enforcement failed (non-fatal)"
 }
 
 setup_security_files() {
@@ -754,6 +798,7 @@ enforce_model_settings
 enforce_gateway_token
 enforce_channel_policies
 enforce_trusted_proxies
+enforce_sandbox_settings
 
 setup_security_files
 run_doctor

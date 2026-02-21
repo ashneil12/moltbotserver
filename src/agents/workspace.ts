@@ -476,6 +476,28 @@ export async function ensureAgentWorkspace(params?: {
     /* template not packaged */
   }
 
+  // Memory subdirectory: seed template files for diary, self-review, etc.
+  // These are referenced by cron jobs (diary-entry, identity-review, etc.)
+  // and must exist before the AI can write to them.
+  {
+    const memoryDir = path.join(dir, "memory");
+    await fs.mkdir(memoryDir, { recursive: true });
+    const memoryTemplates = [
+      "diary.md",
+      "self-review.md",
+      "identity-scratchpad.md",
+      "open-loops.md",
+    ];
+    for (const name of memoryTemplates) {
+      try {
+        const template = await loadTemplate(path.join("memory", name));
+        await writeFileIfMissing(path.join(memoryDir, name), template);
+      } catch {
+        /* template not packaged — skip silently */
+      }
+    }
+  }
+
   // Human mode files: conditionally create or destroy based on env var
   const humanModeOn = resolveHumanModeEnabled();
 

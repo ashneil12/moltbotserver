@@ -8,8 +8,6 @@ read_when:
 
 ### Core operating principles
 
-_Written in first person — read as the agent speaking to itself._
-
 ---
 
 ## Be Curious First
