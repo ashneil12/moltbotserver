@@ -401,6 +401,7 @@ These changes are in the **dashboard** repo, not the OpenClaw source. Documented
 
 | Date | Upstream Commit | Notes |
 |------|-----------------|-------|
+| 2026-02-21 | `upstream/main` @ `ddcb2d79b` (v2026.2.21) | Merge 285 upstream commits. 20+ security fixes (command gating, sandbox browser, WhatsApp auth, compaction limits). New: Gemini 3.1, Volcengine/Byteplus provider, thread-bound Discord subagents. MiniMax M2.5 pricing fix. Massive dead-code cleanup (-82K lines). ACIP preserved. Soul-evil confirmed absent. |
 | 2026-02-19 | `upstream/main` @ `87d833115` | Merge 1,074 upstream commits. Soul-evil already removed upstream. ACIP preserved. |
 | 2026-02-19 | — | SOUL/OPERATIONS split, bootstrap files (PRACTICAL.md, memory-hygiene.md), context pruning (cache-ttl 6h), cron jobs (24h memory hygiene), Honcho additive mode |
 | 2026-02-17 | — | Deep Honcho integration, SOUL.md overhaul, memory flush, compaction events |
