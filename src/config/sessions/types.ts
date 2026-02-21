@@ -95,6 +95,8 @@ export type SessionEntry = {
   compactionCount?: number;
   memoryFlushAt?: number;
   memoryFlushCompactionCount?: number;
+  /** Timestamp (ms) of the last pre-reset memory flush. Used to deduplicate across restarts. */
+  preResetFlushAt?: number;
   cliSessionIds?: Record<string, string>;
   claudeCliSessionId?: string;
   label?: string;
