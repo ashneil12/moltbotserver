@@ -23,6 +23,13 @@ fi
 
 mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
+# Clean up stale Chromium profile locks from previous container runs.
+# The persistent volume retains Singleton{Lock,Cookie,Socket} tied to the old
+# container hostname, which causes Chromium to refuse to start in a new container.
+rm -f "${HOME}/.chrome/SingletonLock" \
+      "${HOME}/.chrome/SingletonCookie" \
+      "${HOME}/.chrome/SingletonSocket"
+
 # Clean up stale lock files from previous runs (prevents Xvfb restart failures)
 rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
 

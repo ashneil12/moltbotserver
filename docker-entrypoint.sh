@@ -270,16 +270,20 @@ run_auto_onboard() {
   if [ -n "$AUTH_CHOICE" ]; then
     ONBOARD_CMD+=("--auth-choice" "$AUTH_CHOICE")
     
-    # Add API keys
+    # Add API keys — covers both upstream auth choice names (e.g. "openai-api-key")
+    # AND MoltBot dashboard auth choice aliases (e.g. "openai-api") from instance-env.ts
     case "$AUTH_CHOICE" in
       ai-gateway-api-key) [ -n "${AI_GATEWAY_API_KEY}" ] && ONBOARD_CMD+=("--ai-gateway-api-key" "$AI_GATEWAY_API_KEY") ;;
-      apiKey) [ -n "${ANTHROPIC_API_KEY}" ] && ONBOARD_CMD+=("--anthropic-api-key" "$ANTHROPIC_API_KEY") ;;
-      openai-api-key) [ -n "${OPENAI_API_KEY}" ] && ONBOARD_CMD+=("--openai-api-key" "$OPENAI_API_KEY") ;;
-      gemini-api-key) [ -n "${GEMINI_API_KEY:-${GOOGLE_API_KEY}}" ] && ONBOARD_CMD+=("--gemini-api-key" "${GEMINI_API_KEY:-${GOOGLE_API_KEY}}") ;;
-      xai-api-key) [ -n "${XAI_API_KEY}" ] && ONBOARD_CMD+=("--xai-api-key" "$XAI_API_KEY") ;;
+      apiKey|anthropic-api) [ -n "${ANTHROPIC_API_KEY}" ] && ONBOARD_CMD+=("--anthropic-api-key" "$ANTHROPIC_API_KEY") ;;
+      openai-api-key|openai-api) [ -n "${OPENAI_API_KEY}" ] && ONBOARD_CMD+=("--openai-api-key" "$OPENAI_API_KEY") ;;
+      gemini-api-key|google-api) [ -n "${GEMINI_API_KEY:-${GOOGLE_API_KEY}}" ] && ONBOARD_CMD+=("--gemini-api-key" "${GEMINI_API_KEY:-${GOOGLE_API_KEY}}") ;;
+      xai-api-key|xai-api) [ -n "${XAI_API_KEY}" ] && ONBOARD_CMD+=("--xai-api-key" "$XAI_API_KEY") ;;
       moonshot-api-key) [ -n "${MOONSHOT_API_KEY}" ] && ONBOARD_CMD+=("--moonshot-api-key" "$MOONSHOT_API_KEY") ;;
       zai-api-key) [ -n "${ZAI_API_KEY}" ] && ONBOARD_CMD+=("--zai-api-key" "$ZAI_API_KEY") ;;
       venice-api-key) [ -n "${VENICE_API_KEY}" ] && ONBOARD_CMD+=("--venice-api-key" "$VENICE_API_KEY") ;;
+      minimax-api) [ -n "${MINIMAX_API_KEY}" ] && ONBOARD_CMD+=("--minimax-api-key" "$MINIMAX_API_KEY") ;;
+      groq-api) [ -n "${GROQ_API_KEY}" ] && ONBOARD_CMD+=("--groq-api-key" "$GROQ_API_KEY") ;;
+      sansa-api) [ -n "${SANSA_API_KEY}" ] && ONBOARD_CMD+=("--sansa-api-key" "$SANSA_API_KEY") ;;
     esac
   fi
 
