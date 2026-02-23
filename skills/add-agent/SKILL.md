@@ -135,7 +135,8 @@ cp "$MAIN_WS/OPERATIONS.md" /home/node/data/workspace-[id]/OPERATIONS.md 2>/dev/
 cp "$MAIN_WS/HEARTBEAT.md" /home/node/data/workspace-[id]/HEARTBEAT.md 2>/dev/null
 cp "$MAIN_WS/TOOLS.md" /home/node/data/workspace-[id]/TOOLS.md 2>/dev/null
 cp "$MAIN_WS/USER.md" /home/node/data/workspace-[id]/USER.md 2>/dev/null
-cp "$MAIN_WS/naturalvoice.md" /home/node/data/workspace-[id]/naturalvoice.md 2>/dev/null
+cp "$MAIN_WS/howtobehuman.md" /home/node/data/workspace-[id]/howtobehuman.md 2>/dev/null
+cp "$MAIN_WS/writelikeahuman.md" /home/node/data/workspace-[id]/writelikeahuman.md 2>/dev/null
 cp "$MAIN_WS/ACIP_SECURITY.md" /home/node/data/workspace-[id]/ACIP_SECURITY.md 2>/dev/null
 mkdir -p /home/node/data/workspace-[id]/memory
 ```
