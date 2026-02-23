@@ -17,7 +17,7 @@
 //   all          Run all enforcement steps in the correct order
 // =============================================================================
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync, readdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -687,6 +687,65 @@ function seedCronJobs(jobsFilePath) {
   console.log(`[enforce-config] ✅ Seeded ${jobs.length} default cron jobs`);
 }
 
+/**
+ * Discover sub-agent workspaces (workspace-*) in the data directory and seed
+ * default cron jobs for any that don't already have them.
+ *
+ * This is safe and idempotent:
+ * - No workspace-* dirs → nothing happens (no sub-agents configured)
+ * - Workspace already has cron/jobs.json → skipped (no overwrite)
+ * - Workspace missing cron/jobs.json → seeded with defaults
+ * - Reflection frequency changes → patched for all agents consistently
+ */
+function seedSubAgentCronJobs(dataDir) {
+  if (!dataDir || !existsSync(dataDir)) {
+    return;
+  }
+
+  let entries;
+  try {
+    entries = readdirSync(dataDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  const workspaceDirs = entries.filter(
+    (e) => e.isDirectory() && e.name.startsWith("workspace-"),
+  );
+
+  if (workspaceDirs.length === 0) {
+    return; // No sub-agents — nothing to do
+  }
+
+  let seeded = 0;
+  let patched = 0;
+
+  for (const wsEntry of workspaceDirs) {
+    const agentName = wsEntry.name.replace(/^workspace-/, "");
+    const cronDir = `${dataDir}/${wsEntry.name}/.openclaw/cron`;
+    const jobsFile = `${cronDir}/jobs.json`;
+
+    // seedCronJobs handles both cases:
+    // - file missing → full seed
+    // - file exists → reflection interval patching only
+    const existed = existsSync(jobsFile);
+    seedCronJobs(jobsFile);
+
+    if (!existed && existsSync(jobsFile)) {
+      seeded++;
+      console.log(`[enforce-config] ✅ Seeded cron jobs for sub-agent: ${agentName}`);
+    } else if (existed) {
+      patched++;
+    }
+  }
+
+  if (seeded > 0 || patched > 0) {
+    console.log(
+      `[enforce-config] Sub-agent cron summary: ${seeded} seeded, ${patched} checked/patched`,
+    );
+  }
+}
+
 // ── CLI Entry Point ─────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
@@ -723,6 +782,9 @@ try {
     case "cron-seed": {
       const cronDir = env("OPENCLAW_STATE_DIR", "/home/node/.clawdbot") + "/cron";
       seedCronJobs(cronDir + "/jobs.json");
+      // Also seed any sub-agent workspaces that exist
+      const dataDir = env("OPENCLAW_DATA_DIR", "/home/node/data");
+      seedSubAgentCronJobs(dataDir);
       break;
     }
     case "all":
@@ -734,6 +796,8 @@ try {
       {
         const cronDir = env("OPENCLAW_STATE_DIR", "/home/node/.clawdbot") + "/cron";
         seedCronJobs(cronDir + "/jobs.json");
+        const dataDir = env("OPENCLAW_DATA_DIR", "/home/node/data");
+        seedSubAgentCronJobs(dataDir);
       }
       break;
     default:
