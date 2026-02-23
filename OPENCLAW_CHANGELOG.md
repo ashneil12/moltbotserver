@@ -307,3 +307,30 @@ When `sandbox.mode = "browser-only"` in `openclaw.json`:
 - If both exist → deletes the stale `allowlist` (groupAllowFrom takes precedence)
 - Applies to both top-level Telegram config and per-account configs
 - Also warns when `groupPolicy=allowlist` is set but `groupAllowFrom` is missing (messages would be blocked)
+
+---
+
+## Plugin Sanitizer — Stock Plugin Discovery Fix
+
+**Purpose:** The `sanitize_config()` function in `docker-entrypoint.sh` removes stale plugin entries from `plugins.entries` to prevent crash loops. However, its fallback plugin discovery (used when `/app/dist/plugins/discovery.js` doesn't exist) was missing `/app/extensions/` — the directory where all stock/bundled plugins (discord, telegram, slack, etc.) reside. This caused Discord and Telegram to silently stop working on every container restart.
+
+### Files Modified
+
+| File                   | Change                                                                                      | Why                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `docker-entrypoint.sh` | Added `/app/extensions` to fallback plugin discovery `pluginDirs` array                     | Stock plugins live here, not in `/app/dist/plugins`                     |
+| `docker-entrypoint.sh` | Trust all subdirs in `/app/extensions/` as known plugins (early `continue`)                 | Stock plugins don't need manifest/package.json detection                |
+| `docker-entrypoint.sh` | Added detection for `openclaw.plugin.json` / `clawdbot.plugin.json`                         | Stock plugin descriptor files used by newer openclaw builds             |
+| `docker-entrypoint.sh` | Extended `package.json` check to also match `pkg.openclaw` key (not just `openclaw-plugin`) | Stock plugins use `"openclaw": { "extensions": [...] }` in package.json |
+
+### How It Works
+
+- Primary plugin discovery via `discoverOpenClawPlugins()` from `/app/dist/plugins/discovery.js` — may not exist in all builds
+- Fallback scans filesystem directories for installed plugins
+- `/app/extensions/` subdirectories are trusted unconditionally (all are stock plugins)
+- Other directories (`/app/dist/plugins`, `$CONFIG_DIR/extensions`) use manifest/package.json detection
+- `config.plugins.installs` entries with valid install paths are also trusted
+
+### Why This Matters for Upstream Merges
+
+If upstream changes the `sanitize_config` function or the fallback discovery logic, ensure `/app/extensions` remains in the `pluginDirs` array. Without it, any stock channel plugin (discord, telegram, etc.) added to `plugins.entries` will be stripped on every restart.
