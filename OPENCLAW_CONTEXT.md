@@ -9,21 +9,22 @@ For full change history and rationale, see `OPENCLAW_CHANGELOG.md`.
 
 These files don't exist in upstream. They will never conflict but must not be deleted during sync.
 
-| File / Directory                                   | Feature                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------- |
-| `docker-entrypoint.sh`                             | Managed platform guards, Sansa provider, memory template seeding |
-| `enforce-config.mjs`                               | Model normalization, reflection intervals, cron job seeding      |
-| `cron/default-jobs.json`                           | Default cron job definitions                                     |
-| `src/gateway/sandbox-browsers.ts`                  | Sandbox browser API + noVNC proxy                                |
-| `src/cron/pre-reset-flush.ts`                      | Pre-reset memory flush cron                                      |
-| `src/cron/pre-reset-flush.test.ts`                 | Tests for above                                                  |
-| `src/agents/models-config.providers.sansa.test.ts` | Sansa provider tests                                             |
-| `src/commands/onboard-interactive.e2e.test.ts`     | Onboarding E2E test                                              |
-| `scripts/sandbox-browser-entrypoint.sh`            | Custom browser container entrypoint                              |
-| `Dockerfile.sandbox-browser`                       | Browser container Dockerfile                                     |
-| `skills/add-agent/SKILL.md`                        | Agent creation skill                                             |
-| `docs/reference/templates/naturalvoice.md`         | Human voice template                                             |
-| `docs/reference/templates/memory/*`                | Memory file templates                                            |
+| File / Directory                                   | Feature                                                                                                                            |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `docker-entrypoint.sh`                             | Managed platform guards, Sansa provider, memory template seeding, `allowlist`→`groupAllowFrom` migration, `groupPolicy` validation |
+| `enforce-config.mjs`                               | Model normalization, reflection intervals, cron job seeding                                                                        |
+| `cron/default-jobs.json`                           | Default cron job definitions                                                                                                       |
+| `src/gateway/sandbox-browsers.ts`                  | Sandbox browser API + noVNC proxy                                                                                                  |
+| `src/cron/pre-reset-flush.ts`                      | Pre-reset memory flush cron                                                                                                        |
+| `src/cron/pre-reset-flush.test.ts`                 | Tests for above                                                                                                                    |
+| `src/agents/models-config.providers.sansa.test.ts` | Sansa provider tests                                                                                                               |
+| `src/commands/onboard-interactive.e2e.test.ts`     | Onboarding E2E test                                                                                                                |
+| `scripts/sandbox-browser-entrypoint.sh`            | Custom browser container entrypoint                                                                                                |
+| `Dockerfile.sandbox-browser`                       | Browser container Dockerfile                                                                                                       |
+| `skills/add-agent/SKILL.md`                        | Agent creation skill                                                                                                               |
+| `docs/reference/templates/howtobehuman.md`         | Human voice philosophy template                                                                                                    |
+| `docs/reference/templates/writelikeahuman.md`      | Human voice writing patterns template                                                                                              |
+| `docs/reference/templates/memory/*`                | Memory file templates                                                                                                              |
 
 ---
 
@@ -53,7 +54,7 @@ These exist in upstream AND have local changes. Conflicts are likely.
 | `src/gateway/server-reload-handlers.ts`  | `stopPreResetFlush()` call on cron restart                                                                                                  |
 | `src/config/sessions/types.ts`           | `preResetFlushAt?: number` field on `SessionEntry`                                                                                          |
 | `src/auto-reply/reply/session.ts`        | `preResetFlushAt = undefined` clear on init/reset                                                                                           |
-| `src/agents/system-prompt.ts`            | Removed `hasPracticalFile`; `naturalvoice.md` detection; updated voice prompt                                                               |
+| `src/agents/system-prompt.ts`            | Removed `hasPracticalFile`; `howtobehuman.md`/`writelikeahuman.md` detection; updated voice prompt                                          |
 | `src/agents/workspace.ts`                | `resolveHumanModeEnabled()`, `resolveHonchoEnabled()`, Honcho conditionals, `stripHonchoConditionals()`, `removeHumanModeSectionFromSoul()` |
 
 ### Template & Doc Files

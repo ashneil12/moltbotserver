@@ -171,19 +171,20 @@ When `sandbox.mode = "browser-only"` in `openclaw.json`:
 
 ---
 
-## Natural Voice Consolidation
+## Human Voice System (Two-File Model)
 
-**Purpose:** Replaced the two-file human mode system (`howtobehuman.md` + `writelikeahuman.md`) with a single comprehensive `naturalvoice.md` (955 lines). Consolidates philosophy and practice into one guide.
+**Purpose:** Custom human voice templates (`howtobehuman.md` for philosophy, `writelikeahuman.md` for writing patterns) that are seeded into agent workspaces when human mode is enabled. System prompt detects these files and injects voice protocol instructions.
+
+> **History:** Briefly consolidated into a single `naturalvoice.md` file, then reverted back to the two-file model for better separation of concerns.
 
 ### Files Modified / Created
 
-| File                                          | Change                                                                                                 | Why                                       |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
-| `docs/reference/templates/naturalvoice.md`    | **NEW** — Complete guide to authentic human communication                                              | Single source of truth for voice behavior |
-| `docs/reference/templates/howtobehuman.md`    | Kept as legacy reference (not loaded by system prompt)                                                 | Backward compat if needed                 |
-| `docs/reference/templates/writelikeahuman.md` | Kept as legacy reference (not loaded by system prompt)                                                 | Backward compat                           |
-| `src/agents/system-prompt.ts`                 | Changed `hasHumanModeFiles` detection from `writelikeahuman.md`/`howtobehuman.md` to `naturalvoice.md` | New file triggers the voice protocol      |
-| `src/agents/system-prompt.ts`                 | Updated voice protocol system prompt text                                                              | Simpler, references single file           |
+| File                                          | Change                                                                                       | Why                                               |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `docs/reference/templates/howtobehuman.md`    | Custom human voice philosophy guide                                                          | Teaches agents the mindset of human communication |
+| `docs/reference/templates/writelikeahuman.md` | Custom human voice writing patterns guide                                                    | Practical writing rules and patterns              |
+| `src/agents/system-prompt.ts`                 | `hasHumanModeFiles` detects `howtobehuman.md` / `writelikeahuman.md`; injects voice protocol | Triggers voice behavior when files are present    |
+| `src/agents/workspace.ts`                     | `resolveHumanModeEnabled()` seeds/deletes human mode files based on env var                  | Runtime toggle for human mode                     |
 
 ---
 
@@ -285,3 +286,24 @@ When `sandbox.mode = "browser-only"` in `openclaw.json`:
 | `src/agents/workspace.ts`                      | Added Honcho conditional markers (`HONCHO_DISABLED_START/END`, `HONCHO_ENABLED_START/END`) | Workspace docs can include/exclude Honcho-specific content |
 | `src/agents/workspace.ts`                      | Added `stripHonchoConditionals()` and `removeHumanModeSectionFromSoul()`                   | Processes template conditionals at bootstrap               |
 | `src/commands/onboard-interactive.e2e.test.ts` | **NEW** — E2E test for onboarding flow                                                     | Validates onboard command works end-to-end                 |
+
+---
+
+## Telegram Config Migration (`allowlist` → `groupAllowFrom`)
+
+**Purpose:** Upstream OpenClaw renamed the Telegram group allowlist configuration key from `allowlist` to `groupAllowFrom`. The entrypoint auto-migrates the deprecated key on container startup to prevent group messaging from silently breaking after an upstream update.
+
+### Files Modified
+
+| File                   | Change                                                                            | Why                                                                |
+| ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `docker-entrypoint.sh` | Added `allowlist` → `groupAllowFrom` migration in enforce-config                  | Auto-migrates deprecated key on startup for top-level and accounts |
+| `docker-entrypoint.sh` | Added `groupPolicy=allowlist` + missing `groupAllowFrom` validation with warnings | Warns operators when group messages will silently be blocked       |
+
+### How It Works
+
+- On container startup, `enforce-config.mjs` (embedded in entrypoint) scans Telegram channel config
+- If `allowlist` array exists and `groupAllowFrom` doesn't → copies value to `groupAllowFrom`, deletes `allowlist`
+- If both exist → deletes the stale `allowlist` (groupAllowFrom takes precedence)
+- Applies to both top-level Telegram config and per-account configs
+- Also warns when `groupPolicy=allowlist` is set but `groupAllowFrom` is missing (messages would be blocked)
