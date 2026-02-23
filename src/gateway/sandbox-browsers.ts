@@ -1,3 +1,4 @@
+import { request as httpRequest, type IncomingMessage, type ServerResponse } from "node:http";
 /**
  * Gateway handler for sandbox browser management:
  *   - GET  /api/sandbox-browsers   → list active sandbox browser containers
@@ -6,13 +7,12 @@
  * Auth: requires a valid gateway token (Bearer or ?token= query param).
  */
 import type { Duplex } from "node:stream";
-import { request as httpRequest, type IncomingMessage, type ServerResponse } from "node:http";
-import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import {
   readBrowserRegistry,
   type SandboxBrowserRegistryEntry,
 } from "../agents/sandbox/registry.js";
 import { loadConfig } from "../config/config.js";
+import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import {
   authorizeGatewayConnect,
   type GatewayAuthResult,
@@ -39,8 +39,8 @@ export interface SandboxBrowserInfo {
   id: string;
   /** Human-readable label */
   label: string;
-  /** "host" for the shared browser, "sandbox" for per-agent */
-  type: "host" | "sandbox";
+  /** "host" for the shared browser, "sandbox" for dynamic per-agent, "agent" for static per-agent */
+  type: "host" | "sandbox" | "agent";
   /** URL path prefix for noVNC access */
   path: string;
 }
@@ -145,12 +145,34 @@ function findEntryByShortId(
 
 async function handleListBrowsers(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   const registry = await readBrowserRegistry();
+  const config = loadConfig();
 
   const browsers: SandboxBrowserInfo[] = [
     // Main/host browser is always first
     { id: "main", label: "Main", type: "host", path: "/browser" },
   ];
 
+  // Include per-agent static browsers from config.browser.profiles
+  // These are dedicated browser containers with Caddy noVNC routes
+  const profiles = config.browser?.profiles ?? {};
+  for (const [name, profile] of Object.entries(profiles)) {
+    // Skip the default "openclaw" profile (that's the main browser above)
+    if (name === "openclaw" || name === "chrome") {
+      continue;
+    }
+    // Only include profiles pointing to a browser-<name> container
+    const cdpUrl = (profile as { cdpUrl?: string }).cdpUrl ?? "";
+    if (cdpUrl.includes(`browser-${name}:`)) {
+      browsers.push({
+        id: name,
+        label: name.charAt(0).toUpperCase() + name.slice(1),
+        type: "agent",
+        path: `/browser-${name}`,
+      });
+    }
+  }
+
+  // Include dynamic sandbox browsers from the registry
   for (const entry of registry.entries) {
     const shortId = deriveShortId(entry);
     browsers.push({
