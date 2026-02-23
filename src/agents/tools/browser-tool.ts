@@ -246,6 +246,8 @@ function resolveBrowserBaseUrl(params: {
 export function createBrowserTool(opts?: {
   sandboxBridgeUrl?: string;
   allowHostControl?: boolean;
+  /** Auto-inject this profile name when no profile is explicitly specified. */
+  agentId?: string;
 }): AnyAgentTool {
   const targetDefault = opts?.sandboxBridgeUrl ? "sandbox" : "host";
   const hostHint =
@@ -269,7 +271,16 @@ export function createBrowserTool(opts?: {
     execute: async (_toolCallId, args) => {
       const params = args as Record<string, unknown>;
       const action = readStringParam(params, "action", { required: true });
-      const profile = readStringParam(params, "profile");
+      let profile = readStringParam(params, "profile");
+      // Auto-inject per-agent browser profile when not explicitly specified.
+      // If the agent has a matching browser profile (e.g. "solomon" → browser-solomon),
+      // route to it instead of the global default.
+      if (!profile && opts?.agentId && opts.agentId !== "main") {
+        const cfg = loadConfig();
+        if (cfg.browser?.profiles?.[opts.agentId]) {
+          profile = opts.agentId;
+        }
+      }
       const requestedNode = readStringParam(params, "node");
       let target = readStringParam(params, "target") as "sandbox" | "host" | "node" | undefined;
 
