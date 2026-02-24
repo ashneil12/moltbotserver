@@ -264,7 +264,23 @@ function enforceCore(configPath) {
   gateway.port = Number(env("GATEWAY_PORT", "3000"));
   gateway.bind = env("GATEWAY_BIND", "lan");
   gateway.customBindHost = "0.0.0.0";
-  gateway.controlUi = { enabled: true, dangerouslyDisableDeviceAuth: true };
+  // controlUi.allowedOrigins is REQUIRED when gateway binds to non-loopback
+  // (bind=lan). Without it, the new gateway version refuses to start.
+  const iframeOrigins = env("OPENCLAW_ALLOW_IFRAME_ORIGINS");
+  const allowedOrigins = new Set(["http://localhost:3000"]);
+  if (iframeOrigins) {
+    for (const o of iframeOrigins
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      allowedOrigins.add(o);
+    }
+  }
+  gateway.controlUi = {
+    enabled: true,
+    dangerouslyDisableDeviceAuth: true,
+    allowedOrigins: [...allowedOrigins],
+  };
 
   // Compaction + memory flush
   const defaults = ensure(config, "agents", "defaults");
