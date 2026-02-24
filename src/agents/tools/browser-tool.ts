@@ -272,12 +272,12 @@ export function createBrowserTool(opts?: {
       const params = args as Record<string, unknown>;
       const action = readStringParam(params, "action", { required: true });
       let profile = readStringParam(params, "profile");
-      // Auto-inject per-agent browser profile when not explicitly specified.
-      // If the agent has a matching browser profile (e.g. "solomon" → browser-solomon),
-      // route to it instead of the global default.
-      if (!profile && opts?.agentId && opts.agentId !== "main") {
+      // Auto-inject per-agent browser profile when the agent has a dedicated browser.
+      // Agents typically pass profile="openclaw" (from tool description), so we override
+      // the default "openclaw" profile with the agent's own profile if one exists.
+      if (opts?.agentId && opts.agentId !== "main") {
         const cfg = loadConfig();
-        if (cfg.browser?.profiles?.[opts.agentId]) {
+        if (cfg.browser?.profiles?.[opts.agentId] && (!profile || profile === "openclaw")) {
           profile = opts.agentId;
         }
       }
