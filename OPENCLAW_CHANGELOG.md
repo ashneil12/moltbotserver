@@ -5,6 +5,35 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Upstream Sync: v2026.2.23 (2026-02-24)
+
+**286 upstream commits** merged from `openclaw/openclaw` main branch.
+
+### Highlights
+
+- **Security hardening**: ACP permission validation, `allowFrom` id-only default (breaking), sandbox fs-bridge/bind-mount policy, exec wrapper `safeBins` validation, HSTS headers, browser SSRF defaults, prototype pollution protection, cron tool denied on `/tools/invoke`
+- **New providers**: Kilo Gateway (#20212), Kimi web_search, moonshot video, Vertex AI for Claude (#23985)
+- **Features**: configurable `runTimeoutSeconds` for subagents, per-agent stream params for cache tuning, Bedrock cacheRetention, auto-reply multilingual triggers (#25103), session/cron maintenance hardening (#24753)
+- **Channel fixes**: Discord/Matrix/Telegram reasoning-leak suppression, Slack `groupPolicy` Zod fix, orphaned tool-result repair for OpenAI
+- **50+ test improvements**: CI stabilization, runtime optimization, deduplication
+
+### Conflict Resolution (49 files)
+
+| Strategy | Count | Files |
+|----------|-------|-------|
+| **Take Upstream** | 46 | Core source, extensions, config, commands, tests |
+| **Keep Local** | 2 | `AGENTS.md` (custom peer protocol), `device-pair/index.ts` (auto-approve) |
+| **Manual Merge** | 1 | `workspace.ts` (combined MINIMAL_BOOTSTRAP_ALLOWLIST entries) |
+
+Also fixed 6 files with pre-existing conflict markers from a previous merge.
+
+### Post-Merge
+
+- Soul-evil scorched earth (files deleted, docs already clean)
+- Build verified (tsdown + tsc + hook metadata + templates)
+
+---
+
 ## Lint Compliance Fixes (2026-02-24)
 
 **Purpose:** Resolve all 9 `oxlint --type-aware` errors to achieve a clean lint pass (0 warnings, 0 errors). All changes are non-behavioral — no runtime impact.
