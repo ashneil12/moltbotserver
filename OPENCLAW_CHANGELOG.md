@@ -5,6 +5,68 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Lint Compliance Fixes (2026-02-24)
+
+**Purpose:** Resolve all 9 `oxlint --type-aware` errors to achieve a clean lint pass (0 warnings, 0 errors). All changes are non-behavioral — no runtime impact.
+
+### Source Files
+
+| File                                      | Change                                                       | Why                                       |
+| ----------------------------------------- | ------------------------------------------------------------ | ----------------------------------------- |
+| `src/discord/send.components.ts`          | Removed unused `import type { APIChannel }`                  | `no-unused-vars` violation                |
+| `src/agents/tools/recall-message-tool.ts` | Removed redundant `as "archive" \| "history"` type assertion | `no-unnecessary-type-assertion` violation |
+
+### Test Files
+
+| File                                                                           | Change                                                                                   | Why                                      |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `src/agents/clawdbot-tools.camera.test.ts` ×3                                  | Added `{}` braces around `throw` in `if` blocks                                          | `eslint(curly)` violation                |
+| `src/slack/monitor.tool-result.forces-thread-replies-replytoid-is-set.test.ts` | `String()` → `JSON.stringify()` for mock assertions; added `\|\| {}` to optional spreads | `no-base-to-string` + spread type errors |
+| `src/slack/monitor/slash.policy.test.ts`                                       | Added `await` before async call                                                          | `no-floating-promises` violation         |
+| `src/slack/monitor/slash.command-arg-menus.test.ts`                            | Added `await` before async call                                                          | `no-floating-promises` violation         |
+
+### Upstream Sync Risk
+
+**Minimal.** 4 of 6 are test files. The 2 source changes are single-line removals. If upstream modifies these files, conflicts will be trivial single-line resolves.
+
+---
+
+## Diary Startup Loading & Two-Phase Archive
+
+**Purpose:** Load `diary.md` into the agent's bootstrap context at startup (with tail-heavy truncation to preserve recent entries), and replace the unreliable prompt-only diary archive cron job with a two-phase system: a deterministic code-level archiver that always runs, followed by an LLM enrichment job that synthesizes a continuity summary.
+
+### Files Modified / Created
+
+| File                                          | Change                                                                          | Why                                             |
+| --------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `src/agents/workspace.ts`                     | Added `DEFAULT_DIARY_FILENAME`, type union entry, bootstrap file entry          | Diary is now loaded at startup                  |
+| `src/agents/pi-embedded-helpers/bootstrap.ts` | Added diary-specific 12k char cap + tail-heavy truncation (30% head / 60% tail) | Recent entries are more relevant than old ones  |
+| `src/cron/diary-archive.ts`                   | **NEW** — Deterministic diary archiver (timer + multi-agent sweep)              | Reliable file archival without LLM dependency   |
+| `src/gateway/server-cron.ts`                  | Integrated `startDiaryArchiveTimer` + `stopDiaryArchiveTimer`                   | Timer starts/stops with gateway lifecycle       |
+| `src/gateway/server-reload-handlers.ts`       | Calls `stopDiaryArchive()` on cron restart                                      | Prevents orphaned timers                        |
+| `cron/default-jobs.json`                      | Replaced `diary-archive` → `diary-post-archive`                                 | LLM enrichment runs after deterministic archive |
+| `enforce-config.mjs`                          | Updated `seedCronJobs()`: `archive-review` → `diary-post-archive`               | New agents get the updated job                  |
+
+### How It Works
+
+**Startup:** `diary.md` is loaded with a 12k character cap using tail-heavy truncation — 30% head for template/headers, 60% tail for recent entries. Excluded from cron/subagent sessions via `MINIMAL_BOOTSTRAP_ALLOWLIST`.
+
+**Phase 1 — Deterministic Archive** (code-level timer, every 14 days):
+
+- Copies `memory/diary.md` → `memory/archive/YYYY-MM/diary-YYYY-MM-DD.md`
+- Copies `memory/identity-scratchpad.md` → `memory/archive/YYYY-MM/scratchpad-YYYY-MM-DD.md`
+- Resets diary to template + raw excerpt (last 30 lines) + `<!-- PREVIOUS_ARCHIVE: path -->` marker
+- Multi-agent aware (iterates all workspaces), idempotent, tracks state in `.diary-archive-state.json`
+
+**Phase 2 — LLM Enrichment** (`diary-post-archive` cron job, ~6h after archive):
+
+- Reads the archived diary via the `<!-- PREVIOUS_ARCHIVE: ... -->` marker
+- Replaces raw excerpt with a synthesized continuity summary
+- Does a final promotion scan (IDENTITY.md, humanization guides, self-review.md)
+- If this job fails, the raw excerpt provides degraded but functional continuity
+
+---
+
 ## Managed Platform Update Guard (`OPENCLAW_MANAGED_PLATFORM=1`)
 
 **Purpose:** Prevent instances from self-updating via upstream OpenClaw npm/git, which would overwrite MoltBot customizations and potentially brick instances. Updates are delivered exclusively through Docker image pulls managed by the MoltBot dashboard.

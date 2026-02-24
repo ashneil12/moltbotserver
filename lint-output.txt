@@ -1,0 +1,88 @@
+
+> openclaw@2026.2.23 lint
+> oxlint --type-aware
+
+
+  x eslint(curly): Expected { after 'if' condition.
+    ,-[src/agents/clawdbot-tools.camera.test.ts:40:16]
+ 39 |     const tool = createMoltbotTools().find((candidate) => candidate.name === "nodes");
+ 40 |     if (!tool) throw new Error("missing nodes tool");
+    :                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 41 | 
+    `----
+  help: Replace `throw new Error("missing nodes tool");` with `{throw new Error("missing nodes tool");}`.
+
+  x eslint(curly): Expected { after 'if' condition.
+    ,-[src/agents/clawdbot-tools.camera.test.ts:76:16]
+ 75 |     const tool = createMoltbotTools().find((candidate) => candidate.name === "nodes");
+ 76 |     if (!tool) throw new Error("missing nodes tool");
+    :                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 77 | 
+    `----
+  help: Replace `throw new Error("missing nodes tool");` with `{throw new Error("missing nodes tool");}`.
+
+  x eslint(curly): Expected { after 'if' condition.
+     ,-[src/agents/clawdbot-tools.camera.test.ts:117:16]
+ 116 |     const tool = createMoltbotTools().find((candidate) => candidate.name === "nodes");
+ 117 |     if (!tool) throw new Error("missing nodes tool");
+     :                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 118 | 
+     `----
+  help: Replace `throw new Error("missing nodes tool");` with `{throw new Error("missing nodes tool");}`.
+
+  x eslint(no-unused-vars): Type 'APIChannel' is imported but never used.
+   ,-[src/discord/send.components.ts:1:15]
+ 1 | import type { APIChannel } from "discord-api-types/v10";
+   :               ^^^^^|^^^^
+   :                    `-- 'APIChannel' is imported here
+ 2 | import {
+   `----
+  help: Consider removing this import.
+
+  x typescript-eslint(no-base-to-string): 'sendMock.mock.calls[0]?.[1] ?? ""' will use Object's default stringification format ('[object Object]') when stringified.
+     ,-[src/slack/monitor.tool-result.forces-thread-replies-replytoid-is-set.test.ts:115:19]
+ 114 |     expect(sendMock).toHaveBeenCalledTimes(1);
+ 115 |     expect(String(sendMock.mock.calls[0]?.[1] ?? "")).toContain("Your Slack user id: U1");
+     :                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 116 |     expect(String(sendMock.mock.calls[0]?.[1] ?? "")).toContain("Pairing code: PAIRCODE");
+     `----
+  help: Consider picking a property (e.g. `user.name`), using a formatter (or `JSON.stringify`), or implementing a custom `toString()`/`toLocaleString()` on the type.
+
+  x typescript-eslint(no-base-to-string): 'sendMock.mock.calls[0]?.[1] ?? ""' will use Object's default stringification format ('[object Object]') when stringified.
+     ,-[src/slack/monitor.tool-result.forces-thread-replies-replytoid-is-set.test.ts:116:19]
+ 115 |     expect(String(sendMock.mock.calls[0]?.[1] ?? "")).toContain("Your Slack user id: U1");
+ 116 |     expect(String(sendMock.mock.calls[0]?.[1] ?? "")).toContain("Pairing code: PAIRCODE");
+     :                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 117 |   });
+     `----
+  help: Consider picking a property (e.g. `user.name`), using a formatter (or `JSON.stringify`), or implementing a custom `toString()`/`toLocaleString()` on the type.
+
+  x typescript-eslint(no-unnecessary-type-assertion): This assertion is unnecessary since it does not change the type of the expression.
+     ,-[src/agents/tools/recall-message-tool.ts:260:28]
+ 259 |             relevanceScore: Math.min(1, score),
+ 260 |             source: source as "archive" | "history",
+     :                    ^^^|^^^ ^^^^^^^^^^^^^^^^^^^^^^^^
+     :                       `-- This expression already has the type '"archive" | "history"'
+ 261 |           });
+     `----
+
+  x typescript-eslint(no-floating-promises): Promises must be awaited, add void operator to ignore.
+    ,-[src/slack/monitor/slash.policy.test.ts:12:3]
+ 11 |   const { registerSlackMonitorSlashCommands } = await import("./slash.js");
+ 12 |   registerSlackMonitorSlashCommands({ ctx: ctx as never, account: account as never });
+    :   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 13 | }
+    `----
+  help: The promise must end with a call to .catch, or end with a call to .then with a rejection handler, or be explicitly marked as ignored with the `void` operator.
+
+  x typescript-eslint(no-floating-promises): Promises must be awaited, add void operator to ignore.
+    ,-[src/slack/monitor/slash.command-arg-menus.test.ts:12:3]
+ 11 |   const { registerSlackMonitorSlashCommands } = await import("./slash.js");
+ 12 |   registerSlackMonitorSlashCommands({ ctx: ctx as never, account: account as never });
+    :   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 13 | }
+    `----
+  help: The promise must end with a call to .catch, or end with a call to .then with a rejection handler, or be explicitly marked as ignored with the `void` operator.
+
+Found 0 warnings and 9 errors.
+Finished in 3.8s on 4581 files with 136 rules using 10 threads.

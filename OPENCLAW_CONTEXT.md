@@ -34,28 +34,30 @@ These exist in upstream AND have local changes. Conflicts are likely.
 
 ### Source Files
 
-| File                                     | What to preserve                                                                                                                            |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/gateway/server-methods/update.ts`   | `OPENCLAW_MANAGED_PLATFORM` guard at top of `update.run`                                                                                    |
-| `src/cli/update-cli/update-command.ts`   | `OPENCLAW_MANAGED_PLATFORM` guard at top of `updateCommand()`                                                                               |
-| `src/infra/update-startup.ts`            | Early return in `runGatewayUpdateCheck()` when managed platform                                                                             |
-| `src/agents/sandbox/types.ts`            | `"browser-only"` in `SandboxConfig.mode` union                                                                                              |
-| `src/agents/sandbox/runtime-status.ts`   | `browser-only` treated like `non-main`                                                                                                      |
-| `src/agents/sandbox/context.ts`          | `browser-only` skips container+workspace                                                                                                    |
-| `src/agents/sandbox/config.ts`           | Auto-enable browser for `browser-only` mode                                                                                                 |
-| `src/agents/sandbox/browser.ts`          | `docker network connect` + `${containerName}-profile` named volume                                                                          |
-| `src/config/types.agent-defaults.ts`     | `"browser-only"` in mode type                                                                                                               |
-| `src/config/types.agents.ts`             | `"browser-only"` in mode type                                                                                                               |
-| `src/config/zod-schema.agent-runtime.ts` | `"browser-only"` in Zod schema                                                                                                              |
-| `src/gateway/server-http.ts`             | `handleSandboxBrowserRequest` integration                                                                                                   |
-| `src/agents/models-config.providers.ts`  | `buildSansaProvider()` + Sansa constants                                                                                                    |
-| `src/agents/model-auth.ts`               | `sansa: "SANSA_API_KEY"` in env key map                                                                                                     |
-| `src/gateway/server-cron.ts`             | `startPreResetFlushTimer` / `stopPreResetFlush` integration                                                                                 |
-| `src/gateway/server-reload-handlers.ts`  | `stopPreResetFlush()` call on cron restart                                                                                                  |
-| `src/config/sessions/types.ts`           | `preResetFlushAt?: number` field on `SessionEntry`                                                                                          |
-| `src/auto-reply/reply/session.ts`        | `preResetFlushAt = undefined` clear on init/reset                                                                                           |
-| `src/agents/system-prompt.ts`            | Removed `hasPracticalFile`; `howtobehuman.md`/`writelikeahuman.md` detection; updated voice prompt                                          |
-| `src/agents/workspace.ts`                | `resolveHumanModeEnabled()`, `resolveHonchoEnabled()`, Honcho conditionals, `stripHonchoConditionals()`, `removeHumanModeSectionFromSoul()` |
+| File                                      | What to preserve                                                                                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/gateway/server-methods/update.ts`    | `OPENCLAW_MANAGED_PLATFORM` guard at top of `update.run`                                                                                    |
+| `src/cli/update-cli/update-command.ts`    | `OPENCLAW_MANAGED_PLATFORM` guard at top of `updateCommand()`                                                                               |
+| `src/infra/update-startup.ts`             | Early return in `runGatewayUpdateCheck()` when managed platform                                                                             |
+| `src/agents/sandbox/types.ts`             | `"browser-only"` in `SandboxConfig.mode` union                                                                                              |
+| `src/agents/sandbox/runtime-status.ts`    | `browser-only` treated like `non-main`                                                                                                      |
+| `src/agents/sandbox/context.ts`           | `browser-only` skips container+workspace                                                                                                    |
+| `src/agents/sandbox/config.ts`            | Auto-enable browser for `browser-only` mode                                                                                                 |
+| `src/agents/sandbox/browser.ts`           | `docker network connect` + `${containerName}-profile` named volume                                                                          |
+| `src/config/types.agent-defaults.ts`      | `"browser-only"` in mode type                                                                                                               |
+| `src/config/types.agents.ts`              | `"browser-only"` in mode type                                                                                                               |
+| `src/config/zod-schema.agent-runtime.ts`  | `"browser-only"` in Zod schema                                                                                                              |
+| `src/gateway/server-http.ts`              | `handleSandboxBrowserRequest` integration                                                                                                   |
+| `src/agents/models-config.providers.ts`   | `buildSansaProvider()` + Sansa constants                                                                                                    |
+| `src/agents/model-auth.ts`                | `sansa: "SANSA_API_KEY"` in env key map                                                                                                     |
+| `src/gateway/server-cron.ts`              | `startPreResetFlushTimer` / `stopPreResetFlush` integration                                                                                 |
+| `src/gateway/server-reload-handlers.ts`   | `stopPreResetFlush()` call on cron restart                                                                                                  |
+| `src/config/sessions/types.ts`            | `preResetFlushAt?: number` field on `SessionEntry`                                                                                          |
+| `src/auto-reply/reply/session.ts`         | `preResetFlushAt = undefined` clear on init/reset                                                                                           |
+| `src/agents/system-prompt.ts`             | Removed `hasPracticalFile`; `howtobehuman.md`/`writelikeahuman.md` detection; updated voice prompt                                          |
+| `src/agents/workspace.ts`                 | `resolveHumanModeEnabled()`, `resolveHonchoEnabled()`, Honcho conditionals, `stripHonchoConditionals()`, `removeHumanModeSectionFromSoul()` |
+| `src/discord/send.components.ts`          | Removed unused `APIChannel` type import (lint fix)                                                                                          |
+| `src/agents/tools/recall-message-tool.ts` | Removed redundant type assertion on `source` variable (lint fix)                                                                            |
 
 ### Template & Doc Files
 

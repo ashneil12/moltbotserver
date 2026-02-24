@@ -9,7 +9,7 @@ beforeEach(() => {
 
 async function registerCommands(ctx: unknown, account: unknown) {
   const { registerSlackMonitorSlashCommands } = await import("./slash.js");
-  registerSlackMonitorSlashCommands({ ctx: ctx as never, account: account as never });
+  await registerSlackMonitorSlashCommands({ ctx: ctx as never, account: account as never });
 }
 
 function encodeValue(parts: { command: string; arg: string; value: string; userId: string }) {

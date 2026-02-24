@@ -5,10 +5,10 @@
  * Use when the user asks "what did I say about X last month?" or "find our conversation about Y".
  */
 
-import { Type } from "@sinclair/typebox";
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { Type } from "@sinclair/typebox";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readNumberParam, readStringParam } from "./common.js";
 
@@ -257,7 +257,7 @@ async function searchConversationFiles(
             role,
             content: messageContent.slice(0, 500) + (messageContent.length > 500 ? "..." : ""),
             relevanceScore: Math.min(1, score),
-            source: source as "archive" | "history",
+            source,
           });
         }
       }
