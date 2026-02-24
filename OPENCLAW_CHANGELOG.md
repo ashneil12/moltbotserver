@@ -110,6 +110,55 @@ When `sandbox.mode = "browser-only"` in `openclaw.json`:
 - Volume ownership: uid 1000 (sandbox user inside browser container)
 - ~1 GB RAM per agent browser container
 
+### Auto-Provisioning Chain (What Happens When a New Agent Is Added)
+
+| Step | What                                                  | Where                                                        | Automatic?                |
+| ---- | ----------------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
+| 1    | Config profile created (`browser.profiles.<agentId>`) | `docker-entrypoint.sh` → `enforce_browser_profiles()`        | ✅ On gateway restart     |
+| 2    | Docker container created (`browser-<agentId>`)        | `docker-entrypoint.sh` → `ensure_agent_browser_containers()` | ✅ On gateway restart     |
+| 3    | Caddy route added (`/browser-<agentId>/*`)            | `docker-entrypoint.sh` → `ensure_agent_browser_containers()` | ✅ On gateway restart     |
+| 4    | Browser tool auto-routes to agent's profile           | `browser-tool.ts` override logic                             | ✅ Automatic at tool call |
+| 5    | Dashboard discovers browser                           | `/api/sandbox-browsers` API                                  | ✅ Automatic              |
+
+All steps are now fully automatic. Adding an agent to the config and restarting the gateway provisions everything.
+
+---
+
+## Browser Tool Auto-Routing (`profile` Override)
+
+**Purpose:** Automatically route each sub-agent's browser tool calls to its dedicated browser container, even though agents always pass `profile="openclaw"` from the tool description.
+
+### The Problem
+
+The browser tool description tells agents: _"Use profile='openclaw' for the isolated openclaw-managed browser."_ AI agents dutifully include `profile="openclaw"` in every tool call. Without the override, all agents share the main `openclaw` browser profile regardless of whether they have a dedicated browser.
+
+### Files Modified
+
+| File                               | Change                                                                                             | Why                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `src/agents/tools/browser-tool.ts` | Added `agentId` opt to `createBrowserTool()`                                                       | Factory receives the calling agent's ID    |
+| `src/agents/tools/browser-tool.ts` | Auto-override: if `!profile \|\| profile === "openclaw"` and agent has a matching profile → use it | Routes agents to their dedicated browsers  |
+| `src/agents/moltbot-tools.ts`      | Passes `resolveSessionAgentId()` as `agentId` to `createBrowserTool()`                             | Wires up the agent ID from session context |
+| `src/agents/openclaw-tools.ts`     | Same as above                                                                                      | Both tool factories get the fix            |
+
+### How It Works
+
+```typescript
+// In browser-tool.ts execute():
+let profile = readStringParam(params, "profile");
+if (opts?.agentId && opts.agentId !== "main") {
+  const cfg = loadConfig();
+  if (cfg.browser?.profiles?.[opts.agentId] && (!profile || profile === "openclaw")) {
+    profile = opts.agentId; // Override "openclaw" with agent's own profile
+  }
+}
+```
+
+- Agent passes `profile="openclaw"` (or omits it) → overridden to `profile="solomon"` etc.
+- Agent passes `profile="chrome"` → left alone (Chrome extension relay is a separate feature)
+- Main agent → no override (`agentId === "main"`)
+- Agent with no matching profile in config → no override (falls back to `"openclaw"`)
+
 ---
 
 ## Browser Persistence (Volume Mount)
