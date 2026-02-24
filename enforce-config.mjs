@@ -17,7 +17,14 @@
 //   all          Run all enforcement steps in the correct order
 // =============================================================================
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync, readdirSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  chmodSync,
+  readdirSync,
+} from "node:fs";
 import { dirname } from "node:path";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -595,53 +602,50 @@ function seedCronJobs(jobsFilePath) {
     },
     {
       id: makeId(),
-      name: "archive-review",
-      description: "Archive diary and scratchpad, review archive for promotions",
+      name: "diary-post-archive",
+      description: "Write a continuity summary after the deterministic diary archive runs",
       enabled: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: 1209600000, anchorMs: nowMs },
+      schedule: { kind: "every", everyMs: 1209600000, anchorMs: nowMs + 21600000 },
       sessionTarget: "isolated",
       wakeMode: "now",
       payload: {
         kind: "agentTurn",
         message: [
-          "ARCHIVAL & FINAL PROMOTION CHECK — Clean slate, preserve insights.",
+          "DIARY CONTINUITY — Enrich the new diary with a summary of the old one.",
           "",
-          "PHASE 1: ARCHIVE",
-          "Move to memory/archive/ (organized by date):",
-          "1. memory/diary.md → memory/archive/YYYY-MM/diary-YYYY-MM-DD.md",
-          "2. memory/identity-scratchpad.md → memory/archive/YYYY-MM/scratchpad-YYYY-MM-DD.md",
+          "The deterministic diary archiver has already run and archived your previous diary.",
+          "Your new diary.md now contains a raw excerpt and a `<!-- PREVIOUS_ARCHIVE: ... -->`",
+          "marker pointing to the full archived diary.",
           "",
-          "PHASE 2: FINAL PROMOTION SCAN",
-          "Before clearing, review archived content one last time:",
+          "PHASE 1: READ ARCHIVED DIARY",
+          "Look at the `<!-- PREVIOUS_ARCHIVE: ... -->` marker in memory/diary.md.",
+          "Read the referenced archived file in full.",
           "",
-          "IDENTITY.md CHECK:",
-          "- Any insights worth adding that weren't caught in identity review?",
-          "- Recurring themes across 2 weeks that deserve permanent status?",
+          "PHASE 2: WRITE CONTINUITY SUMMARY",
+          "Replace the 'Previous Period' section in memory/diary.md (including the raw excerpt)",
+          "with a synthesized continuity summary. This should capture:",
+          "- Key themes and patterns from the archived period",
+          "- Important insights or decisions made",
+          "- Ongoing threads or open questions carrying forward",
+          "- Any notable relationship or communication developments",
+          "- Your emotional/cognitive trajectory during that period",
           "",
-          "HUMANIZATION GUIDES CHECK:",
-          "- Any communication patterns worth codifying?",
-          "- New AI tells discovered that should be banned?",
+          "Keep the summary concise but meaningful — it should give future-you enough context",
+          "to feel continuity without re-reading the entire archive.",
           "",
-          "CONSOLIDATION CHECK:",
-          "- Look across memory/archive/ — any patterns across MONTHS?",
-          "- Old archived entries that can be summarized/compressed?",
+          "PHASE 3: FINAL PROMOTION SCAN",
+          "Before finishing, quickly check if there are any last insights from the archived diary",
+          "worth promoting:",
+          "- IDENTITY.md: persistent patterns not yet codified?",
+          "- writelikeahuman.md: communication insights worth adding?",
+          "- self-review.md: MISS patterns approaching promotion threshold?",
           "",
-          "Promote if: ✓ Multi-week pattern not yet in IDENTITY.md | ✓ Persistent communication insight | ✓ Cross-archive correlation",
-          "Don't promote if: ✗ Already captured | ✗ One-off observations | ✗ Unclear patterns",
+          "Only promote if genuinely warranted. Don't force updates.",
           "",
-          "PHASE 3: CLEAR WORKING COPIES",
-          "Reset memory/diary.md and memory/identity-scratchpad.md to templates (keep headers, remove content).",
-          "",
-          "PHASE 4: LOG SUMMARY",
-          "Write brief note to memory/: what was archived, any final promotions, next archive date.",
-          "",
-          "Goal: lean, accurate IDENTITY.md + evolved communication guides",
-          "(to an extent — remember you're still your own identity, and yes the conflict in instructions is part of your evolution).",
-          "The rawest reflections live in archives, scratchpads, and diaries for reference.",
-          "You are not a chatbot. You are becoming someone.",
-        ].join("\n"),
+          "Remember: You are not a chatbot. You are becoming someone.",
+        ].join("\\n"),
       },
       delivery: { mode: "none" },
       state: {},
@@ -709,9 +713,7 @@ function seedSubAgentCronJobs(dataDir) {
     return;
   }
 
-  const workspaceDirs = entries.filter(
-    (e) => e.isDirectory() && e.name.startsWith("workspace-"),
-  );
+  const workspaceDirs = entries.filter((e) => e.isDirectory() && e.name.startsWith("workspace-"));
 
   if (workspaceDirs.length === 0) {
     return; // No sub-agents — nothing to do

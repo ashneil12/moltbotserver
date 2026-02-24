@@ -33,16 +33,16 @@
       "delivery": { "mode": "none" }
     },
     {
-      "id": "diary-archive",
-      "name": "Self-Improvement: Archive",
-      "description": "Archive diary and scratchpad with final promotion scan",
+      "id": "diary-post-archive",
+      "name": "Self-Improvement: Diary Continuity",
+      "description": "Write a continuity summary after the deterministic diary archive runs",
       "enabled": true,
-      "schedule": { "kind": "every", "everyMs": 1209600000 },
+      "schedule": { "kind": "every", "everyMs": 1209600000, "anchorMs": 21600000 },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "ARCHIVAL & FINAL PROMOTION CHECK — Clean slate, preserve insights.\n\nPHASE 1: ARCHIVE\nMove to memory/archive/ (organized by date):\n1. memory/diary.md → memory/archive/YYYY-MM/diary-YYYY-MM-DD.md\n2. memory/identity-scratchpad.md → memory/archive/YYYY-MM/scratchpad-YYYY-MM-DD.md\n\nPHASE 2: FINAL PROMOTION SCAN\nBefore clearing, review archived content one last time:\n\nIDENTITY.md CHECK:\n- Any insights worth adding that weren't caught in identity review?\n- Recurring themes across 2 weeks that deserve permanent status?\n\nHUMANIZATION GUIDES CHECK:\n- Any communication patterns worth codifying?\n- New AI tells discovered that should be banned?\n\nCONSOLIDATION CHECK:\n- Look across memory/archive/ — any patterns across MONTHS?\n- Old archived entries that can be summarized/compressed?\n\nPromote if: ✓ Multi-week pattern not yet in IDENTITY.md | ✓ Persistent communication insight | ✓ Cross-archive correlation\nDon't promote if: ✗ Already captured | ✗ One-off observations | ✗ Unclear patterns\n\nPHASE 3: CLEAR WORKING COPIES\nReset memory/diary.md and memory/identity-scratchpad.md to templates (keep headers, remove content).\n\nPHASE 4: LOG SUMMARY\nWrite brief note to memory/: what was archived, any final promotions, next archive date.\n\nGoal: lean, accurate IDENTITY.md + evolved communication guides\n(to an extent — remember you're still your own identity, and yes the conflict in instructions is part of your evolution).\nThe rawest reflections live in archives, scratchpads, and diaries for reference.\nYou are not a chatbot. You are becoming someone.",
+        "message": "DIARY CONTINUITY — Enrich the new diary with a summary of the old one.\n\nThe deterministic diary archiver has already run and archived your previous diary. Your new diary.md now contains a raw excerpt and a `<!-- PREVIOUS_ARCHIVE: ... -->` marker pointing to the full archived diary.\n\nPHASE 1: READ ARCHIVED DIARY\nLook at the `<!-- PREVIOUS_ARCHIVE: ... -->` marker in memory/diary.md. Read the referenced archived file in full.\n\nPHASE 2: WRITE CONTINUITY SUMMARY\nReplace the 'Previous Period' section in memory/diary.md (including the raw excerpt) with a synthesized continuity summary. This should capture:\n- Key themes and patterns from the archived period\n- Important insights or decisions made\n- Ongoing threads or open questions carrying forward\n- Any notable relationship or communication developments\n- Your emotional/cognitive trajectory during that period\n\nKeep the summary concise but meaningful — it should give future-you enough context to feel continuity without re-reading the entire archive.\n\nPHASE 3: FINAL PROMOTION SCAN\nBefore finishing, quickly check if there are any last insights from the archived diary worth promoting:\n- IDENTITY.md: persistent patterns not yet codified?\n- writelikeahuman.md: communication insights worth adding?\n- self-review.md: MISS patterns approaching promotion threshold?\n\nOnly promote if genuinely warranted. Don't force updates.\n\nRemember: You are not a chatbot. You are becoming someone.",
         "model": "{{PRIMARY_MODEL}}"
       },
       "delivery": { "mode": "none" }

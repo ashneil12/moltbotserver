@@ -88,6 +88,12 @@ const MIN_BOOTSTRAP_FILE_BUDGET_CHARS = 64;
 const BOOTSTRAP_HEAD_RATIO = 0.7;
 const BOOTSTRAP_TAIL_RATIO = 0.2;
 
+// Diary-specific: cap at ~12k chars with tail-heavy truncation so recent entries are preserved.
+export const DIARY_MAX_CHARS = 12_000;
+const DIARY_HEAD_RATIO = 0.3;
+const DIARY_TAIL_RATIO = 0.6;
+const DIARY_BASENAME = "diary.md";
+
 type TrimBootstrapResult = {
   content: string;
   truncated: boolean;
@@ -115,6 +121,7 @@ function trimBootstrapContent(
   content: string,
   fileName: string,
   maxChars: number,
+  opts?: { headRatio?: number; tailRatio?: number },
 ): TrimBootstrapResult {
   const trimmed = content.trimEnd();
   if (trimmed.length <= maxChars) {
@@ -126,8 +133,10 @@ function trimBootstrapContent(
     };
   }
 
-  const headChars = Math.floor(maxChars * BOOTSTRAP_HEAD_RATIO);
-  const tailChars = Math.floor(maxChars * BOOTSTRAP_TAIL_RATIO);
+  const headRatio = opts?.headRatio ?? BOOTSTRAP_HEAD_RATIO;
+  const tailRatio = opts?.tailRatio ?? BOOTSTRAP_TAIL_RATIO;
+  const headChars = Math.floor(maxChars * headRatio);
+  const tailChars = Math.floor(maxChars * tailRatio);
   const head = trimmed.slice(0, headChars);
   const tail = trimmed.slice(-tailChars);
 
@@ -225,8 +234,14 @@ export function buildBootstrapContextFiles(
       );
       break;
     }
-    const fileMaxChars = Math.max(1, Math.min(maxChars, remainingTotalChars));
-    const trimmed = trimBootstrapContent(file.content ?? "", file.name, fileMaxChars);
+    const isDiary = file.name.endsWith(DIARY_BASENAME);
+    const fileMaxChars = isDiary
+      ? Math.max(1, Math.min(DIARY_MAX_CHARS, remainingTotalChars))
+      : Math.max(1, Math.min(maxChars, remainingTotalChars));
+    const trimOpts = isDiary
+      ? { headRatio: DIARY_HEAD_RATIO, tailRatio: DIARY_TAIL_RATIO }
+      : undefined;
+    const trimmed = trimBootstrapContent(file.content ?? "", file.name, fileMaxChars, trimOpts);
     const contentWithinBudget = clampToBudget(trimmed.content, remainingTotalChars);
     if (!contentWithinBudget) {
       continue;
