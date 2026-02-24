@@ -60,6 +60,65 @@ Also fixed 6 files with pre-existing conflict markers from a previous merge.
 
 ---
 
+## Residential Proxy Support (2026-02-24)
+
+**Purpose:** Allow Chrome browser instances to route traffic through residential proxies via environment variables. Supports authenticated proxies using a dynamically generated Chrome extension for `onAuthRequired` challenges.
+
+### Files Modified / Created
+
+| File                         | Change                                                        | Why                                                               |
+| ---------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `src/browser/chrome.ts`      | Added `resolveProxyServer()` + `generateProxyAuthExtension()` | Builds `--proxy-server` arg and auth extension from env vars      |
+| `src/browser/chrome.ts`      | `launchChrome()` injects proxy args + `--load-extension`      | Routes all browser traffic through the configured proxy           |
+| `src/browser/chrome.test.ts` | **NEW** — Unit tests for proxy functions                      | Validates server resolution, extension generation, and edge cases |
+
+### Environment Variables
+
+| Variable         | Required        | Purpose                                       |
+| ---------------- | --------------- | --------------------------------------------- |
+| `PROXY_HOST`     | Yes (to enable) | Proxy hostname or IP                          |
+| `PROXY_PORT`     | No              | Proxy port (appended to host)                 |
+| `PROXY_USERNAME` | No              | Auth username (triggers extension generation) |
+| `PROXY_PASSWORD` | No              | Auth password (required with username)        |
+
+### How It Works
+
+- `resolveProxyServer()` reads `PROXY_HOST` + `PROXY_PORT` → returns `host:port` string or null
+- `generateProxyAuthExtension()` creates a tiny Chrome extension in `userDataDir/_proxy_auth_ext/` with `manifest.json` + `background.js` that intercepts `onAuthRequired` events
+- `launchChrome()` adds `--proxy-server=host:port` and `--load-extension=extDir` to Chrome args when configured
+- **Note:** Chrome extensions don't load in `--headless=new` mode; our Docker containers use Xvfb so this works
+
+---
+
+## Browser Routing Deduplication Fix (2026-02-24)
+
+**Purpose:** Prevent the `/api/sandbox-browsers` endpoint from returning duplicate entries when an agent has both a static browser profile (from `config.browser.profiles`) and a dynamic sandbox browser running simultaneously.
+
+### Files Modified
+
+| File                              | Change                                                                                  | Why                                                                |
+| --------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `src/gateway/sandbox-browsers.ts` | Added `listedIds` Set tracking; skip registry entries already listed as static profiles | Dashboard was showing duplicate browser entries for the same agent |
+
+---
+
+## Entrypoint Duplicate Provisioning Removal (2026-02-24)
+
+**Purpose:** Removed `ensure_sandbox_browser_image()` and `ensure_agent_browser_containers()` from `docker-entrypoint.sh`. These functions created standalone Docker containers (`moltbot-browser-<id>-1`) that conflicted with the docker-compose-managed containers (`browser-<id>`) and weren't tracked in the sandbox browser registry.
+
+### Files Modified
+
+| File                   | Change                                                   | Why                                                                     |
+| ---------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `docker-entrypoint.sh` | Removed `ensure_sandbox_browser_image()` (~30 lines)     | Image pulls are handled by docker-compose                               |
+| `docker-entrypoint.sh` | Removed `ensure_agent_browser_containers()` (~120 lines) | `ensure-agent-browsers.sh` on the VM host is the single source of truth |
+
+### Context
+
+The `ensure-agent-browsers.sh` script (installed by the dashboard's `hetzner-instance-service.ts` at VM provisioning time) generates `docker-compose.override.yml` and patches the `Caddyfile`. The entrypoint functions were a duplicate mechanism that ran inside the container, creating naming conflicts and orphaned containers.
+
+---
+
 ## Diary Startup Loading & Two-Phase Archive
 
 **Purpose:** Load `diary.md` into the agent's bootstrap context at startup (with tail-heavy truncation to preserve recent entries), and replace the unreliable prompt-only diary archive cron job with a two-phase system: a deterministic code-level archiver that always runs, followed by an LLM enrichment job that synthesizes a continuity summary.
