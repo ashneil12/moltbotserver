@@ -25,6 +25,70 @@ import {
 
 const log = createSubsystemLogger("browser").child("chrome");
 
+// ── Residential Proxy Support ─────────────────────────────────────────────
+
+/**
+ * Build the `--proxy-server` value from environment variables.
+ * Returns `host:port` or `host` (if no port), or null if not configured.
+ */
+export function resolveProxyServer(): string | null {
+  const host = (process.env.PROXY_HOST ?? "").trim();
+  if (!host) {
+    return null;
+  }
+  const port = (process.env.PROXY_PORT ?? "").trim();
+  return port ? `${host}:${port}` : host;
+}
+
+/**
+ * Generate a tiny Chrome extension that auto-answers proxy auth challenges.
+ * Returns the absolute path to the extension directory, or null if no credentials are configured.
+ *
+ * The extension consists of:
+ *   manifest.json — declares webRequest + webRequestAuthProvider permissions
+ *   background.js — returns credentials on `onAuthRequired`
+ *
+ * NOTE: Chrome extensions do NOT load in --headless=new mode.
+ * Our Docker containers use Xvfb (virtual display), so this works fine.
+ */
+export function generateProxyAuthExtension(userDataDir: string): string | null {
+  const username = (process.env.PROXY_USERNAME ?? "").trim();
+  const password = (process.env.PROXY_PASSWORD ?? "").trim();
+  if (!username || !password) {
+    return null;
+  }
+
+  const extDir = path.join(userDataDir, "_proxy_auth_ext");
+  fs.mkdirSync(extDir, { recursive: true });
+
+  const manifest = {
+    manifest_version: 3,
+    name: "Proxy Auth",
+    version: "1.0",
+    permissions: ["webRequest", "webRequestAuthProvider"],
+    host_permissions: ["<all_urls>"],
+    background: { service_worker: "background.js" },
+  };
+  fs.writeFileSync(path.join(extDir, "manifest.json"), JSON.stringify(manifest, null, 2));
+
+  // Escape special characters in credentials for JS string literal safety
+  const safeUser = username.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  const safePass = password.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
+  const background = [
+    `chrome.webRequest.onAuthRequired.addListener(`,
+    `  (details, callback) => {`,
+    `    callback({ authCredentials: { username: '${safeUser}', password: '${safePass}' } });`,
+    `  },`,
+    `  { urls: ['<all_urls>'] },`,
+    `  ['asyncBlocking']`,
+    `);`,
+  ].join("\n");
+  fs.writeFileSync(path.join(extDir, "background.js"), background);
+
+  return extDir;
+}
+
 export type { BrowserExecutable } from "./chrome.executables.js";
 export {
   findChromeExecutableLinux,
@@ -216,6 +280,23 @@ export async function launchOpenClawChrome(
 
     // Stealth: hide navigator.webdriver from automation detection (#80)
     args.push("--disable-blink-features=AutomationControlled");
+
+    // ── Residential proxy ────────────────────────────────────────────────
+    const proxyServer = resolveProxyServer();
+    if (proxyServer) {
+      args.push(`--proxy-server=${proxyServer}`);
+      log.info(`🌐 proxy configured: ${proxyServer}`);
+
+      // For authenticated proxies, generate a tiny extension that handles
+      // chrome.webRequest.onAuthRequired. This is the standard pattern
+      // used by Playwright/Puppeteer for proxy auth in Chromium.
+      const authExtDir = generateProxyAuthExtension(userDataDir);
+      if (authExtDir) {
+        args.push(`--disable-extensions-except=${authExtDir}`);
+        args.push(`--load-extension=${authExtDir}`);
+        log.info("🔑 proxy auth extension loaded");
+      }
+    }
 
     // Append user-configured extra arguments (e.g., stealth flags, window size)
     if (resolved.extraArgs.length > 0) {

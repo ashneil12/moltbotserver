@@ -19,11 +19,11 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ### Conflict Resolution (49 files)
 
-| Strategy | Count | Files |
-|----------|-------|-------|
-| **Take Upstream** | 46 | Core source, extensions, config, commands, tests |
-| **Keep Local** | 2 | `AGENTS.md` (custom peer protocol), `device-pair/index.ts` (auto-approve) |
-| **Manual Merge** | 1 | `workspace.ts` (combined MINIMAL_BOOTSTRAP_ALLOWLIST entries) |
+| Strategy          | Count | Files                                                                     |
+| ----------------- | ----- | ------------------------------------------------------------------------- |
+| **Take Upstream** | 46    | Core source, extensions, config, commands, tests                          |
+| **Keep Local**    | 2     | `AGENTS.md` (custom peer protocol), `device-pair/index.ts` (auto-approve) |
+| **Manual Merge**  | 1     | `workspace.ts` (combined MINIMAL_BOOTSTRAP_ALLOWLIST entries)             |
 
 Also fixed 6 files with pre-existing conflict markers from a previous merge.
 
@@ -203,15 +203,15 @@ When `sandbox.mode = "browser-only"` in `openclaw.json`:
 
 ### Auto-Provisioning Chain (What Happens When a New Agent Is Added)
 
-| Step | What                                                  | Where                                                        | Automatic?                |
-| ---- | ----------------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
-| 1    | Config profile created (`browser.profiles.<agentId>`) | `docker-entrypoint.sh` → `enforce_browser_profiles()`        | ✅ On gateway restart     |
-| 2    | Docker container created (`browser-<agentId>`)        | `docker-entrypoint.sh` → `ensure_agent_browser_containers()` | ✅ On gateway restart     |
-| 3    | Caddy route added (`/browser-<agentId>/*`)            | `docker-entrypoint.sh` → `ensure_agent_browser_containers()` | ✅ On gateway restart     |
-| 4    | Browser tool auto-routes to agent's profile           | `browser-tool.ts` override logic                             | ✅ Automatic at tool call |
-| 5    | Dashboard discovers browser                           | `/api/sandbox-browsers` API                                  | ✅ Automatic              |
+| Step | What                                                  | Where                                                           | Automatic?                       |
+| ---- | ----------------------------------------------------- | --------------------------------------------------------------- | -------------------------------- |
+| 1    | Config profile created (`browser.profiles.<agentId>`) | `docker-entrypoint.sh` → `enforce_browser_profiles()`           | ✅ On gateway restart            |
+| 2    | Docker container created (`browser-<agentId>`)        | `ensure-agent-browsers.sh` → `docker-compose.override.yml`      | ⚠️ Script must be run on VM host |
+| 3    | Caddy route added (`/browser-<agentId>/*`)            | `ensure-agent-browsers.sh` → Caddyfile patch                    | ⚠️ Script must be run on VM host |
+| 4    | Browser tool auto-routes to agent's profile           | `browser-tool.ts` override logic                                | ✅ Automatic at tool call        |
+| 5    | Dashboard discovers browser                           | `/api/sandbox-browsers` API (deduplicates agent + sandbox list) | ✅ Automatic                     |
 
-All steps are now fully automatic. Adding an agent to the config and restarting the gateway provisions everything.
+> **Note (2026-02-24):** `ensure_agent_browser_containers()` and `ensure_sandbox_browser_image()` were removed from `docker-entrypoint.sh` to eliminate duplicate provisioning. The entrypoint was creating standalone Docker containers with `moltbot-browser-<id>-1` names that conflicted with the docker-compose-managed containers (`browser-<id>`) and didn't register in the sandbox browser registry. The dashboard's `ensure-agent-browsers.sh` (installed by `hetzner-instance-service.ts` at VM provisioning time) is now the single source of truth for per-agent browser container/route provisioning.
 
 ---
 

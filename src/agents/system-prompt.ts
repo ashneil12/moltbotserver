@@ -482,36 +482,8 @@ export function buildAgentSystemPrompt(params: {
       : "",
     "",
     // ── Camoufox anti-detection browser ──────────────────────────────────
-    // Conditionally included when the CAMOFOX_ENABLED env var is set.
-    process.env.CAMOFOX_ENABLED === "true" && !isMinimal
-      ? [
-          "## Browser Anti-Detection (Camoufox)",
-          "You have TWO browsers available:",
-          "- **Chromium** (default `browser` tool) — fast, low resource usage. Use this first.",
-          "- **Camoufox** (anti-detection Firefox fork via `camofox-browser` plugin) — stealth mode, bypasses bot detection.",
-          "",
-          "### When to switch to Camoufox",
-          "Switch ONLY when Chromium is actively blocked. Signs:",
-          '- CAPTCHA challenges, Cloudflare "Verify you are human" pages',
-          "- HTTP 403/429 with bot-detection messaging",
-          "- Pages that load but show empty/different content than expected (cloaking)",
-          "- Repeated redirects to verification pages",
-          "",
-          "### How to switch",
-          "1. Close the current Chromium browser tab/page",
-          "2. Use the camofox-browser tools (port 9377) to open the same URL",
-          "3. After completing work, close the Camoufox session to free resources",
-          "",
-          "### Resource rules",
-          "- NEVER run both browsers simultaneously — the VM has limited RAM",
-          "- Always close Camoufox when done; prefer Chromium for routine browsing",
-          "- If Camoufox also gets blocked, report the issue to the user rather than retrying",
-          process.env.PROXY_HOST
-            ? `- A residential proxy is configured (${process.env.PROXY_HOST}). Traffic is automatically routed through it for both browsers.`
-            : "- No proxy is configured. If sites block the server IP, suggest the user configure a residential proxy in Settings → Web Browsing.",
-        ].join("\n")
-      : "",
-    process.env.CAMOFOX_ENABLED === "true" && !isMinimal ? "" : "",
+    // Removed: Camofox integration is "Coming Soon" — no runtime support yet.
+    // When re-enabled, the plugin will register its own tools automatically.
     // Skip model aliases for subagent/none modes
     params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
       ? "## Model Aliases"

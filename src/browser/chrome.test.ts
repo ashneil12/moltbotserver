@@ -8,8 +8,10 @@ import {
   ensureProfileCleanExit,
   findChromeExecutableMac,
   findChromeExecutableWindows,
+  generateProxyAuthExtension,
   isChromeReachable,
   resolveBrowserExecutableForPlatform,
+  resolveProxyServer,
   stopOpenClawChrome,
 } from "./chrome.js";
 import {
@@ -286,5 +288,104 @@ describe("browser chrome helpers", () => {
     );
     expect(proc.kill).toHaveBeenNthCalledWith(1, "SIGTERM");
     expect(proc.kill).toHaveBeenNthCalledWith(2, "SIGKILL");
+  });
+});
+
+describe("resolveProxyServer", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns null when PROXY_HOST is not set", () => {
+    vi.stubEnv("PROXY_HOST", "");
+    expect(resolveProxyServer()).toBeNull();
+  });
+
+  it("returns host only when PROXY_PORT is not set", () => {
+    vi.stubEnv("PROXY_HOST", "proxy.example.com");
+    vi.stubEnv("PROXY_PORT", "");
+    expect(resolveProxyServer()).toBe("proxy.example.com");
+  });
+
+  it("returns host:port when both are set", () => {
+    vi.stubEnv("PROXY_HOST", "proxy.example.com");
+    vi.stubEnv("PROXY_PORT", "8080");
+    expect(resolveProxyServer()).toBe("proxy.example.com:8080");
+  });
+
+  it("trims whitespace from env vars", () => {
+    vi.stubEnv("PROXY_HOST", "  proxy.example.com  ");
+    vi.stubEnv("PROXY_PORT", "  3128  ");
+    expect(resolveProxyServer()).toBe("proxy.example.com:3128");
+  });
+});
+
+describe("generateProxyAuthExtension", () => {
+  let fixtureRoot = "";
+  let fixtureCount = 0;
+
+  const createUserDataDir = async () => {
+    const dir = path.join(fixtureRoot, `proxy-ext-${fixtureCount++}`);
+    await fsp.mkdir(dir, { recursive: true });
+    return dir;
+  };
+
+  beforeAll(async () => {
+    fixtureRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "openclaw-proxy-ext-suite-"));
+  });
+
+  afterAll(async () => {
+    if (fixtureRoot) {
+      await fsp.rm(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns null when no credentials are set", async () => {
+    vi.stubEnv("PROXY_USERNAME", "");
+    vi.stubEnv("PROXY_PASSWORD", "");
+    const dir = await createUserDataDir();
+    expect(generateProxyAuthExtension(dir)).toBeNull();
+  });
+
+  it("returns null when only username is set", async () => {
+    vi.stubEnv("PROXY_USERNAME", "user");
+    vi.stubEnv("PROXY_PASSWORD", "");
+    const dir = await createUserDataDir();
+    expect(generateProxyAuthExtension(dir)).toBeNull();
+  });
+
+  it("generates extension when both username and password are set", async () => {
+    vi.stubEnv("PROXY_USERNAME", "myuser");
+    vi.stubEnv("PROXY_PASSWORD", "mypass");
+    const dir = await createUserDataDir();
+    const extDir = generateProxyAuthExtension(dir);
+
+    expect(extDir).toBeTruthy();
+    expect(fs.existsSync(path.join(extDir!, "manifest.json"))).toBe(true);
+    expect(fs.existsSync(path.join(extDir!, "background.js"))).toBe(true);
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(extDir!, "manifest.json"), "utf-8"));
+    expect(manifest.manifest_version).toBe(3);
+    expect(manifest.permissions).toContain("webRequest");
+
+    const bg = fs.readFileSync(path.join(extDir!, "background.js"), "utf-8");
+    expect(bg).toContain("myuser");
+    expect(bg).toContain("mypass");
+  });
+
+  it("escapes special characters in credentials", async () => {
+    vi.stubEnv("PROXY_USERNAME", "user'with\\quotes");
+    vi.stubEnv("PROXY_PASSWORD", "pass'with\\slashes");
+    const dir = await createUserDataDir();
+    const extDir = generateProxyAuthExtension(dir);
+
+    expect(extDir).toBeTruthy();
+    const bg = fs.readFileSync(path.join(extDir!, "background.js"), "utf-8");
+    expect(bg).toContain("user\\'with\\\\quotes");
+    expect(bg).toContain("pass\\'with\\\\slashes");
   });
 });

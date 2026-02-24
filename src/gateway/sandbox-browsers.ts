@@ -172,9 +172,16 @@ async function handleListBrowsers(_req: IncomingMessage, res: ServerResponse): P
     }
   }
 
+  // Track IDs already listed (main + static profiles) to avoid duplicates
+  const listedIds = new Set(browsers.map((b) => b.id));
+
   // Include dynamic sandbox browsers from the registry
   for (const entry of registry.entries) {
     const shortId = deriveShortId(entry);
+    // Skip if already listed as a static agent browser profile
+    if (listedIds.has(shortId)) {
+      continue;
+    }
     browsers.push({
       id: shortId,
       label: deriveLabel(entry.sessionKey),
