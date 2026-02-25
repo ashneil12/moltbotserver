@@ -860,6 +860,7 @@ export async function executeJob(
   let coreResult: {
     status: CronRunStatus;
     delivered?: boolean;
+    nextRunAfterMs?: number;
   } & CronRunOutcome &
     CronRunTelemetry;
   try {
@@ -875,6 +876,7 @@ export async function executeJob(
     delivered: coreResult.delivered,
     startedAt,
     endedAt,
+    nextRunAfterMs: coreResult.nextRunAfterMs,
   });
 
   emitJobFinished(state, job, coreResult, startedAt);

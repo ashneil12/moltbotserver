@@ -1,5 +1,5 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
 import fs from "node:fs/promises";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -27,7 +27,7 @@ describe("handleControlUiHttpRequest", () => {
     try {
       await fs.writeFile(path.join(tmp, "index.html"), "<html></html>\n");
       const { res, setHeader } = makeResponse();
-      const handled = handleControlUiHttpRequest(
+      const handled = await handleControlUiHttpRequest(
         { url: "/", method: "GET" } as IncomingMessage,
         res,
         {

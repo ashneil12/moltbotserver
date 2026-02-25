@@ -721,6 +721,8 @@ export function buildAgentSystemPrompt(params: {
     const identityFile = validContextFiles.find((f) => getBaseName(f.path) === "IDENTITY.md");
     if (identityFile && identityFile.path) {
       try {
+        // statSync is intentional: buildAgentSystemPrompt is synchronous and making it async
+        // would require changing every callsite. A single metadata-only stat is acceptable here.
         const stats = fs.statSync(identityFile.path);
         const ageHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
         if (ageHours > 72) {

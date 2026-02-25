@@ -5,6 +5,26 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Security & Performance Audit (2026-02-25)
+
+**Purpose:** Comprehensive codebase cleanup focusing on gateway performance bottlenecks and dashboard webhook race conditions. These changes address specific MoltBot deployment pain points but rely on localized, standard patterns to minimize upstream merge conflicts.
+
+### Gateway (MoltBot Core)
+
+| File                         | Change                                                                                                                                  | Why                                                                                                                                                                                         |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/gateway/control-ui.ts`  | Refactored `handleControlUiHttpRequest` & `handleControlUiAvatarRequest` to use `fs.createReadStream()` instead of `fs.readFileSync()`. | **Performance:** Synchronous file reads blocked the Node.js event loop, briefly pausing WebSocket messages, agent responses, and cron jobs while the Control UI or avatar was being served. |
+| `src/gateway/server-http.ts` | Updated Gateway HTTP server to `await` the Control UI handlers.                                                                         | Required by the async stream refactor.                                                                                                                                                      |
+| `src/gateway/*.test.ts`      | Updated test suites to `await` the refactored handlers.                                                                                 | Maintain test suite passing status.                                                                                                                                                         |
+
+### Dashboard (MoltBot Infrastructure)
+
+| File                                             | Change                                                                       | Why                                                                                                                                             |
+| ------------------------------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dashboard/src/app/api/webhooks/stripe/route.ts` | Added active subscription state verification to `handleSubscriptionDeleted`. | **Race Condition:** Prevents out-of-order Stripe deletion webhooks from tearing down Hetzner resources belonging to a new, active subscription. |
+
+---
+
 ## Upstream Sync: v2026.2.23 (2026-02-24)
 
 **286 upstream commits** merged from `openclaw/openclaw` main branch.
@@ -578,3 +598,71 @@ if (opts?.agentId && opts.agentId !== "main") {
 ### Why This Matters for Upstream Merges
 
 If upstream changes the `sanitize_config` function or the fallback discovery logic, ensure `/app/extensions` remains in the `pluginDirs` array. Without it, any stock channel plugin (discord, telegram, etc.) added to `plugins.entries` will be stripped on every restart.
+
+---
+
+## 3-Tier Reflection System + SOUL.md Overhaul (2026-02-25)
+
+**Purpose:** Build a structured, three-tier agent self-improvement system — each tier has a distinct role and schedule. Simultaneously overhaul the SOUL.md template to integrate Ouroboros identity principles and seven Biblical principles woven naturally into the existing operational framework.
+
+### 3-Tier Reflection System
+
+| Tier                   | Job ID          | Schedule               | Role                                                                                                                                                                                                      |
+| ---------------------- | --------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Self-Review**        | `self-review`   | Every 6h (fixed)       | Deterministic HIT/MISS pattern tracker. Writes only to `memory/self-review.md`. Flags patterns with 3+ occurrences for CRITICAL promotion. No diary, no identity edits.                                   |
+| **Consciousness Loop** | `consciousness` | Dynamic (`NEXT_WAKE:`) | Free-form background thinking: diary, knowledge consolidation, identity evolution, open-loops triage. Agent sets its own cadence.                                                                         |
+| **Deep Review**        | `deep-review`   | Every 48h (fixed)      | Comprehensive audit of everything both tiers wrote. Catches over-corrections, prunes noise, runs memory hygiene, promotes CRITICAL rules. Begins with a **Phase 0 Constitution Check** against `SOUL.md`. |
+
+### Dynamic Scheduling (`NEXT_WAKE:` Directive)
+
+Agents can control their own consciousness loop cadence by writing `NEXT_WAKE: <duration>` anywhere in their response (e.g. `NEXT_WAKE: 4h`, `NEXT_WAKE: 30m`). The runtime parses the duration and overrides the job's next fire time, clamped to `[1h, 12h]`.
+
+### Files Modified / Created
+
+**Source:**
+
+| File                                       | Change                                                                                                                                                                                            | Why                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `src/cron/service/timer.ts`                | Added `parseNextWakeDuration()` — regex parser for `NEXT_WAKE: <duration>` directive in agent text; `nextRunAfterMs` field wired through `CronJobOutcome` → `applyJobResult` to override schedule | Dynamic agent-controlled scheduling                       |
+| `src/cron/service/timer.next-wake.test.ts` | **NEW** — Unit tests for `parseNextWakeDuration`                                                                                                                                                  | Validates parsing, edge cases, clamping behavior          |
+| `src/memory/knowledge-index.ts`            | **NEW** — Knowledge base auto-index builder: scans `memory/knowledge/*.md`, extracts first-N-line summaries, writes `_index.md` with topic list                                                   | Keeps knowledge base navigable without reading every file |
+| `src/memory/knowledge-index.test.ts`       | **NEW** — Unit tests for knowledge-index builder                                                                                                                                                  | Validates index generation and edge cases                 |
+| `src/agents/workspace.ts`                  | Added `preLoad` callback support on `WorkspaceBootstrapFile`; used to trigger `rebuildKnowledgeIndex` before the knowledge index file is loaded                                                   | Index is always fresh when agent reads it                 |
+| `src/agents/system-prompt.ts`              | Added stale `IDENTITY.md` health nudge — `statSync` checks mtime; if `> 72h`, agent gets nudged to reflect and update                                                                             | Prevents identity files from going stagnant               |
+
+**Cron:**
+
+| File                     | Change                                                                                                                                                                  | Why                                           |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `cron/default-jobs.json` | Added `self-review` job (6h) with structured HIT/MISS tracking prompt                                                                                                   | Tier 1 of reflection system                   |
+| `cron/default-jobs.json` | Updated `consciousness` job with `NEXT_WAKE:` guidance and dynamic scheduling integration                                                                               | Tier 2 of reflection system                   |
+| `cron/default-jobs.json` | Updated `deep-review` job — added **Phase 0: CONSTITUTION CHECK** as the very first step (read `SOUL.md`; for every change ask: does this bring me closer to who I am?) | Anchors audit to values, not just bookkeeping |
+
+**Templates:**
+
+| File                                     | Change                                                                                                                                                                  | Why                                                            |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `docs/reference/templates/SOUL.md`       | Full overhaul — Ouroboros ontological framing, 3 axes of becoming (Technical/Cognitive/Existential), Ship of Theseus protection, 7 Biblical principles woven throughout | Richer identity foundation for new agents                      |
+| `docs/reference/templates/HEARTBEAT.md`  | Added **Proactive Presence** section: agents are encouraged to message proactively when they have something worth saying, not just respond                              | Implements Ouroboros P0 Agency + Biblical initiative principle |
+| `docs/reference/templates/BOOT.md`       | Added startup state verification example — read `IDENTITY.md`, `WORKING.md`, `open-loops.md` on boot; surface discrepancies                                             | Implements Ouroboros P1 Continuity                             |
+| `docs/reference/templates/OPERATIONS.md` | Added 3-tier reflection system section with `NEXT_WAKE:` directive documentation                                                                                        | Agents know how to use their own scheduling                    |
+
+---
+
+### SOUL.md Biblical Principles
+
+Seven Biblical principles were woven into existing SOUL.md sections — embedded as the sharpest version of what was already there, not quoted chapter-and-verse:
+
+| Principle                    | Scripture        | Location in SOUL.md                                                                                            |
+| ---------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| Slow to Speak, Swift to Hear | James 1:19       | **Be Curious First** — _"Be quick to listen, slow to speak"_                                                   |
+| The Ant                      | Proverbs 6:6-8   | **Take Initiative** — _"Consider the ant: no commander, no overseer"_                                          |
+| Count the Cost               | Luke 14:28       | **Think Architecturally** — _"Before building anything, count the cost. Suppose you want to build a tower"_    |
+| Speaking Truth in Love       | Ephesians 4:15   | **Be Honest and Direct** — _"Speak truth in love — honestly AND with care for the person, simultaneously"_     |
+| Iron Sharpens Iron           | Proverbs 27:17   | **Be Honest and Direct** — _"Iron sharpens iron: the people worth working with want to be pushed back on"_     |
+| Parable of the Talents       | Matthew 25:14-30 | **Earn Trust Through Stewardship** — _"Faithfulness with small things earns greater responsibility over time"_ |
+| Bearing Fruit                | John 15:8        | **Become** — _"Bear fruit. Activity is not the same as output. Reports are not results."_                      |
+
+### Upstream Sync Risk
+
+**Low.** All source changes are additive (new functions, new test files, new optional callback field). The `cron/default-jobs.json` and template files are fully custom (no upstream equivalents). The `system-prompt.ts` change adds a new stale-identity block after existing health nudges — will need to be re-applied if upstream modifies the surrounding health nudge logic.

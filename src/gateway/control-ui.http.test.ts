@@ -40,14 +40,14 @@ describe("handleControlUiHttpRequest", () => {
     expect(params.end).toHaveBeenCalledWith("Not Found");
   }
 
-  function runControlUiRequest(params: {
+  async function runControlUiRequest(params: {
     url: string;
     method: "GET" | "HEAD";
     rootPath: string;
     basePath?: string;
   }) {
     const { res, end } = makeMockHttpResponse();
-    const handled = handleControlUiHttpRequest(
+    const handled = await handleControlUiHttpRequest(
       { url: params.url, method: params.method } as IncomingMessage,
       res,
       {
@@ -58,14 +58,14 @@ describe("handleControlUiHttpRequest", () => {
     return { res, end, handled };
   }
 
-  function runAvatarRequest(params: {
+  async function runAvatarRequest(params: {
     url: string;
     method: "GET" | "HEAD";
     resolveAvatar: Parameters<typeof handleControlUiAvatarRequest>[2]["resolveAvatar"];
     basePath?: string;
   }) {
     const { res, end } = makeMockHttpResponse();
-    const handled = handleControlUiAvatarRequest(
+    const handled = await handleControlUiAvatarRequest(
       { url: params.url, method: params.method } as IncomingMessage,
       res,
       {
@@ -105,7 +105,7 @@ describe("handleControlUiHttpRequest", () => {
     await withControlUiRoot({
       fn: async (tmp) => {
         const { res, setHeader } = makeMockHttpResponse();
-        const handled = handleControlUiHttpRequest(
+        const handled = await handleControlUiHttpRequest(
           { url: "/", method: "GET" } as IncomingMessage,
           res,
           {
@@ -129,7 +129,7 @@ describe("handleControlUiHttpRequest", () => {
       indexHtml: html,
       fn: async (tmp) => {
         const { res, end } = makeMockHttpResponse();
-        const handled = handleControlUiHttpRequest(
+        const handled = await handleControlUiHttpRequest(
           { url: "/", method: "GET" } as IncomingMessage,
           res,
           {
@@ -150,7 +150,7 @@ describe("handleControlUiHttpRequest", () => {
     await withControlUiRoot({
       fn: async (tmp) => {
         const { res, end } = makeMockHttpResponse();
-        const handled = handleControlUiHttpRequest(
+        const handled = await handleControlUiHttpRequest(
           { url: CONTROL_UI_BOOTSTRAP_CONFIG_PATH, method: "GET" } as IncomingMessage,
           res,
           {
@@ -175,7 +175,7 @@ describe("handleControlUiHttpRequest", () => {
     await withControlUiRoot({
       fn: async (tmp) => {
         const { res, end } = makeMockHttpResponse();
-        const handled = handleControlUiHttpRequest(
+        const handled = await handleControlUiHttpRequest(
           { url: `/openclaw${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`, method: "GET" } as IncomingMessage,
           res,
           {
@@ -203,7 +203,7 @@ describe("handleControlUiHttpRequest", () => {
       const avatarPath = path.join(tmp, "main.png");
       await fs.writeFile(avatarPath, "avatar-bytes\n");
 
-      const { res, end, handled } = runAvatarRequest({
+      const { res, end, handled } = await runAvatarRequest({
         url: "/avatar/main",
         method: "GET",
         resolveAvatar: () => ({ kind: "local", filePath: avatarPath }),
@@ -226,7 +226,7 @@ describe("handleControlUiHttpRequest", () => {
       const linkPath = path.join(tmp, "avatar-link.png");
       await fs.symlink(outsideFile, linkPath);
 
-      const { res, end, handled } = runAvatarRequest({
+      const { res, end, handled } = await runAvatarRequest({
         url: "/avatar/main",
         method: "GET",
         resolveAvatar: () => ({ kind: "local", filePath: linkPath }),
@@ -251,7 +251,7 @@ describe("handleControlUiHttpRequest", () => {
           await fs.symlink(outsideFile, path.join(assetsDir, "leak.txt"));
 
           const { res, end } = makeMockHttpResponse();
-          const handled = handleControlUiHttpRequest(
+          const handled = await handleControlUiHttpRequest(
             { url: "/assets/leak.txt", method: "GET" } as IncomingMessage,
             res,
             {
@@ -272,7 +272,7 @@ describe("handleControlUiHttpRequest", () => {
         const { assetsDir, filePath } = await writeAssetFile(tmp, "actual.txt", "inside-ok\n");
         await fs.symlink(filePath, path.join(assetsDir, "linked.txt"));
 
-        const { res, end, handled } = runControlUiRequest({
+        const { res, end, handled } = await runControlUiRequest({
           url: "/assets/linked.txt",
           method: "GET",
           rootPath: tmp,
@@ -290,7 +290,7 @@ describe("handleControlUiHttpRequest", () => {
       fn: async (tmp) => {
         await writeAssetFile(tmp, "actual.txt", "inside-ok\n");
 
-        const { res, end, handled } = runControlUiRequest({
+        const { res, end, handled } = await runControlUiRequest({
           url: "/assets/actual.txt",
           method: "HEAD",
           rootPath: tmp,
@@ -313,7 +313,7 @@ describe("handleControlUiHttpRequest", () => {
           await fs.rm(path.join(tmp, "index.html"));
           await fs.symlink(outsideIndex, path.join(tmp, "index.html"));
 
-          const { res, end, handled } = runControlUiRequest({
+          const { res, end, handled } = await runControlUiRequest({
             url: "/app/route",
             method: "GET",
             rootPath: tmp,
@@ -335,7 +335,7 @@ describe("handleControlUiHttpRequest", () => {
 
         const secretPathUrl = secretPath.split(path.sep).join("/");
         const absolutePathUrl = secretPathUrl.startsWith("/") ? secretPathUrl : `/${secretPathUrl}`;
-        const { res, end, handled } = runControlUiRequest({
+        const { res, end, handled } = await runControlUiRequest({
           url: `/openclaw/${absolutePathUrl}`,
           method: "GET",
           rootPath: root,
@@ -364,7 +364,7 @@ describe("handleControlUiHttpRequest", () => {
           throw error;
         }
 
-        const { res, end, handled } = runControlUiRequest({
+        const { res, end, handled } = await runControlUiRequest({
           url: "/openclaw/assets/leak.txt",
           method: "GET",
           rootPath: root,
