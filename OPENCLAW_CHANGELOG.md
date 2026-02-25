@@ -5,20 +5,41 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## noVNC No-Auth Mode (2026-02-25)
+
+**Purpose:** Prevent the noVNC password dialog when accessing browser views from the dashboard. The host browser container generated a random VNC password on every startup that was never passed to the dashboard URL, causing a password prompt on every connection.
+
+### Files Modified
+
+| File                                        | Change                                                                                                  | Why                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `scripts/sandbox-browser-entrypoint.sh`     | Added `OPENCLAW_BROWSER_NOVNC_NO_AUTH` env var (default `0`). When `1`, x11vnc runs without `-rfbauth`. | Disables VNC-level password; external auth (Caddy gateway token) handles access control |
+| `dashboard/.../hetzner-instance-service.ts` | Added `OPENCLAW_BROWSER_NOVNC_NO_AUTH=1` to main browser + per-agent browser docker-compose templates   | All deployed browser containers skip VNC password                                       |
+
+### Security Model
+
+Safe because: x11vnc binds to `-localhost` (Docker-internal only), Caddy gates `/browser/vnc.html` and `/browser/websockify` behind the gateway token, and no VNC port is exposed to the internet.
+
+### Upstream Sync Risk
+
+**None.** `sandbox-browser-entrypoint.sh` is fully custom (not in upstream). The env var defaults to `0`, so if the entrypoint is ever reset, existing behavior is preserved.
+
+---
+
 ## Merge Artifact Cleanup (2026-02-25)
 
 **Purpose:** Remove duplicate function/variable declarations left behind by the upstream rebase. These caused esbuild compilation failures in ~5 test files.
 
 ### Files Fixed
 
-| File | Duplicates Removed | Lines Saved |
-|------|-------------------|-------------|
-| `src/security/audit-extra.sync.ts` | 4 functions (`hasConfiguredDockerConfig`, `normalizeNodeCommand`, `listKnownNodeCommands`, `looksLikeNodeCommandPattern`) | 55 |
-| `src/agents/workspace.ts` | 2 variables (`workspaceTemplateCache`, `gitAvailabilityPromise`) + 1 function (`loadExtraBootstrapFiles`) | 70 |
-| `src/config/io.ts` | 3 functions (`resolveConfigAuditLogPath`, `resolveConfigWriteSuspiciousReasons`, `appendConfigWriteAuditRecord`) | 49 |
-| `src/agents/models-config.providers.ts` | 1 function (`discoverVllmModels`) | 53 |
-| `src/agents/workspace.ts` | Added missing `resolveHonchoEnabled()` + `stripHonchoConditionals()` (referenced but never defined after rebase) | +47 (added) |
-| `src/agents/system-prompt.test.ts` | Updated owner line format (`Owner numbers:` → `Authorized senders:`) + Skills section assertion | 3 lines changed |
+| File                                    | Duplicates Removed                                                                                                        | Lines Saved     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `src/security/audit-extra.sync.ts`      | 4 functions (`hasConfiguredDockerConfig`, `normalizeNodeCommand`, `listKnownNodeCommands`, `looksLikeNodeCommandPattern`) | 55              |
+| `src/agents/workspace.ts`               | 2 variables (`workspaceTemplateCache`, `gitAvailabilityPromise`) + 1 function (`loadExtraBootstrapFiles`)                 | 70              |
+| `src/config/io.ts`                      | 3 functions (`resolveConfigAuditLogPath`, `resolveConfigWriteSuspiciousReasons`, `appendConfigWriteAuditRecord`)          | 49              |
+| `src/agents/models-config.providers.ts` | 1 function (`discoverVllmModels`)                                                                                         | 53              |
+| `src/agents/workspace.ts`               | Added missing `resolveHonchoEnabled()` + `stripHonchoConditionals()` (referenced but never defined after rebase)          | +47 (added)     |
+| `src/agents/system-prompt.test.ts`      | Updated owner line format (`Owner numbers:` → `Authorized senders:`) + Skills section assertion                           | 3 lines changed |
 
 ### Impact
 
@@ -34,23 +55,23 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ### New Modules
 
-| File | Purpose | Tests |
-|------|---------|-------|
-| `src/security/content-scanner.ts` | Two-stage content scanner (40+ regex patterns + optional frontier model). Detects prompt injection, SQL injection, role spoofing, data exfiltration, command injection. Risk scoring via `sqrt(sum) * 15`. | 48 |
-| `src/logging/event-log.ts` | Structured JSONL event logger with per-event files + unified stream. PII redaction, log rotation, queryable history. | 30 |
-| `src/security/data-classification.ts` | Three-tier data classification (Confidential/Internal/Public) with context-aware gating and PII detection. | 47 |
-| `src/logging/diagnostics-toolkit.ts` | System health checks: PID file, port reachability, error rate, disk space. Cron job debugging. | 21 |
-| `src/security/scan-and-log.ts` | Shared `scanAndLog()` helper — DRY wrapper for scan + log + warn. Lazy singleton EventLogger. | — |
+| File                                  | Purpose                                                                                                                                                                                                    | Tests |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `src/security/content-scanner.ts`     | Two-stage content scanner (40+ regex patterns + optional frontier model). Detects prompt injection, SQL injection, role spoofing, data exfiltration, command injection. Risk scoring via `sqrt(sum) * 15`. | 48    |
+| `src/logging/event-log.ts`            | Structured JSONL event logger with per-event files + unified stream. PII redaction, log rotation, queryable history.                                                                                       | 30    |
+| `src/security/data-classification.ts` | Three-tier data classification (Confidential/Internal/Public) with context-aware gating and PII detection.                                                                                                 | 47    |
+| `src/logging/diagnostics-toolkit.ts`  | System health checks: PID file, port reachability, error rate, disk space. Cron job debugging.                                                                                                             | 21    |
+| `src/security/scan-and-log.ts`        | Shared `scanAndLog()` helper — DRY wrapper for scan + log + warn. Lazy singleton EventLogger.                                                                                                              | —     |
 
 ### Integration Points
 
-| File | Integration |
-|------|-------------|
-| `src/agents/tools/web-fetch.ts` | Scanner on all fetched page content via `scanAndLog()` |
-| `src/agents/tools/browser-tool.ts` | Scanner on browser snapshots, console output, tab data via `scanAndLog()` |
-| `src/cron/isolated-agent/run.ts` | Scanner on external hook content + cron outcome event logging via `scanAndLog()` |
-| `src/agents/system-prompt.ts` | Data sharing policy injected per channel context type (DM/group/channel) |
-| `src/logging/diagnostic.ts` | Periodic health check every ~5min via heartbeat counter |
+| File                               | Integration                                                                      |
+| ---------------------------------- | -------------------------------------------------------------------------------- |
+| `src/agents/tools/web-fetch.ts`    | Scanner on all fetched page content via `scanAndLog()`                           |
+| `src/agents/tools/browser-tool.ts` | Scanner on browser snapshots, console output, tab data via `scanAndLog()`        |
+| `src/cron/isolated-agent/run.ts`   | Scanner on external hook content + cron outcome event logging via `scanAndLog()` |
+| `src/agents/system-prompt.ts`      | Data sharing policy injected per channel context type (DM/group/channel)         |
+| `src/logging/diagnostic.ts`        | Periodic health check every ~5min via heartbeat counter                          |
 
 ### Design Decisions
 
@@ -71,8 +92,8 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ### Files Modified
 
-| File                 | Change                                                                | Why                                                         |
-| -------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------- |
+| File                 | Change                                                        | Why                                                                     |
+| -------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | `enforce-config.mjs` | Added `tools.loopDetection.enabled = true` in `enforceCore()` | Enables 3-detector system (generic repeat, poll-no-progress, ping-pong) |
 
 ### How It Works

@@ -14,6 +14,7 @@ ENABLE_NOVNC="${OPENCLAW_BROWSER_ENABLE_NOVNC:-${CLAWDBOT_BROWSER_ENABLE_NOVNC:-
 HEADLESS="${OPENCLAW_BROWSER_HEADLESS:-${CLAWDBOT_BROWSER_HEADLESS:-0}}"
 ALLOW_NO_SANDBOX="${OPENCLAW_BROWSER_NO_SANDBOX:-${CLAWDBOT_BROWSER_NO_SANDBOX:-0}}"
 NOVNC_PASSWORD="${OPENCLAW_BROWSER_NOVNC_PASSWORD:-${CLAWDBOT_BROWSER_NOVNC_PASSWORD:-}}"
+NOVNC_NO_AUTH="${OPENCLAW_BROWSER_NOVNC_NO_AUTH:-0}"
 
 mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
@@ -80,17 +81,22 @@ fi
 socat "${SOCAT_LISTEN_ADDR}" "TCP:127.0.0.1:${CHROME_CDP_PORT}" &
 
 if [[ "${ENABLE_NOVNC}" == "1" && "${HEADLESS}" != "1" ]]; then
-  # VNC auth passwords are max 8 chars; use a random default when not provided.
-  if [[ -z "${NOVNC_PASSWORD}" ]]; then
-    NOVNC_PASSWORD="$(< /proc/sys/kernel/random/uuid)"
-    NOVNC_PASSWORD="${NOVNC_PASSWORD//-/}"
-    NOVNC_PASSWORD="${NOVNC_PASSWORD:0:8}"
+  if [[ "${NOVNC_NO_AUTH}" == "1" ]]; then
+    # No VNC password — rely on external auth (e.g. Caddy gateway token).
+    x11vnc -display :1 -rfbport "${VNC_PORT}" -shared -forever -localhost &
+  else
+    # VNC auth passwords are max 8 chars; use a random default when not provided.
+    if [[ -z "${NOVNC_PASSWORD}" ]]; then
+      NOVNC_PASSWORD="$(< /proc/sys/kernel/random/uuid)"
+      NOVNC_PASSWORD="${NOVNC_PASSWORD//-/}"
+      NOVNC_PASSWORD="${NOVNC_PASSWORD:0:8}"
+    fi
+    NOVNC_PASSWD_FILE="${HOME}/.vnc/passwd"
+    mkdir -p "${HOME}/.vnc"
+    x11vnc -storepasswd "${NOVNC_PASSWORD}" "${NOVNC_PASSWD_FILE}" >/dev/null
+    chmod 600 "${NOVNC_PASSWD_FILE}"
+    x11vnc -display :1 -rfbport "${VNC_PORT}" -shared -forever -rfbauth "${NOVNC_PASSWD_FILE}" -localhost &
   fi
-  NOVNC_PASSWD_FILE="${HOME}/.vnc/passwd"
-  mkdir -p "${HOME}/.vnc"
-  x11vnc -storepasswd "${NOVNC_PASSWORD}" "${NOVNC_PASSWD_FILE}" >/dev/null
-  chmod 600 "${NOVNC_PASSWD_FILE}"
-  x11vnc -display :1 -rfbport "${VNC_PORT}" -shared -forever -rfbauth "${NOVNC_PASSWD_FILE}" -localhost &
   websockify --web /opt/novnc/ "${NOVNC_PORT}" "localhost:${VNC_PORT}" &
 fi
 
