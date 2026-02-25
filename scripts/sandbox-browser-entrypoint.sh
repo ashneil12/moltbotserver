@@ -17,6 +17,15 @@ NOVNC_PASSWORD="${OPENCLAW_BROWSER_NOVNC_PASSWORD:-${CLAWDBOT_BROWSER_NOVNC_PASS
 
 mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
+# Clean stale X11 lock files from previous runs (prevents "Server is already
+# active for display 1" on container restart with `restart: unless-stopped`).
+rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
+
+# Clean stale Chrome profile locks left by a previous container ID.
+find "${HOME}/.chrome" -name 'SingletonLock' -delete 2>/dev/null || true
+find "${HOME}/.chrome" -name 'SingletonCookie' -delete 2>/dev/null || true
+find "${HOME}/.chrome" -name 'SingletonSocket' -delete 2>/dev/null || true
+
 Xvfb :1 -screen 0 1280x800x24 -ac -nolisten tcp &
 
 if [[ "${HEADLESS}" == "1" ]]; then
@@ -82,7 +91,7 @@ if [[ "${ENABLE_NOVNC}" == "1" && "${HEADLESS}" != "1" ]]; then
   x11vnc -storepasswd "${NOVNC_PASSWORD}" "${NOVNC_PASSWD_FILE}" >/dev/null
   chmod 600 "${NOVNC_PASSWD_FILE}"
   x11vnc -display :1 -rfbport "${VNC_PORT}" -shared -forever -rfbauth "${NOVNC_PASSWD_FILE}" -localhost &
-  websockify --web /usr/share/novnc/ "${NOVNC_PORT}" "localhost:${VNC_PORT}" &
+  websockify --web /opt/novnc/ "${NOVNC_PORT}" "localhost:${VNC_PORT}" &
 fi
 
 wait -n
