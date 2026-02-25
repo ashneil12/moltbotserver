@@ -361,12 +361,6 @@ export function buildConfigSchema(params?: {
   const mergedHints = applyDerivedTags(
     applySensitiveHints(mergedWithoutSensitiveHints, extensionHintKeys),
   );
-  const extensionHintKeys = collectExtensionHintKeys(
-    mergedWithoutSensitiveHints,
-    plugins,
-    channels,
-  );
-  const mergedHints = applySensitiveHints(mergedWithoutSensitiveHints, extensionHintKeys);
   const mergedSchema = applyChannelSchemas(applyPluginSchemas(base.schema, plugins), channels);
   return {
     ...base,
