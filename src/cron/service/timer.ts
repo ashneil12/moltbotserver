@@ -118,6 +118,49 @@ function errorBackoffMs(consecutiveErrors: number): number {
   return ERROR_BACKOFF_SCHEDULE_MS[Math.max(0, idx)];
 }
 
+// --- Dynamic scheduling (NEXT_WAKE) ---
+
+const MIN_DYNAMIC_INTERVAL_MS = 60 * 60_000; // 1 hour
+const MAX_DYNAMIC_INTERVAL_MS = 12 * 60 * 60_000; // 12 hours
+const NEXT_WAKE_PATTERN = /NEXT_WAKE:\s*([\d]+(?:\.\d+)?\s*[hHmM][^\n]*)/;
+
+/**
+ * Parse a `NEXT_WAKE: <duration>` directive from the agent's response text.
+ * Supports formats like `2h`, `30m`, `4h30m`, `1.5h`.
+ * Returns the interval in ms, clamped to [1h, 12h], or undefined if not found.
+ */
+export function parseNextWakeDuration(text: string | undefined): number | undefined {
+  if (!text) {
+    return undefined;
+  }
+  const match = text.match(NEXT_WAKE_PATTERN);
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const raw = match[1].trim().toLowerCase();
+  let totalMs = 0;
+
+  // Match hours
+  const hoursMatch = raw.match(/(\d+(?:\.\d+)?)\s*h/);
+  if (hoursMatch?.[1]) {
+    totalMs += parseFloat(hoursMatch[1]) * 60 * 60_000;
+  }
+
+  // Match minutes
+  const minutesMatch = raw.match(/(\d+(?:\.\d+)?)\s*m/);
+  if (minutesMatch?.[1]) {
+    totalMs += parseFloat(minutesMatch[1]) * 60_000;
+  }
+
+  if (totalMs <= 0) {
+    return undefined;
+  }
+
+  // Clamp to [1h, 12h]
+  return Math.max(MIN_DYNAMIC_INTERVAL_MS, Math.min(MAX_DYNAMIC_INTERVAL_MS, totalMs));
+}
+
 function resolveDeliveryStatus(params: { job: CronJob; delivered?: boolean }): CronDeliveryStatus {
   if (params.delivered === true) {
     return "delivered";
@@ -142,6 +185,8 @@ export function applyJobResult(
     delivered?: boolean;
     startedAt: number;
     endedAt: number;
+    /** When set, overrides the natural schedule for the next run. */
+    nextRunAfterMs?: number;
   },
 ): boolean {
   job.state.runningAtMs = undefined;
@@ -203,17 +248,31 @@ export function applyJobResult(
         "cron: applying error backoff",
       );
     } else if (job.enabled) {
-      const naturalNext = computeJobNextRunAtMs(job, result.endedAt);
-      if (job.schedule.kind === "cron") {
-        // Safety net: ensure the next fire is at least MIN_REFIRE_GAP_MS
-        // after the current run ended.  Prevents spin-loops when the
-        // schedule computation lands in the same second due to
-        // timezone/croner edge cases (see #17821).
-        const minNext = result.endedAt + MIN_REFIRE_GAP_MS;
-        job.state.nextRunAtMs =
-          naturalNext !== undefined ? Math.max(naturalNext, minNext) : minNext;
+      // Dynamic scheduling: if the agent response included a NEXT_WAKE directive,
+      // use it to override the natural schedule.
+      if (typeof result.nextRunAfterMs === "number" && result.nextRunAfterMs > 0) {
+        job.state.nextRunAtMs = result.endedAt + result.nextRunAfterMs;
+        state.deps.log.info(
+          {
+            jobId: job.id,
+            nextRunAfterMs: result.nextRunAfterMs,
+            nextRunAtMs: job.state.nextRunAtMs,
+          },
+          "cron: dynamic schedule override from NEXT_WAKE",
+        );
       } else {
-        job.state.nextRunAtMs = naturalNext;
+        const naturalNext = computeJobNextRunAtMs(job, result.endedAt);
+        if (job.schedule.kind === "cron") {
+          // Safety net: ensure the next fire is at least MIN_REFIRE_GAP_MS
+          // after the current run ended.  Prevents spin-loops when the
+          // schedule computation lands in the same second due to
+          // timezone/croner edge cases (see #17821).
+          const minNext = result.endedAt + MIN_REFIRE_GAP_MS;
+          job.state.nextRunAtMs =
+            naturalNext !== undefined ? Math.max(naturalNext, minNext) : minNext;
+        } else {
+          job.state.nextRunAtMs = naturalNext;
+        }
       }
     } else {
       job.state.nextRunAtMs = undefined;
@@ -240,6 +299,7 @@ function applyOutcomeToStoredJob(state: CronServiceState, result: TimedCronRunOu
     delivered: result.delivered,
     startedAt: result.startedAt,
     endedAt: result.endedAt,
+    nextRunAfterMs: result.nextRunAfterMs,
   });
 
   emitJobFinished(state, job, result, result.startedAt);
@@ -559,6 +619,7 @@ export async function runMissedJobs(
         model: result.model,
         provider: result.provider,
         usage: result.usage,
+        nextRunAfterMs: result.nextRunAfterMs,
         startedAt,
         endedAt: state.deps.nowMs(),
       });
@@ -774,6 +835,7 @@ export async function executeJobCore(
     model: res.model,
     provider: res.provider,
     usage: res.usage,
+    nextRunAfterMs: parseNextWakeDuration(res.summary),
   };
 }
 

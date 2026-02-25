@@ -52,6 +52,13 @@ export type CronRunOutcome = {
   summary?: string;
   sessionId?: string;
   sessionKey?: string;
+  /**
+   * When set, overrides the natural schedule for the next run.
+   * The next run will be scheduled at `endedAt + nextRunAfterMs`.
+   * Used by dynamic-interval jobs (e.g. consciousness loop) where the agent
+   * includes `NEXT_WAKE: <duration>` in its response.
+   */
+  nextRunAfterMs?: number;
 };
 
 export type CronPayload =

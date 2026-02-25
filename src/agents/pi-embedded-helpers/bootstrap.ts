@@ -94,6 +94,14 @@ const DIARY_HEAD_RATIO = 0.3;
 const DIARY_TAIL_RATIO = 0.6;
 const DIARY_BASENAME = "diary.md";
 
+// WORKING.md / open-loops / knowledge index: cap at ~4k chars each.
+export const WORKING_MAX_CHARS = 4_000;
+const WORKING_BASENAME = "WORKING.md";
+export const OPEN_LOOPS_MAX_CHARS = 4_000;
+const OPEN_LOOPS_BASENAME = "open-loops.md";
+export const KNOWLEDGE_INDEX_MAX_CHARS = 4_000;
+const KNOWLEDGE_INDEX_BASENAME = "_index.md";
+
 type TrimBootstrapResult = {
   content: string;
   truncated: boolean;
@@ -235,12 +243,26 @@ export function buildBootstrapContextFiles(
       break;
     }
     const isDiary = file.name.endsWith(DIARY_BASENAME);
-    const fileMaxChars = isDiary
-      ? Math.max(1, Math.min(DIARY_MAX_CHARS, remainingTotalChars))
-      : Math.max(1, Math.min(maxChars, remainingTotalChars));
-    const trimOpts = isDiary
-      ? { headRatio: DIARY_HEAD_RATIO, tailRatio: DIARY_TAIL_RATIO }
-      : undefined;
+    const isWorking = file.name.endsWith(WORKING_BASENAME);
+    const isOpenLoops = file.name.endsWith(OPEN_LOOPS_BASENAME);
+    const isKnowledgeIndex =
+      file.name.endsWith(KNOWLEDGE_INDEX_BASENAME) && file.name.includes("knowledge");
+
+    let fileMaxChars: number;
+    let trimOpts: { headRatio?: number; tailRatio?: number } | undefined;
+
+    if (isDiary) {
+      fileMaxChars = Math.max(1, Math.min(DIARY_MAX_CHARS, remainingTotalChars));
+      trimOpts = { headRatio: DIARY_HEAD_RATIO, tailRatio: DIARY_TAIL_RATIO };
+    } else if (isWorking) {
+      fileMaxChars = Math.max(1, Math.min(WORKING_MAX_CHARS, remainingTotalChars));
+    } else if (isOpenLoops) {
+      fileMaxChars = Math.max(1, Math.min(OPEN_LOOPS_MAX_CHARS, remainingTotalChars));
+    } else if (isKnowledgeIndex) {
+      fileMaxChars = Math.max(1, Math.min(KNOWLEDGE_INDEX_MAX_CHARS, remainingTotalChars));
+    } else {
+      fileMaxChars = Math.max(1, Math.min(maxChars, remainingTotalChars));
+    }
     const trimmed = trimBootstrapContent(file.content ?? "", file.name, fileMaxChars, trimOpts);
     const contentWithinBudget = clampToBudget(trimmed.content, remainingTotalChars);
     if (!contentWithinBudget) {

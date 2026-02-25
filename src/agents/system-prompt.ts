@@ -625,6 +625,19 @@ export function buildAgentSystemPrompt(params: {
       const name = getBaseName(file.path);
       return name === "naturalvoice.md";
     });
+    const hasWorkingFile = validContextFiles.some(
+      (file) => getBaseName(file.path) === "working.md" && !file.content?.includes("[MISSING]"),
+    );
+    const hasOpenLoopsFile = validContextFiles.some(
+      (file) => getBaseName(file.path) === "open-loops.md" && !file.content?.includes("[MISSING]"),
+    );
+    const hasKnowledgeIndex = validContextFiles.some(
+      (file) =>
+        file.path.includes("knowledge") &&
+        getBaseName(file.path) === "_index.md" &&
+        file.content &&
+        !file.content.includes("[MISSING]"),
+    );
     lines.push("# Project Context", "", "The following project context files have been loaded:");
     if (hasBootstrapFile) {
       lines.push(
@@ -666,9 +679,61 @@ export function buildAgentSystemPrompt(params: {
         "",
       );
     }
+    if (hasWorkingFile) {
+      lines.push(
+        "WORKING.md tracks your current task state. Read it on wake, update it before context compaction or long-running tasks. Keep it concise — it's injected into every context.",
+      );
+    }
+    if (hasOpenLoopsFile) {
+      lines.push(
+        "memory/open-loops.md tracks things to follow up on. Review during heartbeats, close or escalate stale items. Delete items after 7 days if no longer relevant.",
+      );
+    }
+    if (hasKnowledgeIndex) {
+      lines.push(
+        "memory/knowledge/_index.md shows topics you've accumulated knowledge about. Before starting work in a familiar domain, check if you have relevant knowledge files. After completing significant work, write key learnings to memory/knowledge/<topic>.md — the index auto-rebuilds.",
+      );
+    }
     lines.push("");
     for (const file of validContextFiles) {
       lines.push(`## ${file.path}`, "", file.content, "");
+    }
+
+    // Lightweight agent health nudges based on context
+    const healthNudges: string[] = [];
+    const diaryFile = validContextFiles.find((f) => getBaseName(f.path) === "diary.md");
+    if (diaryFile) {
+      const contentLines = diaryFile.content
+        .split("\n")
+        .filter((l) => l.trim() && !l.startsWith("#") && !l.startsWith(">"));
+      if (contentLines.length === 0) {
+        healthNudges.push("💭 Your diary is empty — start reflecting on your experiences.");
+      }
+    }
+    const knowledgeFile = validContextFiles.find(
+      (f) => f.path.includes("knowledge") && getBaseName(f.path) === "_index.md",
+    );
+    if (knowledgeFile && knowledgeFile.content && knowledgeFile.content.includes("No topics yet")) {
+      healthNudges.push(
+        "📚 Knowledge base is empty — write learnings to memory/knowledge/<topic>.md after significant work.",
+      );
+    }
+    const identityFile = validContextFiles.find((f) => getBaseName(f.path) === "IDENTITY.md");
+    if (identityFile && identityFile.path) {
+      try {
+        const stats = fs.statSync(identityFile.path);
+        const ageHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
+        if (ageHours > 72) {
+          healthNudges.push(
+            `🪪 IDENTITY.md hasn't been updated in ${Math.round(ageHours)}h — reflect on recent experiences and update it if anything has shifted.`,
+          );
+        }
+      } catch {
+        // File stat failed — skip nudge
+      }
+    }
+    if (healthNudges.length > 0) {
+      lines.push("## Agent Health", "", ...healthNudges, "");
     }
   }
 
