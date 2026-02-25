@@ -3,6 +3,8 @@ FROM node:22-bookworm@sha256:cd7bcd2e7a1e6f72052feb023c7f6b722205d3fcab7bbcbd2d1
 # Install Bun (required for build scripts)
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
+# Install gosu for secure privilege-drop in entrypoint (root → node)
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
 
@@ -54,15 +56,18 @@ RUN pnpm ui:build
 
 ENV NODE_ENV=production
 
-# Security hardening: Run as non-root user
-# The node:22-bookworm image includes a 'node' user (uid 1000)
-# This reduces the attack surface by preventing container escape via root privileges
-USER node
+# Make our custom entrypoint executable
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Run entrypoint as root so it can fix Docker volume ownership (volumes
+# are created as root but the gateway runs as node).  The entrypoint
+# uses `exec gosu node …` / `exec su-exec node …` to drop privileges,
+# or if neither is available, stays as root for the gateway process.
+USER root
+
+# Our custom entrypoint handles config generation, onboarding, model
+# enforcement, security file deployment, and permission fixes.
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Start gateway server with default config.
-# Binds to loopback (127.0.0.1) by default for security.
-#
-# For container platforms requiring external health checks:
-#   1. Set OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD env var
-#   2. Override CMD: ["node","openclaw.mjs","gateway","--allow-unconfigured","--bind","lan"]
 CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]

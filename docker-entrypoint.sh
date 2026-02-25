@@ -18,13 +18,23 @@ else
   echo "[entrypoint] Sudo access ENABLED"
 fi
 
-# Configuration directory
+# Fix Docker volume ownership — volumes are created as root:root
+# but the gateway process runs as node (uid 1000).
 CONFIG_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
+WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/workspace}}"
+for dir in "$CONFIG_DIR" "$WORKSPACE_DIR" /home/node; do
+  if [ -d "$dir" ] && [ "$(stat -c '%u' "$dir" 2>/dev/null || echo 0)" != "1000" ]; then
+    chown -R node:node "$dir" 2>/dev/null || true
+  fi
+  mkdir -p "$dir" 2>/dev/null && chown node:node "$dir" 2>/dev/null || true
+done
+
+# Configuration directory
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 
 # Get values from environment
 GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-${CLAWDBOT_GATEWAY_TOKEN:-}}"
-GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-custom}}"
+GATEWAY_BIND="${OPENCLAW_BIND:-${CLAWDBOT_BIND:-lan}}"
 GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}}"
 
 
@@ -137,7 +147,6 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "mode": "local",
     "port": ${GATEWAY_PORT},
     "bind": "${GATEWAY_BIND}",
-    "customBindHost": "0.0.0.0",
     "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"],
     "controlUi": {
       "enabled": true,
@@ -560,5 +569,5 @@ if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
   fi
 fi
 
-# Execute the main command
-exec "$@"
+# Execute the main command as node user (drop privileges from root)
+exec gosu node "$@" 2>/dev/null || exec su -s /bin/sh node -c "exec $*" 2>/dev/null || exec "$@"
