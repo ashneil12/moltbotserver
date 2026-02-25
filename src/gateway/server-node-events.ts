@@ -12,12 +12,9 @@ import { registerApnsToken } from "../infra/push-apns.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
 import { normalizeMainKey } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
-<<<<<<< HEAD
 import { parseMessageWithAttachments } from "./chat-attachments.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./server-methods/attachment-normalize.js";
 import type { NodeEvent, NodeEventContext } from "./server-node-events-types.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   loadSessionEntry,
   pruneLegacyStoreKeys,
@@ -267,33 +264,9 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
       const sessionKey = sessionKeyRaw.length > 0 ? sessionKeyRaw : rawMainKey;
       const { storePath, entry, canonicalKey } = loadSessionEntry(sessionKey);
       const now = Date.now();
-<<<<<<< HEAD
       const fingerprint = resolveVoiceTranscriptFingerprint(obj, text);
       if (shouldDropDuplicateVoiceTranscript({ sessionKey: canonicalKey, fingerprint, now })) {
         return;
-=======
-      const sessionId = entry?.sessionId ?? randomUUID();
-      if (storePath) {
-        await updateSessionStore(storePath, (store) => {
-          const target = resolveGatewaySessionStoreTarget({ cfg, key: sessionKey, store });
-          pruneLegacyStoreKeys({
-            store,
-            canonicalKey: target.canonicalKey,
-            candidates: target.storeKeys,
-          });
-          store[canonicalKey] = {
-            sessionId,
-            updatedAt: now,
-            thinkingLevel: entry?.thinkingLevel,
-            verboseLevel: entry?.verboseLevel,
-            reasoningLevel: entry?.reasoningLevel,
-            systemSent: entry?.systemSent,
-            sendPolicy: entry?.sendPolicy,
-            lastChannel: entry?.lastChannel,
-            lastTo: entry?.lastTo,
-          };
-        });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
       const sessionId = entry?.sessionId ?? randomUUID();
       queueSessionStoreTouch({
@@ -402,7 +375,6 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
       const { storePath, entry, canonicalKey } = loadSessionEntry(sessionKey);
       const now = Date.now();
       const sessionId = entry?.sessionId ?? randomUUID();
-<<<<<<< HEAD
       await touchSessionStore({ cfg, sessionKey, storePath, canonicalKey, entry, sessionId, now });
 
       if (deliverRequested && (!channel || !to)) {
@@ -438,27 +410,6 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
           text: receiptText,
         }).catch((err) => {
           ctx.logGateway.warn(`agent receipt failed node=${nodeId}: ${formatForLog(err)}`);
-=======
-      if (storePath) {
-        await updateSessionStore(storePath, (store) => {
-          const target = resolveGatewaySessionStoreTarget({ cfg, key: sessionKey, store });
-          pruneLegacyStoreKeys({
-            store,
-            canonicalKey: target.canonicalKey,
-            candidates: target.storeKeys,
-          });
-          store[canonicalKey] = {
-            sessionId,
-            updatedAt: now,
-            thinkingLevel: entry?.thinkingLevel,
-            verboseLevel: entry?.verboseLevel,
-            reasoningLevel: entry?.reasoningLevel,
-            systemSent: entry?.systemSent,
-            sendPolicy: entry?.sendPolicy,
-            lastChannel: entry?.lastChannel,
-            lastTo: entry?.lastTo,
-          };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         });
       } else if (wantsReceipt) {
         ctx.logGateway.warn(

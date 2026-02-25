@@ -34,7 +34,6 @@ export type EmbeddingProvider = {
   embedBatch: (texts: string[]) => Promise<number[][]>;
 };
 
-<<<<<<< HEAD
 export type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage" | "mistral";
 export type EmbeddingProviderRequest = EmbeddingProviderId | "auto";
 export type EmbeddingProviderFallback = EmbeddingProviderId | "none";
@@ -43,16 +42,6 @@ const REMOTE_EMBEDDING_PROVIDER_IDS = ["openai", "gemini", "voyage", "mistral"] 
 
 export type EmbeddingProviderResult = {
   provider: EmbeddingProvider | null;
-=======
-export type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage";
-export type EmbeddingProviderRequest = EmbeddingProviderId | "auto";
-export type EmbeddingProviderFallback = EmbeddingProviderId | "none";
-
-const REMOTE_EMBEDDING_PROVIDER_IDS = ["openai", "gemini", "voyage"] as const;
-
-export type EmbeddingProviderResult = {
-  provider: EmbeddingProvider;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   requestedProvider: EmbeddingProviderRequest;
   fallbackFrom?: EmbeddingProviderId;
   fallbackReason?: string;

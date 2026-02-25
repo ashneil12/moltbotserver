@@ -1,10 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD
 import { withTempDir } from "../test-utils/temp-dir.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   cameraTempPath,
   parseCameraClipPayload,

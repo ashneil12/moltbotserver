@@ -304,6 +304,15 @@ function enforceCore(configPath) {
     keepLastAssistants: 3,
   };
 
+  // Tool loop detection — upstream defaults to disabled; enable for MoltBot.
+  // Detects generic repeats, poll-no-progress, and ping-pong patterns.
+  // Respects existing user config (even explicit `false`).
+  const tools = ensure(config, "tools");
+  tools.loopDetection = tools.loopDetection || {};
+  if (tools.loopDetection.enabled === undefined) {
+    tools.loopDetection.enabled = true;
+  }
+
   // Workspace
   defaults.workspace = env("OPENCLAW_WORKSPACE_DIR", "/home/node/workspace");
 

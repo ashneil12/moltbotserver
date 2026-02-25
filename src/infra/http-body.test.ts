@@ -1,13 +1,7 @@
-<<<<<<< HEAD
 import { EventEmitter } from "node:events";
 import type { IncomingMessage } from "node:http";
 import { describe, expect, it } from "vitest";
 import { createMockServerResponse } from "../test-utils/mock-http-response.js";
-=======
-import type { IncomingMessage, ServerResponse } from "node:http";
-import { EventEmitter } from "node:events";
-import { describe, expect, it } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   installRequestBodyLimitGuard,
   isRequestBodyLimitError,
@@ -15,7 +9,6 @@ import {
   readRequestBodyWithLimit,
 } from "./http-body.js";
 
-<<<<<<< HEAD
 type MockIncomingMessage = IncomingMessage & {
   destroyed?: boolean;
   destroy: (error?: Error) => MockIncomingMessage;
@@ -26,13 +19,10 @@ async function waitForMicrotaskTurn(): Promise<void> {
   await new Promise<void>((resolve) => queueMicrotask(resolve));
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function createMockRequest(params: {
   chunks?: string[];
   headers?: Record<string, string>;
   emitEnd?: boolean;
-<<<<<<< HEAD
 }): MockIncomingMessage {
   const req = new EventEmitter() as MockIncomingMessage;
   req.destroyed = false;
@@ -52,15 +42,6 @@ function createMockRequest(params: {
     }
     return req;
   }) as MockIncomingMessage["destroy"];
-=======
-}): IncomingMessage {
-  const req = new EventEmitter() as IncomingMessage & { destroyed?: boolean; destroy: () => void };
-  req.destroyed = false;
-  req.headers = params.headers ?? {};
-  req.destroy = () => {
-    req.destroyed = true;
-  };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   if (params.chunks) {
     void Promise.resolve().then(() => {
@@ -79,27 +60,6 @@ function createMockRequest(params: {
   return req;
 }
 
-<<<<<<< HEAD
-=======
-function createMockResponse(): ServerResponse & { body?: string } {
-  const headers: Record<string, string> = {};
-  const res = {
-    headersSent: false,
-    statusCode: 200,
-    setHeader: (key: string, value: string) => {
-      headers[key.toLowerCase()] = value;
-      return res;
-    },
-    end: (body?: string) => {
-      res.headersSent = true;
-      res.body = body;
-      return res;
-    },
-  } as unknown as ServerResponse & { body?: string };
-  return res;
-}
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 describe("http body limits", () => {
   it("reads body within max bytes", async () => {
     const req = createMockRequest({ chunks: ['{"ok":true}'] });
@@ -111,10 +71,7 @@ describe("http body limits", () => {
     await expect(readRequestBodyWithLimit(req, { maxBytes: 64 })).rejects.toMatchObject({
       message: "PayloadTooLarge",
     });
-<<<<<<< HEAD
     expect(req.__unhandledDestroyError).toBeUndefined();
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("returns json parse error when body is invalid", async () => {
@@ -137,11 +94,7 @@ describe("http body limits", () => {
       headers: { "content-length": "9999" },
       emitEnd: false,
     });
-<<<<<<< HEAD
     const res = createMockServerResponse();
-=======
-    const res = createMockResponse();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const guard = installRequestBodyLimitGuard(req, res, { maxBytes: 128 });
     expect(guard.isTripped()).toBe(true);
     expect(guard.code()).toBe("PAYLOAD_TOO_LARGE");
@@ -150,20 +103,13 @@ describe("http body limits", () => {
 
   it("guard rejects streamed oversized body", async () => {
     const req = createMockRequest({ chunks: ["small", "x".repeat(256)], emitEnd: false });
-<<<<<<< HEAD
     const res = createMockServerResponse();
     const guard = installRequestBodyLimitGuard(req, res, { maxBytes: 128, responseFormat: "text" });
     await waitForMicrotaskTurn();
-=======
-    const res = createMockResponse();
-    const guard = installRequestBodyLimitGuard(req, res, { maxBytes: 128, responseFormat: "text" });
-    await new Promise((resolve) => setTimeout(resolve, 0));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(guard.isTripped()).toBe(true);
     expect(guard.code()).toBe("PAYLOAD_TOO_LARGE");
     expect(res.statusCode).toBe(413);
     expect(res.body).toBe("Payload too large");
-<<<<<<< HEAD
     expect(req.__unhandledDestroyError).toBeUndefined();
   });
 
@@ -201,15 +147,5 @@ describe("http body limits", () => {
     // Wait a tick for any async destroy(err) emission.
     await waitForMicrotaskTurn();
     expect(req.__unhandledDestroyError).toBeUndefined();
-=======
-  });
-
-  it("timeout surfaces typed error", async () => {
-    const req = createMockRequest({ emitEnd: false });
-    const promise = readRequestBodyWithLimit(req, { maxBytes: 128, timeoutMs: 10 });
-    await expect(promise).rejects.toSatisfy((error: unknown) =>
-      isRequestBodyLimitError(error, "REQUEST_BODY_TIMEOUT"),
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

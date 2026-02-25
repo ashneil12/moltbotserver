@@ -119,7 +119,6 @@ vi.mock("../../config/config.js", async (importOriginal) => {
   };
 });
 
-<<<<<<< HEAD:src/commands/models/list.status.test.ts
 vi.mock("../../infra/provider-usage.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../infra/provider-usage.js")>();
   return {
@@ -133,9 +132,6 @@ import { modelsStatusCommand } from "./list.status-command.js";
 const defaultResolveEnvApiKeyImpl:
   | ((provider: string) => { apiKey: string; source: string } | null)
   | undefined = mocks.resolveEnvApiKey.getMockImplementation();
-=======
-import { modelsStatusCommand } from "./list.status-command.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/models/list.status.e2e.test.ts
 
 const runtime = {
   log: vi.fn(),

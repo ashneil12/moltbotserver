@@ -1,11 +1,6 @@
 import crypto from "node:crypto";
 import { listAgentIds } from "../../agents/agent-scope.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
-<<<<<<< HEAD
-=======
-import type { OpenClawConfig } from "../../config/config.js";
-import { listAgentIds } from "../../agents/agent-scope.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   normalizeThinkLevel,
   normalizeVerboseLevel,

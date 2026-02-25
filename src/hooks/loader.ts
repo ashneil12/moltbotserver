@@ -7,13 +7,8 @@
 
 import path from "node:path";
 import type { OpenClawConfig } from "../config/config.js";
-<<<<<<< HEAD
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { isPathInsideWithRealpath } from "../security/scan-paths.js";
-=======
-import type { InternalHookHandler } from "./internal-hooks.js";
-import { createSubsystemLogger } from "../logging/subsystem.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveHookConfig } from "./config.js";
 import { shouldIncludeHook } from "./config.js";
 import { buildImportUrl } from "./import-url.js";
@@ -99,11 +94,7 @@ export async function loadInternalHooks(
           exportName,
         });
 
-<<<<<<< HEAD
         if (!handler) {
-=======
-        if (typeof handler !== "function") {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           log.error(`Handler '${exportName}' from ${entry.hook.name} is not a function`);
           continue;
         }
@@ -139,7 +130,6 @@ export async function loadInternalHooks(
   const handlers = cfg.hooks.internal.handlers ?? [];
   for (const handlerConfig of handlers) {
     try {
-<<<<<<< HEAD
       // Legacy handler paths: keep them workspace-relative.
       const rawModule = handlerConfig.module.trim();
       if (!rawModule) {
@@ -187,28 +177,6 @@ export async function loadInternalHooks(
       }
 
       registerInternalHook(handlerConfig.event, handler);
-=======
-      // Resolve module path (absolute or relative to cwd)
-      const modulePath = path.isAbsolute(handlerConfig.module)
-        ? handlerConfig.module
-        : path.join(process.cwd(), handlerConfig.module);
-
-      // Import the module with cache-busting to ensure fresh reload
-      const url = pathToFileURL(modulePath).href;
-      const cacheBustedUrl = `${url}?t=${Date.now()}`;
-      const mod = (await import(cacheBustedUrl)) as Record<string, unknown>;
-
-      // Get the handler function
-      const exportName = handlerConfig.export ?? "default";
-      const handler = mod[exportName];
-
-      if (typeof handler !== "function") {
-        log.error(`Handler '${exportName}' from ${modulePath} is not a function`);
-        continue;
-      }
-
-      registerInternalHook(handlerConfig.event, handler as InternalHookHandler);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       log.info(
         `Registered hook (legacy): ${handlerConfig.event} -> ${modulePath}${exportName !== "default" ? `#${exportName}` : ""}`,
       );

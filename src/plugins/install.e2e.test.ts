@@ -1,12 +1,7 @@
-<<<<<<< HEAD:src/plugins/install.test.ts
-=======
-import JSZip from "jszip";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-<<<<<<< HEAD:src/plugins/install.test.ts
 import JSZip from "jszip";
 import * as tar from "tar";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,11 +13,6 @@ import {
   expectUnsupportedNpmSpec,
   mockNpmPackMetadataResult,
 } from "../test-utils/npm-spec-install-test-helpers.js";
-=======
-import * as tar from "tar";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import * as skillScanner from "../security/skill-scanner.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
 
 vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout: vi.fn(),
@@ -282,28 +272,7 @@ beforeEach(() => {
 
 describe("installPluginFromArchive", () => {
   it("installs into ~/.openclaw/extensions and uses unscoped id", async () => {
-<<<<<<< HEAD:src/plugins/install.test.ts
     const { stateDir, archivePath, extensionsDir } = await setupVoiceCallArchiveInstall({
-=======
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const pkgDir = path.join(workDir, "package");
-    fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@openclaw/voice-call",
-        version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pkgDir, "dist", "index.js"), "export {};", "utf-8");
-
-    const archivePath = await packToArchive({
-      pkgDir,
-      outDir: workDir,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
       outName: "plugin.tgz",
       version: "0.0.1",
     });
@@ -321,28 +290,7 @@ describe("installPluginFromArchive", () => {
   });
 
   it("rejects installing when plugin already exists", async () => {
-<<<<<<< HEAD:src/plugins/install.test.ts
     const { archivePath, extensionsDir } = await setupVoiceCallArchiveInstall({
-=======
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const pkgDir = path.join(workDir, "package");
-    fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@openclaw/voice-call",
-        version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pkgDir, "dist", "index.js"), "export {};", "utf-8");
-
-    const archivePath = await packToArchive({
-      pkgDir,
-      outDir: workDir,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
       outName: "plugin.tgz",
       version: "0.0.1",
     });
@@ -387,27 +335,7 @@ describe("installPluginFromArchive", () => {
 
   it("allows updates when mode is update", async () => {
     const stateDir = makeTempDir();
-<<<<<<< HEAD:src/plugins/install.test.ts
     const archiveV1 = writeArchiveBuffer({
-=======
-    const workDir = makeTempDir();
-    const pkgDir = path.join(workDir, "package");
-    fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@openclaw/voice-call",
-        version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pkgDir, "dist", "index.js"), "export {};", "utf-8");
-
-    const archiveV1 = await packToArchive({
-      pkgDir,
-      outDir: workDir,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
       outName: "plugin-v1.tgz",
       buffer: await VOICE_CALL_ARCHIVE_V1_BUFFER_PROMISE,
     });
@@ -416,26 +344,6 @@ describe("installPluginFromArchive", () => {
       buffer: await VOICE_CALL_ARCHIVE_V2_BUFFER_PROMISE,
     });
 
-<<<<<<< HEAD:src/plugins/install.test.ts
-=======
-    const archiveV2 = await (async () => {
-      fs.writeFileSync(
-        path.join(pkgDir, "package.json"),
-        JSON.stringify({
-          name: "@openclaw/voice-call",
-          version: "0.0.2",
-          openclaw: { extensions: ["./dist/index.js"] },
-        }),
-        "utf-8",
-      );
-      return await packToArchive({
-        pkgDir,
-        outDir: workDir,
-        outName: "plugin-v2.tgz",
-      });
-    })();
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
     const extensionsDir = path.join(stateDir, "extensions");
     const first = await installPluginFromArchive({
       archivePath: archiveV1,
@@ -459,80 +367,22 @@ describe("installPluginFromArchive", () => {
   });
 
   it("rejects traversal-like plugin names", async () => {
-<<<<<<< HEAD:src/plugins/install.test.ts
     await expectArchiveInstallReservedSegmentRejection({
       packageName: "@evil/..",
-=======
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const pkgDir = path.join(workDir, "package");
-    fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@evil/..",
-        version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pkgDir, "dist", "index.js"), "export {};", "utf-8");
-
-    const archivePath = await packToArchive({
-      pkgDir,
-      outDir: workDir,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
       outName: "traversal.tgz",
     });
   });
 
   it("rejects reserved plugin ids", async () => {
-<<<<<<< HEAD:src/plugins/install.test.ts
     await expectArchiveInstallReservedSegmentRejection({
       packageName: "@evil/.",
-=======
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const pkgDir = path.join(workDir, "package");
-    fs.mkdirSync(path.join(pkgDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@evil/.",
-        version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pkgDir, "dist", "index.js"), "export {};", "utf-8");
-
-    const archivePath = await packToArchive({
-      pkgDir,
-      outDir: workDir,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
       outName: "reserved.tgz",
     });
   });
 
   it("rejects packages without openclaw.extensions", async () => {
-<<<<<<< HEAD:src/plugins/install.test.ts
     const result = await installArchivePackageAndReturnResult({
       packageJson: { name: "@openclaw/nope", version: "0.0.1" },
-=======
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const pkgDir = path.join(workDir, "package");
-    fs.mkdirSync(pkgDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/nope", version: "0.0.1" }),
-      "utf-8",
-    );
-
-    const archivePath = await packToArchive({
-      pkgDir,
-      outDir: workDir,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/install.e2e.test.ts
       outName: "bad.tgz",
     });
     expect(result.ok).toBe(false);

@@ -129,7 +129,6 @@ function getErrorMessage(err: unknown): string {
   return String(err);
 }
 
-<<<<<<< HEAD
 function resolveToolInputErrorStatus(err: unknown): number | null {
   if (err instanceof ToolInputError) {
     const status = (err as { status?: unknown }).status;
@@ -147,18 +146,6 @@ function resolveToolInputErrorStatus(err: unknown): number | null {
     return status;
   }
   return name === "ToolAuthorizationError" ? 403 : 400;
-=======
-function isToolInputError(err: unknown): boolean {
-  if (err instanceof ToolInputError) {
-    return true;
-  }
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "name" in err &&
-    (err as { name?: unknown }).name === "ToolInputError"
-  );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function handleToolsInvokeHttpRequest(
@@ -168,10 +155,7 @@ export async function handleToolsInvokeHttpRequest(
     auth: ResolvedGatewayAuth;
     maxBodyBytes?: number;
     trustedProxies?: string[];
-<<<<<<< HEAD
     allowRealIpFallback?: boolean;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     rateLimiter?: AuthRateLimiter;
   },
 ): Promise<boolean> {
@@ -192,10 +176,7 @@ export async function handleToolsInvokeHttpRequest(
     connectAuth: token ? { token, password: token } : null,
     req,
     trustedProxies: opts.trustedProxies ?? cfg.gateway?.trustedProxies,
-<<<<<<< HEAD
     allowRealIpFallback: opts.allowRealIpFallback ?? cfg.gateway?.allowRealIpFallback,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     rateLimiter: opts.rateLimiter,
   });
   if (!authResult.ok) {
@@ -335,17 +316,6 @@ export async function handleToolsInvokeHttpRequest(
   const gatewayDenySet = new Set(gatewayDenyNames);
   const gatewayFiltered = subagentFiltered.filter((t) => !gatewayDenySet.has(t.name));
 
-<<<<<<< HEAD
-=======
-  // Gateway HTTP-specific deny list — applies to ALL sessions via HTTP.
-  const gatewayToolsCfg = cfg.gateway?.tools;
-  const gatewayDenyNames = DEFAULT_GATEWAY_HTTP_TOOL_DENY.filter(
-    (name) => !gatewayToolsCfg?.allow?.includes(name),
-  ).concat(Array.isArray(gatewayToolsCfg?.deny) ? gatewayToolsCfg.deny : []);
-  const gatewayDenySet = new Set(gatewayDenyNames);
-  const gatewayFiltered = subagentFiltered.filter((t) => !gatewayDenySet.has(t.name));
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const tool = gatewayFiltered.find((t) => t.name === toolName);
   if (!tool) {
     sendJson(res, 404, {
@@ -366,14 +336,9 @@ export async function handleToolsInvokeHttpRequest(
     const result = await (tool as any).execute?.(`http-${Date.now()}`, toolArgs);
     sendJson(res, 200, { ok: true, result });
   } catch (err) {
-<<<<<<< HEAD
     const inputStatus = resolveToolInputErrorStatus(err);
     if (inputStatus !== null) {
       sendJson(res, inputStatus, {
-=======
-    if (isToolInputError(err)) {
-      sendJson(res, 400, {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         ok: false,
         error: { type: "tool_error", message: getErrorMessage(err) || "invalid tool arguments" },
       });

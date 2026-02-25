@@ -1,14 +1,6 @@
 import { getActiveEmbeddedRunCount } from "../agents/pi-embedded-runner/runs.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CliDeps } from "../cli/deps.js";
-<<<<<<< HEAD
-=======
-import type { loadConfig } from "../config/config.js";
-import type { HeartbeatRunner } from "../infra/heartbeat-runner.js";
-import type { ChannelKind, GatewayReloadPlan } from "./config-reload.js";
-import { getActiveEmbeddedRunCount } from "../agents/pi-embedded-runner/runs.js";
-import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveAgentMaxConcurrent, resolveSubagentMaxConcurrent } from "../config/agent-limits.js";
 import { isRestartEnabled } from "../config/commands.js";
 import type { loadConfig } from "../config/config.js";

@@ -3,7 +3,6 @@ import { HEARTBEAT_TOKEN } from "../auto-reply/tokens.js";
 // Build a dynamic prompt for cron events by embedding the actual event content.
 // This ensures the model sees the reminder text directly instead of relying on
 // "shown in the system messages above" which may not be visible in context.
-<<<<<<< HEAD
 export function buildCronEventPrompt(
   pendingEvents: string[],
   opts?: {
@@ -19,17 +18,11 @@ export function buildCronEventPrompt(
         "Handle this internally and reply HEARTBEAT_OK when nothing needs user-facing follow-up."
       );
     }
-=======
-export function buildCronEventPrompt(pendingEvents: string[]): string {
-  const eventText = pendingEvents.join("\n").trim();
-  if (!eventText) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return (
       "A scheduled cron event was triggered, but no event content was found. " +
       "Reply HEARTBEAT_OK."
     );
   }
-<<<<<<< HEAD
   if (!deliverToUser) {
     return (
       "A scheduled reminder has been triggered. The reminder content is:\n\n" +
@@ -37,8 +30,6 @@ export function buildCronEventPrompt(pendingEvents: string[]): string {
       "\n\nHandle this reminder internally. Do not relay it to the user unless explicitly requested."
     );
   }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return (
     "A scheduled reminder has been triggered. The reminder content is:\n\n" +
     eventText +
@@ -46,7 +37,6 @@ export function buildCronEventPrompt(pendingEvents: string[]): string {
   );
 }
 
-<<<<<<< HEAD
 export function buildExecEventPrompt(opts?: { deliverToUser?: boolean }): string {
   const deliverToUser = opts?.deliverToUser ?? true;
   if (!deliverToUser) {
@@ -62,8 +52,6 @@ export function buildExecEventPrompt(opts?: { deliverToUser?: boolean }): string
   );
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const HEARTBEAT_OK_PREFIX = HEARTBEAT_TOKEN.toLowerCase();
 
 // Detect heartbeat-specific noise so cron reminders don't trigger on non-reminder events.

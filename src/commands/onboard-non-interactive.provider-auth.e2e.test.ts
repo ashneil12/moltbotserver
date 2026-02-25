@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-<<<<<<< HEAD:src/commands/onboard-non-interactive.provider-auth.test.ts
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
 import { withEnvAsync } from "../test-utils/env.js";
@@ -11,9 +10,6 @@ import {
   readJsonFile,
   type NonInteractiveRuntime,
 } from "./onboard-non-interactive.test-helpers.js";
-=======
-import { describe, expect, it } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/onboard-non-interactive.provider-auth.e2e.test.ts
 import { OPENAI_DEFAULT_MODEL } from "./openai-model-default.js";
 
 type OnboardEnv = {
@@ -81,23 +77,7 @@ async function withOnboardEnv(
 ): Promise<void> {
   const tempHome = await makeTempWorkspace(prefix);
   const configPath = path.join(tempHome, "openclaw.json");
-<<<<<<< HEAD:src/commands/onboard-non-interactive.provider-auth.test.ts
   const runtime = createThrowingRuntime();
-=======
-  process.env.HOME = tempHome;
-  process.env.OPENCLAW_STATE_DIR = tempHome;
-  process.env.OPENCLAW_CONFIG_PATH = configPath;
-
-  const runtime: RuntimeMock = {
-    log: () => {},
-    error: (msg: string) => {
-      throw new Error(msg);
-    },
-    exit: (code: number) => {
-      throw new Error(`exit:${code}`);
-    },
-  };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/onboard-non-interactive.provider-auth.e2e.test.ts
 
   try {
     await withEnvAsync(
@@ -372,68 +352,8 @@ describe("onboard (non-interactive): provider auth", () => {
   it("rejects vLLM auth choice in non-interactive mode", async () => {
     await withOnboardEnv("openclaw-onboard-vllm-non-interactive-", async ({ runtime }) => {
       await expect(
-<<<<<<< HEAD:src/commands/onboard-non-interactive.provider-auth.test.ts
         runNonInteractiveOnboardingWithDefaults(runtime, {
           authChoice: "vllm",
-=======
-        runNonInteractive(
-          {
-            nonInteractive: true,
-            authChoice: "vllm",
-            skipHealth: true,
-            skipChannels: true,
-            skipSkills: true,
-            json: true,
-          },
-          runtime,
-        ),
-      ).rejects.toThrow('Auth choice "vllm" requires interactive mode.');
-    });
-  }, 60_000);
-
-  it("stores LiteLLM API key and sets default model", async () => {
-    await withOnboardEnv("openclaw-onboard-litellm-", async ({ configPath, runtime }) => {
-      await runNonInteractive(
-        {
-          nonInteractive: true,
-          authChoice: "litellm-api-key",
-          litellmApiKey: "litellm-test-key",
-          skipHealth: true,
-          skipChannels: true,
-          skipSkills: true,
-          json: true,
-        },
-        runtime,
-      );
-
-      const cfg = await readJsonFile<{
-        auth?: { profiles?: Record<string, { provider?: string; mode?: string }> };
-        agents?: { defaults?: { model?: { primary?: string } } };
-      }>(configPath);
-
-      expect(cfg.auth?.profiles?.["litellm:default"]?.provider).toBe("litellm");
-      expect(cfg.auth?.profiles?.["litellm:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBe("litellm/claude-opus-4-6");
-      await expectApiKeyProfile({
-        profileId: "litellm:default",
-        provider: "litellm",
-        key: "litellm-test-key",
-      });
-    });
-  }, 60_000);
-
-  it("stores Cloudflare AI Gateway API key and metadata", async () => {
-    await withOnboardEnv("openclaw-onboard-cf-gateway-", async ({ configPath, runtime }) => {
-      await runNonInteractive(
-        {
-          nonInteractive: true,
-          authChoice: "cloudflare-ai-gateway-api-key",
-          cloudflareAiGatewayAccountId: "cf-account-id",
-          cloudflareAiGatewayGatewayId: "cf-gateway-id",
-          cloudflareAiGatewayApiKey: "cf-gateway-test-key",
-          skipHealth: true,
-          skipChannels: true,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/onboard-non-interactive.provider-auth.e2e.test.ts
           skipSkills: true,
         }),
       ).rejects.toThrow('Auth choice "vllm" requires interactive mode.');

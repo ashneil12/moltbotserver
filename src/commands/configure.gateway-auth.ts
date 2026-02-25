@@ -70,7 +70,6 @@ export function buildGatewayAuthConfig(params: {
     const token = sanitizeTokenValue(params.token) ?? randomToken();
     return { ...base, mode: "token", token };
   }
-<<<<<<< HEAD
   if (params.mode === "password") {
     const password = params.password?.trim();
     return { ...base, mode: "password", ...(password && { password }) };
@@ -82,10 +81,6 @@ export function buildGatewayAuthConfig(params: {
     return { ...base, mode: "trusted-proxy", trustedProxy: params.trustedProxy };
   }
   return base;
-=======
-  const password = params.password?.trim();
-  return { ...base, mode: "password", ...(password && { password }) };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function promptAuthConfig(

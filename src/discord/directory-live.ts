@@ -42,14 +42,8 @@ export async function listDiscordDirectoryGroupsLive(
   if (!access) {
     return [];
   }
-<<<<<<< HEAD
   const { token, query } = access;
   const guilds = await listDiscordGuilds(token);
-=======
-  const query = normalizeQuery(params.query);
-  const rawGuilds = await fetchDiscord<DiscordGuild[]>("/users/@me/guilds", token);
-  const guilds = rawGuilds.filter((g) => g.id && g.name);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const rows: ChannelDirectoryEntry[] = [];
 
   for (const guild of guilds) {
@@ -90,12 +84,7 @@ export async function listDiscordDirectoryPeersLive(
     return [];
   }
 
-<<<<<<< HEAD
   const guilds = await listDiscordGuilds(token);
-=======
-  const rawGuilds = await fetchDiscord<DiscordGuild[]>("/users/@me/guilds", token);
-  const guilds = rawGuilds.filter((g) => g.id && g.name);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const rows: ChannelDirectoryEntry[] = [];
   const limit = typeof params.limit === "number" && params.limit > 0 ? params.limit : 25;
 

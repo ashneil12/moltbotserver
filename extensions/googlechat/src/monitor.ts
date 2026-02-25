@@ -1,7 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import {
-<<<<<<< HEAD
   GROUP_POLICY_BLOCKED_LABEL,
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
@@ -17,21 +16,6 @@ import {
   requestBodyErrorToText,
   resolveMentionGatingWithBypass,
 } from "openclaw/plugin-sdk";
-=======
-  createReplyPrefixOptions,
-  readJsonBodyWithLimit,
-  requestBodyErrorToText,
-  resolveMentionGatingWithBypass,
-} from "openclaw/plugin-sdk";
-import type {
-  GoogleChatAnnotation,
-  GoogleChatAttachment,
-  GoogleChatEvent,
-  GoogleChatSpace,
-  GoogleChatMessage,
-  GoogleChatUser,
-} from "./types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { type ResolvedGoogleChatAccount } from "./accounts.js";
 import {
   downloadGoogleChatMedia,
@@ -104,32 +88,12 @@ function warnDeprecatedUsersEmailEntries(
   if (warnedDeprecatedUsersEmailAllowFrom.has(key)) {
     return;
   }
-<<<<<<< HEAD
   warnedDeprecatedUsersEmailAllowFrom.add(key);
   logVerbose(
     core,
     runtime,
     `Deprecated allowFrom entry detected: "users/<email>" is no longer treated as an email allowlist. Use raw email (alice@example.com) or immutable user id (users/<id>). entries=${deprecated.join(", ")}`,
   );
-=======
-  return withSlash;
-}
-
-function resolveWebhookPath(webhookPath?: string, webhookUrl?: string): string | null {
-  const trimmedPath = webhookPath?.trim();
-  if (trimmedPath) {
-    return normalizeWebhookPath(trimmedPath);
-  }
-  if (webhookUrl?.trim()) {
-    try {
-      const parsed = new URL(webhookUrl);
-      return normalizeWebhookPath(parsed.pathname || "/");
-    } catch {
-      return null;
-    }
-  }
-  return "/googlechat";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function registerGoogleChatWebhookTarget(target: WebhookTarget): () => void {

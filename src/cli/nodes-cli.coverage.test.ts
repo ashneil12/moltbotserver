@@ -1,9 +1,6 @@
 import { Command } from "commander";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD
 import { createCliRuntimeCapture } from "./test-runtime-capture.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 type NodeInvokeCall = {
   method?: string;
@@ -83,7 +80,6 @@ vi.mock("../config/config.js", () => ({
 describe("nodes-cli coverage", () => {
   let registerNodesCli: (program: Command) => void;
 
-<<<<<<< HEAD
   const getNodeInvokeCall = () =>
     callGateway.mock.calls.find((call) => call[0]?.method === "node.invoke")?.[0] as NodeInvokeCall;
 
@@ -128,46 +124,6 @@ describe("nodes-cli coverage", () => {
       "echo",
       "hi",
     ]);
-=======
-  beforeAll(async () => {
-    ({ registerNodesCli } = await import("./nodes-cli.js"));
-  });
-
-  beforeEach(() => {
-    runtimeLogs.length = 0;
-    runtimeErrors.length = 0;
-    callGateway.mockClear();
-    randomIdempotencyKey.mockClear();
-  });
-
-  it("invokes system.run with parsed params", async () => {
-    const program = new Command();
-    program.exitOverride();
-    registerNodesCli(program);
-
-    await program.parseAsync(
-      [
-        "nodes",
-        "run",
-        "--node",
-        "mac-1",
-        "--cwd",
-        "/tmp",
-        "--env",
-        "FOO=bar",
-        "--command-timeout",
-        "1200",
-        "--needs-screen-recording",
-        "--invoke-timeout",
-        "5000",
-        "echo",
-        "hi",
-      ],
-      { from: "user" },
-    );
-
-    const invoke = callGateway.mock.calls.find((call) => call[0]?.method === "node.invoke")?.[0];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(invoke).toBeTruthy();
     expect(invoke?.params?.idempotencyKey).toBe("rk_test");
@@ -187,7 +143,6 @@ describe("nodes-cli coverage", () => {
   });
 
   it("invokes system.run with raw command", async () => {
-<<<<<<< HEAD
     const invoke = await runNodesCommand([
       "nodes",
       "run",
@@ -198,18 +153,6 @@ describe("nodes-cli coverage", () => {
       "--raw",
       "echo hi",
     ]);
-=======
-    const program = new Command();
-    program.exitOverride();
-    registerNodesCli(program);
-
-    await program.parseAsync(
-      ["nodes", "run", "--agent", "main", "--node", "mac-1", "--raw", "echo hi"],
-      { from: "user" },
-    );
-
-    const invoke = callGateway.mock.calls.find((call) => call[0]?.method === "node.invoke")?.[0];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(invoke).toBeTruthy();
     expect(invoke?.params?.idempotencyKey).toBe("rk_test");
@@ -225,7 +168,6 @@ describe("nodes-cli coverage", () => {
   });
 
   it("invokes system.notify with provided fields", async () => {
-<<<<<<< HEAD
     const invoke = await runNodesCommand([
       "nodes",
       "notify",
@@ -238,29 +180,6 @@ describe("nodes-cli coverage", () => {
       "--delivery",
       "overlay",
     ]);
-=======
-    const program = new Command();
-    program.exitOverride();
-    registerNodesCli(program);
-
-    await program.parseAsync(
-      [
-        "nodes",
-        "notify",
-        "--node",
-        "mac-1",
-        "--title",
-        "Ping",
-        "--body",
-        "Gateway ready",
-        "--delivery",
-        "overlay",
-      ],
-      { from: "user" },
-    );
-
-    const invoke = callGateway.mock.calls.find((call) => call[0]?.method === "node.invoke")?.[0];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(invoke).toBeTruthy();
     expect(invoke?.params?.command).toBe("system.notify");
@@ -274,7 +193,6 @@ describe("nodes-cli coverage", () => {
   });
 
   it("invokes location.get with params", async () => {
-<<<<<<< HEAD
     const invoke = await runNodesCommand([
       "nodes",
       "location",
@@ -290,32 +208,6 @@ describe("nodes-cli coverage", () => {
       "--invoke-timeout",
       "6000",
     ]);
-=======
-    const program = new Command();
-    program.exitOverride();
-    registerNodesCli(program);
-
-    await program.parseAsync(
-      [
-        "nodes",
-        "location",
-        "get",
-        "--node",
-        "mac-1",
-        "--accuracy",
-        "precise",
-        "--max-age",
-        "1000",
-        "--location-timeout",
-        "5000",
-        "--invoke-timeout",
-        "6000",
-      ],
-      { from: "user" },
-    );
-
-    const invoke = callGateway.mock.calls.find((call) => call[0]?.method === "node.invoke")?.[0];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(invoke).toBeTruthy();
     expect(invoke?.params?.command).toBe("location.get");

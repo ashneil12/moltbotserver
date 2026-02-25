@@ -1,10 +1,4 @@
-<<<<<<< HEAD:src/agents/models-config.normalizes-gemini-3-ids-preview-google-providers.test.ts
 import { describe, expect, it } from "vitest";
-=======
-import fs from "node:fs/promises";
-import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/models-config.normalizes-gemini-3-ids-preview-google-providers.e2e.test.ts
 import type { OpenClawConfig } from "../config/config.js";
 import { installModelsConfigTestHooks, withModelsTempHome } from "./models-config.e2e-harness.js";
 import { ensureOpenClawModelsJson } from "./models-config.js";
@@ -14,14 +8,7 @@ describe("models-config", () => {
   installModelsConfigTestHooks();
 
   it("normalizes gemini 3 ids to preview for google providers", async () => {
-<<<<<<< HEAD:src/agents/models-config.normalizes-gemini-3-ids-preview-google-providers.test.ts
     await withModelsTempHome(async () => {
-=======
-    await withTempHome(async () => {
-      const { ensureOpenClawModelsJson } = await import("./models-config.js");
-      const { resolveOpenClawAgentDir } = await import("./agent-paths.js");
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/models-config.normalizes-gemini-3-ids-preview-google-providers.e2e.test.ts
       const cfg: OpenClawConfig = {
         models: {
           providers: {

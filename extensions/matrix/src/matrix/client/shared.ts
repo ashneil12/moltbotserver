@@ -1,10 +1,6 @@
 import type { MatrixClient } from "@vector-im/matrix-bot-sdk";
 import { LogService } from "@vector-im/matrix-bot-sdk";
-<<<<<<< HEAD
 import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-=======
-import { normalizeAccountId } from "openclaw/plugin-sdk";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type { CoreConfig } from "../../types.js";
 import { resolveMatrixAuth } from "./config.js";
 import { createMatrixClient } from "./create-client.js";

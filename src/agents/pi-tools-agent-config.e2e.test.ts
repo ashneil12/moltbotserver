@@ -4,11 +4,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import "./test-helpers/fast-coding-tools.js";
 import type { OpenClawConfig } from "../config/config.js";
-<<<<<<< HEAD:src/agents/pi-tools-agent-config.test.ts
-=======
-import type { SandboxDockerConfig } from "./sandbox.js";
-import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools-agent-config.e2e.test.ts
 import { createOpenClawCodingTools } from "./pi-tools.js";
 import type { SandboxDockerConfig } from "./sandbox.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
@@ -32,25 +27,6 @@ describe("Agent-specific tool filtering", () => {
     rename: async () => {},
     stat: async () => null,
   };
-<<<<<<< HEAD:src/agents/pi-tools-agent-config.test.ts
-=======
-
-  it("should apply global tool policy when no agent-specific policy exists", () => {
-    const cfg: OpenClawConfig = {
-      tools: {
-        allow: ["read", "write"],
-        deny: ["bash"],
-      },
-      agents: {
-        list: [
-          {
-            id: "main",
-            workspace: "~/openclaw",
-          },
-        ],
-      },
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools-agent-config.e2e.test.ts
 
   async function withApplyPatchEscapeCase(
     opts: { workspaceOnly?: boolean },

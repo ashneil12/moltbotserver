@@ -4,11 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let testPort = 0;
 let prevGatewayPort: string | undefined;
-<<<<<<< HEAD
 let prevGatewayToken: string | undefined;
 let prevGatewayPassword: string | undefined;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const pwMocks = vi.hoisted(() => ({
   cookiesGetViaPlaywright: vi.fn(async () => ({
@@ -87,13 +84,10 @@ describe("browser control evaluate gating", () => {
     testPort = await getFreePort();
     prevGatewayPort = process.env.OPENCLAW_GATEWAY_PORT;
     process.env.OPENCLAW_GATEWAY_PORT = String(testPort - 2);
-<<<<<<< HEAD
     prevGatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;
     prevGatewayPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
     delete process.env.OPENCLAW_GATEWAY_TOKEN;
     delete process.env.OPENCLAW_GATEWAY_PASSWORD;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     pwMocks.cookiesGetViaPlaywright.mockClear();
     pwMocks.storageGetViaPlaywright.mockClear();
@@ -109,7 +103,6 @@ describe("browser control evaluate gating", () => {
     } else {
       process.env.OPENCLAW_GATEWAY_PORT = prevGatewayPort;
     }
-<<<<<<< HEAD
     if (prevGatewayToken === undefined) {
       delete process.env.OPENCLAW_GATEWAY_TOKEN;
     } else {
@@ -120,8 +113,6 @@ describe("browser control evaluate gating", () => {
     } else {
       process.env.OPENCLAW_GATEWAY_PASSWORD = prevGatewayPassword;
     }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await stopBrowserControlServer();
   });

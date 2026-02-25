@@ -4,13 +4,9 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type { OpenClawConfig } from "../config/config.js";
-<<<<<<< HEAD
 import { withEnvAsync } from "../test-utils/env.js";
 import { collectPluginsCodeSafetyFindings } from "./audit-extra.js";
 import type { SecurityAuditOptions, SecurityAuditReport } from "./audit.js";
-=======
-import { collectPluginsCodeSafetyFindings } from "./audit-extra.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { runSecurityAudit } from "./audit.js";
 import * as skillScanner from "./skill-scanner.js";
 
@@ -19,12 +15,8 @@ const isWindows = process.platform === "win32";
 function stubChannelPlugin(params: {
   id: "discord" | "slack" | "telegram";
   label: string;
-<<<<<<< HEAD
   resolveAccount: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
   listAccountIds?: (cfg: OpenClawConfig) => string[];
-=======
-  resolveAccount: (cfg: OpenClawConfig) => unknown;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }): ChannelPlugin {
   return {
     id: params.id,
@@ -36,7 +28,6 @@ function stubChannelPlugin(params: {
       blurb: "test stub",
     },
     capabilities: {
-<<<<<<< HEAD
       chatTypes: ["direct", "group"],
     },
     security: {},
@@ -50,17 +41,6 @@ function stubChannelPlugin(params: {
           return enabled ? ["default"] : [];
         }),
       resolveAccount: (cfg, accountId) => params.resolveAccount(cfg, accountId),
-=======
-      chatTypes: ["dm", "group"],
-    },
-    security: {},
-    config: {
-      listAccountIds: (cfg) => {
-        const enabled = Boolean((cfg.channels as Record<string, unknown> | undefined)?.[params.id]);
-        return enabled ? ["default"] : [];
-      },
-      resolveAccount: (cfg) => params.resolveAccount(cfg),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       isEnabled: () => true,
       isConfigured: () => true,
     },
@@ -70,7 +50,6 @@ function stubChannelPlugin(params: {
 const discordPlugin = stubChannelPlugin({
   id: "discord",
   label: "Discord",
-<<<<<<< HEAD
   listAccountIds: (cfg) => {
     const ids = Object.keys(cfg.channels?.discord?.accounts ?? {});
     return ids.length > 0 ? ids : ["default"];
@@ -81,15 +60,11 @@ const discordPlugin = stubChannelPlugin({
     const account = cfg.channels?.discord?.accounts?.[resolvedAccountId] ?? {};
     return { config: { ...base, ...account } };
   },
-=======
-  resolveAccount: (cfg) => ({ config: cfg.channels?.discord ?? {} }),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });
 
 const slackPlugin = stubChannelPlugin({
   id: "slack",
   label: "Slack",
-<<<<<<< HEAD
   listAccountIds: (cfg) => {
     const ids = Object.keys(cfg.channels?.slack?.accounts ?? {});
     return ids.length > 0 ? ids : ["default"];
@@ -100,15 +75,11 @@ const slackPlugin = stubChannelPlugin({
     const account = cfg.channels?.slack?.accounts?.[resolvedAccountId] ?? {};
     return { config: { ...base, ...account } };
   },
-=======
-  resolveAccount: (cfg) => ({ config: cfg.channels?.slack ?? {} }),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });
 
 const telegramPlugin = stubChannelPlugin({
   id: "telegram",
   label: "Telegram",
-<<<<<<< HEAD
   listAccountIds: (cfg) => {
     const ids = Object.keys(cfg.channels?.telegram?.accounts ?? {});
     return ids.length > 0 ? ids : ["default"];
@@ -119,9 +90,6 @@ const telegramPlugin = stubChannelPlugin({
     const account = cfg.channels?.telegram?.accounts?.[resolvedAccountId] ?? {};
     return { config: { ...base, ...account } };
   },
-=======
-  resolveAccount: (cfg) => ({ config: cfg.channels?.telegram ?? {} }),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });
 
 function successfulProbeResult(url: string) {
@@ -253,7 +221,6 @@ describe("security audit", () => {
     }
   });
 
-<<<<<<< HEAD
   it("evaluates gateway auth rate-limit warning based on configuration", async () => {
     const cases: Array<{
       name: string;
@@ -269,54 +236,6 @@ describe("security audit", () => {
           },
         },
         expectWarn: true,
-=======
-  it("warns when non-loopback bind has auth but no auth rate limit", async () => {
-    const cfg: OpenClawConfig = {
-      gateway: {
-        bind: "lan",
-        auth: { token: "secret" },
-      },
-    };
-
-    const res = await runSecurityAudit({
-      config: cfg,
-      env: {},
-      includeFilesystem: false,
-      includeChannelSecurity: false,
-    });
-
-    expect(
-      res.findings.some((f) => f.checkId === "gateway.auth_no_rate_limit" && f.severity === "warn"),
-    ).toBe(true);
-  });
-
-  it("does not warn for auth rate limiting when configured", async () => {
-    const cfg: OpenClawConfig = {
-      gateway: {
-        bind: "lan",
-        auth: {
-          token: "secret",
-          rateLimit: { maxAttempts: 10, windowMs: 60_000, lockoutMs: 300_000 },
-        },
-      },
-    };
-
-    const res = await runSecurityAudit({
-      config: cfg,
-      env: {},
-      includeFilesystem: false,
-      includeChannelSecurity: false,
-    });
-
-    expect(res.findings.some((f) => f.checkId === "gateway.auth_no_rate_limit")).toBe(false);
-  });
-
-  it("warns when loopback control UI lacks trusted proxies", async () => {
-    const cfg: OpenClawConfig = {
-      gateway: {
-        bind: "loopback",
-        controlUi: { enabled: true },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       },
       {
         name: "rate limit configured",
@@ -2517,7 +2436,6 @@ describe("security audit", () => {
     }
   });
 
-<<<<<<< HEAD
   it("warns on unpinned npm install specs and missing integrity metadata", async () => {
     const tmp = await makeTmpDir("install-metadata-warns");
     const stateDir = path.join(tmp, "state");
@@ -2657,17 +2575,12 @@ describe("security audit", () => {
 
   it("flags enabled extensions when tool policy can expose plugin tools", async () => {
     const tmp = await makeTmpDir("plugins-reachable");
-=======
-  it("flags enabled extensions when tool policy can expose plugin tools", async () => {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-plugins-"));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const stateDir = path.join(tmp, "state");
     await fs.mkdir(path.join(stateDir, "extensions", "some-plugin"), {
       recursive: true,
       mode: 0o700,
     });
 
-<<<<<<< HEAD
     const cfg: OpenClawConfig = {
       plugins: { allow: ["some-plugin"] },
     };
@@ -2691,42 +2604,12 @@ describe("security audit", () => {
 
   it("does not flag plugin tool reachability when profile is restrictive", async () => {
     const tmp = await makeTmpDir("plugins-restrictive");
-=======
-    try {
-      const cfg: OpenClawConfig = {
-        plugins: { allow: ["some-plugin"] },
-      };
-      const res = await runSecurityAudit({
-        config: cfg,
-        includeFilesystem: true,
-        includeChannelSecurity: false,
-        stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
-      });
-
-      expect(res.findings).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            checkId: "plugins.tools_reachable_permissive_policy",
-            severity: "warn",
-          }),
-        ]),
-      );
-    } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
-    }
-  });
-
-  it("does not flag plugin tool reachability when profile is restrictive", async () => {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-plugins-"));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const stateDir = path.join(tmp, "state");
     await fs.mkdir(path.join(stateDir, "extensions", "some-plugin"), {
       recursive: true,
       mode: 0o700,
     });
 
-<<<<<<< HEAD
     const cfg: OpenClawConfig = {
       plugins: { allow: ["some-plugin"] },
       tools: { profile: "coding" },
@@ -2742,27 +2625,6 @@ describe("security audit", () => {
     expect(
       res.findings.some((f) => f.checkId === "plugins.tools_reachable_permissive_policy"),
     ).toBe(false);
-=======
-    try {
-      const cfg: OpenClawConfig = {
-        plugins: { allow: ["some-plugin"] },
-        tools: { profile: "coding" },
-      };
-      const res = await runSecurityAudit({
-        config: cfg,
-        includeFilesystem: true,
-        includeChannelSecurity: false,
-        stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
-      });
-
-      expect(
-        res.findings.some((f) => f.checkId === "plugins.tools_reachable_permissive_policy"),
-      ).toBe(false);
-    } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("flags unallowlisted extensions as critical when native skill commands are exposed", async () => {
@@ -2935,10 +2797,6 @@ description: test skill
       expect(findings.some((f) => f.checkId === "plugins.code_safety.scan_failed")).toBe(true);
     } finally {
       scanSpy.mockRestore();
-<<<<<<< HEAD
-=======
-      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => undefined);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
   });
 

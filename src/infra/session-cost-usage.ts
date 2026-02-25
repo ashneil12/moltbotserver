@@ -2,31 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import type { NormalizedUsage, UsageLike } from "../agents/usage.js";
-<<<<<<< HEAD
-=======
-import type { OpenClawConfig } from "../config/config.js";
-import type { SessionEntry } from "../config/sessions/types.js";
-import type {
-  CostBreakdown,
-  CostUsageTotals,
-  CostUsageSummary,
-  DiscoveredSession,
-  ParsedTranscriptEntry,
-  ParsedUsageEntry,
-  SessionCostSummary,
-  SessionDailyLatency,
-  SessionDailyMessageCounts,
-  SessionDailyModelUsage,
-  SessionDailyUsage,
-  SessionLatencyStats,
-  SessionLogEntry,
-  SessionMessageCounts,
-  SessionModelUsage,
-  SessionToolUsage,
-  SessionUsageTimePoint,
-  SessionUsageTimeSeries,
-} from "./session-cost-usage.types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { normalizeUsage } from "../agents/usage.js";
 import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import type { OpenClawConfig } from "../config/config.js";

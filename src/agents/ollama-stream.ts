@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import { randomUUID } from "node:crypto";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type { StreamFn } from "@mariozechner/pi-agent-core";
 import type {
   AssistantMessage,
@@ -12,13 +9,9 @@ import type {
   Usage,
 } from "@mariozechner/pi-ai";
 import { createAssistantMessageEventStream } from "@mariozechner/pi-ai";
-<<<<<<< HEAD
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
 const log = createSubsystemLogger("ollama-stream");
-=======
-import { randomUUID } from "node:crypto";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export const OLLAMA_NATIVE_BASE_URL = "http://127.0.0.1:11434";
 
@@ -56,7 +49,6 @@ interface OllamaToolCall {
   };
 }
 
-<<<<<<< HEAD
 const MAX_SAFE_INTEGER_ABS_STR = String(Number.MAX_SAFE_INTEGER);
 
 function isAsciiDigit(ch: string | undefined): boolean {
@@ -181,8 +173,6 @@ function parseJsonPreservingUnsafeIntegers(input: string): unknown {
   return JSON.parse(quoteUnsafeIntegerLiterals(input)) as unknown;
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 // ── Ollama /api/chat response types ─────────────────────────────────────────
 
 interface OllamaChatResponse {
@@ -191,10 +181,7 @@ interface OllamaChatResponse {
   message: {
     role: "assistant";
     content: string;
-<<<<<<< HEAD
     reasoning?: string;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     tool_calls?: OllamaToolCall[];
   };
   done: boolean;
@@ -332,17 +319,12 @@ export function buildAssistantMessage(
 ): AssistantMessage {
   const content: (TextContent | ToolCall)[] = [];
 
-<<<<<<< HEAD
   // Qwen 3 (and potentially other reasoning models) may return their final
   // answer in a `reasoning` field with an empty `content`. Fall back to
   // `reasoning` so the response isn't silently dropped.
   const text = response.message.content || response.message.reasoning || "";
   if (text) {
     content.push({ type: "text", text });
-=======
-  if (response.message.content) {
-    content.push({ type: "text", text: response.message.content });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   const toolCalls = response.message.tool_calls;
@@ -404,33 +386,18 @@ export async function* parseNdjsonStream(
         continue;
       }
       try {
-<<<<<<< HEAD
         yield parseJsonPreservingUnsafeIntegers(trimmed) as OllamaChatResponse;
       } catch {
         log.warn(`Skipping malformed NDJSON line: ${trimmed.slice(0, 120)}`);
-=======
-        yield JSON.parse(trimmed) as OllamaChatResponse;
-      } catch {
-        console.warn("[ollama-stream] Skipping malformed NDJSON line:", trimmed.slice(0, 120));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
     }
   }
 
   if (buffer.trim()) {
     try {
-<<<<<<< HEAD
       yield parseJsonPreservingUnsafeIntegers(buffer.trim()) as OllamaChatResponse;
     } catch {
       log.warn(`Skipping malformed trailing data: ${buffer.trim().slice(0, 120)}`);
-=======
-      yield JSON.parse(buffer.trim()) as OllamaChatResponse;
-    } catch {
-      console.warn(
-        "[ollama-stream] Skipping malformed trailing data:",
-        buffer.trim().slice(0, 120),
-      );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
   }
 }
@@ -509,12 +476,9 @@ export function createOllamaStreamFn(baseUrl: string): StreamFn {
         for await (const chunk of parseNdjsonStream(reader)) {
           if (chunk.message?.content) {
             accumulatedContent += chunk.message.content;
-<<<<<<< HEAD
           } else if (chunk.message?.reasoning) {
             // Qwen 3 reasoning mode: content may be empty, output in reasoning
             accumulatedContent += chunk.message.reasoning;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           }
 
           // Ollama sends tool_calls in intermediate (done:false) chunks,

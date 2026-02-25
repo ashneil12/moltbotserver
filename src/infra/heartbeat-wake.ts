@@ -210,11 +210,7 @@ export function setHeartbeatWakeHandler(next: HeartbeatWakeHandler | null): () =
     running = false;
     scheduled = false;
   }
-<<<<<<< HEAD
   if (handler && pendingWakes.size > 0) {
-=======
-  if (handler && pendingWake) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     schedule(DEFAULT_COALESCE_MS, "normal");
   }
   return () => {

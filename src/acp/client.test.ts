@@ -1,10 +1,7 @@
 import type { RequestPermissionRequest } from "@agentclientprotocol/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { resolvePermissionRequest } from "./client.js";
-<<<<<<< HEAD
 import { extractAttachmentsFromPrompt, extractTextFromPrompt } from "./event-mapper.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function makePermissionRequest(
   overrides: Partial<RequestPermissionRequest> = {},
@@ -52,7 +49,6 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
   });
 
-<<<<<<< HEAD
   it("prompts for non-read/search tools (write)", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(
@@ -217,8 +213,6 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("uses allow_always and reject_always when once options are absent", async () => {
     const options: RequestPermissionRequest["options"] = [
       { kind: "allow_always", name: "Always allow", optionId: "allow-always" },
@@ -251,7 +245,6 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
   });
 
-<<<<<<< HEAD
   it("prompts when metadata tool name contains invalid characters", async () => {
     const prompt = vi.fn(async () => false);
     const res = await resolvePermissionRequest(
@@ -305,8 +298,6 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("returns cancelled when no permission options are present", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(makePermissionRequest({ options: [] }), {
@@ -317,7 +308,6 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "cancelled" } });
   });
 });
-<<<<<<< HEAD
 
 describe("acp event mapper", () => {
   const hasRawInlineControlChars = (value: string): boolean =>
@@ -443,5 +433,3 @@ describe("acp event mapper", () => {
     ]);
   });
 });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

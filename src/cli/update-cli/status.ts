@@ -5,24 +5,14 @@ import {
 } from "../../commands/status.update.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
 import {
-<<<<<<< HEAD
   normalizeUpdateChannel,
   resolveUpdateChannelDisplay,
-=======
-  formatUpdateChannelLabel,
-  normalizeUpdateChannel,
-  resolveEffectiveUpdateChannel,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 } from "../../infra/update-channels.js";
 import { checkUpdateStatus } from "../../infra/update-check.js";
 import { defaultRuntime } from "../../runtime.js";
 import { renderTable } from "../../terminal/table.js";
 import { theme } from "../../terminal/theme.js";
-<<<<<<< HEAD
 import { parseTimeoutMsOrExit, resolveUpdateRoot, type UpdateStatusOptions } from "./shared.js";
-=======
-import { resolveUpdateRoot, type UpdateStatusOptions } from "./shared.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function formatGitStatusLine(params: {
   branch: string | null;
@@ -41,15 +31,8 @@ function formatGitStatusLine(params: {
 }
 
 export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<void> {
-<<<<<<< HEAD
   const timeoutMs = parseTimeoutMsOrExit(opts.timeout);
   if (timeoutMs === null) {
-=======
-  const timeoutMs = opts.timeout ? Number.parseInt(opts.timeout, 10) * 1000 : undefined;
-  if (timeoutMs !== undefined && (Number.isNaN(timeoutMs) || timeoutMs <= 0)) {
-    defaultRuntime.error("--timeout must be a positive integer (seconds)");
-    defaultRuntime.exit(1);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return;
   }
 
@@ -66,7 +49,6 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
     includeRegistry: true,
   });
 
-<<<<<<< HEAD
   const channelInfo = resolveUpdateChannelDisplay({
     configChannel,
     installKind: update.installKind,
@@ -74,19 +56,6 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
     gitBranch: update.git?.branch ?? null,
   });
   const channelLabel = channelInfo.label;
-=======
-  const channelInfo = resolveEffectiveUpdateChannel({
-    configChannel,
-    installKind: update.installKind,
-    git: update.git ? { tag: update.git.tag, branch: update.git.branch } : undefined,
-  });
-  const channelLabel = formatUpdateChannelLabel({
-    channel: channelInfo.channel,
-    source: channelInfo.source,
-    gitTag: update.git?.tag ?? null,
-    gitBranch: update.git?.branch ?? null,
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const gitLabel =
     update.installKind === "git"

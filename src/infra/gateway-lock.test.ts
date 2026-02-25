@@ -5,11 +5,7 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-<<<<<<< HEAD
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-=======
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveConfigPath, resolveGatewayLockDir, resolveStateDir } from "../config/paths.js";
 import { acquireGatewayLock, GatewayLockError, type GatewayLockOptions } from "./gateway-lock.js";
 
@@ -26,18 +22,9 @@ async function makeEnv() {
   await fs.writeFile(configPath, "{}", "utf8");
   await fs.mkdir(resolveGatewayLockDir(), { recursive: true });
   return {
-<<<<<<< HEAD
     ...process.env,
     OPENCLAW_STATE_DIR: dir,
     OPENCLAW_CONFIG_PATH: configPath,
-=======
-    env: {
-      ...process.env,
-      OPENCLAW_STATE_DIR: dir,
-      OPENCLAW_CONFIG_PATH: configPath,
-    },
-    cleanup: async () => {},
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   };
 }
 
@@ -90,7 +77,6 @@ function makeProcStat(pid: number, startTime: number) {
   return `${pid} (node) ${fields.join(" ")}`;
 }
 
-<<<<<<< HEAD
 function createLockPayload(params: { configPath: string; startTime: number; createdAt?: string }) {
   return {
     pid: process.pid,
@@ -142,24 +128,6 @@ function createPortProbeConnectionSpy(result: "connect" | "refused") {
         return;
       }
       socket.emit("error", Object.assign(new Error("ECONNREFUSED"), { code: "ECONNREFUSED" }));
-=======
-describe("gateway lock", () => {
-  beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-lock-"));
-  });
-
-  afterAll(async () => {
-    await fs.rm(fixtureRoot, { recursive: true, force: true });
-  });
-
-  it("blocks concurrent acquisition until release", async () => {
-    const { env, cleanup } = await makeEnv();
-    const lock = await acquireGatewayLock({
-      env,
-      allowInTests: true,
-      timeoutMs: 80,
-      pollIntervalMs: 5,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
     return socket;
   });
@@ -200,30 +168,11 @@ describe("gateway lock", () => {
     const lock = await acquireForTest(env, { timeoutMs: 50 });
     expect(lock).not.toBeNull();
 
-<<<<<<< HEAD
     const pending = acquireForTest(env, { timeoutMs: 15 });
     await expect(pending).rejects.toBeInstanceOf(GatewayLockError);
 
     await lock?.release();
     const lock2 = await acquireForTest(env);
-=======
-    await expect(
-      acquireGatewayLock({
-        env,
-        allowInTests: true,
-        timeoutMs: 80,
-        pollIntervalMs: 5,
-      }),
-    ).rejects.toBeInstanceOf(GatewayLockError);
-
-    await lock?.release();
-    const lock2 = await acquireGatewayLock({
-      env,
-      allowInTests: true,
-      timeoutMs: 80,
-      pollIntervalMs: 5,
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await lock2?.release();
   });
 
@@ -240,13 +189,7 @@ describe("gateway lock", () => {
       onProcRead: () => statValue,
     });
 
-<<<<<<< HEAD
     const lock = await acquireForTest(env, {
-=======
-    const lock = await acquireGatewayLock({
-      env,
-      allowInTests: true,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       timeoutMs: 80,
       pollIntervalMs: 5,
       platform: "linux",
@@ -263,52 +206,9 @@ describe("gateway lock", () => {
     await writeLockFile(env);
     const spy = createEaccesProcStatSpy();
 
-<<<<<<< HEAD
     const pending = acquireForTest(env, {
       timeoutMs: 15,
       staleMs: 10_000,
-=======
-    const readFileSync = fsSync.readFileSync;
-    const spy = vi.spyOn(fsSync, "readFileSync").mockImplementation((filePath, encoding) => {
-      if (filePath === `/proc/${process.pid}/stat`) {
-        throw new Error("EACCES");
-      }
-      return readFileSync(filePath as never, encoding as never) as never;
-    });
-
-    await expect(
-      acquireGatewayLock({
-        env,
-        allowInTests: true,
-        timeoutMs: 50,
-        pollIntervalMs: 5,
-        staleMs: 10_000,
-        platform: "linux",
-      }),
-    ).rejects.toBeInstanceOf(GatewayLockError);
-
-    spy.mockRestore();
-
-    const stalePayload = {
-      ...payload,
-      createdAt: new Date(0).toISOString(),
-    };
-    await fs.writeFile(lockPath, JSON.stringify(stalePayload), "utf8");
-
-    const staleSpy = vi.spyOn(fsSync, "readFileSync").mockImplementation((filePath, encoding) => {
-      if (filePath === `/proc/${process.pid}/stat`) {
-        throw new Error("EACCES");
-      }
-      return readFileSync(filePath as never, encoding as never) as never;
-    });
-
-    const lock = await acquireGatewayLock({
-      env,
-      allowInTests: true,
-      timeoutMs: 80,
-      pollIntervalMs: 5,
-      staleMs: 1,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       platform: "linux",
     });
     await expect(pending).rejects.toBeInstanceOf(GatewayLockError);

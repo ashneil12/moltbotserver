@@ -1,21 +1,15 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import {
-<<<<<<< HEAD
   createLoggerBackedRuntime,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   type RuntimeEnv,
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
   requestBodyErrorToText,
 } from "openclaw/plugin-sdk";
-<<<<<<< HEAD
 import { resolveNextcloudTalkAccount } from "./accounts.js";
 import { handleNextcloudTalkInbound } from "./inbound.js";
 import { getNextcloudTalkRuntime } from "./runtime.js";
 import { extractNextcloudTalkHeaders, verifyNextcloudTalkSignature } from "./signature.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type {
   CoreConfig,
   NextcloudTalkInboundMessage,
@@ -98,10 +92,7 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
     opts.maxBodyBytes > 0
       ? Math.floor(opts.maxBodyBytes)
       : DEFAULT_WEBHOOK_MAX_BODY_BYTES;
-<<<<<<< HEAD
   const readBody = opts.readBody ?? readNextcloudTalkWebhookBody;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     if (req.url === HEALTH_PATH) {
@@ -117,11 +108,6 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
     }
 
     try {
-<<<<<<< HEAD
-=======
-      const body = await readNextcloudTalkWebhookBody(req, maxBodyBytes);
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const headers = extractNextcloudTalkHeaders(
         req.headers as Record<string, string | string[] | undefined>,
       );

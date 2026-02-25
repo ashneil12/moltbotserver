@@ -451,39 +451,12 @@ describe("exec tool backgrounding", () => {
   });
 
   it("uses default timeout when timeout is omitted", async () => {
-<<<<<<< HEAD:src/agents/bash-tools.test.ts
     const customBash = createTestExecTool({
       timeoutSec: 0.05,
       backgroundMs: 10,
       allowBackground: false,
     });
     await expect(executeExecCommand(customBash, longDelayCmd)).rejects.toThrow(/timed out/i);
-=======
-    const customBash = createExecTool({ timeoutSec: 0.2, backgroundMs: 10 });
-    const customProcess = createProcessTool();
-
-    const result = await customBash.execute("call1", {
-      command: longDelayCmd,
-      background: true,
-    });
-
-    const sessionId = (result.details as { sessionId: string }).sessionId;
-    let status = "running";
-    const deadline = Date.now() + 5000;
-
-    while (Date.now() < deadline && status === "running") {
-      const poll = await customProcess.execute("call2", {
-        action: "poll",
-        sessionId,
-      });
-      status = (poll.details as { status: string }).status;
-      if (status === "running") {
-        await sleep(20);
-      }
-    }
-
-    expect(status).toBe("failed");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/bash-tools.e2e.test.ts
   });
 
   it.each<DisallowedElevationCase>(DISALLOWED_ELEVATION_CASES)(

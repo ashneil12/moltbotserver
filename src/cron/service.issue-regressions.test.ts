@@ -3,12 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD
 import type { HeartbeatRunResult } from "../infra/heartbeat-wake.js";
 import * as schedule from "./schedule.js";
-=======
-import type { CronJob } from "./types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { CronService } from "./service.js";
 import { createDeferred, createRunningCronServiceState } from "./service.test-harness.js";
 import { computeJobNextRunAtMs } from "./service/jobs.js";
@@ -184,19 +180,9 @@ describe("Cron issue regressions", () => {
   it("covers schedule updates, force runs, isolated wake scheduling, and payload patching", async () => {
     const store = await makeStorePath();
     const enqueueSystemEvent = vi.fn();
-<<<<<<< HEAD
     const cron = await startCronForStore({
       storePath: store.storePath,
       enqueueSystemEvent,
-=======
-    const cron = new CronService({
-      cronEnabled: true,
-      storePath: store.storePath,
-      log: noopLogger,
-      enqueueSystemEvent,
-      requestHeartbeatNow: vi.fn(),
-      runIsolatedAgentJob: vi.fn().mockResolvedValue({ status: "ok", summary: "ok" }),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
 
     const created = await cron.add({
@@ -228,14 +214,10 @@ describe("Cron issue regressions", () => {
     const result = await cron.run(forceNow.id, "force");
 
     expect(result).toEqual({ ok: true, ran: true });
-<<<<<<< HEAD
     expect(enqueueSystemEvent).toHaveBeenCalledWith(
       "force",
       expect.objectContaining({ agentId: undefined }),
     );
-=======
-    expect(enqueueSystemEvent).toHaveBeenCalledWith("force", { agentId: undefined });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const job = await cron.add({
       name: "isolated",
@@ -494,7 +476,6 @@ describe("Cron issue regressions", () => {
     const started = createDeferred<void>();
     const finished = createDeferred<void>();
     let targetJobId = "";
-<<<<<<< HEAD
 
     const cron = await startCronForStore({
       storePath: store.storePath,
@@ -511,29 +492,6 @@ describe("Cron issue regressions", () => {
       },
     });
 
-=======
-
-    const cron = new CronService({
-      cronEnabled: true,
-      storePath: store.storePath,
-      log: noopLogger,
-      enqueueSystemEvent: vi.fn(),
-      requestHeartbeatNow: vi.fn(),
-      runIsolatedAgentJob,
-      onEvent: (evt: CronEvent) => {
-        if (evt.jobId !== targetJobId) {
-          return;
-        }
-        if (evt.action === "started") {
-          started.resolve();
-        } else if (evt.action === "finished" && evt.status === "ok") {
-          finished.resolve();
-        }
-      },
-    });
-    await cron.start();
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const runAt = Date.now() + 1;
     const job = await cron.add({
       name: "timer-overlap",
@@ -560,7 +518,6 @@ describe("Cron issue regressions", () => {
     await cron.list({ includeDisabled: true });
 
     cron.stop();
-<<<<<<< HEAD
   });
 
   it("does not double-run a job when cron.run overlaps a due timer tick", async () => {
@@ -706,9 +663,6 @@ describe("Cron issue regressions", () => {
     expect(persistedJob?.state.lastDelivered).toBe(true);
 
     cron.stop();
-=======
-    await store.cleanup();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("#13845: one-shot jobs with terminal statuses do not re-fire on restart", async () => {
@@ -725,7 +679,6 @@ describe("Cron issue regressions", () => {
       wakeMode: "now",
       payload: { kind: "systemEvent", text: "⏰ Reminder" },
     } as const;
-<<<<<<< HEAD
     const terminalStates: Array<{ id: string; state: CronJobState }> = [
       {
         id: "oneshot-skipped",
@@ -746,27 +699,6 @@ describe("Cron issue regressions", () => {
       },
     ];
     for (const { id, state } of terminalStates) {
-=======
-    for (const [id, state] of [
-      [
-        "oneshot-skipped",
-        {
-          nextRunAtMs: pastAt,
-          lastStatus: "skipped" as const,
-          lastRunAtMs: pastAt,
-        },
-      ],
-      [
-        "oneshot-errored",
-        {
-          nextRunAtMs: pastAt,
-          lastStatus: "error" as const,
-          lastRunAtMs: pastAt,
-          lastError: "heartbeat failed",
-        },
-      ],
-    ]) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       const job: CronJob = { id, ...baseJob, state };
       await fs.writeFile(
         store.storePath,
@@ -774,7 +706,6 @@ describe("Cron issue regressions", () => {
         "utf-8",
       );
       const enqueueSystemEvent = vi.fn();
-<<<<<<< HEAD
       const cron = await startCronForStore({
         storePath: store.storePath,
         enqueueSystemEvent,
@@ -1162,22 +1093,6 @@ describe("Cron issue regressions", () => {
     } finally {
       spy.mockRestore();
     }
-=======
-      const cron = new CronService({
-        cronEnabled: true,
-        storePath: store.storePath,
-        log: noopLogger,
-        enqueueSystemEvent,
-        requestHeartbeatNow: vi.fn(),
-        runIsolatedAgentJob: vi.fn().mockResolvedValue({ status: "ok" }),
-      });
-
-      await cron.start();
-      expect(enqueueSystemEvent).not.toHaveBeenCalled();
-      cron.stop();
-    }
-    await store.cleanup();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("records per-job start time and duration for batched due jobs", async () => {

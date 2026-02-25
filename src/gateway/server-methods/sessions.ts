@@ -325,19 +325,7 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     respond(true, { ts: Date.now(), previews } satisfies SessionsPreviewResult, undefined);
   },
   "sessions.resolve": async ({ params, respond }) => {
-<<<<<<< HEAD
     if (!assertValidParams(params, validateSessionsResolveParams, "sessions.resolve", respond)) {
-=======
-    if (!validateSessionsResolveParams(params)) {
-      respond(
-        false,
-        undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          `invalid sessions.resolve params: ${formatValidationErrors(validateSessionsResolveParams.errors)}`,
-        ),
-      );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       return;
     }
     const p = params;
@@ -403,7 +391,6 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       return;
     }
 
-<<<<<<< HEAD
     const { cfg, target, storePath } = resolveGatewaySessionTargetFromKey(key);
     const { entry } = loadSessionEntry(key);
     const hadExistingEntry = Boolean(entry);
@@ -426,11 +413,6 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       respond(false, undefined, cleanupError);
       return;
     }
-=======
-    const cfg = loadConfig();
-    const target = resolveGatewaySessionStoreTarget({ cfg, key });
-    const storePath = target.storePath;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     let oldSessionId: string | undefined;
     let oldSessionFile: string | undefined;
     const next = await updateSessionStore(storePath, (store) => {
@@ -474,15 +456,12 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       agentId: target.agentId,
       reason: "reset",
     });
-<<<<<<< HEAD
     if (hadExistingEntry) {
       await emitSessionUnboundLifecycleEvent({
         targetSessionKey: target.canonicalKey ?? key,
         reason: "session-reset",
       });
     }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     respond(true, { ok: true, key: target.canonicalKey, entry: next }, undefined);
   },
   "sessions.delete": async ({ params, respond, client, isWebchatConnect }) => {
@@ -518,39 +497,15 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       respond(false, undefined, cleanupError);
       return;
     }
-<<<<<<< HEAD
     const deleted = await updateSessionStore(storePath, (store) => {
       const { primaryKey } = migrateAndPruneSessionStoreKey({ cfg, key, store });
       const hadEntry = Boolean(store[primaryKey]);
       if (hadEntry) {
-=======
-    clearSessionQueues([...queueKeys]);
-    stopSubagentsForRequester({ cfg, requesterSessionKey: target.canonicalKey });
-    if (sessionId) {
-      abortEmbeddedPiRun(sessionId);
-      const ended = await waitForEmbeddedPiRunEnd(sessionId, 15_000);
-      if (!ended) {
-        respond(
-          false,
-          undefined,
-          errorShape(
-            ErrorCodes.UNAVAILABLE,
-            `Session ${key} is still active; try again in a moment.`,
-          ),
-        );
-        return;
-      }
-    }
-    await updateSessionStore(storePath, (store) => {
-      const { primaryKey } = migrateAndPruneSessionStoreKey({ cfg, key, store });
-      if (store[primaryKey]) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         delete store[primaryKey];
       }
       return hadEntry;
     });
 
-<<<<<<< HEAD
     const archived =
       deleted && deleteTranscript
         ? archiveSessionTranscriptsForSession({
@@ -569,17 +524,6 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         emitHooks: emitLifecycleHooks,
       });
     }
-=======
-    const archived = deleteTranscript
-      ? archiveSessionTranscriptsForSession({
-          sessionId,
-          storePath,
-          sessionFile: entry?.sessionFile,
-          agentId: target.agentId,
-          reason: "deleted",
-        })
-      : [];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     respond(true, { ok: true, key: target.canonicalKey, deleted, archived }, undefined);
   },

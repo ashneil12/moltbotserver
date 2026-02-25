@@ -31,12 +31,8 @@ describe("waitForTransportReady", () => {
     const readyPromise = waitForTransportReady({
       label: "test transport",
       timeoutMs: 220,
-<<<<<<< HEAD
       // Deterministic: first attempt at t=0 won't log; second attempt at t=50 will.
       logAfterMs: 1,
-=======
-      logAfterMs: 60,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       logIntervalMs: 1_000,
       pollIntervalMs: 50,
       runtime,
@@ -49,24 +45,14 @@ describe("waitForTransportReady", () => {
       },
     });
 
-<<<<<<< HEAD
     await vi.advanceTimersByTimeAsync(200);
-=======
-    for (let i = 0; i < 3; i += 1) {
-      await vi.advanceTimersByTimeAsync(50);
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await readyPromise;
     expect(runtime.error).toHaveBeenCalled();
   });
 
   it("throws after the timeout", async () => {
-<<<<<<< HEAD
     const runtime = createRuntime();
-=======
-    const runtime = { log: vi.fn(), error: vi.fn(), exit: vi.fn() };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const waitPromise = waitForTransportReady({
       label: "test transport",
       timeoutMs: 110,
@@ -76,14 +62,9 @@ describe("waitForTransportReady", () => {
       runtime,
       check: async () => ({ ok: false, error: "still down" }),
     });
-<<<<<<< HEAD
     const asserted = expect(waitPromise).rejects.toThrow("test transport not ready");
     await vi.advanceTimersByTimeAsync(200);
     await asserted;
-=======
-    await vi.advanceTimersByTimeAsync(200);
-    await expect(waitPromise).rejects.toThrow("test transport not ready");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(runtime.error).toHaveBeenCalled();
   });
 

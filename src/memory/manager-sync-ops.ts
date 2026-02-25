@@ -1,28 +1,16 @@
-<<<<<<< HEAD
-=======
-// @ts-nocheck
-// oxlint-disable eslint/no-unused-vars, typescript/no-explicit-any
-import type { DatabaseSync } from "node:sqlite";
-import chokidar, { type FSWatcher } from "chokidar";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { randomUUID } from "node:crypto";
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-<<<<<<< HEAD
 import type { DatabaseSync } from "node:sqlite";
 import chokidar, { FSWatcher } from "chokidar";
 import { resolveAgentDir } from "../agents/agent-scope.js";
 import { ResolvedMemorySearchConfig } from "../agents/memory-search.js";
 import { type OpenClawConfig } from "../config/config.js";
-=======
-import type { MemorySource, MemorySyncProgressUpdate } from "./types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { onSessionTranscriptUpdate } from "../sessions/transcript-events.js";
 import { resolveUserPath } from "../utils.js";
-<<<<<<< HEAD
 import { DEFAULT_GEMINI_EMBEDDING_MODEL } from "./embeddings-gemini.js";
 import { DEFAULT_MISTRAL_EMBEDDING_MODEL } from "./embeddings-mistral.js";
 import { DEFAULT_OPENAI_EMBEDDING_MODEL } from "./embeddings-openai.js";
@@ -46,44 +34,20 @@ import {
 import { type MemoryFileEntry } from "./internal.js";
 import { ensureMemoryIndexSchema } from "./memory-schema.js";
 import type { SessionFileEntry } from "./session-files.js";
-=======
-import {
-  buildFileEntry,
-  ensureDir,
-  isMemoryPath,
-  listMemoryFiles,
-  normalizeExtraMemoryPaths,
-  parseEmbedding,
-  remapChunkLines,
-  runWithConcurrency,
-  type MemoryFileEntry,
-} from "./internal.js";
-import { ensureMemoryIndexSchema } from "./memory-schema.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   buildSessionEntry,
   listSessionFilesForAgent,
   sessionPathForFile,
-<<<<<<< HEAD
 } from "./session-files.js";
 import { loadSqliteVecExtension } from "./sqlite-vec.js";
 import { requireNodeSqlite } from "./sqlite.js";
 import type { MemorySource, MemorySyncProgressUpdate } from "./types.js";
-=======
-  type SessionFileEntry,
-} from "./session-files.js";
-import { loadSqliteVecExtension } from "./sqlite-vec.js";
-import { requireNodeSqlite } from "./sqlite.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 type MemoryIndexMeta = {
   model: string;
   provider: string;
   providerKey?: string;
-<<<<<<< HEAD
   sources?: MemorySource[];
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   chunkTokens: number;
   chunkOverlap: number;
   vectorDims?: number;
@@ -103,7 +67,6 @@ const EMBEDDING_CACHE_TABLE = "embedding_cache";
 const SESSION_DIRTY_DEBOUNCE_MS = 5000;
 const SESSION_DELTA_READ_CHUNK_BYTES = 64 * 1024;
 const VECTOR_LOAD_TIMEOUT_MS = 30_000;
-<<<<<<< HEAD
 const IGNORED_MEMORY_WATCH_DIR_NAMES = new Set([
   ".git",
   "node_modules",
@@ -192,14 +155,6 @@ export abstract class MemoryManagerSyncOps {
   ): Promise<void>;
 
   protected async ensureVectorReady(dimensions?: number): Promise<boolean> {
-=======
-
-const log = createSubsystemLogger("memory");
-
-class MemoryManagerSyncOps {
-  [key: string]: any;
-  private async ensureVectorReady(dimensions?: number): Promise<boolean> {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (!this.vector.enabled) {
       return false;
     }
@@ -212,11 +167,7 @@ class MemoryManagerSyncOps {
     }
     let ready = false;
     try {
-<<<<<<< HEAD
       ready = (await this.vectorReady) || false;
-=======
-      ready = await this.vectorReady;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.vector.available = false;
@@ -284,11 +235,7 @@ class MemoryManagerSyncOps {
     }
   }
 
-<<<<<<< HEAD
   protected buildSourceFilter(alias?: string): { sql: string; params: MemorySource[] } {
-=======
-  private buildSourceFilter(alias?: string): { sql: string; params: MemorySource[] } {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const sources = Array.from(this.sources);
     if (sources.length === 0) {
       return { sql: "", params: [] };
@@ -298,11 +245,7 @@ class MemoryManagerSyncOps {
     return { sql: ` AND ${column} IN (${placeholders})`, params: sources };
   }
 
-<<<<<<< HEAD
   protected openDatabase(): DatabaseSync {
-=======
-  private openDatabase(): DatabaseSync {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const dbPath = resolveUserPath(this.settings.store.path);
     return this.openDatabaseAtPath(dbPath);
   }
@@ -396,11 +339,7 @@ class MemoryManagerSyncOps {
     await Promise.all(suffixes.map((suffix) => fs.rm(`${basePath}${suffix}`, { force: true })));
   }
 
-<<<<<<< HEAD
   protected ensureSchema() {
-=======
-  private ensureSchema() {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const result = ensureMemoryIndexSchema({
       db: this.db,
       embeddingCacheTable: EMBEDDING_CACHE_TABLE,
@@ -414,7 +353,6 @@ class MemoryManagerSyncOps {
     }
   }
 
-<<<<<<< HEAD
   protected ensureWatcher() {
     if (!this.sources.has("memory") || !this.settings.sync.watch || this.watcher) {
       return;
@@ -445,30 +383,6 @@ class MemoryManagerSyncOps {
     this.watcher = chokidar.watch(Array.from(watchPaths), {
       ignoreInitial: true,
       ignored: (watchPath) => shouldIgnoreMemoryWatchPath(String(watchPath)),
-=======
-  private ensureWatcher() {
-    if (!this.sources.has("memory") || !this.settings.sync.watch || this.watcher) {
-      return;
-    }
-    const additionalPaths = normalizeExtraMemoryPaths(this.workspaceDir, this.settings.extraPaths)
-      .map((entry) => {
-        try {
-          const stat = fsSync.lstatSync(entry);
-          return stat.isSymbolicLink() ? null : entry;
-        } catch {
-          return null;
-        }
-      })
-      .filter((entry): entry is string => Boolean(entry));
-    const watchPaths = new Set<string>([
-      path.join(this.workspaceDir, "MEMORY.md"),
-      path.join(this.workspaceDir, "memory.md"),
-      path.join(this.workspaceDir, "memory"),
-      ...additionalPaths,
-    ]);
-    this.watcher = chokidar.watch(Array.from(watchPaths), {
-      ignoreInitial: true,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       awaitWriteFinish: {
         stabilityThreshold: this.settings.sync.watchDebounceMs,
         pollInterval: 100,
@@ -483,11 +397,7 @@ class MemoryManagerSyncOps {
     this.watcher.on("unlink", markDirty);
   }
 
-<<<<<<< HEAD
   protected ensureSessionListener() {
-=======
-  private ensureSessionListener() {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (!this.sources.has("sessions") || this.sessionUnsubscribe) {
       return;
     }
@@ -617,7 +527,6 @@ class MemoryManagerSyncOps {
     if (end <= start) {
       return 0;
     }
-<<<<<<< HEAD
     let handle;
     try {
       handle = await fs.open(absPath, "r");
@@ -627,9 +536,6 @@ class MemoryManagerSyncOps {
       }
       throw err;
     }
-=======
-    const handle = await fs.open(absPath, "r");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     try {
       let offset = start;
       let count = 0;
@@ -673,11 +579,7 @@ class MemoryManagerSyncOps {
     return resolvedFile.startsWith(`${resolvedDir}${path.sep}`);
   }
 
-<<<<<<< HEAD
   protected ensureIntervalSync() {
-=======
-  private ensureIntervalSync() {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const minutes = this.settings.sync.intervalMinutes;
     if (!minutes || minutes <= 0 || this.intervalTimer) {
       return;
@@ -729,7 +631,6 @@ class MemoryManagerSyncOps {
     needsFullReindex: boolean;
     progress?: MemorySyncProgressState;
   }) {
-<<<<<<< HEAD
     // FTS-only mode: skip embedding sync (no provider)
     if (!this.provider) {
       log.debug("Skipping memory file sync in FTS-only mode (no embedding provider)");
@@ -740,12 +641,6 @@ class MemoryManagerSyncOps {
     const fileEntries = (
       await Promise.all(files.map(async (file) => buildFileEntry(file, this.workspaceDir)))
     ).filter((entry): entry is MemoryFileEntry => entry !== null);
-=======
-    const files = await listMemoryFiles(this.workspaceDir, this.settings.extraPaths);
-    const fileEntries = await Promise.all(
-      files.map(async (file) => buildFileEntry(file, this.workspaceDir)),
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     log.debug("memory sync: indexing memory files", {
       files: fileEntries.length,
       needsFullReindex: params.needsFullReindex,
@@ -817,15 +712,12 @@ class MemoryManagerSyncOps {
     needsFullReindex: boolean;
     progress?: MemorySyncProgressState;
   }) {
-<<<<<<< HEAD
     // FTS-only mode: skip embedding sync (no provider)
     if (!this.provider) {
       log.debug("Skipping session file sync in FTS-only mode (no embedding provider)");
       return;
     }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const files = await listSessionFilesForAgent(this.agentId);
     const activePaths = new Set(files.map((file) => sessionPathForFile(file)));
     const indexAll = params.needsFullReindex || this.sessionsDirtyFiles.size === 0;
@@ -948,11 +840,7 @@ class MemoryManagerSyncOps {
     return state;
   }
 
-<<<<<<< HEAD
   protected async runSync(params?: {
-=======
-  private async runSync(params?: {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     reason?: string;
     force?: boolean;
     progress?: (update: MemorySyncProgressUpdate) => void;
@@ -967,7 +855,6 @@ class MemoryManagerSyncOps {
     }
     const vectorReady = await this.ensureVectorReady();
     const meta = this.readMeta();
-<<<<<<< HEAD
     const configuredSources = this.resolveConfiguredSourcesForMeta();
     const needsFullReindex =
       params?.force ||
@@ -976,20 +863,11 @@ class MemoryManagerSyncOps {
       (this.provider && meta.provider !== this.provider.id) ||
       meta.providerKey !== this.providerKey ||
       this.metaSourcesDiffer(meta, configuredSources) ||
-=======
-    const needsFullReindex =
-      params?.force ||
-      !meta ||
-      meta.model !== this.provider.model ||
-      meta.provider !== this.provider.id ||
-      meta.providerKey !== this.providerKey ||
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       meta.chunkTokens !== this.settings.chunking.tokens ||
       meta.chunkOverlap !== this.settings.chunking.overlap ||
       (vectorReady && !meta?.vectorDims);
     try {
       if (needsFullReindex) {
-<<<<<<< HEAD
         if (
           process.env.OPENCLAW_TEST_FAST === "1" &&
           process.env.OPENCLAW_TEST_MEMORY_UNSAFE_REINDEX === "1"
@@ -1006,13 +884,6 @@ class MemoryManagerSyncOps {
             progress: progress ?? undefined,
           });
         }
-=======
-        await this.runSafeReindex({
-          reason: params?.reason,
-          force: params?.force,
-          progress: progress ?? undefined,
-        });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         return;
       }
 
@@ -1054,11 +925,7 @@ class MemoryManagerSyncOps {
     return /embedding|embeddings|batch/i.test(message);
   }
 
-<<<<<<< HEAD
   protected resolveBatchConfig(): {
-=======
-  private resolveBatchConfig(): {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     enabled: boolean;
     wait: boolean;
     concurrency: number;
@@ -1068,10 +935,7 @@ class MemoryManagerSyncOps {
     const batch = this.settings.remote?.batch;
     const enabled = Boolean(
       batch?.enabled &&
-<<<<<<< HEAD
       this.provider &&
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       ((this.openAi && this.provider.id === "openai") ||
         (this.gemini && this.provider.id === "gemini") ||
         (this.voyage && this.provider.id === "voyage")),
@@ -1087,21 +951,13 @@ class MemoryManagerSyncOps {
 
   private async activateFallbackProvider(reason: string): Promise<boolean> {
     const fallback = this.settings.fallback;
-<<<<<<< HEAD
     if (!fallback || fallback === "none" || !this.provider || fallback === this.provider.id) {
-=======
-    if (!fallback || fallback === "none" || fallback === this.provider.id) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       return false;
     }
     if (this.fallbackFrom) {
       return false;
     }
-<<<<<<< HEAD
     const fallbackFrom = this.provider.id as "openai" | "gemini" | "local" | "voyage" | "mistral";
-=======
-    const fallbackFrom = this.provider.id as "openai" | "gemini" | "local" | "voyage";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const fallbackModel =
       fallback === "gemini"
@@ -1110,13 +966,9 @@ class MemoryManagerSyncOps {
           ? DEFAULT_OPENAI_EMBEDDING_MODEL
           : fallback === "voyage"
             ? DEFAULT_VOYAGE_EMBEDDING_MODEL
-<<<<<<< HEAD
             : fallback === "mistral"
               ? DEFAULT_MISTRAL_EMBEDDING_MODEL
               : this.settings.model;
-=======
-            : this.settings.model;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const fallbackResult = await createEmbeddingProvider({
       config: this.cfg,
@@ -1134,10 +986,7 @@ class MemoryManagerSyncOps {
     this.openAi = fallbackResult.openAi;
     this.gemini = fallbackResult.gemini;
     this.voyage = fallbackResult.voyage;
-<<<<<<< HEAD
     this.mistral = fallbackResult.mistral;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     this.providerKey = this.computeProviderKey();
     this.batch = this.resolveBatchConfig();
     log.warn(`memory embeddings: switched to fallback provider (${fallback})`, { reason });
@@ -1213,7 +1062,6 @@ class MemoryManagerSyncOps {
       }
 
       nextMeta = {
-<<<<<<< HEAD
         model: this.provider?.model ?? "fts-only",
         provider: this.provider?.id ?? "none",
         providerKey: this.providerKey!,
@@ -1225,24 +1073,12 @@ class MemoryManagerSyncOps {
         throw new Error("Failed to compute memory index metadata for reindexing.");
       }
 
-=======
-        model: this.provider.model,
-        provider: this.provider.id,
-        providerKey: this.providerKey,
-        chunkTokens: this.settings.chunking.tokens,
-        chunkOverlap: this.settings.chunking.overlap,
-      };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       if (this.vector.available && this.vector.dims) {
         nextMeta.vectorDims = this.vector.dims;
       }
 
       this.writeMeta(nextMeta);
-<<<<<<< HEAD
       this.pruneEmbeddingCacheIfNeeded?.();
-=======
-      this.pruneEmbeddingCacheIfNeeded();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       this.db.close();
       originalDb.close();
@@ -1255,11 +1091,7 @@ class MemoryManagerSyncOps {
       this.vector.available = null;
       this.vector.loadError = undefined;
       this.ensureSchema();
-<<<<<<< HEAD
       this.vector.dims = nextMeta?.vectorDims;
-=======
-      this.vector.dims = nextMeta.vectorDims;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     } catch (err) {
       try {
         this.db.close();
@@ -1270,7 +1102,6 @@ class MemoryManagerSyncOps {
     }
   }
 
-<<<<<<< HEAD
   private async runUnsafeReindex(params: {
     reason?: string;
     force?: boolean;
@@ -1317,8 +1148,6 @@ class MemoryManagerSyncOps {
     this.pruneEmbeddingCacheIfNeeded?.();
   }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   private resetIndex() {
     this.db.exec(`DELETE FROM files`);
     this.db.exec(`DELETE FROM chunks`);
@@ -1332,11 +1161,7 @@ class MemoryManagerSyncOps {
     this.sessionsDirtyFiles.clear();
   }
 
-<<<<<<< HEAD
   protected readMeta(): MemoryIndexMeta | null {
-=======
-  private readMeta(): MemoryIndexMeta | null {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const row = this.db.prepare(`SELECT value FROM meta WHERE key = ?`).get(META_KEY) as
       | { value: string }
       | undefined;
@@ -1350,11 +1175,7 @@ class MemoryManagerSyncOps {
     }
   }
 
-<<<<<<< HEAD
   protected writeMeta(meta: MemoryIndexMeta) {
-=======
-  private writeMeta(meta: MemoryIndexMeta) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const value = JSON.stringify(meta);
     this.db
       .prepare(
@@ -1362,7 +1183,6 @@ class MemoryManagerSyncOps {
       )
       .run(META_KEY, value);
   }
-<<<<<<< HEAD
 
   private resolveConfiguredSourcesForMeta(): MemorySource[] {
     const normalized = Array.from(this.sources)
@@ -1394,8 +1214,3 @@ class MemoryManagerSyncOps {
     return metaSources.some((source, index) => source !== configuredSources[index]);
   }
 }
-=======
-}
-
-export const memoryManagerSyncOps = MemoryManagerSyncOps.prototype;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

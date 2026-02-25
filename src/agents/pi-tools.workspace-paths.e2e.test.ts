@@ -5,11 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 import { createOpenClawCodingTools } from "./pi-tools.js";
 import { createHostSandboxFsBridge } from "./test-helpers/host-sandbox-fs-bridge.js";
-<<<<<<< HEAD:src/agents/pi-tools.workspace-paths.test.ts
 import { expectReadWriteEditTools, getTextContent } from "./test-helpers/pi-tools-fs-helpers.js";
 import { createPiToolsSandboxContext } from "./test-helpers/pi-tools-sandbox-context.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools.workspace-paths.e2e.test.ts
 
 vi.mock("../infra/shell-env.js", async (importOriginal) => {
   const mod = await importOriginal<typeof import("../infra/shell-env.js")>();
@@ -163,26 +160,8 @@ describe("sandboxed workspace paths", () => {
         const sandbox = createPiToolsSandboxContext({
           workspaceDir: sandboxDir,
           agentWorkspaceDir: workspaceDir,
-<<<<<<< HEAD:src/agents/pi-tools.workspace-paths.test.ts
           workspaceAccess: "rw" as const,
           fsBridge: createHostSandboxFsBridge(sandboxDir),
-=======
-          workspaceAccess: "rw",
-          containerName: "openclaw-sbx-test",
-          containerWorkdir: "/workspace",
-          fsBridge: createHostSandboxFsBridge(sandboxDir),
-          docker: {
-            image: "openclaw-sandbox:bookworm-slim",
-            containerPrefix: "openclaw-sbx-",
-            workdir: "/workspace",
-            readOnlyRoot: true,
-            tmpfs: [],
-            network: "none",
-            user: "1000:1000",
-            capDrop: ["ALL"],
-            env: { LANG: "C.UTF-8" },
-          },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools.workspace-paths.e2e.test.ts
           tools: { allow: [], deny: [] },
         });
 

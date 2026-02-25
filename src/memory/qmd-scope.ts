@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import type { ResolvedQmdConfig } from "./backend-config.js";
 
@@ -7,26 +6,16 @@ type ParsedQmdSessionScope = {
   chatType?: "channel" | "group" | "direct";
   normalizedKey?: string;
 };
-=======
-import type { ResolvedQmdConfig } from "./backend-config.js";
-import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function isQmdScopeAllowed(scope: ResolvedQmdConfig["scope"], sessionKey?: string): boolean {
   if (!scope) {
     return true;
   }
-<<<<<<< HEAD
   const parsed = parseQmdSessionScope(sessionKey);
   const channel = parsed.channel;
   const chatType = parsed.chatType;
   const normalizedKey = parsed.normalizedKey ?? "";
   const rawKey = sessionKey?.trim().toLowerCase() ?? "";
-=======
-  const channel = deriveQmdScopeChannel(sessionKey);
-  const chatType = deriveQmdScopeChatType(sessionKey);
-  const normalizedKey = sessionKey ?? "";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   for (const rule of scope.rules ?? []) {
     if (!rule) {
       continue;
@@ -38,7 +27,6 @@ export function isQmdScopeAllowed(scope: ResolvedQmdConfig["scope"], sessionKey?
     if (match.chatType && match.chatType !== chatType) {
       continue;
     }
-<<<<<<< HEAD
     const normalizedPrefix = match.keyPrefix?.trim().toLowerCase() || undefined;
     const rawPrefix = match.rawKeyPrefix?.trim().toLowerCase() || undefined;
 
@@ -56,11 +44,6 @@ export function isQmdScopeAllowed(scope: ResolvedQmdConfig["scope"], sessionKey?
         continue;
       }
     }
-=======
-    if (match.keyPrefix && !normalizedKey.startsWith(match.keyPrefix)) {
-      continue;
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return rule.action === "allow";
   }
   const fallback = scope.default ?? "allow";
@@ -68,7 +51,6 @@ export function isQmdScopeAllowed(scope: ResolvedQmdConfig["scope"], sessionKey?
 }
 
 export function deriveQmdScopeChannel(key?: string): string | undefined {
-<<<<<<< HEAD
   return parseQmdSessionScope(key).channel;
 }
 
@@ -83,21 +65,10 @@ function parseQmdSessionScope(key?: string): ParsedQmdSessionScope {
   }
   const parts = normalized.split(":").filter(Boolean);
   let chatType: ParsedQmdSessionScope["chatType"];
-=======
-  if (!key) {
-    return undefined;
-  }
-  const normalized = normalizeQmdSessionKey(key);
-  if (!normalized) {
-    return undefined;
-  }
-  const parts = normalized.split(":").filter(Boolean);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (
     parts.length >= 2 &&
     (parts[1] === "group" || parts[1] === "channel" || parts[1] === "direct" || parts[1] === "dm")
   ) {
-<<<<<<< HEAD
     if (parts.includes("group")) {
       chatType = "group";
     } else if (parts.includes("channel")) {
@@ -122,31 +93,6 @@ function normalizeQmdSessionKey(key?: string): string | undefined {
   if (!key) {
     return undefined;
   }
-=======
-    return parts[0]?.toLowerCase();
-  }
-  return undefined;
-}
-
-export function deriveQmdScopeChatType(key?: string): "channel" | "group" | "direct" | undefined {
-  if (!key) {
-    return undefined;
-  }
-  const normalized = normalizeQmdSessionKey(key);
-  if (!normalized) {
-    return undefined;
-  }
-  if (normalized.includes(":group:")) {
-    return "group";
-  }
-  if (normalized.includes(":channel:")) {
-    return "channel";
-  }
-  return "direct";
-}
-
-function normalizeQmdSessionKey(key: string): string | undefined {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const trimmed = key.trim();
   if (!trimmed) {
     return undefined;

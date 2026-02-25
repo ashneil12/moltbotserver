@@ -91,7 +91,6 @@ export function resolveTranscriptWaiter(
   return true;
 }
 
-<<<<<<< HEAD
 export function waitForFinalTranscript(
   ctx: TimerContext,
   callId: CallId,
@@ -100,11 +99,6 @@ export function waitForFinalTranscript(
   if (ctx.transcriptWaiters.has(callId)) {
     return Promise.reject(new Error("Already waiting for transcript"));
   }
-=======
-export function waitForFinalTranscript(ctx: TimerContext, callId: CallId): Promise<string> {
-  // Only allow one in-flight waiter per call.
-  rejectTranscriptWaiter(ctx, callId, "Transcript waiter replaced");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const timeoutMs = ctx.config.transcriptTimeoutMs;
   return new Promise((resolve, reject) => {

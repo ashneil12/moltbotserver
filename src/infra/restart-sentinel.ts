@@ -109,7 +109,6 @@ export async function consumeRestartSentinel(
 }
 
 export function formatRestartSentinelMessage(payload: RestartSentinelPayload): string {
-<<<<<<< HEAD
   const message = payload.message?.trim();
   if (message && !payload.stats) {
     return message;
@@ -126,12 +125,6 @@ export function formatRestartSentinelMessage(payload: RestartSentinelPayload): s
     lines.push(payload.doctorHint.trim());
   }
   return lines.join("\n");
-=======
-  if (payload.message?.trim()) {
-    return payload.message.trim();
-  }
-  return summarizeRestartSentinel(payload);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function summarizeRestartSentinel(payload: RestartSentinelPayload): string {

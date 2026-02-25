@@ -238,7 +238,6 @@ export async function handleDiscordMessagingAction(
       const to = readStringParam(params, "to", { required: true });
       const asVoice = params.asVoice === true;
       const silent = params.silent === true;
-<<<<<<< HEAD
       const rawComponents = params.components;
       const componentSpec =
         rawComponents && typeof rawComponents === "object" && !Array.isArray(rawComponents)
@@ -250,17 +249,12 @@ export async function handleDiscordMessagingAction(
           : undefined;
       const content = readStringParam(params, "content", {
         required: !asVoice && !componentSpec && !components,
-=======
-      const content = readStringParam(params, "content", {
-        required: !asVoice,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         allowEmpty: true,
       });
       const mediaUrl =
         readStringParam(params, "mediaUrl", { trim: false }) ??
         readStringParam(params, "path", { trim: false }) ??
         readStringParam(params, "filePath", { trim: false });
-<<<<<<< HEAD
       const filename = readStringParam(params, "filename");
       const replyTo = readStringParam(params, "replyTo");
       const rawEmbeds = params.embeds;
@@ -292,21 +286,12 @@ export async function handleDiscordMessagingAction(
         });
         return jsonResult({ ok: true, result, components: true });
       }
-=======
-      const replyTo = readStringParam(params, "replyTo");
-      const embeds =
-        Array.isArray(params.embeds) && params.embeds.length > 0 ? params.embeds : undefined;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       // Handle voice message sending
       if (asVoice) {
         if (!mediaUrl) {
           throw new Error(
-<<<<<<< HEAD
             "Voice messages require a media file reference (mediaUrl, path, or filePath).",
-=======
-            "Voice messages require a local media file path (mediaUrl, path, or filePath).",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           );
         }
         if (content && content.trim()) {
@@ -314,15 +299,7 @@ export async function handleDiscordMessagingAction(
             "Voice messages cannot include text content (Discord limitation). Remove the content parameter.",
           );
         }
-<<<<<<< HEAD
         assertMediaNotDataUrl(mediaUrl);
-=======
-        if (mediaUrl.startsWith("http://") || mediaUrl.startsWith("https://")) {
-          throw new Error(
-            "Voice messages require a local file path, not a URL. Download the file first.",
-          );
-        }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         const result = await sendVoiceMessageDiscord(to, mediaUrl, {
           ...(accountId ? { accountId } : {}),
           replyTo,

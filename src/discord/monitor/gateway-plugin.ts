@@ -1,5 +1,4 @@
 import { GatewayIntents, GatewayPlugin } from "@buape/carbon/gateway";
-<<<<<<< HEAD
 import type { APIGatewayBotInfo } from "discord-api-types/v10";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ProxyAgent, fetch as undiciFetch } from "undici";
@@ -7,13 +6,6 @@ import WebSocket from "ws";
 import type { DiscordAccountConfig } from "../../config/types.js";
 import { danger } from "../../globals.js";
 import type { RuntimeEnv } from "../../runtime.js";
-=======
-import { HttpsProxyAgent } from "https-proxy-agent";
-import WebSocket from "ws";
-import type { DiscordAccountConfig } from "../../config/types.js";
-import type { RuntimeEnv } from "../../runtime.js";
-import { danger } from "../../globals.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function resolveDiscordGatewayIntents(
   intentsConfig?: import("../../config/types.discord.js").DiscordIntentsConfig,
@@ -24,12 +16,8 @@ export function resolveDiscordGatewayIntents(
     GatewayIntents.MessageContent |
     GatewayIntents.DirectMessages |
     GatewayIntents.GuildMessageReactions |
-<<<<<<< HEAD
     GatewayIntents.DirectMessageReactions |
     GatewayIntents.GuildVoiceStates;
-=======
-    GatewayIntents.DirectMessageReactions;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (intentsConfig?.presence) {
     intents |= GatewayIntents.GuildPresences;
   }
@@ -56,12 +44,8 @@ export function createDiscordGatewayPlugin(params: {
   }
 
   try {
-<<<<<<< HEAD
     const wsAgent = new HttpsProxyAgent<string>(proxy);
     const fetchAgent = new ProxyAgent(proxy);
-=======
-    const agent = new HttpsProxyAgent<string>(proxy);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     params.runtime.log?.("discord: gateway proxy enabled");
 
@@ -70,7 +54,6 @@ export function createDiscordGatewayPlugin(params: {
         super(options);
       }
 
-<<<<<<< HEAD
       override async registerClient(client: Parameters<GatewayPlugin["registerClient"]>[0]) {
         if (!this.gatewayInfo) {
           try {
@@ -93,10 +76,6 @@ export function createDiscordGatewayPlugin(params: {
 
       override createWebSocket(url: string) {
         return new WebSocket(url, { agent: wsAgent });
-=======
-      createWebSocket(url: string) {
-        return new WebSocket(url, { agent });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
     }
 

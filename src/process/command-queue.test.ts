@@ -137,13 +137,6 @@ describe("command queue", () => {
   it("getActiveTaskCount returns count of currently executing tasks", async () => {
     const { task, release } = enqueueBlockedMainTask();
 
-<<<<<<< HEAD
-=======
-    const task = enqueueCommand(async () => {
-      await blocker;
-    });
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(getActiveTaskCount()).toBe(1);
 
     release();
@@ -163,7 +156,6 @@ describe("command queue", () => {
     try {
       const drainPromise = waitForActiveTasks(5000);
 
-<<<<<<< HEAD
       await vi.advanceTimersByTimeAsync(50);
       release();
       await vi.advanceTimersByTimeAsync(50);
@@ -185,23 +177,6 @@ describe("command queue", () => {
 
     release();
     await task;
-=======
-    vi.useFakeTimers();
-    try {
-      const drainPromise = waitForActiveTasks(5000);
-
-      // Resolve the blocker after a short delay.
-      setTimeout(() => resolve1(), 10);
-      await vi.advanceTimersByTimeAsync(100);
-
-      const { drained } = await drainPromise;
-      expect(drained).toBe(true);
-
-      await task;
-    } finally {
-      vi.useRealTimers();
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("waitForActiveTasks returns drained=false on timeout", async () => {
@@ -235,7 +210,6 @@ describe("command queue", () => {
       await blocker;
     });
 
-<<<<<<< HEAD
     await vi.waitFor(() => {
       expect(getActiveTaskCount()).toBeGreaterThanOrEqual(1);
     });
@@ -246,46 +220,6 @@ describe("command queue", () => {
       task2Ran = true;
     });
 
-=======
-    vi.useFakeTimers();
-    try {
-      const waitPromise = waitForActiveTasks(50);
-      await vi.advanceTimersByTimeAsync(100);
-      const { drained } = await waitPromise;
-      expect(drained).toBe(false);
-
-      resolve1();
-      await task;
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("resetAllLanes drains queued work immediately after reset", async () => {
-    const lane = `reset-test-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setCommandLaneConcurrency(lane, 1);
-
-    let resolve1!: () => void;
-    const blocker = new Promise<void>((r) => {
-      resolve1 = r;
-    });
-
-    // Start a task that blocks the lane
-    const task1 = enqueueCommandInLane(lane, async () => {
-      await blocker;
-    });
-
-    await vi.waitFor(() => {
-      expect(getActiveTaskCount()).toBeGreaterThanOrEqual(1);
-    });
-
-    // Enqueue another task — it should be stuck behind the blocker
-    let task2Ran = false;
-    const task2 = enqueueCommandInLane(lane, async () => {
-      task2Ran = true;
-    });
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await vi.waitFor(() => {
       expect(getQueueSize(lane)).toBeGreaterThanOrEqual(2);
     });
@@ -338,21 +272,8 @@ describe("command queue", () => {
   });
 
   it("clearCommandLane rejects pending promises", async () => {
-<<<<<<< HEAD
     // First task blocks the lane.
     const { task: first, release } = enqueueBlockedMainTask(async () => "first");
-=======
-    let resolve1!: () => void;
-    const blocker = new Promise<void>((r) => {
-      resolve1 = r;
-    });
-
-    // First task blocks the lane.
-    const first = enqueueCommand(async () => {
-      await blocker;
-      return "first";
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     // Second task is queued behind the first.
     const second = enqueueCommand(async () => "second");
@@ -364,11 +285,7 @@ describe("command queue", () => {
     await expect(second).rejects.toBeInstanceOf(CommandLaneClearedError);
 
     // Let the active task finish normally.
-<<<<<<< HEAD
     release();
-=======
-    resolve1();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await expect(first).resolves.toBe("first");
   });
 });

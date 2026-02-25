@@ -200,25 +200,10 @@ describe("CallManager", () => {
   });
 
   it("rejects duplicate inbound events with a single hangup call", () => {
-<<<<<<< HEAD
     const { manager, provider } = createManagerHarness({
       inboundPolicy: "disabled",
     });
 
-=======
-    const config = VoiceCallConfigSchema.parse({
-      enabled: true,
-      provider: "plivo",
-      fromNumber: "+15550000000",
-      inboundPolicy: "disabled",
-    });
-
-    const storePath = path.join(os.tmpdir(), `openclaw-voice-call-test-${Date.now()}`);
-    const provider = new FakeProvider();
-    const manager = new CallManager(config, storePath);
-    manager.initialize(provider, "https://example.com/voice/webhook");
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     manager.processEvent({
       id: "evt-reject-init",
       type: "call.initiated",

@@ -5,10 +5,7 @@ import { describe, expect, it } from "vitest";
 import "./test-helpers/fast-coding-tools.js";
 import { createOpenClawCodingTools } from "./pi-tools.js";
 import { createHostSandboxFsBridge } from "./test-helpers/host-sandbox-fs-bridge.js";
-<<<<<<< HEAD:src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.test.ts
 import { createPiToolsSandboxContext } from "./test-helpers/pi-tools-sandbox-context.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.e2e.test.ts
 
 const defaultTools = createOpenClawCodingTools();
 const tinyPngBuffer = Buffer.from(
@@ -61,34 +58,11 @@ describe("createOpenClawCodingTools", () => {
   });
   it("filters tools by sandbox policy", () => {
     const sandboxDir = path.join(os.tmpdir(), "moltbot-sandbox");
-<<<<<<< HEAD:src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.test.ts
     const sandbox = createPiToolsSandboxContext({
       workspaceDir: sandboxDir,
       agentWorkspaceDir: path.join(os.tmpdir(), "moltbot-workspace"),
       workspaceAccess: "none" as const,
       fsBridge: createHostSandboxFsBridge(sandboxDir),
-=======
-    const sandbox = {
-      enabled: true,
-      sessionKey: "sandbox:test",
-      workspaceDir: sandboxDir,
-      agentWorkspaceDir: path.join(os.tmpdir(), "moltbot-workspace"),
-      workspaceAccess: "none",
-      containerName: "openclaw-sbx-test",
-      containerWorkdir: "/workspace",
-      fsBridge: createHostSandboxFsBridge(sandboxDir),
-      docker: {
-        image: "openclaw-sandbox:bookworm-slim",
-        containerPrefix: "openclaw-sbx-",
-        workdir: "/workspace",
-        readOnlyRoot: true,
-        tmpfs: [],
-        network: "none",
-        user: "1000:1000",
-        capDrop: ["ALL"],
-        env: { LANG: "C.UTF-8" },
-      },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.e2e.test.ts
       tools: {
         allow: ["bash"],
         deny: ["browser"],
@@ -101,34 +75,11 @@ describe("createOpenClawCodingTools", () => {
   });
   it("hard-disables write/edit when sandbox workspaceAccess is ro", () => {
     const sandboxDir = path.join(os.tmpdir(), "moltbot-sandbox");
-<<<<<<< HEAD:src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.test.ts
     const sandbox = createPiToolsSandboxContext({
       workspaceDir: sandboxDir,
       agentWorkspaceDir: path.join(os.tmpdir(), "moltbot-workspace"),
       workspaceAccess: "ro" as const,
       fsBridge: createHostSandboxFsBridge(sandboxDir),
-=======
-    const sandbox = {
-      enabled: true,
-      sessionKey: "sandbox:test",
-      workspaceDir: sandboxDir,
-      agentWorkspaceDir: path.join(os.tmpdir(), "moltbot-workspace"),
-      workspaceAccess: "ro",
-      containerName: "openclaw-sbx-test",
-      containerWorkdir: "/workspace",
-      fsBridge: createHostSandboxFsBridge(sandboxDir),
-      docker: {
-        image: "openclaw-sandbox:bookworm-slim",
-        containerPrefix: "openclaw-sbx-",
-        workdir: "/workspace",
-        readOnlyRoot: true,
-        tmpfs: [],
-        network: "none",
-        user: "1000:1000",
-        capDrop: ["ALL"],
-        env: { LANG: "C.UTF-8" },
-      },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.e2e.test.ts
       tools: {
         allow: ["read", "write", "edit"],
         deny: [],

@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import { extractHandleFromChatGuid, normalizeBlueBubblesHandle } from "./targets.js";
 import type { BlueBubblesAttachment } from "./types.js";
-=======
-import type { BlueBubblesAttachment } from "./types.js";
-import { normalizeBlueBubblesHandle } from "./targets.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -203,7 +198,6 @@ function readFirstChatRecord(message: Record<string, unknown>): Record<string, u
   return asRecord(first);
 }
 
-<<<<<<< HEAD
 function extractSenderInfo(message: Record<string, unknown>): {
   senderId: string;
   senderName?: string;
@@ -306,8 +300,6 @@ function extractChatContext(message: Record<string, unknown>): {
   };
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function normalizeParticipantEntry(entry: unknown): BlueBubblesParticipant | null {
   if (typeof entry === "string" || typeof entry === "number") {
     const raw = String(entry).trim();
@@ -637,7 +629,6 @@ export function parseTapbackText(params: {
 }
 
 function extractMessagePayload(payload: Record<string, unknown>): Record<string, unknown> | null {
-<<<<<<< HEAD
   const parseRecord = (value: unknown): Record<string, unknown> | null => {
     const record = asRecord(value);
     if (record) {
@@ -674,20 +665,6 @@ function extractMessagePayload(payload: Record<string, unknown>): Record<string,
     return message;
   }
   return null;
-=======
-  const dataRaw = payload.data ?? payload.payload ?? payload.event;
-  const data =
-    asRecord(dataRaw) ??
-    (typeof dataRaw === "string" ? (asRecord(JSON.parse(dataRaw)) ?? null) : null);
-  const messageRaw = payload.message ?? data?.message ?? data;
-  const message =
-    asRecord(messageRaw) ??
-    (typeof messageRaw === "string" ? (asRecord(JSON.parse(messageRaw)) ?? null) : null);
-  if (!message) {
-    return null;
-  }
-  return message;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function normalizeWebhookMessage(
@@ -704,91 +681,10 @@ export function normalizeWebhookMessage(
     readString(message, "subject") ??
     "";
 
-<<<<<<< HEAD
   const { senderId, senderName } = extractSenderInfo(message);
   const { chatGuid, chatIdentifier, chatId, chatName, isGroup, participants } =
     extractChatContext(message);
   const normalizedParticipants = normalizeParticipantList(participants);
-=======
-  const handleValue = message.handle ?? message.sender;
-  const handle =
-    asRecord(handleValue) ?? (typeof handleValue === "string" ? { address: handleValue } : null);
-  const senderId =
-    readString(handle, "address") ??
-    readString(handle, "handle") ??
-    readString(handle, "id") ??
-    readString(message, "senderId") ??
-    readString(message, "sender") ??
-    readString(message, "from") ??
-    "";
-
-  const senderName =
-    readString(handle, "displayName") ??
-    readString(handle, "name") ??
-    readString(message, "senderName") ??
-    undefined;
-
-  const chat = asRecord(message.chat) ?? asRecord(message.conversation) ?? null;
-  const chatFromList = readFirstChatRecord(message);
-  const chatGuid =
-    readString(message, "chatGuid") ??
-    readString(message, "chat_guid") ??
-    readString(chat, "chatGuid") ??
-    readString(chat, "chat_guid") ??
-    readString(chat, "guid") ??
-    readString(chatFromList, "chatGuid") ??
-    readString(chatFromList, "chat_guid") ??
-    readString(chatFromList, "guid");
-  const chatIdentifier =
-    readString(message, "chatIdentifier") ??
-    readString(message, "chat_identifier") ??
-    readString(chat, "chatIdentifier") ??
-    readString(chat, "chat_identifier") ??
-    readString(chat, "identifier") ??
-    readString(chatFromList, "chatIdentifier") ??
-    readString(chatFromList, "chat_identifier") ??
-    readString(chatFromList, "identifier") ??
-    extractChatIdentifierFromChatGuid(chatGuid);
-  const chatId =
-    readNumberLike(message, "chatId") ??
-    readNumberLike(message, "chat_id") ??
-    readNumberLike(chat, "chatId") ??
-    readNumberLike(chat, "chat_id") ??
-    readNumberLike(chat, "id") ??
-    readNumberLike(chatFromList, "chatId") ??
-    readNumberLike(chatFromList, "chat_id") ??
-    readNumberLike(chatFromList, "id");
-  const chatName =
-    readString(message, "chatName") ??
-    readString(chat, "displayName") ??
-    readString(chat, "name") ??
-    readString(chatFromList, "displayName") ??
-    readString(chatFromList, "name") ??
-    undefined;
-
-  const chatParticipants = chat ? chat["participants"] : undefined;
-  const messageParticipants = message["participants"];
-  const chatsParticipants = chatFromList ? chatFromList["participants"] : undefined;
-  const participants = Array.isArray(chatParticipants)
-    ? chatParticipants
-    : Array.isArray(messageParticipants)
-      ? messageParticipants
-      : Array.isArray(chatsParticipants)
-        ? chatsParticipants
-        : [];
-  const normalizedParticipants = normalizeParticipantList(participants);
-  const participantsCount = participants.length;
-  const groupFromChatGuid = resolveGroupFlagFromChatGuid(chatGuid);
-  const explicitIsGroup =
-    readBoolean(message, "isGroup") ??
-    readBoolean(message, "is_group") ??
-    readBoolean(chat, "isGroup") ??
-    readBoolean(message, "group");
-  const isGroup =
-    typeof groupFromChatGuid === "boolean"
-      ? groupFromChatGuid
-      : (explicitIsGroup ?? participantsCount > 2);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const fromMe = readBoolean(message, "isFromMe") ?? readBoolean(message, "is_from_me");
   const messageId =
@@ -828,14 +724,10 @@ export function normalizeWebhookMessage(
         : timestampRaw * 1000
       : undefined;
 
-<<<<<<< HEAD
   // BlueBubbles may omit `handle` in webhook payloads; for DM chat GUIDs we can still infer sender.
   const senderFallbackFromChatGuid =
     !senderId && !isGroup && chatGuid ? extractHandleFromChatGuid(chatGuid) : null;
   const normalizedSender = normalizeBlueBubblesHandle(senderId || senderFallbackFromChatGuid || "");
-=======
-  const normalizedSender = normalizeBlueBubblesHandle(senderId);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (!normalizedSender) {
     return null;
   }
@@ -894,87 +786,8 @@ export function normalizeWebhookReaction(
   const emoji = (associatedEmoji?.trim() || mapping?.emoji) ?? `reaction:${associatedType}`;
   const action = mapping?.action ?? resolveTapbackActionHint(associatedType) ?? "added";
 
-<<<<<<< HEAD
   const { senderId, senderName } = extractSenderInfo(message);
   const { chatGuid, chatIdentifier, chatId, chatName, isGroup } = extractChatContext(message);
-=======
-  const handleValue = message.handle ?? message.sender;
-  const handle =
-    asRecord(handleValue) ?? (typeof handleValue === "string" ? { address: handleValue } : null);
-  const senderId =
-    readString(handle, "address") ??
-    readString(handle, "handle") ??
-    readString(handle, "id") ??
-    readString(message, "senderId") ??
-    readString(message, "sender") ??
-    readString(message, "from") ??
-    "";
-  const senderName =
-    readString(handle, "displayName") ??
-    readString(handle, "name") ??
-    readString(message, "senderName") ??
-    undefined;
-
-  const chat = asRecord(message.chat) ?? asRecord(message.conversation) ?? null;
-  const chatFromList = readFirstChatRecord(message);
-  const chatGuid =
-    readString(message, "chatGuid") ??
-    readString(message, "chat_guid") ??
-    readString(chat, "chatGuid") ??
-    readString(chat, "chat_guid") ??
-    readString(chat, "guid") ??
-    readString(chatFromList, "chatGuid") ??
-    readString(chatFromList, "chat_guid") ??
-    readString(chatFromList, "guid");
-  const chatIdentifier =
-    readString(message, "chatIdentifier") ??
-    readString(message, "chat_identifier") ??
-    readString(chat, "chatIdentifier") ??
-    readString(chat, "chat_identifier") ??
-    readString(chat, "identifier") ??
-    readString(chatFromList, "chatIdentifier") ??
-    readString(chatFromList, "chat_identifier") ??
-    readString(chatFromList, "identifier") ??
-    extractChatIdentifierFromChatGuid(chatGuid);
-  const chatId =
-    readNumberLike(message, "chatId") ??
-    readNumberLike(message, "chat_id") ??
-    readNumberLike(chat, "chatId") ??
-    readNumberLike(chat, "chat_id") ??
-    readNumberLike(chat, "id") ??
-    readNumberLike(chatFromList, "chatId") ??
-    readNumberLike(chatFromList, "chat_id") ??
-    readNumberLike(chatFromList, "id");
-  const chatName =
-    readString(message, "chatName") ??
-    readString(chat, "displayName") ??
-    readString(chat, "name") ??
-    readString(chatFromList, "displayName") ??
-    readString(chatFromList, "name") ??
-    undefined;
-
-  const chatParticipants = chat ? chat["participants"] : undefined;
-  const messageParticipants = message["participants"];
-  const chatsParticipants = chatFromList ? chatFromList["participants"] : undefined;
-  const participants = Array.isArray(chatParticipants)
-    ? chatParticipants
-    : Array.isArray(messageParticipants)
-      ? messageParticipants
-      : Array.isArray(chatsParticipants)
-        ? chatsParticipants
-        : [];
-  const participantsCount = participants.length;
-  const groupFromChatGuid = resolveGroupFlagFromChatGuid(chatGuid);
-  const explicitIsGroup =
-    readBoolean(message, "isGroup") ??
-    readBoolean(message, "is_group") ??
-    readBoolean(chat, "isGroup") ??
-    readBoolean(message, "group");
-  const isGroup =
-    typeof groupFromChatGuid === "boolean"
-      ? groupFromChatGuid
-      : (explicitIsGroup ?? participantsCount > 2);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const fromMe = readBoolean(message, "isFromMe") ?? readBoolean(message, "is_from_me");
   const timestampRaw =
@@ -988,13 +801,9 @@ export function normalizeWebhookReaction(
         : timestampRaw * 1000
       : undefined;
 
-<<<<<<< HEAD
   const senderFallbackFromChatGuid =
     !senderId && !isGroup && chatGuid ? extractHandleFromChatGuid(chatGuid) : null;
   const normalizedSender = normalizeBlueBubblesHandle(senderId || senderFallbackFromChatGuid || "");
-=======
-  const normalizedSender = normalizeBlueBubblesHandle(senderId);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (!normalizedSender) {
     return null;
   }

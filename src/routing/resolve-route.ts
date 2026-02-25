@@ -164,7 +164,6 @@ type BindingScope = {
   memberRoleIds: Set<string>;
 };
 
-<<<<<<< HEAD
 type EvaluatedBindingsCache = {
   bindingsRef: OpenClawConfig["bindings"];
   byChannelAccount: Map<string, EvaluatedBinding[]>;
@@ -222,14 +221,6 @@ function normalizePeerConstraint(
   if (!peer) {
     return { state: "none" };
   }
-=======
-function normalizePeerConstraint(
-  peer: { kind?: string; id?: string } | undefined,
-): NormalizedPeerConstraint {
-  if (!peer) {
-    return { state: "none" };
-  }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const kind = normalizeChatType(peer.kind);
   const id = normalizeId(peer.id);
   if (!kind || !id) {
@@ -311,22 +302,7 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   const memberRoleIds = input.memberRoleIds ?? [];
   const memberRoleIdSet = new Set(memberRoleIds);
 
-<<<<<<< HEAD
   const bindings = getEvaluatedBindingsForChannelAccount(input.cfg, channel, accountId);
-=======
-  const bindings: EvaluatedBinding[] = listBindings(input.cfg).flatMap((binding) => {
-    if (!binding || typeof binding !== "object") {
-      return [];
-    }
-    if (!matchesChannel(binding.match, channel)) {
-      return [];
-    }
-    if (!matchesAccountId(binding.match?.accountId, accountId)) {
-      return [];
-    }
-    return [{ binding, match: normalizeBindingMatch(binding.match) }];
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   const dmScope = input.cfg.session?.dmScope ?? "main";
   const identityLinks = input.cfg.session?.identityLinks;
@@ -355,7 +331,6 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
     };
   };
 
-<<<<<<< HEAD
   const shouldLogDebug = shouldLogVerbose();
   const formatPeer = (value?: RoutePeer | null) =>
     value?.kind && value?.id ? `${value.kind}:${value.id}` : "none";
@@ -379,8 +354,6 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
       );
     }
   }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   // Thread parent inheritance: if peer (thread) didn't match, check parent peer binding
   const parentPeer = input.parentPeer
     ? {
@@ -459,12 +432,9 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
         }),
     );
     if (matched) {
-<<<<<<< HEAD
       if (shouldLogDebug) {
         logDebug(`[routing] match: matchedBy=${tier.matchedBy} agentId=${matched.binding.agentId}`);
       }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       return choose(matched.binding.agentId, tier.matchedBy);
     }
   }

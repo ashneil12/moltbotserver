@@ -79,7 +79,6 @@ export type ReadRequestBodyOptions = {
   encoding?: BufferEncoding;
 };
 
-<<<<<<< HEAD
 type RequestBodyLimitValues = {
   maxBytes: number;
   timeoutMs: number;
@@ -89,12 +88,6 @@ function resolveRequestBodyLimitValues(options: {
   maxBytes: number;
   timeoutMs?: number;
 }): RequestBodyLimitValues {
-=======
-export async function readRequestBodyWithLimit(
-  req: IncomingMessage,
-  options: ReadRequestBodyOptions,
-): Promise<string> {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const maxBytes = Number.isFinite(options.maxBytes)
     ? Math.max(1, Math.floor(options.maxBytes))
     : 1;
@@ -102,7 +95,6 @@ export async function readRequestBodyWithLimit(
     typeof options.timeoutMs === "number" && Number.isFinite(options.timeoutMs)
       ? Math.max(1, Math.floor(options.timeoutMs))
       : DEFAULT_WEBHOOK_BODY_TIMEOUT_MS;
-<<<<<<< HEAD
   return { maxBytes, timeoutMs };
 }
 
@@ -111,21 +103,15 @@ export async function readRequestBodyWithLimit(
   options: ReadRequestBodyOptions,
 ): Promise<string> {
   const { maxBytes, timeoutMs } = resolveRequestBodyLimitValues(options);
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const encoding = options.encoding ?? "utf-8";
 
   const declaredLength = parseContentLengthHeader(req);
   if (declaredLength !== null && declaredLength > maxBytes) {
     const error = new RequestBodyLimitError({ code: "PAYLOAD_TOO_LARGE" });
     if (!req.destroyed) {
-<<<<<<< HEAD
       // Limit violations are expected user input; destroying with an Error causes
       // an async 'error' event which can crash the process if no listener remains.
       req.destroy();
-=======
-      req.destroy(error);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     throw error;
   }
@@ -160,11 +146,7 @@ export async function readRequestBodyWithLimit(
     const timer = setTimeout(() => {
       const error = new RequestBodyLimitError({ code: "REQUEST_BODY_TIMEOUT" });
       if (!req.destroyed) {
-<<<<<<< HEAD
         req.destroy();
-=======
-        req.destroy(error);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
       fail(error);
     }, timeoutMs);
@@ -178,11 +160,7 @@ export async function readRequestBodyWithLimit(
       if (totalBytes > maxBytes) {
         const error = new RequestBodyLimitError({ code: "PAYLOAD_TOO_LARGE" });
         if (!req.destroyed) {
-<<<<<<< HEAD
           req.destroy();
-=======
-          req.destroy(error);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         }
         fail(error);
         return;
@@ -276,17 +254,7 @@ export function installRequestBodyLimitGuard(
   res: ServerResponse,
   options: RequestBodyLimitGuardOptions,
 ): RequestBodyLimitGuard {
-<<<<<<< HEAD
   const { maxBytes, timeoutMs } = resolveRequestBodyLimitValues(options);
-=======
-  const maxBytes = Number.isFinite(options.maxBytes)
-    ? Math.max(1, Math.floor(options.maxBytes))
-    : 1;
-  const timeoutMs =
-    typeof options.timeoutMs === "number" && Number.isFinite(options.timeoutMs)
-      ? Math.max(1, Math.floor(options.timeoutMs))
-      : DEFAULT_WEBHOOK_BODY_TIMEOUT_MS;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const responseFormat = options.responseFormat ?? "json";
   const customText = options.responseText ?? {};
 
@@ -335,13 +303,9 @@ export function installRequestBodyLimitGuard(
     finish();
     respond(error);
     if (!req.destroyed) {
-<<<<<<< HEAD
       // Limit violations are expected user input; destroying with an Error causes
       // an async 'error' event which can crash the process if no listener remains.
       req.destroy();
-=======
-      req.destroy(error);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
   };
 

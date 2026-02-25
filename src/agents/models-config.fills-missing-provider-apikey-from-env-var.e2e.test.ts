@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-<<<<<<< HEAD:src/agents/models-config.fills-missing-provider-apikey-from-env-var.test.ts
 import { describe, expect, it } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 import { validateConfigObject } from "../config/validation.js";
@@ -12,13 +11,6 @@ import {
 } from "./models-config.e2e-harness.js";
 import { ensureOpenClawModelsJson } from "./models-config.js";
 import { readGeneratedModelsJson } from "./models-config.test-utils.js";
-=======
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
-import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
-import { resolveOpenClawAgentDir } from "./agent-paths.js";
-import { ensureOpenClawModelsJson } from "./models-config.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/models-config.fills-missing-provider-apikey-from-env-var.e2e.test.ts
 
 installModelsConfigTestHooks();
 

@@ -1,10 +1,5 @@
 import { randomUUID } from "node:crypto";
-<<<<<<< HEAD
 import type { IncomingMessage, ServerResponse } from "node:http";
-=======
-import type { AuthRateLimiter } from "./auth-rate-limit.js";
-import { buildHistoryContextFromEntries, type HistoryEntry } from "../auto-reply/reply/history.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { createDefaultDeps } from "../cli/deps.js";
 import { agentCommand } from "../commands/agent.js";
 import { emitAgentEvent, onAgentEvent } from "../infra/agent-events.js";
@@ -12,7 +7,6 @@ import { logWarn } from "../logger.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveAssistantStreamDeltaText } from "./agent-event-assistant-text.js";
 import {
-<<<<<<< HEAD
   buildAgentMessageFromConversationEntries,
   type ConversationEntry,
 } from "./agent-prompt.js";
@@ -21,25 +15,12 @@ import type { ResolvedGatewayAuth } from "./auth.js";
 import { sendJson, setSseHeaders, writeDone } from "./http-common.js";
 import { handleGatewayPostJsonEndpoint } from "./http-endpoint-helpers.js";
 import { resolveAgentIdForRequest, resolveSessionKey } from "./http-utils.js";
-=======
-  readJsonBodyOrError,
-  sendGatewayAuthFailure,
-  sendJson,
-  sendMethodNotAllowed,
-  setSseHeaders,
-  writeDone,
-} from "./http-common.js";
-import { getBearerToken, resolveAgentIdForRequest, resolveSessionKey } from "./http-utils.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 type OpenAiHttpOptions = {
   auth: ResolvedGatewayAuth;
   maxBodyBytes?: number;
   trustedProxies?: string[];
-<<<<<<< HEAD
   allowRealIpFallback?: boolean;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   rateLimiter?: AuthRateLimiter;
 };
 
@@ -238,29 +219,7 @@ export async function handleOpenAiHttpRequest(
     return true;
   }
 
-<<<<<<< HEAD
   const payload = coerceRequest(handled.body);
-=======
-  const token = getBearerToken(req);
-  const authResult = await authorizeGatewayConnect({
-    auth: opts.auth,
-    connectAuth: { token, password: token },
-    req,
-    trustedProxies: opts.trustedProxies,
-    rateLimiter: opts.rateLimiter,
-  });
-  if (!authResult.ok) {
-    sendGatewayAuthFailure(res, authResult);
-    return true;
-  }
-
-  const body = await readJsonBodyOrError(req, res, opts.maxBodyBytes ?? 1024 * 1024);
-  if (body === undefined) {
-    return true;
-  }
-
-  const payload = coerceRequest(body);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const stream = Boolean(payload.stream);
   const model = typeof payload.model === "string" ? payload.model : "openclaw";
   const user = typeof payload.user === "string" ? payload.user : undefined;
@@ -398,18 +357,8 @@ export async function handleOpenAiHttpRequest(
       writeAssistantContentChunk(res, {
         runId,
         model,
-<<<<<<< HEAD
         content: "Error: internal error",
         finishReason: "stop",
-=======
-        choices: [
-          {
-            index: 0,
-            delta: { content: "Error: internal error" },
-            finish_reason: "stop",
-          },
-        ],
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       });
       emitAgentEvent({
         runId,

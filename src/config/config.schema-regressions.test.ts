@@ -36,7 +36,6 @@ describe("config schema regressions", () => {
 
     expect(res.ok).toBe(true);
   });
-<<<<<<< HEAD
 
   it('accepts memorySearch provider "mistral"', () => {
     const res = validateConfigObject({
@@ -131,6 +130,4 @@ describe("config schema regressions", () => {
       expect(res.issues[0]?.path).toBe("channels.imessage.attachmentRoots.0");
     }
   });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

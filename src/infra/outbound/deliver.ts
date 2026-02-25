@@ -29,11 +29,8 @@ import type { sendMessageTelegram } from "../../telegram/send.js";
 import type { sendMessageWhatsApp } from "../../web/outbound.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
-<<<<<<< HEAD
 import type { OutboundIdentity } from "./identity.js";
 import type { NormalizedOutboundPayload } from "./payloads.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { normalizeReplyPayloadsForDelivery } from "./payloads.js";
 import type { OutboundChannel } from "./targets.js";
 
@@ -116,7 +113,6 @@ type ChannelHandlerParams = {
   deps?: OutboundSendDeps;
   gifPlayback?: boolean;
   silent?: boolean;
-<<<<<<< HEAD
   mediaLocalRoots?: readonly string[];
 };
 
@@ -124,49 +120,15 @@ type ChannelHandlerParams = {
 async function createChannelHandler(params: ChannelHandlerParams): Promise<ChannelHandler> {
   const outbound = await loadChannelOutboundAdapter(params.channel);
   const handler = createPluginHandler({ ...params, outbound });
-=======
-}): Promise<ChannelHandler> {
-  const outbound = await loadChannelOutboundAdapter(params.channel);
-  if (!outbound?.sendText || !outbound?.sendMedia) {
-    throw new Error(`Outbound not configured for channel: ${params.channel}`);
-  }
-  const handler = createPluginHandler({
-    outbound,
-    cfg: params.cfg,
-    channel: params.channel,
-    to: params.to,
-    accountId: params.accountId,
-    replyToId: params.replyToId,
-    threadId: params.threadId,
-    deps: params.deps,
-    gifPlayback: params.gifPlayback,
-    silent: params.silent,
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (!handler) {
     throw new Error(`Outbound not configured for channel: ${params.channel}`);
   }
   return handler;
 }
 
-<<<<<<< HEAD
 function createPluginHandler(
   params: ChannelHandlerParams & { outbound?: ChannelOutboundAdapter },
 ): ChannelHandler | null {
-=======
-function createPluginHandler(params: {
-  outbound?: ChannelOutboundAdapter;
-  cfg: OpenClawConfig;
-  channel: Exclude<OutboundChannel, "none">;
-  to: string;
-  accountId?: string;
-  replyToId?: string | null;
-  threadId?: string | number | null;
-  deps?: OutboundSendDeps;
-  gifPlayback?: boolean;
-  silent?: boolean;
-}): ChannelHandler | null {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const outbound = params.outbound;
   if (!outbound?.sendText || !outbound?.sendMedia) {
     return null;
@@ -194,15 +156,6 @@ function createPluginHandler(params: {
             ...resolveCtx(overrides),
             text: payload.text ?? "",
             mediaUrl: payload.mediaUrl,
-<<<<<<< HEAD
-=======
-            accountId: params.accountId,
-            replyToId: params.replyToId,
-            threadId: params.threadId,
-            gifPlayback: params.gifPlayback,
-            deps: params.deps,
-            silent: params.silent,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             payload,
           })
       : undefined,
@@ -210,35 +163,16 @@ function createPluginHandler(params: {
       sendText({
         ...resolveCtx(overrides),
         text,
-<<<<<<< HEAD
-=======
-        accountId: params.accountId,
-        replyToId: params.replyToId,
-        threadId: params.threadId,
-        gifPlayback: params.gifPlayback,
-        deps: params.deps,
-        silent: params.silent,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }),
     sendMedia: async (caption, mediaUrl, overrides) =>
       sendMedia({
         ...resolveCtx(overrides),
         text: caption,
         mediaUrl,
-<<<<<<< HEAD
-=======
-        accountId: params.accountId,
-        replyToId: params.replyToId,
-        threadId: params.threadId,
-        gifPlayback: params.gifPlayback,
-        deps: params.deps,
-        silent: params.silent,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }),
   };
 }
 
-<<<<<<< HEAD
 function createChannelOutboundContextBase(
   params: ChannelHandlerParams,
 ): Omit<ChannelOutboundContext, "text" | "mediaUrl"> {
@@ -259,11 +193,6 @@ function createChannelOutboundContextBase(
 const isAbortError = (err: unknown): boolean => err instanceof Error && err.name === "AbortError";
 
 type DeliverOutboundPayloadsCoreParams = {
-=======
-const isAbortError = (err: unknown): boolean => err instanceof Error && err.name === "AbortError";
-
-export async function deliverOutboundPayloads(params: {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   cfg: OpenClawConfig;
   channel: Exclude<OutboundChannel, "none">;
   to: string;
@@ -287,7 +216,6 @@ export async function deliverOutboundPayloads(params: {
     mediaUrls?: string[];
   };
   silent?: boolean;
-<<<<<<< HEAD
   /** Session key for internal hook dispatch (when `mirror` is not needed). */
   sessionKey?: string;
 };
@@ -300,11 +228,6 @@ type DeliverOutboundPayloadsParams = DeliverOutboundPayloadsCoreParams & {
 export async function deliverOutboundPayloads(
   params: DeliverOutboundPayloadsParams,
 ): Promise<OutboundDeliveryResult[]> {
-=======
-  /** @internal Skip write-ahead queue (used by crash-recovery to avoid re-enqueueing). */
-  skipQueue?: boolean;
-}): Promise<OutboundDeliveryResult[]> {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const { channel, to, payloads } = params;
 
   // Write-ahead delivery queue: persist before sending, remove after success.
@@ -363,34 +286,9 @@ export async function deliverOutboundPayloads(
 }
 
 /** Core delivery logic (extracted for queue wrapper). */
-<<<<<<< HEAD
 async function deliverOutboundPayloadsCore(
   params: DeliverOutboundPayloadsCoreParams,
 ): Promise<OutboundDeliveryResult[]> {
-=======
-async function deliverOutboundPayloadsCore(params: {
-  cfg: OpenClawConfig;
-  channel: Exclude<OutboundChannel, "none">;
-  to: string;
-  accountId?: string;
-  payloads: ReplyPayload[];
-  replyToId?: string | null;
-  threadId?: string | number | null;
-  deps?: OutboundSendDeps;
-  gifPlayback?: boolean;
-  abortSignal?: AbortSignal;
-  bestEffort?: boolean;
-  onError?: (err: unknown, payload: NormalizedOutboundPayload) => void;
-  onPayload?: (payload: NormalizedOutboundPayload) => void;
-  mirror?: {
-    sessionKey: string;
-    agentId?: string;
-    text?: string;
-    mediaUrls?: string[];
-  };
-  silent?: boolean;
-}): Promise<OutboundDeliveryResult[]> {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const { cfg, channel, to, payloads } = params;
   const accountId = params.accountId;
   const deps = params.deps;
@@ -412,10 +310,7 @@ async function deliverOutboundPayloadsCore(params: {
     identity: params.identity,
     gifPlayback: params.gifPlayback,
     silent: params.silent,
-<<<<<<< HEAD
     mediaLocalRoots,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
   const textLimit = handler.chunker
     ? resolveTextChunkLimit(cfg, channel, accountId, {

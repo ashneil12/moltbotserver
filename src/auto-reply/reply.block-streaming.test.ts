@@ -1,12 +1,6 @@
 import fs from "node:fs/promises";
-<<<<<<< HEAD
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-=======
-import os from "node:os";
-import path from "node:path";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
@@ -31,7 +25,6 @@ vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
 
-<<<<<<< HEAD
 type GetReplyOptions = NonNullable<Parameters<typeof getReplyFromConfig>[1]>;
 
 function createEmbeddedReply(text: string): RunEmbeddedPiAgentReply {
@@ -91,60 +84,6 @@ async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
     await fs.mkdir(path.join(home, ".openclaw", "agents", "main", "sessions"), { recursive: true });
     return fn(home);
   });
-=======
-type HomeEnvSnapshot = {
-  HOME: string | undefined;
-  USERPROFILE: string | undefined;
-  HOMEDRIVE: string | undefined;
-  HOMEPATH: string | undefined;
-  OPENCLAW_STATE_DIR: string | undefined;
-};
-
-function snapshotHomeEnv(): HomeEnvSnapshot {
-  return {
-    HOME: process.env.HOME,
-    USERPROFILE: process.env.USERPROFILE,
-    HOMEDRIVE: process.env.HOMEDRIVE,
-    HOMEPATH: process.env.HOMEPATH,
-    OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
-  };
-}
-
-function restoreHomeEnv(snapshot: HomeEnvSnapshot) {
-  for (const [key, value] of Object.entries(snapshot)) {
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-}
-
-let fixtureRoot = "";
-let caseId = 0;
-
-async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
-  const home = path.join(fixtureRoot, `case-${++caseId}`);
-  await fs.mkdir(path.join(home, ".openclaw", "agents", "main", "sessions"), { recursive: true });
-  const envSnapshot = snapshotHomeEnv();
-  process.env.HOME = home;
-  process.env.USERPROFILE = home;
-  process.env.OPENCLAW_STATE_DIR = path.join(home, ".openclaw");
-
-  if (process.platform === "win32") {
-    const match = home.match(/^([A-Za-z]:)(.*)$/);
-    if (match) {
-      process.env.HOMEDRIVE = match[1];
-      process.env.HOMEPATH = match[2] || "\\";
-    }
-  }
-
-  try {
-    return await fn(home);
-  } finally {
-    restoreHomeEnv(envSnapshot);
-  }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 describe("block streaming", () => {
@@ -203,7 +142,6 @@ describe("block streaming", () => {
       };
       piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(impl);
 
-<<<<<<< HEAD
       const replyPromise = runTelegramReply({
         home,
         messageSid: "msg-123",
@@ -211,32 +149,6 @@ describe("block streaming", () => {
         onBlockReply,
         disableBlockStreaming: false,
       });
-=======
-      const replyPromise = getReplyFromConfig(
-        {
-          Body: "ping",
-          From: "+1004",
-          To: "+2000",
-          MessageSid: "msg-123",
-          Provider: "telegram",
-        },
-        {
-          onReplyStart,
-          onBlockReply,
-          disableBlockStreaming: false,
-        },
-        {
-          agents: {
-            defaults: {
-              model: "anthropic/claude-opus-4-5",
-              workspace: path.join(home, "openclaw"),
-            },
-          },
-          channels: { telegram: { allowFrom: ["*"] } },
-          session: { store: path.join(home, "sessions.json") },
-        },
-      );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       await onReplyStartCalled;
       releaseTyping?.();
@@ -244,7 +156,6 @@ describe("block streaming", () => {
       const res = await replyPromise;
       expect(res).toBeUndefined();
       expect(seen).toEqual(["first\n\nsecond"]);
-<<<<<<< HEAD
 
       const onBlockReplyStreamMode = vi.fn().mockResolvedValue(undefined);
       piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(async () =>
@@ -315,98 +226,6 @@ describe("block streaming", () => {
         text: "Result",
         mediaUrls: ["./image.png"],
       });
-=======
-
-      let sawAbort = false;
-      const onBlockReplyTimeout = vi.fn((_, context) => {
-        return new Promise<void>((resolve) => {
-          context?.abortSignal?.addEventListener(
-            "abort",
-            () => {
-              sawAbort = true;
-              resolve();
-            },
-            { once: true },
-          );
-        });
-      });
-
-      const timeoutImpl = async (params: RunEmbeddedPiAgentParams) => {
-        void params.onBlockReply?.({ text: "streamed" });
-        return {
-          payloads: [{ text: "final" }],
-          meta: {
-            durationMs: 5,
-            agentMeta: { sessionId: "s", provider: "p", model: "m" },
-          },
-        };
-      };
-      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(timeoutImpl);
-
-      const timeoutReplyPromise = getReplyFromConfig(
-        {
-          Body: "ping",
-          From: "+1004",
-          To: "+2000",
-          MessageSid: "msg-126",
-          Provider: "telegram",
-        },
-        {
-          onBlockReply: onBlockReplyTimeout,
-          blockReplyTimeoutMs: 1,
-          disableBlockStreaming: false,
-        },
-        {
-          agents: {
-            defaults: {
-              model: "anthropic/claude-opus-4-5",
-              workspace: path.join(home, "openclaw"),
-            },
-          },
-          channels: { telegram: { allowFrom: ["*"] } },
-          session: { store: path.join(home, "sessions.json") },
-        },
-      );
-
-      const timeoutRes = await timeoutReplyPromise;
-      expect(timeoutRes).toMatchObject({ text: "final" });
-      expect(sawAbort).toBe(true);
-
-      const onBlockReplyStreamMode = vi.fn().mockResolvedValue(undefined);
-      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(async () => ({
-        payloads: [{ text: "final" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
-      }));
-
-      const resStreamMode = await getReplyFromConfig(
-        {
-          Body: "ping",
-          From: "+1004",
-          To: "+2000",
-          MessageSid: "msg-127",
-          Provider: "telegram",
-        },
-        {
-          onBlockReply: onBlockReplyStreamMode,
-        },
-        {
-          agents: {
-            defaults: {
-              model: "anthropic/claude-opus-4-5",
-              workspace: path.join(home, "openclaw"),
-            },
-          },
-          channels: { telegram: { allowFrom: ["*"], streamMode: "block" } },
-          session: { store: path.join(home, "sessions.json") },
-        },
-      );
-
-      expect(resStreamMode?.text).toBe("final");
-      expect(onBlockReplyStreamMode).not.toHaveBeenCalled();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   });
 });

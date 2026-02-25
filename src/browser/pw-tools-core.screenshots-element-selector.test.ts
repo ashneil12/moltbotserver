@@ -6,39 +6,8 @@ import {
   setPwToolsCoreCurrentRefLocator,
 } from "./pw-tools-core.test-harness.js";
 
-<<<<<<< HEAD
 installPwToolsCoreTestHooks();
 const sessionMocks = getPwToolsCoreSessionMocks();
-=======
-let currentPage: Record<string, unknown> | null = null;
-let currentRefLocator: Record<string, unknown> | null = null;
-let pageState: {
-  console: unknown[];
-  armIdUpload: number;
-  armIdDialog: number;
-  armIdDownload: number;
-};
-
-const sessionMocks = vi.hoisted(() => ({
-  getPageForTargetId: vi.fn(async () => {
-    if (!currentPage) {
-      throw new Error("missing page");
-    }
-    return currentPage;
-  }),
-  ensurePageState: vi.fn(() => pageState),
-  restoreRoleRefsForTarget: vi.fn(() => {}),
-  refLocator: vi.fn(() => {
-    if (!currentRefLocator) {
-      throw new Error("missing locator");
-    }
-    return currentRefLocator;
-  }),
-  rememberRoleRefsForTarget: vi.fn(() => {}),
-}));
-
-vi.mock("./pw-session.js", () => sessionMocks);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const mod = await import("./pw-tools-core.js");
 
 describe("pw-tools-core", () => {
@@ -91,11 +60,7 @@ describe("pw-tools-core", () => {
         first: () => ({ screenshot: vi.fn(async () => Buffer.from("E")) }),
       })),
       screenshot: vi.fn(async () => Buffer.from("P")),
-<<<<<<< HEAD
     });
-=======
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await expect(
       mod.takeScreenshotViaPlaywright({

@@ -43,7 +43,6 @@ const discordSendMocks = vi.hoisted(() => ({
   timeoutMemberDiscord: vi.fn(async () => ({})),
   unpinMessageDiscord: vi.fn(async () => ({})),
 }));
-<<<<<<< HEAD:src/agents/tools/discord-actions.test.ts
 
 const {
   createChannelDiscord,
@@ -69,70 +68,6 @@ const {
 
 vi.mock("../../discord/send.js", () => ({
   ...discordSendMocks,
-=======
-const createThreadDiscord = vi.fn(async () => ({}));
-const deleteChannelDiscord = vi.fn(async () => ({ ok: true, channelId: "C1" }));
-const deleteMessageDiscord = vi.fn(async () => ({}));
-const editChannelDiscord = vi.fn(async () => ({
-  id: "C1",
-  name: "edited",
-}));
-const editMessageDiscord = vi.fn(async () => ({}));
-const fetchMessageDiscord = vi.fn(async () => ({}));
-const fetchChannelPermissionsDiscord = vi.fn(async () => ({}));
-const fetchReactionsDiscord = vi.fn(async () => ({}));
-const listGuildChannelsDiscord = vi.fn(async () => []);
-const listPinsDiscord = vi.fn(async () => ({}));
-const listThreadsDiscord = vi.fn(async () => ({}));
-const moveChannelDiscord = vi.fn(async () => ({ ok: true }));
-const pinMessageDiscord = vi.fn(async () => ({}));
-const reactMessageDiscord = vi.fn(async () => ({}));
-const readMessagesDiscord = vi.fn(async () => []);
-const removeChannelPermissionDiscord = vi.fn(async () => ({ ok: true }));
-const removeOwnReactionsDiscord = vi.fn(async () => ({ removed: ["👍"] }));
-const removeReactionDiscord = vi.fn(async () => ({}));
-const searchMessagesDiscord = vi.fn(async () => ({}));
-const sendMessageDiscord = vi.fn(async () => ({}));
-const sendVoiceMessageDiscord = vi.fn(async () => ({}));
-const sendPollDiscord = vi.fn(async () => ({}));
-const sendStickerDiscord = vi.fn(async () => ({}));
-const setChannelPermissionDiscord = vi.fn(async () => ({ ok: true }));
-const unpinMessageDiscord = vi.fn(async () => ({}));
-const timeoutMemberDiscord = vi.fn(async () => ({}));
-const kickMemberDiscord = vi.fn(async () => ({}));
-const banMemberDiscord = vi.fn(async () => ({}));
-
-vi.mock("../../discord/send.js", () => ({
-  banMemberDiscord: (...args: unknown[]) => banMemberDiscord(...args),
-  createChannelDiscord: (...args: unknown[]) => createChannelDiscord(...args),
-  createThreadDiscord: (...args: unknown[]) => createThreadDiscord(...args),
-  deleteChannelDiscord: (...args: unknown[]) => deleteChannelDiscord(...args),
-  deleteMessageDiscord: (...args: unknown[]) => deleteMessageDiscord(...args),
-  editChannelDiscord: (...args: unknown[]) => editChannelDiscord(...args),
-  editMessageDiscord: (...args: unknown[]) => editMessageDiscord(...args),
-  fetchMessageDiscord: (...args: unknown[]) => fetchMessageDiscord(...args),
-  fetchChannelPermissionsDiscord: (...args: unknown[]) => fetchChannelPermissionsDiscord(...args),
-  fetchReactionsDiscord: (...args: unknown[]) => fetchReactionsDiscord(...args),
-  kickMemberDiscord: (...args: unknown[]) => kickMemberDiscord(...args),
-  listGuildChannelsDiscord: (...args: unknown[]) => listGuildChannelsDiscord(...args),
-  listPinsDiscord: (...args: unknown[]) => listPinsDiscord(...args),
-  listThreadsDiscord: (...args: unknown[]) => listThreadsDiscord(...args),
-  moveChannelDiscord: (...args: unknown[]) => moveChannelDiscord(...args),
-  pinMessageDiscord: (...args: unknown[]) => pinMessageDiscord(...args),
-  reactMessageDiscord: (...args: unknown[]) => reactMessageDiscord(...args),
-  readMessagesDiscord: (...args: unknown[]) => readMessagesDiscord(...args),
-  removeChannelPermissionDiscord: (...args: unknown[]) => removeChannelPermissionDiscord(...args),
-  removeOwnReactionsDiscord: (...args: unknown[]) => removeOwnReactionsDiscord(...args),
-  removeReactionDiscord: (...args: unknown[]) => removeReactionDiscord(...args),
-  searchMessagesDiscord: (...args: unknown[]) => searchMessagesDiscord(...args),
-  sendMessageDiscord: (...args: unknown[]) => sendMessageDiscord(...args),
-  sendVoiceMessageDiscord: (...args: unknown[]) => sendVoiceMessageDiscord(...args),
-  sendPollDiscord: (...args: unknown[]) => sendPollDiscord(...args),
-  sendStickerDiscord: (...args: unknown[]) => sendStickerDiscord(...args),
-  setChannelPermissionDiscord: (...args: unknown[]) => setChannelPermissionDiscord(...args),
-  timeoutMemberDiscord: (...args: unknown[]) => timeoutMemberDiscord(...args),
-  unpinMessageDiscord: (...args: unknown[]) => unpinMessageDiscord(...args),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/tools/discord-actions.e2e.test.ts
 }));
 
 const enableAllActions = () => true;
@@ -329,7 +264,6 @@ describe("handleDiscordMessagingAction", () => {
     expect(sendMessageDiscord).not.toHaveBeenCalled();
   });
 
-<<<<<<< HEAD:src/agents/tools/discord-actions.test.ts
   it("forwards trusted mediaLocalRoots into sendMessageDiscord", async () => {
     sendMessageDiscord.mockClear();
     await handleDiscordMessagingAction(
@@ -352,8 +286,6 @@ describe("handleDiscordMessagingAction", () => {
     );
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/tools/discord-actions.e2e.test.ts
   it("rejects voice messages that include content", async () => {
     await expect(
       handleDiscordMessagingAction(

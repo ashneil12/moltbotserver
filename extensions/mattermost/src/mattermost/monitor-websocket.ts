@@ -7,10 +7,7 @@ export type MattermostEventPayload = {
   event?: string;
   data?: {
     post?: string;
-<<<<<<< HEAD
     reaction?: string;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     channel_id?: string;
     channel_name?: string;
     channel_display_name?: string;
@@ -55,32 +52,16 @@ type CreateMattermostConnectOnceOpts = {
   runtime: RuntimeEnv;
   nextSeq: () => number;
   onPosted: (post: MattermostPost, payload: MattermostEventPayload) => Promise<void>;
-<<<<<<< HEAD
   onReaction?: (payload: MattermostEventPayload) => Promise<void>;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   webSocketFactory?: MattermostWebSocketFactory;
 };
 
 export const defaultMattermostWebSocketFactory: MattermostWebSocketFactory = (url) =>
   new WebSocket(url) as MattermostWebSocketLike;
 
-<<<<<<< HEAD
 export function parsePostedPayload(
   payload: MattermostEventPayload,
 ): { payload: MattermostEventPayload; post: MattermostPost } | null {
-=======
-export function parsePostedEvent(
-  data: WebSocket.RawData,
-): { payload: MattermostEventPayload; post: MattermostPost } | null {
-  const raw = rawDataToString(data);
-  let payload: MattermostEventPayload;
-  try {
-    payload = JSON.parse(raw) as MattermostEventPayload;
-  } catch {
-    return null;
-  }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (payload.event !== "posted") {
     return null;
   }
@@ -104,7 +85,6 @@ export function parsePostedEvent(
   return { payload, post };
 }
 
-<<<<<<< HEAD
 export function parsePostedEvent(
   data: WebSocket.RawData,
 ): { payload: MattermostEventPayload; post: MattermostPost } | null {
@@ -118,8 +98,6 @@ export function parsePostedEvent(
   return parsePostedPayload(payload);
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function createMattermostConnectOnce(
   opts: CreateMattermostConnectOnceOpts,
 ): () => Promise<void> {
@@ -165,7 +143,6 @@ export function createMattermostConnectOnce(
         });
 
         ws.on("message", async (data) => {
-<<<<<<< HEAD
           const raw = rawDataToString(data);
           let payload: MattermostEventPayload;
           try {
@@ -190,9 +167,6 @@ export function createMattermostConnectOnce(
             return;
           }
           const parsed = parsePostedPayload(payload);
-=======
-          const parsed = parsePostedEvent(data);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           if (!parsed) {
             return;
           }

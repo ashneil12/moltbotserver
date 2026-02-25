@@ -786,13 +786,10 @@ export async function executeJobCore(
     abortSignal,
   });
 
-<<<<<<< HEAD
   if (abortSignal?.aborted) {
     return { status: "error", error: timeoutErrorMessage() };
   }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   // Post a short summary back to the main session — but only when the
   // isolated run did NOT already deliver its output to the target channel.
   // When `res.delivered` is true the announce flow (or direct outbound
@@ -801,13 +798,9 @@ export async function executeJobCore(
   // See: https://github.com/openclaw/openclaw/issues/15692
   const summaryText = res.summary?.trim();
   const deliveryPlan = resolveCronDeliveryPlan(job);
-<<<<<<< HEAD
   const suppressMainSummary =
     res.status === "error" && res.errorKind === "delivery-target" && deliveryPlan.requested;
   if (summaryText && deliveryPlan.requested && !res.delivered && !suppressMainSummary) {
-=======
-  if (summaryText && deliveryPlan.requested && !res.delivered) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const prefix = "Cron";
     const label =
       res.status === "error" ? `${prefix} (error): ${summaryText}` : `${prefix}: ${summaryText}`;

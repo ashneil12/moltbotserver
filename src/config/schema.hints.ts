@@ -2,10 +2,7 @@ import { z } from "zod";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { FIELD_HELP } from "./schema.help.js";
 import { FIELD_LABELS } from "./schema.labels.js";
-<<<<<<< HEAD
 import { applyDerivedTags } from "./schema.tags.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { sensitive } from "./zod-schema.sensitive.js";
 
 const log = createSubsystemLogger("config/schema");
@@ -96,11 +93,7 @@ const FIELD_PLACEHOLDERS: Record<string, string> = {
  * These are explicitly excluded from redaction (plugin config) and
  * warnings about not being marked sensitive (base config).
  */
-<<<<<<< HEAD
 const SENSITIVE_KEY_WHITELIST_SUFFIXES = [
-=======
-const SENSITIVE_KEY_WHITELIST = new Set([
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "maxtokens",
   "maxoutputtokens",
   "maxinputtokens",
@@ -111,7 +104,6 @@ const SENSITIVE_KEY_WHITELIST = new Set([
   "tokenlimit",
   "tokenbudget",
   "passwordFile",
-<<<<<<< HEAD
 ] as const;
 const NORMALIZED_SENSITIVE_KEY_WHITELIST_SUFFIXES = SENSITIVE_KEY_WHITELIST_SUFFIXES.map((suffix) =>
   suffix.toLowerCase(),
@@ -126,17 +118,6 @@ function isWhitelistedSensitivePath(path: string): boolean {
 
 function matchesSensitivePattern(path: string): boolean {
   return SENSITIVE_PATTERNS.some((pattern) => pattern.test(path));
-=======
-]);
-
-const SENSITIVE_PATTERNS = [/token$/i, /password/i, /secret/i, /api.?key/i];
-
-export function isSensitiveConfigPath(path: string): boolean {
-  return (
-    !Array.from(SENSITIVE_KEY_WHITELIST).some((suffix) => path.endsWith(suffix)) &&
-    SENSITIVE_PATTERNS.some((pattern) => pattern.test(path))
-  );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function isSensitiveConfigPath(path: string): boolean {
@@ -228,14 +209,11 @@ export function mapSensitivePaths(
       const nextPath = path ? `${path}.${key}` : key;
       next = mapSensitivePaths(shape[key], nextPath, next);
     }
-<<<<<<< HEAD
     const catchallSchema = currentSchema._def.catchall as z.ZodType | undefined;
     if (catchallSchema && !(catchallSchema instanceof z.ZodNever)) {
       const nextPath = path ? `${path}.*` : "*";
       next = mapSensitivePaths(catchallSchema, nextPath, next);
     }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   } else if (currentSchema instanceof z.ZodArray) {
     const nextPath = path ? `${path}[]` : "[]";
     next = mapSensitivePaths(currentSchema.element as z.ZodType, nextPath, next);

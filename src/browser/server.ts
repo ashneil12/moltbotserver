@@ -4,7 +4,6 @@ import { loadConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveBrowserConfig } from "./config.js";
 import { ensureBrowserControlAuth, resolveBrowserControlAuth } from "./control-auth.js";
-<<<<<<< HEAD
 import { isPwAiLoaded } from "./pw-ai-state.js";
 import { registerBrowserRoutes } from "./routes/index.js";
 import type { BrowserRouteRegistrar } from "./routes/types.js";
@@ -14,16 +13,6 @@ import {
   installBrowserAuthMiddleware,
   installBrowserCommonMiddleware,
 } from "./server-middleware.js";
-=======
-import { ensureChromeExtensionRelayServer } from "./extension-relay.js";
-import { isPwAiLoaded } from "./pw-ai-state.js";
-import { registerBrowserRoutes } from "./routes/index.js";
-import {
-  type BrowserServerState,
-  createBrowserRouteContext,
-  listKnownProfileNames,
-} from "./server-context.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 let state: BrowserServerState | null = null;
 const log = createSubsystemLogger("browser");
@@ -99,30 +88,9 @@ export async function stopBrowserControlServer(): Promise<void> {
 
   await stopKnownBrowserProfiles({
     getState: () => state,
-<<<<<<< HEAD
     onWarn: (message) => logServer.warn(message),
   });
 
-=======
-    refreshConfigFromDisk: true,
-  });
-
-  try {
-    const current = state;
-    if (current) {
-      for (const name of listKnownProfileNames(current)) {
-        try {
-          await ctx.forProfile(name).stopRunningBrowser();
-        } catch {
-          // ignore
-        }
-      }
-    }
-  } catch (err) {
-    logServer.warn(`openclaw browser stop failed: ${String(err)}`);
-  }
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (current.server) {
     await new Promise<void>((resolve) => {
       current.server?.close(() => resolve());

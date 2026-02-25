@@ -36,10 +36,7 @@ type ConversationContext = Pick<
   | "provider"
   | "config"
   | "storePath"
-<<<<<<< HEAD
   | "activeTurnCalls"
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   | "transcriptWaiters"
   | "maxDurationTimers"
 >;
@@ -54,7 +51,6 @@ type EndCallContext = Pick<
   | "maxDurationTimers"
 >;
 
-<<<<<<< HEAD
 type ConnectedCallContext = Pick<CallManagerContext, "activeCalls" | "provider">;
 
 type ConnectedCallLookup =
@@ -106,8 +102,6 @@ function requireConnectedCall(ctx: ConnectedCallContext, callId: CallId): Connec
   };
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export async function initiateCall(
   ctx: InitiateContext,
   to: string,

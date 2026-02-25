@@ -37,7 +37,6 @@ vi.mock("../runtime.js", () => ({
 
 const { registerCronCli } = await import("./cron-cli.js");
 
-<<<<<<< HEAD
 type CronUpdatePatch = {
   patch?: {
     schedule?: { kind?: string; expr?: string; tz?: string; staggerMs?: number };
@@ -55,8 +54,6 @@ type CronAddParams = {
   sessionTarget?: string;
 };
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function buildProgram() {
   const program = new Command();
   program.exitOverride();
@@ -64,7 +61,6 @@ function buildProgram() {
   return program;
 }
 
-<<<<<<< HEAD
 function resetGatewayMock() {
   callGatewayFromCli.mockClear();
   callGatewayFromCli.mockImplementation(defaultGatewayMock);
@@ -166,33 +162,6 @@ describe("cron cli", () => {
       "--thinking",
       "  low  ",
     ]);
-=======
-describe("cron cli", () => {
-  it("trims model and thinking on cron add", { timeout: 60_000 }, async () => {
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      [
-        "cron",
-        "add",
-        "--name",
-        "Daily",
-        "--cron",
-        "* * * * *",
-        "--session",
-        "isolated",
-        "--message",
-        "hello",
-        "--model",
-        "  opus  ",
-        "--thinking",
-        "  low  ",
-      ],
-      { from: "user" },
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     const params = addCall?.[2] as {
@@ -204,7 +173,6 @@ describe("cron cli", () => {
   });
 
   it("defaults isolated cron add to announce delivery", async () => {
-<<<<<<< HEAD
     await runCronCommand([
       "cron",
       "add",
@@ -217,27 +185,6 @@ describe("cron cli", () => {
       "--message",
       "hello",
     ]);
-=======
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      [
-        "cron",
-        "add",
-        "--name",
-        "Daily",
-        "--cron",
-        "* * * * *",
-        "--session",
-        "isolated",
-        "--message",
-        "hello",
-      ],
-      { from: "user" },
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     const params = addCall?.[2] as { delivery?: { mode?: string } };
@@ -246,7 +193,6 @@ describe("cron cli", () => {
   });
 
   it("infers sessionTarget from payload when --session is omitted", async () => {
-<<<<<<< HEAD
     await runCronCommand([
       "cron",
       "add",
@@ -257,16 +203,6 @@ describe("cron cli", () => {
       "--system-event",
       "hi",
     ]);
-=======
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      ["cron", "add", "--name", "Main reminder", "--cron", "* * * * *", "--system-event", "hi"],
-      { from: "user" },
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     let addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     let params = addCall?.[2] as { sessionTarget?: string; payload?: { kind?: string } };
@@ -291,7 +227,6 @@ describe("cron cli", () => {
   });
 
   it("supports --keep-after-run on cron add", async () => {
-<<<<<<< HEAD
     await runCronCommand([
       "cron",
       "add",
@@ -305,28 +240,6 @@ describe("cron cli", () => {
       "hello",
       "--keep-after-run",
     ]);
-=======
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      [
-        "cron",
-        "add",
-        "--name",
-        "Keep me",
-        "--at",
-        "20m",
-        "--session",
-        "main",
-        "--system-event",
-        "hello",
-        "--keep-after-run",
-      ],
-      { from: "user" },
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     const params = addCall?.[2] as { deleteAfterRun?: boolean };
@@ -342,7 +255,6 @@ describe("cron cli", () => {
   });
 
   it("sends agent id on cron add", async () => {
-<<<<<<< HEAD
     await runCronCommand([
       "cron",
       "add",
@@ -357,36 +269,12 @@ describe("cron cli", () => {
       "--agent",
       "ops",
     ]);
-=======
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      [
-        "cron",
-        "add",
-        "--name",
-        "Agent pinned",
-        "--cron",
-        "* * * * *",
-        "--session",
-        "isolated",
-        "--message",
-        "hi",
-        "--agent",
-        "ops",
-      ],
-      { from: "user" },
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     const params = addCall?.[2] as { agentId?: string };
     expect(params?.agentId).toBe("ops");
   });
 
-<<<<<<< HEAD
   it.each([
     {
       label: "omits empty model and thinking",
@@ -404,71 +292,12 @@ describe("cron cli", () => {
     const patch = await runCronEditAndGetPatch(args);
     expect(patch?.patch?.payload?.model).toBe(expectedModel);
     expect(patch?.patch?.payload?.thinking).toBe(expectedThinking);
-=======
-  it("omits empty model and thinking on cron edit", async () => {
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      ["cron", "edit", "job-1", "--message", "hello", "--model", "   ", "--thinking", "  "],
-      { from: "user" },
-    );
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as {
-      patch?: { payload?: { model?: string; thinking?: string } };
-    };
-
-    expect(patch?.patch?.payload?.model).toBeUndefined();
-    expect(patch?.patch?.payload?.thinking).toBeUndefined();
-  });
-
-  it("trims model and thinking on cron edit", async () => {
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      [
-        "cron",
-        "edit",
-        "job-1",
-        "--message",
-        "hello",
-        "--model",
-        "  opus  ",
-        "--thinking",
-        "  high  ",
-      ],
-      { from: "user" },
-    );
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as {
-      patch?: { payload?: { model?: string; thinking?: string } };
-    };
-
-    expect(patch?.patch?.payload?.model).toBe("opus");
-    expect(patch?.patch?.payload?.thinking).toBe("high");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("sets and clears agent id on cron edit", async () => {
     await runCronCommand(["cron", "edit", "job-1", "--agent", " Ops ", "--message", "hello"]);
 
-<<<<<<< HEAD
     const patch = getGatewayCallParams<{ patch?: { agentId?: unknown } }>("cron.update");
-=======
-    const program = buildProgram();
-
-    await program.parseAsync(["cron", "edit", "job-1", "--agent", " Ops ", "--message", "hello"], {
-      from: "user",
-    });
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as { patch?: { agentId?: unknown } };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(patch?.patch?.agentId).toBe("ops");
 
     await runCronCommand(["cron", "edit", "job-2", "--clear-agent"]);
@@ -479,18 +308,7 @@ describe("cron cli", () => {
   it("allows model/thinking updates without --message", async () => {
     await runCronCommand(["cron", "edit", "job-1", "--model", "opus", "--thinking", "low"]);
 
-<<<<<<< HEAD
     const patch = getGatewayCallParams<{
-=======
-    const program = buildProgram();
-
-    await program.parseAsync(["cron", "edit", "job-1", "--model", "opus", "--thinking", "low"], {
-      from: "user",
-    });
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       patch?: { payload?: { kind?: string; model?: string; thinking?: string } };
     }>("cron.update");
 
@@ -511,19 +329,7 @@ describe("cron cli", () => {
       "19098680",
     ]);
 
-<<<<<<< HEAD
     const patch = getGatewayCallParams<{
-=======
-    const program = buildProgram();
-
-    await program.parseAsync(
-      ["cron", "edit", "job-1", "--deliver", "--channel", "telegram", "--to", "19098680"],
-      { from: "user" },
-    );
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       patch?: {
         payload?: { kind?: string; message?: string };
         delivery?: { mode?: string; channel?: string; to?: string };
@@ -540,16 +346,7 @@ describe("cron cli", () => {
   it("supports --no-deliver on cron edit", async () => {
     await runCronCommand(["cron", "edit", "job-1", "--no-deliver"]);
 
-<<<<<<< HEAD
     const patch = getGatewayCallParams<{
-=======
-    const program = buildProgram();
-
-    await program.parseAsync(["cron", "edit", "job-1", "--no-deliver"], { from: "user" });
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       patch?: { payload?: { kind?: string }; delivery?: { mode?: string } };
     }>("cron.update");
 
@@ -558,13 +355,6 @@ describe("cron cli", () => {
   });
 
   it("does not include undefined delivery fields when updating message", async () => {
-<<<<<<< HEAD
-=======
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     // Update message without delivery flags - should NOT include undefined delivery fields
     await runCronCommand(["cron", "edit", "job-1", "--message", "Updated message"]);
 
@@ -593,7 +383,6 @@ describe("cron cli", () => {
   });
 
   it("includes delivery fields when explicitly provided with message", async () => {
-<<<<<<< HEAD
     const patch = await runCronEditAndGetPatch([
       "--message",
       "Updated message",
@@ -603,36 +392,6 @@ describe("cron cli", () => {
       "--to",
       "19098680",
     ]);
-=======
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    // Update message AND delivery - should include both
-    await program.parseAsync(
-      [
-        "cron",
-        "edit",
-        "job-1",
-        "--message",
-        "Updated message",
-        "--deliver",
-        "--channel",
-        "telegram",
-        "--to",
-        "19098680",
-      ],
-      { from: "user" },
-    );
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as {
-      patch?: {
-        payload?: { message?: string };
-        delivery?: { mode?: string; channel?: string; to?: string };
-      };
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     // Should include everything
     expect(patch?.patch?.payload?.message).toBe("Updated message");
@@ -641,32 +400,11 @@ describe("cron cli", () => {
     expect(patch?.patch?.delivery?.to).toBe("19098680");
   });
 
-<<<<<<< HEAD
   it.each([
     { flag: "--best-effort-deliver", expectedBestEffort: true },
     { flag: "--no-best-effort-deliver", expectedBestEffort: false },
   ])("applies $flag on cron edit message updates", async ({ flag, expectedBestEffort }) => {
     const patch = await runCronEditAndGetPatch(["--message", "Updated message", flag]);
-=======
-  it("includes best-effort delivery when provided with message", async () => {
-    callGatewayFromCli.mockClear();
-
-    const program = buildProgram();
-
-    await program.parseAsync(
-      ["cron", "edit", "job-1", "--message", "Updated message", "--best-effort-deliver"],
-      { from: "user" },
-    );
-
-    const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
-    const patch = updateCall?.[2] as {
-      patch?: {
-        payload?: { message?: string };
-        delivery?: { bestEffort?: boolean; mode?: string };
-      };
-    };
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(patch?.patch?.payload?.message).toBe("Updated message");
     expect(patch?.patch?.delivery?.mode).toBe("announce");
     expect(patch?.patch?.delivery?.bestEffort).toBe(expectedBestEffort);
@@ -689,7 +427,6 @@ describe("cron cli", () => {
     expect(params?.schedule?.staggerMs).toBe(45_000);
   });
 
-<<<<<<< HEAD
   it("sets exact cron mode on add", async () => {
     const params = await runCronAddAndGetParams([
       "--name",
@@ -705,9 +442,6 @@ describe("cron cli", () => {
     expect(params?.schedule?.kind).toBe("cron");
     expect(params?.schedule?.staggerMs).toBe(0);
   });
-=======
-    const program = buildProgram();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   it("rejects --stagger with --exact on add", async () => {
     await expectCronCommandExit([

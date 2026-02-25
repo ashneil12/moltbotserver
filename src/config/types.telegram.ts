@@ -133,11 +133,8 @@ export type TelegramAccountConfig = {
   webhookPath?: string;
   /** Local webhook listener bind host (default: 127.0.0.1). */
   webhookHost?: string;
-<<<<<<< HEAD
   /** Local webhook listener bind port (default: 8787). */
   webhookPort?: number;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   /** Per-action tool gating (default: true for all). */
   actions?: TelegramActionConfig;
   /**

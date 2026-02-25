@@ -1,7 +1,6 @@
 import { IRC_FIELD_HELP } from "./schema.irc.js";
 
 export const FIELD_HELP: Record<string, string> = {
-<<<<<<< HEAD
   meta: "Metadata fields automatically maintained by OpenClaw to record write/version history for this config file. Keep these values system-managed and avoid manual edits unless debugging migration history.",
   "meta.lastTouchedVersion": "Auto-set when OpenClaw writes the config.",
   "meta.lastTouchedAt": "ISO timestamp of the last config write (auto-set).",
@@ -129,19 +128,11 @@ export const FIELD_HELP: Record<string, string> = {
     "Bearer token used to authenticate this client to a remote gateway in token-auth deployments. Store via secret/env substitution and rotate alongside remote gateway auth changes.",
   "gateway.remote.password":
     "Password credential used for remote gateway authentication when password mode is enabled. Keep this secret managed externally and avoid plaintext values in committed config.",
-=======
-  "meta.lastTouchedVersion": "Auto-set when OpenClaw writes the config.",
-  "meta.lastTouchedAt": "ISO timestamp of the last config write (auto-set).",
-  "update.channel": 'Update channel for git + npm installs ("stable", "beta", or "dev").',
-  "update.checkOnStart": "Check for npm updates when the gateway starts (default: true).",
-  "gateway.remote.url": "Remote Gateway WebSocket URL (ws:// or wss://).",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "gateway.remote.tlsFingerprint":
     "Expected sha256 TLS fingerprint for the remote gateway (pin to avoid MITM).",
   "gateway.remote.sshTarget":
     "Remote gateway over SSH (tunnels the gateway port to localhost). Format: user@host or user@host:port.",
   "gateway.remote.sshIdentity": "Optional SSH identity file path (passed to ssh -i).",
-<<<<<<< HEAD
   "talk.provider": 'Active Talk provider id (for example "elevenlabs").',
   "talk.providers":
     "Provider-specific Talk settings keyed by provider id. During migration, prefer this over legacy talk.* keys.",
@@ -162,13 +153,10 @@ export const FIELD_HELP: Record<string, string> = {
     "Use this legacy ElevenLabs API key for Talk mode only during migration, and keep secrets in env-backed storage. Prefer talk.providers.elevenlabs.apiKey (fallback: ELEVENLABS_API_KEY).",
   "talk.interruptOnSpeech":
     "If true (default), stop assistant speech when the user starts speaking in Talk mode. Keep enabled for conversational turn-taking.",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "agents.list.*.skills":
     "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
   "agents.list[].skills":
     "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
-<<<<<<< HEAD
   agents:
     "Agent runtime configuration root covering defaults and explicit agent entries used for routing and execution context. Keep this section explicit so model/tool behavior stays predictable across multi-agent workflows.",
   "agents.defaults":
@@ -319,21 +307,11 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional CIDR allowlist for container-edge CDP ingress (for example 172.21.0.1/32).",
   "agents.list[].sandbox.browser.cdpSourceRange":
     "Per-agent override for CDP source CIDR allowlist.",
-=======
-  "agents.list[].identity.avatar":
-    "Avatar image path (relative to the agent workspace only) or a remote URL/data URL.",
-  "discovery.mdns.mode":
-    'mDNS broadcast mode ("minimal" default, "full" includes cliPath/sshPort, "off" disables mDNS).',
-  "gateway.auth.token":
-    "Required by default for gateway access (unless using Tailscale Serve identity); required for non-loopback binds.",
-  "gateway.auth.password": "Required for Tailscale funnel.",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "gateway.controlUi.basePath":
     "Optional URL prefix where the Control UI is served (e.g. /openclaw).",
   "gateway.controlUi.root":
     "Optional filesystem root for Control UI assets (defaults to dist/control-ui).",
   "gateway.controlUi.allowedOrigins":
-<<<<<<< HEAD
     "Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled.",
   "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback":
     "DANGEROUS toggle that enables Host-header based origin fallback for Control UI/WebChat websocket checks. This mode is supported when your deployment intentionally relies on Host-header origin policy; explicit gateway.controlUi.allowedOrigins remains the recommended hardened default.",
@@ -345,22 +323,11 @@ export const FIELD_HELP: Record<string, string> = {
     "Enable the OpenAI-compatible `POST /v1/chat/completions` endpoint (default: false).",
   "gateway.reload.mode":
     'Controls how config edits are applied: "off" ignores live edits, "restart" always restarts, "hot" applies in-process, and "hybrid" tries hot then restarts if required. Keep "hybrid" for safest routine updates.',
-=======
-    "Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com).",
-  "gateway.controlUi.allowInsecureAuth":
-    "Allow Control UI auth over insecure HTTP (token-only; not recommended).",
-  "gateway.controlUi.dangerouslyDisableDeviceAuth":
-    "DANGEROUS. Disable Control UI device identity checks (token/password only).",
-  "gateway.http.endpoints.chatCompletions.enabled":
-    "Enable the OpenAI-compatible `POST /v1/chat/completions` endpoint (default: false).",
-  "gateway.reload.mode": 'Hot reload strategy for config changes ("hybrid" recommended).',
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "gateway.reload.debounceMs": "Debounce window (ms) before applying config changes.",
   "gateway.nodes.browser.mode":
     'Node browser routing ("auto" = pick single connected browser node, "manual" = require node param, "off" = disable).',
   "gateway.nodes.browser.node": "Pin browser routing to a specific node id or name (optional).",
   "gateway.nodes.allowCommands":
-<<<<<<< HEAD
     "Extra node.invoke commands to allow beyond the gateway defaults (array of command strings). Enabling dangerous commands here is a security-sensitive override and is flagged by `openclaw security audit`.",
   "gateway.nodes.denyCommands":
     "Commands to block even if present in node claims or default allowlist.",
@@ -436,16 +403,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Trace sampling rate (0-1) controlling how much trace traffic is exported to observability backends. Lower rates reduce overhead/cost, while higher rates improve debugging fidelity.",
   "diagnostics.otel.flushIntervalMs":
     "Interval in milliseconds for periodic telemetry flush from buffers to the collector. Increase to reduce export chatter, or lower for faster visibility during active incident response.",
-=======
-    "Extra node.invoke commands to allow beyond the gateway defaults (array of command strings).",
-  "gateway.nodes.denyCommands":
-    "Commands to block even if present in node claims or default allowlist.",
-  "nodeHost.browserProxy.enabled": "Expose the local browser control server via node proxy.",
-  "nodeHost.browserProxy.allowProfiles":
-    "Optional allowlist of browser profile names exposed via the node proxy.",
-  "diagnostics.flags":
-    'Enable targeted diagnostics logs by flag (e.g. ["telegram.http"]). Supports wildcards like "telegram.*" or "*".',
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "diagnostics.cacheTrace.enabled":
     "Log cache trace snapshots for embedded agent runs (default: false).",
   "diagnostics.cacheTrace.filePath":
@@ -456,7 +413,6 @@ export const FIELD_HELP: Record<string, string> = {
   "diagnostics.cacheTrace.includeSystem": "Include system prompt in trace output (default: true).",
   "tools.exec.applyPatch.enabled":
     "Experimental. Enables apply_patch for OpenAI models when allowed by tool policy.",
-<<<<<<< HEAD
   "tools.exec.applyPatch.workspaceOnly":
     "Restrict apply_patch paths to the workspace directory (default: true). Set false to allow writing outside the workspace (dangerous).",
   "tools.exec.applyPatch.allowModels":
@@ -594,15 +550,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Restrict filesystem tools (read/write/edit/apply_patch) to the workspace directory (default: false).",
   "tools.sessions.visibility":
     'Controls which sessions can be targeted by sessions_list/sessions_history/sessions_send. ("tree" default = current session + spawned subagent sessions; "self" = only current; "agent" = any session in the current agent id; "all" = any session; cross-agent still requires tools.agentToAgent).',
-=======
-  "tools.exec.applyPatch.allowModels":
-    'Optional allowlist of model ids (e.g. "gpt-5.2" or "openai/gpt-5.2").',
-  "tools.exec.notifyOnExit":
-    "When true (default), backgrounded exec sessions enqueue a system event and request a heartbeat on exit.",
-  "tools.exec.pathPrepend": "Directories to prepend to PATH for exec runs (gateway/sandbox).",
-  "tools.exec.safeBins":
-    "Allow stdin-only safe binaries to run without explicit allowlist entries.",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "tools.message.allowCrossContextSend":
     "Legacy override: allow cross-context sends across all providers.",
   "tools.message.crossContext.allowWithinProvider":
@@ -617,17 +564,12 @@ export const FIELD_HELP: Record<string, string> = {
     'Text suffix for cross-context markers (supports "{channel}").',
   "tools.message.broadcast.enabled": "Enable broadcast action (default: true).",
   "tools.web.search.enabled": "Enable the web_search tool (requires a provider API key).",
-<<<<<<< HEAD
   "tools.web.search.provider":
     'Search provider ("brave", "perplexity", "grok", "gemini", or "kimi"). Auto-detected from available API keys if omitted.',
-=======
-  "tools.web.search.provider": 'Search provider ("brave" or "perplexity").',
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "tools.web.search.apiKey": "Brave Search API key (fallback: BRAVE_API_KEY env var).",
   "tools.web.search.maxResults": "Default number of results to return (1-10).",
   "tools.web.search.timeoutSeconds": "Timeout in seconds for web_search requests.",
   "tools.web.search.cacheTtlMinutes": "Cache TTL in minutes for web_search results.",
-<<<<<<< HEAD
   "tools.web.search.gemini.apiKey":
     "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
   "tools.web.search.gemini.model": 'Gemini model override (default: "gemini-2.5-flash").',
@@ -638,8 +580,6 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.web.search.kimi.baseUrl":
     'Kimi base URL override (default: "https://api.moonshot.ai/v1").',
   "tools.web.search.kimi.model": 'Kimi model override (default: "moonshot-v1-128k").',
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "tools.web.search.perplexity.apiKey":
     "Perplexity or OpenRouter API key (fallback: PERPLEXITY_API_KEY or OPENROUTER_API_KEY env var).",
   "tools.web.search.perplexity.baseUrl":
@@ -665,7 +605,6 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.web.fetch.firecrawl.maxAgeMs":
     "Firecrawl maxAge (ms) for cached results when supported by the API.",
   "tools.web.fetch.firecrawl.timeoutSeconds": "Timeout in seconds for Firecrawl requests.",
-<<<<<<< HEAD
   models:
     "Model catalog root for provider definitions, merge/replace behavior, and optional Bedrock discovery integration. Keep provider definitions explicit and validated before relying on production failover paths.",
   "models.mode":
@@ -701,8 +640,6 @@ export const FIELD_HELP: Record<string, string> = {
   "models.bedrockDiscovery.defaultMaxTokens":
     "Fallback max-token value applied to discovered models without explicit output token limits. Use conservative defaults to reduce truncation surprises and unexpected token spend.",
   auth: "Authentication profile root used for multi-profile provider credentials and cooldown-based failover ordering. Keep profiles minimal and explicit so automatic failover behavior stays auditable.",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.slack.allowBots":
     "Allow bot-authored messages to trigger Slack replies (default: false).",
   "channels.slack.thread.historyScope":
@@ -722,28 +659,20 @@ export const FIELD_HELP: Record<string, string> = {
     "Require @mention in channels before responding (default: true).",
   "auth.profiles": "Named auth profiles (provider + mode + optional email).",
   "auth.order": "Ordered auth profile IDs per provider (used for automatic failover).",
-<<<<<<< HEAD
   "auth.cooldowns":
     "Cooldown/backoff controls for temporary profile suppression after billing-related failures and retry windows. Use these to prevent rapid re-selection of profiles that are still blocked.",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "auth.cooldowns.billingBackoffHours":
     "Base backoff (hours) when a profile fails due to billing/insufficient credits (default: 5).",
   "auth.cooldowns.billingBackoffHoursByProvider":
     "Optional per-provider overrides for billing backoff (hours).",
   "auth.cooldowns.billingMaxHours": "Cap (hours) for billing backoff (default: 24).",
   "auth.cooldowns.failureWindowHours": "Failure window (hours) for backoff counters (default: 24).",
-<<<<<<< HEAD
   "agents.defaults.workspace":
     "Default workspace path exposed to agent runtime tools for filesystem context and repo-aware behavior. Set this explicitly when running from wrappers so path resolution stays deterministic.",
   "agents.defaults.bootstrapMaxChars":
     "Max characters of each workspace bootstrap file injected into the system prompt before truncation (default: 20000).",
   "agents.defaults.bootstrapTotalMaxChars":
     "Max total characters across all injected workspace bootstrap files (default: 150000).",
-=======
-  "agents.defaults.bootstrapMaxChars":
-    "Max characters of each workspace bootstrap file injected into the system prompt before truncation (default: 20000).",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "agents.defaults.repoRoot":
     "Optional repository root shown in the system prompt runtime line (overrides auto-detect).",
   "agents.defaults.envelopeTimezone":
@@ -754,7 +683,6 @@ export const FIELD_HELP: Record<string, string> = {
   "agents.defaults.models": "Configured model catalog (keys are full provider/model IDs).",
   "agents.defaults.memorySearch":
     "Vector search over MEMORY.md and memory/*.md (per-agent overrides supported).",
-<<<<<<< HEAD
   "agents.defaults.memorySearch.enabled":
     "Master toggle for memory search indexing and retrieval behavior on this agent profile. Keep enabled for semantic recall, and disable when you want fully stateless responses.",
   "agents.defaults.memorySearch.sources":
@@ -927,107 +855,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Per-plugin environment variable map injected for that plugin runtime context only. Use this to scope provider credentials to one plugin instead of sharing global process environment.",
   "plugins.entries.*.config":
     "Plugin-defined configuration payload interpreted by that plugin's own schema and validation rules. Use only documented fields from the plugin to prevent ignored or invalid settings.",
-=======
-  "agents.defaults.memorySearch.sources":
-    'Sources to index for memory search (default: ["memory"]; add "sessions" to include session transcripts).',
-  "agents.defaults.memorySearch.extraPaths":
-    "Extra paths to include in memory search (directories or .md files; relative paths resolved from workspace).",
-  "agents.defaults.memorySearch.experimental.sessionMemory":
-    "Enable experimental session transcript indexing for memory search (default: false).",
-  "agents.defaults.memorySearch.provider":
-    'Embedding provider ("openai", "gemini", "voyage", or "local").',
-  "agents.defaults.memorySearch.remote.baseUrl":
-    "Custom base URL for remote embeddings (OpenAI-compatible proxies or Gemini overrides).",
-  "agents.defaults.memorySearch.remote.apiKey": "Custom API key for the remote embedding provider.",
-  "agents.defaults.memorySearch.remote.headers":
-    "Extra headers for remote embeddings (merged; remote overrides OpenAI headers).",
-  "agents.defaults.memorySearch.remote.batch.enabled":
-    "Enable batch API for memory embeddings (OpenAI/Gemini; default: true).",
-  "agents.defaults.memorySearch.remote.batch.wait":
-    "Wait for batch completion when indexing (default: true).",
-  "agents.defaults.memorySearch.remote.batch.concurrency":
-    "Max concurrent embedding batch jobs for memory indexing (default: 2).",
-  "agents.defaults.memorySearch.remote.batch.pollIntervalMs":
-    "Polling interval in ms for batch status (default: 2000).",
-  "agents.defaults.memorySearch.remote.batch.timeoutMinutes":
-    "Timeout in minutes for batch indexing (default: 60).",
-  "agents.defaults.memorySearch.local.modelPath":
-    "Local GGUF model path or hf: URI (node-llama-cpp).",
-  "agents.defaults.memorySearch.fallback":
-    'Fallback provider when embeddings fail ("openai", "gemini", "local", or "none").',
-  "agents.defaults.memorySearch.store.path":
-    "SQLite index path (default: ~/.openclaw/memory/{agentId}.sqlite).",
-  "agents.defaults.memorySearch.store.vector.enabled":
-    "Enable sqlite-vec extension for vector search (default: true).",
-  "agents.defaults.memorySearch.store.vector.extensionPath":
-    "Optional override path to sqlite-vec extension library (.dylib/.so/.dll).",
-  "agents.defaults.memorySearch.query.hybrid.enabled":
-    "Enable hybrid BM25 + vector search for memory (default: true).",
-  "agents.defaults.memorySearch.query.hybrid.vectorWeight":
-    "Weight for vector similarity when merging results (0-1).",
-  "agents.defaults.memorySearch.query.hybrid.textWeight":
-    "Weight for BM25 text relevance when merging results (0-1).",
-  "agents.defaults.memorySearch.query.hybrid.candidateMultiplier":
-    "Multiplier for candidate pool size (default: 4).",
-  "agents.defaults.memorySearch.cache.enabled":
-    "Cache chunk embeddings in SQLite to speed up reindexing and frequent updates (default: true).",
-  memory: "Memory backend configuration (global).",
-  "memory.backend": 'Memory backend ("builtin" for OpenClaw embeddings, "qmd" for QMD sidecar).',
-  "memory.citations": 'Default citation behavior ("auto", "on", or "off").',
-  "memory.qmd.command": "Path to the qmd binary (default: resolves from PATH).",
-  "memory.qmd.includeDefaultMemory":
-    "Whether to automatically index MEMORY.md + memory/**/*.md (default: true).",
-  "memory.qmd.paths":
-    "Additional directories/files to index with QMD (path + optional glob pattern).",
-  "memory.qmd.paths.path": "Absolute or ~-relative path to index via QMD.",
-  "memory.qmd.paths.pattern": "Glob pattern relative to the path root (default: **/*.md).",
-  "memory.qmd.paths.name":
-    "Optional stable name for the QMD collection (default derived from path).",
-  "memory.qmd.sessions.enabled":
-    "Enable QMD session transcript indexing (experimental, default: false).",
-  "memory.qmd.sessions.exportDir":
-    "Override directory for sanitized session exports before indexing.",
-  "memory.qmd.sessions.retentionDays":
-    "Retention window for exported sessions before pruning (default: unlimited).",
-  "memory.qmd.update.interval":
-    "How often the QMD sidecar refreshes indexes (duration string, default: 5m).",
-  "memory.qmd.update.debounceMs":
-    "Minimum delay between successive QMD refresh runs (default: 15000).",
-  "memory.qmd.update.onBoot": "Run QMD update once on gateway startup (default: true).",
-  "memory.qmd.update.waitForBootSync":
-    "Block startup until the boot QMD refresh finishes (default: false).",
-  "memory.qmd.update.embedInterval":
-    "How often QMD embeddings are refreshed (duration string, default: 60m). Set to 0 to disable periodic embed.",
-  "memory.qmd.update.commandTimeoutMs":
-    "Timeout for QMD maintenance commands like collection list/add (default: 30000).",
-  "memory.qmd.update.updateTimeoutMs": "Timeout for `qmd update` runs (default: 120000).",
-  "memory.qmd.update.embedTimeoutMs": "Timeout for `qmd embed` runs (default: 120000).",
-  "memory.qmd.limits.maxResults": "Max QMD results returned to the agent loop (default: 6).",
-  "memory.qmd.limits.maxSnippetChars": "Max characters per snippet pulled from QMD (default: 700).",
-  "memory.qmd.limits.maxInjectedChars": "Max total characters injected from QMD hits per turn.",
-  "memory.qmd.limits.timeoutMs": "Per-query timeout for QMD searches (default: 4000).",
-  "memory.qmd.scope":
-    "Session/channel scope for QMD recall (same syntax as session.sendPolicy; default: direct-only).",
-  "agents.defaults.memorySearch.cache.maxEntries":
-    "Optional cap on cached embeddings (best-effort).",
-  "agents.defaults.memorySearch.sync.onSearch":
-    "Lazy sync: schedule a reindex on search after changes.",
-  "agents.defaults.memorySearch.sync.watch": "Watch memory files for changes (chokidar).",
-  "agents.defaults.memorySearch.sync.sessions.deltaBytes":
-    "Minimum appended bytes before session transcripts trigger reindex (default: 100000).",
-  "agents.defaults.memorySearch.sync.sessions.deltaMessages":
-    "Minimum appended JSONL lines before session transcripts trigger reindex (default: 50).",
-  "plugins.enabled": "Enable plugin/extension loading (default: true).",
-  "plugins.allow": "Optional allowlist of plugin ids; when set, only listed plugins load.",
-  "plugins.deny": "Optional denylist of plugin ids; deny wins over allowlist.",
-  "plugins.load.paths": "Additional plugin files or directories to load.",
-  "plugins.slots": "Select which plugins own exclusive slots (memory, etc.).",
-  "plugins.slots.memory":
-    'Select the active memory plugin by id, or "none" to disable memory plugins.',
-  "plugins.entries": "Per-plugin settings keyed by plugin id (enable/disable + config payloads).",
-  "plugins.entries.*.enabled": "Overrides plugin enable/disable for this entry (restart required).",
-  "plugins.entries.*.config": "Plugin-defined config payload (schema is provided by the plugin).",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "plugins.installs":
     "CLI-managed install metadata (used by `openclaw plugins update` to locate install sources).",
   "plugins.installs.*.source": 'Install source ("npm", "archive", or "path").',
@@ -1036,7 +863,6 @@ export const FIELD_HELP: Record<string, string> = {
   "plugins.installs.*.installPath":
     "Resolved install directory (usually ~/.openclaw/extensions/<id>).",
   "plugins.installs.*.version": "Version recorded at install time (if available).",
-<<<<<<< HEAD
   "plugins.installs.*.resolvedName": "Resolved npm package name from the fetched artifact.",
   "plugins.installs.*.resolvedVersion":
     "Resolved npm package version from the fetched artifact (useful for non-pinned specs).",
@@ -1048,8 +874,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Resolved npm dist shasum for the fetched artifact (if reported by npm).",
   "plugins.installs.*.resolvedAt":
     "ISO timestamp when npm package metadata was last resolved for this install record.",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "plugins.installs.*.installedAt": "ISO timestamp of last install/update.",
   "agents.list.*.identity.avatar":
     "Agent avatar (workspace-relative path, http(s) URL, or data URI).",
@@ -1059,7 +883,6 @@ export const FIELD_HELP: Record<string, string> = {
   "agents.defaults.imageModel.primary":
     "Optional image model (provider/model) used when the primary model lacks image input.",
   "agents.defaults.imageModel.fallbacks": "Ordered fallback image models (provider/model).",
-<<<<<<< HEAD
   "agents.defaults.imageMaxDimensionPx":
     "Max image side length in pixels when sanitizing transcript/tool-result image payloads (default: 1200).",
   "agents.defaults.cliBackends": "Optional CLI backends for text-only fallback (claude-cli, etc.).",
@@ -1096,24 +919,12 @@ export const FIELD_HELP: Record<string, string> = {
     "Registers native skill commands so users can invoke skills directly from provider command menus where supported. Keep aligned with your skill policy so exposed commands match what operators expect.",
   "commands.text":
     "Enables text-command parsing in chat input in addition to native command surfaces where available. Keep this enabled for compatibility across channels that do not support native command registration.",
-=======
-  "agents.defaults.cliBackends": "Optional CLI backends for text-only fallback (claude-cli, etc.).",
-  "agents.defaults.humanDelay.mode": 'Delay style for block replies ("off", "natural", "custom").',
-  "agents.defaults.humanDelay.minMs": "Minimum delay in ms for custom humanDelay (default: 800).",
-  "agents.defaults.humanDelay.maxMs": "Maximum delay in ms for custom humanDelay (default: 2500).",
-  "commands.native":
-    "Register native commands with channels that support it (Discord/Slack/Telegram).",
-  "commands.nativeSkills":
-    "Register native skill commands (user-invocable skills) with channels that support it.",
-  "commands.text": "Allow text command parsing (slash commands only).",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "commands.bash":
     "Allow bash chat command (`!`; `/bash` alias) to run host shell commands (default: false; requires tools.elevated).",
   "commands.bashForegroundMs":
     "How long bash waits before backgrounding (default: 2000; 0 backgrounds immediately).",
   "commands.config": "Allow /config chat command to read/write config on disk (default: false).",
   "commands.debug": "Allow /debug chat command for runtime-only overrides (default: false).",
-<<<<<<< HEAD
   "commands.restart": "Allow /restart and gateway restart tool actions (default: true).",
   "commands.useAccessGroups": "Enforce access-group allowlists/policies for commands.",
   "commands.ownerAllowFrom":
@@ -1441,38 +1252,18 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional Slack user token for workflows requiring user-context API access beyond bot permissions. Use sparingly and audit scopes because this token can carry broader authority.",
   "channels.slack.userTokenReadOnly":
     "When true, treat configured Slack user token usage as read-only helper behavior where possible. Keep enabled if you only need supplemental reads without user-context writes.",
-=======
-  "commands.restart": "Allow /restart and gateway restart tool actions (default: false).",
-  "commands.useAccessGroups": "Enforce access-group allowlists/policies for commands.",
-  "commands.ownerAllowFrom":
-    "Explicit owner allowlist for owner-only tools/commands. Use channel-native IDs (optionally prefixed like \"whatsapp:+15551234567\"). '*' is ignored.",
-  "session.dmScope":
-    'DM session scoping: "main" keeps continuity; "per-peer", "per-channel-peer", or "per-account-channel-peer" isolates DM history (recommended for shared inboxes/multi-account).',
-  "session.identityLinks":
-    "Map canonical identities to provider-prefixed peer IDs for DM session linking (example: telegram:123456).",
-  "channels.telegram.configWrites":
-    "Allow Telegram to write config in response to channel events/commands (default: true).",
-  "channels.slack.configWrites":
-    "Allow Slack to write config in response to channel events/commands (default: true).",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.mattermost.configWrites":
     "Allow Mattermost to write config in response to channel events/commands (default: true).",
   "channels.discord.configWrites":
     "Allow Discord to write config in response to channel events/commands (default: true).",
-<<<<<<< HEAD
   "channels.discord.token":
     "Discord bot token used for gateway and REST API authentication for this provider account. Keep this secret out of committed config and rotate immediately after any leak.",
   "channels.discord.proxy":
     "Proxy URL for Discord gateway + API requests (app-id lookup and allowlist resolution). Set per account via channels.discord.accounts.<id>.proxy.",
-=======
-  "channels.discord.proxy":
-    "Proxy URL for Discord gateway WebSocket connections. Set per account via channels.discord.accounts.<id>.proxy.",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.whatsapp.configWrites":
     "Allow WhatsApp to write config in response to channel events/commands (default: true).",
   "channels.signal.configWrites":
     "Allow Signal to write config in response to channel events/commands (default: true).",
-<<<<<<< HEAD
   "channels.signal.account":
     "Signal account identifier (phone/number handle) used to bind this channel config to a specific Signal identity. Keep this aligned with your linked device/session state.",
   "channels.imessage.configWrites":
@@ -1483,12 +1274,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Allow Microsoft Teams to write config in response to channel events/commands (default: true).",
   "channels.modelByChannel":
     "Map provider -> channel id -> model override (values are provider/model or aliases).",
-=======
-  "channels.imessage.configWrites":
-    "Allow iMessage to write config in response to channel events/commands (default: true).",
-  "channels.msteams.configWrites":
-    "Allow Microsoft Teams to write config in response to channel events/commands (default: true).",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   ...IRC_FIELD_HELP,
   "channels.discord.commands.native": 'Override native commands for Discord (bool or "auto").',
   "channels.discord.commands.nativeSkills":
@@ -1499,7 +1284,6 @@ export const FIELD_HELP: Record<string, string> = {
   "channels.slack.commands.native": 'Override native commands for Slack (bool or "auto").',
   "channels.slack.commands.nativeSkills":
     'Override native skill commands for Slack (bool or "auto").',
-<<<<<<< HEAD
   "channels.slack.streaming":
     'Unified Slack stream preview mode: "off" | "partial" | "block" | "progress". Legacy boolean/streamMode keys are auto-mapped.',
   "channels.slack.nativeStreaming":
@@ -1521,20 +1305,10 @@ export const FIELD_HELP: Record<string, string> = {
     "Override default status reaction emojis. Keys: thinking, tool, coding, web, done, error, stallSoft, stallHard. Must be valid Telegram reaction emojis.",
   "messages.statusReactions.timing":
     "Override default timing. Keys: debounceMs (700), stallSoftMs (25000), stallHardMs (60000), doneHoldMs (1500), errorHoldMs (2500).",
-=======
-  "session.agentToAgent.maxPingPongTurns":
-    "Max reply-back turns between requester and target (0–5).",
-  "channels.telegram.customCommands":
-    "Additional Telegram bot menu commands (merged with native; conflicts ignored).",
-  "messages.ackReaction": "Emoji reaction used to acknowledge inbound messages (empty disables).",
-  "messages.ackReactionScope":
-    'When to send ack reactions ("group-mentions", "group-all", "direct", "all").',
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "messages.inbound.debounceMs":
     "Debounce window (ms) for batching rapid inbound messages from the same sender (0 to disable).",
   "channels.telegram.dmPolicy":
     'Direct message access control ("pairing" recommended). "open" requires channels.telegram.allowFrom=["*"].',
-<<<<<<< HEAD
   "channels.telegram.streaming":
     'Unified Telegram stream preview mode: "off" | "partial" | "block" | "progress". "progress" maps to "partial" on Telegram. Legacy boolean/streamMode keys are auto-mapped.',
   "channels.discord.streaming":
@@ -1547,16 +1321,6 @@ export const FIELD_HELP: Record<string, string> = {
     'Target max size for a Discord stream preview chunk when channels.discord.streaming="block" (default: 800; clamped to channels.discord.textChunkLimit).',
   "channels.discord.draftChunk.breakPreference":
     "Preferred breakpoints for Discord draft chunks (paragraph | newline | sentence). Default: paragraph.",
-=======
-  "channels.telegram.streamMode":
-    "Draft streaming mode for Telegram replies (off | partial | block). Separate from block streaming; requires private topics + sendMessageDraft.",
-  "channels.telegram.draftChunk.minChars":
-    'Minimum chars before emitting a Telegram draft update when channels.telegram.streamMode="block" (default: 200).',
-  "channels.telegram.draftChunk.maxChars":
-    'Target max size for a Telegram draft update chunk when channels.telegram.streamMode="block" (default: 800; clamped to channels.telegram.textChunkLimit).',
-  "channels.telegram.draftChunk.breakPreference":
-    "Preferred breakpoints for Telegram draft chunks (paragraph | newline | sentence). Default: paragraph.",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.telegram.retry.attempts":
     "Max retry attempts for outbound Telegram API calls (default: 3).",
   "channels.telegram.retry.minDelayMs": "Minimum retry delay in ms for Telegram outbound calls.",
@@ -1578,22 +1342,16 @@ export const FIELD_HELP: Record<string, string> = {
     'Direct message access control ("pairing" recommended). "open" requires channels.imessage.allowFrom=["*"].',
   "channels.bluebubbles.dmPolicy":
     'Direct message access control ("pairing" recommended). "open" requires channels.bluebubbles.allowFrom=["*"].',
-<<<<<<< HEAD
   "channels.discord.dmPolicy":
     'Direct message access control ("pairing" recommended). "open" requires channels.discord.allowFrom=["*"].',
   "channels.discord.dm.policy":
     'Direct message access control ("pairing" recommended). "open" requires channels.discord.allowFrom=["*"] (legacy: channels.discord.dm.allowFrom).',
-=======
-  "channels.discord.dm.policy":
-    'Direct message access control ("pairing" recommended). "open" requires channels.discord.dm.allowFrom=["*"].',
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.discord.retry.attempts":
     "Max retry attempts for outbound Discord API calls (default: 3).",
   "channels.discord.retry.minDelayMs": "Minimum retry delay in ms for Discord outbound calls.",
   "channels.discord.retry.maxDelayMs": "Maximum retry delay cap in ms for Discord outbound calls.",
   "channels.discord.retry.jitter": "Jitter factor (0-1) applied to Discord retry delays.",
   "channels.discord.maxLinesPerMessage": "Soft max line count per Discord message (default: 17).",
-<<<<<<< HEAD
   "channels.discord.threadBindings.enabled":
     "Enable Discord thread binding features (/focus, bound-thread routing/delivery, and thread-bound subagent sessions). Overrides session.threadBindings.enabled when set.",
   "channels.discord.threadBindings.ttlHours":
@@ -1612,8 +1370,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Consecutive decrypt failures before DAVE attempts session recovery (passed to @discordjs/voice; default: 24).",
   "channels.discord.voice.tts":
     "Optional TTS overrides for Discord voice playback (merged with messages.tts).",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.discord.intents.presence":
     "Enable the Guild Presences privileged intent. Must also be enabled in the Discord Developer Portal. Allows tracking user activities (e.g. Spotify). Default: false.",
   "channels.discord.intents.guildMembers":
@@ -1628,11 +1384,7 @@ export const FIELD_HELP: Record<string, string> = {
     "Discord presence activity type (0=Playing,1=Streaming,2=Listening,3=Watching,4=Custom,5=Competing).",
   "channels.discord.activityUrl": "Discord presence streaming URL (required for activityType=1).",
   "channels.slack.dm.policy":
-<<<<<<< HEAD
     'Direct message access control ("pairing" recommended). "open" requires channels.slack.allowFrom=["*"] (legacy: channels.slack.dm.allowFrom).',
   "channels.slack.dmPolicy":
     'Direct message access control ("pairing" recommended). "open" requires channels.slack.allowFrom=["*"].',
-=======
-    'Direct message access control ("pairing" recommended). "open" requires channels.slack.dm.allowFrom=["*"].',
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 };

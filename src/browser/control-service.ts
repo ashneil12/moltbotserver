@@ -2,17 +2,8 @@ import { loadConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveBrowserConfig } from "./config.js";
 import { ensureBrowserControlAuth } from "./control-auth.js";
-<<<<<<< HEAD
 import { type BrowserServerState, createBrowserRouteContext } from "./server-context.js";
 import { ensureExtensionRelayForProfiles, stopKnownBrowserProfiles } from "./server-lifecycle.js";
-=======
-import { ensureChromeExtensionRelayServer } from "./extension-relay.js";
-import {
-  type BrowserServerState,
-  createBrowserRouteContext,
-  listKnownProfileNames,
-} from "./server-context.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 let state: BrowserServerState | null = null;
 const log = createSubsystemLogger("browser");
@@ -74,27 +65,9 @@ export async function stopBrowserControlService(): Promise<void> {
 
   await stopKnownBrowserProfiles({
     getState: () => state,
-<<<<<<< HEAD
     onWarn: (message) => logService.warn(message),
   });
 
-=======
-    refreshConfigFromDisk: true,
-  });
-
-  try {
-    for (const name of listKnownProfileNames(current)) {
-      try {
-        await ctx.forProfile(name).stopRunningBrowser();
-      } catch {
-        // ignore
-      }
-    }
-  } catch (err) {
-    logService.warn(`openclaw browser stop failed: ${String(err)}`);
-  }
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   state = null;
 
   // Optional: Playwright is not always available (e.g. embedded gateway builds).

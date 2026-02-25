@@ -10,13 +10,8 @@ describe("github-copilot token", () => {
   const cachePath = "/tmp/openclaw-state/credentials/github-copilot.token.json";
 
   beforeEach(() => {
-<<<<<<< HEAD
     loadJsonFile.mockClear();
     saveJsonFile.mockClear();
-=======
-    loadJsonFile.mockReset();
-    saveJsonFile.mockReset();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("derives baseUrl from token", async () => {

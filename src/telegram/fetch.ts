@@ -96,9 +96,6 @@ export function resolveTelegramFetch(
 
 export function resetTelegramFetchStateForTests(): void {
   appliedAutoSelectFamily = null;
-<<<<<<< HEAD
   appliedDnsResultOrder = null;
   appliedGlobalDispatcherAutoSelectFamily = null;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

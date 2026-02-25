@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD
 import { captureEnv } from "../test-utils/env.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import * as tailscale from "./tailscale.js";
 
 const {
@@ -26,29 +23,15 @@ function createRuntimeWithExitError() {
 }
 
 describe("tailscale helpers", () => {
-<<<<<<< HEAD
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
     envSnapshot = captureEnv(["OPENCLAW_TEST_TAILSCALE_BINARY"]);
-=======
-  const originalForcedBinary = process.env.OPENCLAW_TEST_TAILSCALE_BINARY;
-
-  beforeEach(() => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     process.env.OPENCLAW_TEST_TAILSCALE_BINARY = "tailscale";
   });
 
   afterEach(() => {
-<<<<<<< HEAD
     envSnapshot.restore();
-=======
-    if (originalForcedBinary === undefined) {
-      delete process.env.OPENCLAW_TEST_TAILSCALE_BINARY;
-    } else {
-      process.env.OPENCLAW_TEST_TAILSCALE_BINARY = originalForcedBinary;
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     vi.restoreAllMocks();
   });
 

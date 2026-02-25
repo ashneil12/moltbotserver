@@ -459,7 +459,6 @@ describe("BlueBubbles webhook monitor", () => {
       expect(res.statusCode).toBe(400);
     });
 
-<<<<<<< HEAD
     it("accepts URL-encoded payload wrappers", async () => {
       const account = createMockAccount();
       const config: OpenClawConfig = {};
@@ -499,8 +498,6 @@ describe("BlueBubbles webhook monitor", () => {
       expect(res.body).toBe("ok");
     });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     it("returns 408 when request body times out (Slow-Loris protection)", async () => {
       vi.useFakeTimers();
       try {

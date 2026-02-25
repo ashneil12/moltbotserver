@@ -182,10 +182,7 @@ Bindings are **deterministic** and **most-specific wins**:
 7. channel-level match (`accountId: "*"`)
 8. fallback to default agent (`agents.list[].default`, else first list entry, default: `main`)
 
-<<<<<<< HEAD
 If multiple bindings match in the same tier, the first one in config order wins.
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 If a binding sets multiple match fields (for example `peer` + `guildId`), all specified fields are required (`AND` semantics).
 
 ## Multiple accounts / phone numbers

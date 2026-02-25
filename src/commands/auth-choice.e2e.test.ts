@@ -27,13 +27,9 @@ vi.mock("../providers/github-copilot-auth.js", () => ({
   githubCopilotLoginCommand: vi.fn(async () => {}),
 }));
 
-<<<<<<< HEAD:src/commands/auth-choice.test.ts
 const loginOpenAICodexOAuth = vi.hoisted(() =>
   vi.fn<() => Promise<OAuthCredentials | null>>(async () => null),
 );
-=======
-const loginOpenAICodexOAuth = vi.hoisted(() => vi.fn(async () => null));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/auth-choice.e2e.test.ts
 vi.mock("./openai-codex-oauth.js", () => ({
   loginOpenAICodexOAuth,
 }));
@@ -59,7 +55,6 @@ type StoredAuthProfile = {
 };
 
 describe("applyAuthChoice", () => {
-<<<<<<< HEAD:src/commands/auth-choice.test.ts
   const lifecycle = createAuthTestLifecycle([
     "OPENCLAW_STATE_DIR",
     "OPENCLAW_AGENT_DIR",
@@ -127,26 +122,10 @@ describe("applyAuthChoice", () => {
   async function readAuthProfile(profileId: string) {
     return (await readAuthProfiles()).profiles?.[profileId];
   }
-=======
-  const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-  const previousAgentDir = process.env.OPENCLAW_AGENT_DIR;
-  const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
-  const previousAnthropicKey = process.env.ANTHROPIC_API_KEY;
-  const previousOpenrouterKey = process.env.OPENROUTER_API_KEY;
-  const previousHfToken = process.env.HF_TOKEN;
-  const previousHfHubToken = process.env.HUGGINGFACE_HUB_TOKEN;
-  const previousLitellmKey = process.env.LITELLM_API_KEY;
-  const previousAiGatewayKey = process.env.AI_GATEWAY_API_KEY;
-  const previousCloudflareGatewayKey = process.env.CLOUDFLARE_AI_GATEWAY_API_KEY;
-  const previousSshTty = process.env.SSH_TTY;
-  const previousChutesClientId = process.env.CHUTES_CLIENT_ID;
-  let tempStateDir: string | null = null;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/auth-choice.e2e.test.ts
 
   afterEach(async () => {
     vi.unstubAllGlobals();
     resolvePluginProviders.mockReset();
-<<<<<<< HEAD:src/commands/auth-choice.test.ts
     detectZaiEndpoint.mockReset();
     detectZaiEndpoint.mockResolvedValue(null);
     loginOpenAICodexOAuth.mockReset();
@@ -157,118 +136,6 @@ describe("applyAuthChoice", () => {
 
   it("does not throw when openai-codex oauth fails", async () => {
     await setupTempState();
-=======
-    loginOpenAICodexOAuth.mockReset();
-    loginOpenAICodexOAuth.mockResolvedValue(null);
-    if (tempStateDir) {
-      await fs.rm(tempStateDir, { recursive: true, force: true });
-      tempStateDir = null;
-    }
-    if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
-    } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
-    }
-    if (previousAgentDir === undefined) {
-      delete process.env.OPENCLAW_AGENT_DIR;
-    } else {
-      process.env.OPENCLAW_AGENT_DIR = previousAgentDir;
-    }
-    if (previousPiAgentDir === undefined) {
-      delete process.env.PI_CODING_AGENT_DIR;
-    } else {
-      process.env.PI_CODING_AGENT_DIR = previousPiAgentDir;
-    }
-    if (previousAnthropicKey === undefined) {
-      delete process.env.ANTHROPIC_API_KEY;
-    } else {
-      process.env.ANTHROPIC_API_KEY = previousAnthropicKey;
-    }
-    if (previousOpenrouterKey === undefined) {
-      delete process.env.OPENROUTER_API_KEY;
-    } else {
-      process.env.OPENROUTER_API_KEY = previousOpenrouterKey;
-    }
-    if (previousHfToken === undefined) {
-      delete process.env.HF_TOKEN;
-    } else {
-      process.env.HF_TOKEN = previousHfToken;
-    }
-    if (previousHfHubToken === undefined) {
-      delete process.env.HUGGINGFACE_HUB_TOKEN;
-    } else {
-      process.env.HUGGINGFACE_HUB_TOKEN = previousHfHubToken;
-    }
-    if (previousLitellmKey === undefined) {
-      delete process.env.LITELLM_API_KEY;
-    } else {
-      process.env.LITELLM_API_KEY = previousLitellmKey;
-    }
-    if (previousAiGatewayKey === undefined) {
-      delete process.env.AI_GATEWAY_API_KEY;
-    } else {
-      process.env.AI_GATEWAY_API_KEY = previousAiGatewayKey;
-    }
-    if (previousCloudflareGatewayKey === undefined) {
-      delete process.env.CLOUDFLARE_AI_GATEWAY_API_KEY;
-    } else {
-      process.env.CLOUDFLARE_AI_GATEWAY_API_KEY = previousCloudflareGatewayKey;
-    }
-    if (previousSshTty === undefined) {
-      delete process.env.SSH_TTY;
-    } else {
-      process.env.SSH_TTY = previousSshTty;
-    }
-    if (previousChutesClientId === undefined) {
-      delete process.env.CHUTES_CLIENT_ID;
-    } else {
-      process.env.CHUTES_CLIENT_ID = previousChutesClientId;
-    }
-  });
-
-  it("does not throw when openai-codex oauth fails", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-    process.env.OPENCLAW_STATE_DIR = tempStateDir;
-    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
-    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
-
-    loginOpenAICodexOAuth.mockRejectedValueOnce(new Error("oauth failed"));
-
-    const prompter: WizardPrompter = {
-      intro: vi.fn(noopAsync),
-      outro: vi.fn(noopAsync),
-      note: vi.fn(noopAsync),
-      select: vi.fn(async () => "" as never),
-      multiselect: vi.fn(async () => []),
-      text: vi.fn(async () => ""),
-      confirm: vi.fn(async () => false),
-      progress: vi.fn(() => ({ update: noop, stop: noop })),
-    };
-    const runtime: RuntimeEnv = {
-      log: vi.fn(),
-      error: vi.fn(),
-      exit: vi.fn((code: number) => {
-        throw new Error(`exit:${code}`);
-      }),
-    };
-
-    await expect(
-      applyAuthChoice({
-        authChoice: "openai-codex",
-        config: {},
-        prompter,
-        runtime,
-        setDefaultModel: false,
-      }),
-    ).resolves.toEqual({ config: {} });
-  });
-
-  it("prompts and writes MiniMax API key when selecting minimax-api", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-    process.env.OPENCLAW_STATE_DIR = tempStateDir;
-    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
-    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/auth-choice.e2e.test.ts
 
     loginOpenAICodexOAuth.mockRejectedValueOnce(new Error("oauth failed"));
 
@@ -380,7 +247,6 @@ describe("applyAuthChoice", () => {
         setDefaultModel: true,
       });
 
-<<<<<<< HEAD:src/commands/auth-choice.test.ts
       expect(text).toHaveBeenCalledWith(
         expect.objectContaining({ message: expect.stringContaining(scenario.promptContains) }),
       );
@@ -392,88 +258,6 @@ describe("applyAuthChoice", () => {
         expect(result.config.models?.providers?.[scenario.provider]?.baseUrl).toBe(
           scenario.expectedBaseUrl,
         );
-=======
-    expect(text).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Enter Synthetic API key" }),
-    );
-    expect(result.config.auth?.profiles?.["synthetic:default"]).toMatchObject({
-      provider: "synthetic",
-      mode: "api_key",
-    });
-
-    const authProfilePath = authProfilePathFor(requireAgentDir());
-    const raw = await fs.readFile(authProfilePath, "utf8");
-    const parsed = JSON.parse(raw) as {
-      profiles?: Record<string, { key?: string }>;
-    };
-    expect(parsed.profiles?.["synthetic:default"]?.key).toBe("sk-synthetic-test");
-  });
-
-  it("prompts and writes Hugging Face API key when selecting huggingface-api-key", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-    process.env.OPENCLAW_STATE_DIR = tempStateDir;
-    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
-    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
-
-    const text = vi.fn().mockResolvedValue("hf-test-token");
-    const select: WizardPrompter["select"] = vi.fn(
-      async (params) => params.options[0]?.value as never,
-    );
-    const multiselect: WizardPrompter["multiselect"] = vi.fn(async () => []);
-    const prompter: WizardPrompter = {
-      intro: vi.fn(noopAsync),
-      outro: vi.fn(noopAsync),
-      note: vi.fn(noopAsync),
-      select,
-      multiselect,
-      text,
-      confirm: vi.fn(async () => false),
-      progress: vi.fn(() => ({ update: noop, stop: noop })),
-    };
-    const runtime: RuntimeEnv = {
-      log: vi.fn(),
-      error: vi.fn(),
-      exit: vi.fn((code: number) => {
-        throw new Error(`exit:${code}`);
-      }),
-    };
-
-    const result = await applyAuthChoice({
-      authChoice: "huggingface-api-key",
-      config: {},
-      prompter,
-      runtime,
-      setDefaultModel: true,
-    });
-
-    expect(text).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining("Hugging Face") }),
-    );
-    expect(result.config.auth?.profiles?.["huggingface:default"]).toMatchObject({
-      provider: "huggingface",
-      mode: "api_key",
-    });
-    expect(result.config.agents?.defaults?.model?.primary).toMatch(/^huggingface\/.+/);
-
-    const authProfilePath = authProfilePathFor(requireAgentDir());
-    const raw = await fs.readFile(authProfilePath, "utf8");
-    const parsed = JSON.parse(raw) as {
-      profiles?: Record<string, { key?: string }>;
-    };
-    expect(parsed.profiles?.["huggingface:default"]?.key).toBe("hf-test-token");
-  });
-
-  it("prompts for Z.AI endpoint when selecting zai-api-key", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-    process.env.OPENCLAW_STATE_DIR = tempStateDir;
-    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
-    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
-
-    const text = vi.fn().mockResolvedValue("zai-test-key");
-    const select = vi.fn(async (params: { message: string }) => {
-      if (params.message === "Select Z.AI endpoint") {
-        return "coding-cn";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/auth-choice.e2e.test.ts
       }
       if (scenario.expectedModelPrefix) {
         expect(
@@ -583,7 +367,6 @@ describe("applyAuthChoice", () => {
     }
   });
 
-<<<<<<< HEAD:src/commands/auth-choice.test.ts
   it("maps apiKey tokenProvider aliases to provider flow", async () => {
     const scenarios: Array<{
       tokenProvider: string;
@@ -633,71 +416,6 @@ describe("applyAuthChoice", () => {
       await setupTempState();
       delete process.env.HF_TOKEN;
       delete process.env.HUGGINGFACE_HUB_TOKEN;
-=======
-  it("maps apiKey + tokenProvider=huggingface to huggingface-api-key flow", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-    process.env.OPENCLAW_STATE_DIR = tempStateDir;
-    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
-    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
-    delete process.env.HF_TOKEN;
-    delete process.env.HUGGINGFACE_HUB_TOKEN;
-
-    const text = vi.fn().mockResolvedValue("should-not-be-used");
-    const select: WizardPrompter["select"] = vi.fn(
-      async (params) => params.options[0]?.value as never,
-    );
-    const multiselect: WizardPrompter["multiselect"] = vi.fn(async () => []);
-    const confirm = vi.fn(async () => false);
-    const prompter: WizardPrompter = {
-      intro: vi.fn(noopAsync),
-      outro: vi.fn(noopAsync),
-      note: vi.fn(noopAsync),
-      select,
-      multiselect,
-      text,
-      confirm,
-      progress: vi.fn(() => ({ update: noop, stop: noop })),
-    };
-    const runtime: RuntimeEnv = {
-      log: vi.fn(),
-      error: vi.fn(),
-      exit: vi.fn((code: number) => {
-        throw new Error(`exit:${code}`);
-      }),
-    };
-
-    const result = await applyAuthChoice({
-      authChoice: "apiKey",
-      config: {},
-      prompter,
-      runtime,
-      setDefaultModel: true,
-      opts: {
-        tokenProvider: "huggingface",
-        token: "hf-token-provider-test",
-      },
-    });
-
-    expect(result.config.auth?.profiles?.["huggingface:default"]).toMatchObject({
-      provider: "huggingface",
-      mode: "api_key",
-    });
-    expect(result.config.agents?.defaults?.model?.primary).toMatch(/^huggingface\/.+/);
-    expect(text).not.toHaveBeenCalled();
-
-    const authProfilePath = authProfilePathFor(requireAgentDir());
-    const raw = await fs.readFile(authProfilePath, "utf8");
-    const parsed = JSON.parse(raw) as {
-      profiles?: Record<string, { key?: string }>;
-    };
-    expect(parsed.profiles?.["huggingface:default"]?.key).toBe("hf-token-provider-test");
-  });
-  it("does not override the global default model when selecting xai-api-key without setDefaultModel", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-    process.env.OPENCLAW_STATE_DIR = tempStateDir;
-    process.env.OPENCLAW_AGENT_DIR = path.join(tempStateDir, "agent");
-    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/auth-choice.e2e.test.ts
 
       const text = vi.fn().mockResolvedValue("should-not-be-used");
       const confirm = vi.fn(async () => false);
@@ -1082,11 +800,7 @@ describe("applyAuthChoice", () => {
       if (previousIsTTYDescriptor) {
         Object.defineProperty(stdin, "isTTY", previousIsTTYDescriptor);
       } else if (!hadOwnIsTTY) {
-<<<<<<< HEAD:src/commands/auth-choice.test.ts
         delete (stdin as { isTTY?: boolean }).isTTY;
-=======
-        delete stdin.isTTY;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/auth-choice.e2e.test.ts
       }
     }
   });

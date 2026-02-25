@@ -1,16 +1,10 @@
-<<<<<<< HEAD
 import fs from "node:fs";
 import path from "node:path";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveBrowserConfig } from "../browser/config.js";
 import { loadConfig } from "../config/config.js";
 import { GatewayClient } from "../gateway/client.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
-<<<<<<< HEAD
 import type { SkillBinTrustEntry } from "../infra/exec-approvals.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { getMachineDisplayName } from "../infra/machine-name.js";
 import { ensureOpenClawCliOnPath } from "../infra/path-env.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
@@ -36,7 +30,6 @@ type NodeHostRunOptions = {
 
 const DEFAULT_NODE_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
-<<<<<<< HEAD
 function isExecutableFile(filePath: string): boolean {
   try {
     const stat = fs.statSync(filePath);
@@ -103,10 +96,6 @@ function resolveSkillBinTrustEntries(bins: string[], pathEnv: string): SkillBinT
 
 class SkillBinsCache implements SkillBinsProvider {
   private bins: SkillBinTrustEntry[] = [];
-=======
-class SkillBinsCache implements SkillBinsProvider {
-  private bins = new Set<string>();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   private lastRefresh = 0;
   private readonly ttlMs = 90_000;
   private readonly fetch: () => Promise<string[]>;

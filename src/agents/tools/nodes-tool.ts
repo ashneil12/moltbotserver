@@ -319,14 +319,6 @@ export function createNodesTool(options?: {
               payload,
               facing,
             });
-<<<<<<< HEAD
-=======
-            if (payload.url) {
-              await writeUrlToFile(filePath, payload.url);
-            } else if (payload.base64) {
-              await writeBase64ToFile(filePath, payload.base64);
-            }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             return {
               content: [{ type: "text", text: `FILE:${filePath}` }],
               details: {
@@ -482,23 +474,15 @@ export function createNodesTool(options?: {
             // the gateway and wait for the user to approve/deny via the UI.
             const APPROVAL_TIMEOUT_MS = 120_000;
             const cmdText = command.join(" ");
-<<<<<<< HEAD
             const approvalId = crypto.randomUUID();
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             const approvalResult = await callGatewayTool(
               "exec.approval.request",
               { ...gatewayOpts, timeoutMs: APPROVAL_TIMEOUT_MS + 5_000 },
               {
-<<<<<<< HEAD
                 id: approvalId,
                 command: cmdText,
                 cwd,
                 nodeId,
-=======
-                command: cmdText,
-                cwd,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
                 host: "node",
                 agentId,
                 sessionKey,
@@ -528,10 +512,7 @@ export function createNodesTool(options?: {
               command: "system.run",
               params: {
                 ...runParams,
-<<<<<<< HEAD
                 runId: approvalId,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
                 approved: true,
                 approvalDecision,
               },

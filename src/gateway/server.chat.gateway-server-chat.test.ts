@@ -16,10 +16,7 @@ import {
   writeSessionStore,
 } from "./test-helpers.js";
 import { agentCommand } from "./test-helpers.mocks.js";
-<<<<<<< HEAD:src/gateway/server.chat.gateway-server-chat.test.ts
 import { installConnectedControlUiServerSuite } from "./test-with-server.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/server.chat.gateway-server-chat.e2e.test.ts
 
 installGatewayTestHooks({ scope: "suite" });
 const CHAT_RESPONSE_TIMEOUT_MS = 4_000;
@@ -27,13 +24,7 @@ const CHAT_RESPONSE_TIMEOUT_MS = 4_000;
 let ws: WebSocket;
 let port: number;
 
-<<<<<<< HEAD:src/gateway/server.chat.gateway-server-chat.test.ts
 installConnectedControlUiServerSuite((started) => {
-=======
-beforeAll(async () => {
-  const started = await startServerWithClient(undefined, { controlUiEnabled: true });
-  server = started.server;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/server.chat.gateway-server-chat.e2e.test.ts
   ws = started.ws;
   port = started.port;
 });
@@ -89,10 +80,7 @@ describe("gateway server chat", () => {
       webchatWs = new WebSocket(`ws://127.0.0.1:${port}`, {
         headers: { origin: `http://127.0.0.1:${port}` },
       });
-<<<<<<< HEAD:src/gateway/server.chat.gateway-server-chat.test.ts
       trackConnectChallengeNonce(webchatWs);
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/server.chat.gateway-server-chat.e2e.test.ts
       await new Promise<void>((resolve) => webchatWs?.once("open", resolve));
       await connectOk(webchatWs, {
         client: {
@@ -384,10 +372,7 @@ describe("gateway server chat", () => {
     const webchatWs = new WebSocket(`ws://127.0.0.1:${port}`, {
       headers: { origin: `http://127.0.0.1:${port}` },
     });
-<<<<<<< HEAD:src/gateway/server.chat.gateway-server-chat.test.ts
     trackConnectChallengeNonce(webchatWs);
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/server.chat.gateway-server-chat.e2e.test.ts
     await new Promise<void>((resolve) => webchatWs.once("open", resolve));
     await connectOk(webchatWs, {
       client: {

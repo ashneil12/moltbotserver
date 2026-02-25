@@ -211,64 +211,16 @@ describe("runCronIsolatedAgentTurn", () => {
         deps,
       });
 
-<<<<<<< HEAD:src/cron/isolated-agent.skips-delivery-without-whatsapp-recipient-besteffortdeliver-true.test.ts
       expectDeliveredOk(res);
-=======
-      expect(res.status).toBe("ok");
-      expect(res.delivered).toBe(true);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/cron/isolated-agent.skips-delivery-without-whatsapp-recipient-besteffortdeliver-true.e2e.test.ts
       expect(runSubagentAnnounceFlow).not.toHaveBeenCalled();
       expect(deps.sendMessageTelegram).not.toHaveBeenCalled();
     });
   });
 
   it("reports not-delivered when best-effort structured outbound sends all fail", async () => {
-<<<<<<< HEAD:src/cron/isolated-agent.skips-delivery-without-whatsapp-recipient-besteffortdeliver-true.test.ts
     await expectBestEffortTelegramNotDelivered({
       text: "caption",
       mediaUrl: "https://example.com/img.png",
-=======
-    await withTempHome(async (home) => {
-      const storePath = await writeSessionStore(home);
-      const deps: CliDeps = {
-        sendMessageWhatsApp: vi.fn(),
-        sendMessageTelegram: vi.fn().mockRejectedValue(new Error("boom")),
-        sendMessageDiscord: vi.fn(),
-        sendMessageSignal: vi.fn(),
-        sendMessageIMessage: vi.fn(),
-      };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "caption", mediaUrl: "https://example.com/img.png" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
-      });
-
-      const res = await runCronIsolatedAgentTurn({
-        cfg: makeCfg(home, storePath, {
-          channels: { telegram: { botToken: "t-1" } },
-        }),
-        deps,
-        job: {
-          ...makeJob({ kind: "agentTurn", message: "do it" }),
-          delivery: {
-            mode: "announce",
-            channel: "telegram",
-            to: "123",
-            bestEffort: true,
-          },
-        },
-        message: "do it",
-        sessionKey: "cron:job-1",
-        lane: "cron",
-      });
-
-      expect(res.status).toBe("ok");
-      expect(res.delivered).toBe(false);
-      expect(runSubagentAnnounceFlow).not.toHaveBeenCalled();
-      expect(deps.sendMessageTelegram).toHaveBeenCalledTimes(1);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/cron/isolated-agent.skips-delivery-without-whatsapp-recipient-besteffortdeliver-true.e2e.test.ts
     });
   });
 

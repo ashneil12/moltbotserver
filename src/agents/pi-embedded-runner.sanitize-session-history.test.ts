@@ -74,13 +74,7 @@ describe("sanitizeSessionHistory", () => {
     ] as unknown as AgentMessage[];
 
   beforeEach(async () => {
-<<<<<<< HEAD
     sanitizeSessionHistory = await loadSanitizeSessionHistoryWithCleanMocks();
-=======
-    vi.resetAllMocks();
-    vi.mocked(helpers.sanitizeSessionMessagesImages).mockImplementation(async (msgs) => msgs);
-    ({ sanitizeSessionHistory } = await import("./pi-embedded-runner/google.js"));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("sanitizes tool call ids for Google model APIs", async () => {
@@ -132,13 +126,8 @@ describe("sanitizeSessionHistory", () => {
     );
   });
 
-<<<<<<< HEAD
   it("does not sanitize tool call ids for openai-responses", async () => {
     setNonGoogleModelApi();
-=======
-  it("sanitizes tool call ids for openai-responses while keeping images-only mode", async () => {
-    vi.mocked(helpers.isGoogleModelApi).mockReturnValue(false);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await sanitizeWithOpenAIResponses({
       sanitizeSessionHistory,

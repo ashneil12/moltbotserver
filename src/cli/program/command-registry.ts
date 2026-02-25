@@ -3,19 +3,6 @@ import { getPrimaryCommand, hasHelpOrVersion } from "../argv.js";
 import { reparseProgramFromActionArgs } from "./action-reparse.js";
 import { removeCommandByName } from "./command-tree.js";
 import type { ProgramContext } from "./context.js";
-<<<<<<< HEAD
-=======
-import { registerBrowserCli } from "../browser-cli.js";
-import { registerConfigCli } from "../config-cli.js";
-import { registerMemoryCli } from "../memory-cli.js";
-import { registerAgentCommands } from "./register.agent.js";
-import { registerConfigureCommand } from "./register.configure.js";
-import { registerMaintenanceCommands } from "./register.maintenance.js";
-import { registerMessageCommands } from "./register.message.js";
-import { registerOnboardCommand } from "./register.onboard.js";
-import { registerSetupCommand } from "./register.setup.js";
-import { registerStatusHealthSessionsCommands } from "./register.status-health-sessions.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { registerSubCliCommands } from "./register.subclis.js";
 
 type CommandRegisterParams = {
@@ -29,7 +16,6 @@ export type CommandRegistration = {
   register: (params: CommandRegisterParams) => void;
 };
 
-<<<<<<< HEAD
 type CoreCliCommandDescriptor = {
   name: string;
   description: string;
@@ -52,9 +38,6 @@ const shouldRegisterCorePrimaryOnly = (argv: string[]) => {
 // If you update the list of commands, also check whether they have subcommands
 // and set the flag accordingly.
 const coreEntries: CoreCliEntry[] = [
-=======
-export const commandRegistry: CommandRegistration[] = [
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   {
     commands: [
       {
@@ -151,7 +134,6 @@ export const commandRegistry: CommandRegistration[] = [
     },
   },
   {
-<<<<<<< HEAD
     commands: [
       {
         name: "memory",
@@ -183,15 +165,6 @@ export const commandRegistry: CommandRegistration[] = [
         agentChannelOptions: ctx.agentChannelOptions,
       });
     },
-=======
-    id: "memory",
-    register: ({ program }) => registerMemoryCli(program),
-  },
-  {
-    id: "agent",
-    register: ({ program, ctx }) =>
-      registerAgentCommands(program, { agentChannelOptions: ctx.agentChannelOptions }),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   },
   {
     commands: [
@@ -217,7 +190,6 @@ export const commandRegistry: CommandRegistration[] = [
     },
   },
   {
-<<<<<<< HEAD
     commands: [
       {
         name: "browser",
@@ -229,14 +201,6 @@ export const commandRegistry: CommandRegistration[] = [
       const mod = await import("../browser-cli.js");
       mod.registerBrowserCli(program);
     },
-=======
-    id: "status-health-sessions",
-    register: ({ program }) => registerStatusHealthSessionsCommands(program),
-  },
-  {
-    id: "browser",
-    register: ({ program }) => registerBrowserCli(program),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   },
 ];
 
@@ -335,12 +299,6 @@ export function registerProgramCommands(
   ctx: ProgramContext,
   argv: string[] = process.argv,
 ) {
-<<<<<<< HEAD
   registerCoreCliCommands(program, ctx, argv);
   registerSubCliCommands(program, argv);
-=======
-  for (const entry of commandRegistry) {
-    entry.register({ program, ctx, argv });
-  }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

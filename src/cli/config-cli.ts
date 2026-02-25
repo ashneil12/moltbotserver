@@ -239,10 +239,7 @@ function parseRequiredPath(path: string): PathSegment[] {
   if (parsedPath.length === 0) {
     throw new Error("Path is empty.");
   }
-<<<<<<< HEAD
   validatePathSegments(parsedPath);
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return parsedPath;
 }
 
@@ -251,12 +248,8 @@ export async function runConfigGet(opts: { path: string; json?: boolean; runtime
   try {
     const parsedPath = parseRequiredPath(opts.path);
     const snapshot = await loadValidConfig(runtime);
-<<<<<<< HEAD
     const redacted = redactConfigObject(snapshot.config);
     const res = getAtPath(redacted, parsedPath);
-=======
-    const res = getAtPath(snapshot.config, parsedPath);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (!res.found) {
       runtime.error(danger(`Config path not found: ${opts.path}`));
       runtime.exit(1);
@@ -296,11 +289,7 @@ export async function runConfigUnset(opts: { path: string; runtime?: RuntimeEnv 
       runtime.exit(1);
       return;
     }
-<<<<<<< HEAD
     await writeConfigFile(next, { unsetPaths: [parsedPath] });
-=======
-    await writeConfigFile(next);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     runtime.log(info(`Removed ${opts.path}. Restart the gateway to apply.`));
   } catch (err) {
     runtime.error(danger(String(err)));

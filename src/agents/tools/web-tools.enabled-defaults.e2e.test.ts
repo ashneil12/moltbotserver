@@ -296,7 +296,6 @@ describe("web_search kimi provider", () => {
     ) as {
       messages?: Array<Record<string, unknown>>;
     };
-<<<<<<< HEAD:src/agents/tools/web-tools.enabled-defaults.test.ts
     const toolMessage = secondBody.messages?.find((message) => message.role === "tool") as
       | { content?: string; tool_call_id?: string }
       | undefined;
@@ -309,57 +308,6 @@ describe("web_search kimi provider", () => {
       citations?: string[];
       content?: string;
       provider?: string;
-=======
-    expect(body.model).toBe("sonar-pro");
-  });
-
-  it("passes freshness to Perplexity provider as search_recency_filter", async () => {
-    vi.stubEnv("PERPLEXITY_API_KEY", "pplx-test");
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ choices: [{ message: { content: "ok" } }], citations: [] }),
-      } as Response),
-    );
-    // @ts-expect-error mock fetch
-    global.fetch = mockFetch;
-
-    const tool = createWebSearchTool({
-      config: { tools: { web: { search: { provider: "perplexity" } } } },
-      sandboxed: true,
-    });
-    await tool?.execute?.(1, { query: "perplexity-freshness-test", freshness: "pw" });
-
-    expect(mockFetch).toHaveBeenCalledOnce();
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
-    expect(body.search_recency_filter).toBe("week");
-  });
-
-  it("defaults to OpenRouter when OPENROUTER_API_KEY is set", async () => {
-    vi.stubEnv("PERPLEXITY_API_KEY", "");
-    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ choices: [{ message: { content: "ok" } }], citations: [] }),
-      } as Response),
-    );
-    // @ts-expect-error mock fetch
-    global.fetch = mockFetch;
-
-    const tool = createWebSearchTool({
-      config: { tools: { web: { search: { provider: "perplexity" } } } },
-      sandboxed: true,
-    });
-    await tool?.execute?.(1, { query: "test-openrouter-env" });
-
-    expect(mockFetch).toHaveBeenCalled();
-    expect(mockFetch.mock.calls[0]?.[0]).toBe("https://openrouter.ai/api/v1/chat/completions");
-    const request = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined;
-    const requestBody = request?.body;
-    const body = JSON.parse(typeof requestBody === "string" ? requestBody : "{}") as {
-      model?: string;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/tools/web-tools.enabled-defaults.e2e.test.ts
     };
     expect(details.provider).toBe("kimi");
     expect(details.citations).toEqual(["https://openclaw.ai/docs"]);

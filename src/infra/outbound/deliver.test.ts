@@ -22,13 +22,10 @@ const hookMocks = vi.hoisted(() => ({
     runMessageSent: vi.fn(async () => {}),
   },
 }));
-<<<<<<< HEAD
 const internalHookMocks = vi.hoisted(() => ({
   createInternalHookEvent: vi.fn(),
   triggerInternalHook: vi.fn(async () => {}),
 }));
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const queueMocks = vi.hoisted(() => ({
   enqueueDelivery: vi.fn(async () => "mock-queue-id"),
   ackDelivery: vi.fn(async () => {}),
@@ -47,13 +44,10 @@ vi.mock("../../config/sessions.js", async () => {
 vi.mock("../../plugins/hook-runner-global.js", () => ({
   getGlobalHookRunner: () => hookMocks.runner,
 }));
-<<<<<<< HEAD
 vi.mock("../../hooks/internal-hooks.js", () => ({
   createInternalHookEvent: internalHookMocks.createInternalHookEvent,
   triggerInternalHook: internalHookMocks.triggerInternalHook,
 }));
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 vi.mock("./delivery-queue.js", () => ({
   enqueueDelivery: queueMocks.enqueueDelivery,
   ackDelivery: queueMocks.ackDelivery,
@@ -114,7 +108,6 @@ describe("deliverOutboundPayloads", () => {
     hookMocks.runner.hasHooks.mockReturnValue(false);
     hookMocks.runner.runMessageSent.mockClear();
     hookMocks.runner.runMessageSent.mockResolvedValue(undefined);
-<<<<<<< HEAD
     internalHookMocks.createInternalHookEvent.mockClear();
     internalHookMocks.createInternalHookEvent.mockImplementation(createInternalHookEventPayload);
     internalHookMocks.triggerInternalHook.mockClear();
@@ -123,13 +116,6 @@ describe("deliverOutboundPayloads", () => {
     queueMocks.ackDelivery.mockClear();
     queueMocks.ackDelivery.mockResolvedValue(undefined);
     queueMocks.failDelivery.mockClear();
-=======
-    queueMocks.enqueueDelivery.mockReset();
-    queueMocks.enqueueDelivery.mockResolvedValue("mock-queue-id");
-    queueMocks.ackDelivery.mockReset();
-    queueMocks.ackDelivery.mockResolvedValue(undefined);
-    queueMocks.failDelivery.mockReset();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     queueMocks.failDelivery.mockResolvedValue(undefined);
   });
 
@@ -548,7 +534,6 @@ describe("deliverOutboundPayloads", () => {
     expect(results).toEqual([{ channel: "whatsapp", messageId: "w2", toJid: "jid" }]);
   });
 
-<<<<<<< HEAD
   it("emits internal message:sent hook with success=true for chunked payload delivery", async () => {
     const { sendWhatsApp } = await runChunkedWhatsAppDelivery({
       mirror: {
@@ -618,8 +603,6 @@ describe("deliverOutboundPayloads", () => {
     expect(internalHookMocks.triggerInternalHook).toHaveBeenCalledTimes(1);
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("calls failDelivery instead of ackDelivery on bestEffort partial failure", async () => {
     const sendWhatsApp = vi
       .fn()

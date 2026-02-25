@@ -107,7 +107,6 @@ export class TuiStreamAssembler {
       state.thinkingText = thinkingText;
     }
     if (contentText) {
-<<<<<<< HEAD
       const nextContentBlocks = textBlocks.length > 0 ? textBlocks : [contentText];
       const shouldPreserveBoundaryDroppedText =
         opts?.protectBoundaryDrops === true &&
@@ -121,10 +120,6 @@ export class TuiStreamAssembler {
         state.contentText = contentText;
         state.contentBlocks = nextContentBlocks;
       }
-=======
-      state.contentText = contentText;
-      state.contentBlocks = textBlocks.length > 0 ? textBlocks : [contentText];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     if (sawNonTextContentBlocks) {
       state.sawNonTextContentBlocks = true;

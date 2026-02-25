@@ -94,26 +94,10 @@ function createAutoProvider(model = "") {
 }
 
 describe("embedding provider remote overrides", () => {
-<<<<<<< HEAD
   it("uses remote baseUrl/apiKey and merges headers", async () => {
     const fetchMock = createFetchMock();
     vi.stubGlobal("fetch", fetchMock);
     mockResolvedProviderKey("provider-key");
-=======
-  afterEach(() => {
-    vi.resetAllMocks();
-    vi.unstubAllGlobals();
-  });
-
-  it("uses remote baseUrl/apiKey and merges headers", async () => {
-    const fetchMock = createFetchMock();
-    vi.stubGlobal("fetch", fetchMock);
-    vi.mocked(authModule.resolveApiKeyForProvider).mockResolvedValue({
-      apiKey: "provider-key",
-      mode: "api-key",
-      source: "test",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const cfg = {
       models: {
@@ -162,15 +146,7 @@ describe("embedding provider remote overrides", () => {
   it("falls back to resolved api key when remote apiKey is blank", async () => {
     const fetchMock = createFetchMock();
     vi.stubGlobal("fetch", fetchMock);
-<<<<<<< HEAD
     mockResolvedProviderKey("provider-key");
-=======
-    vi.mocked(authModule.resolveApiKeyForProvider).mockResolvedValue({
-      apiKey: "provider-key",
-      mode: "api-key",
-      source: "test",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const cfg = {
       models: {
@@ -205,15 +181,7 @@ describe("embedding provider remote overrides", () => {
   it("builds Gemini embeddings requests with api key header", async () => {
     const fetchMock = createGeminiFetchMock();
     vi.stubGlobal("fetch", fetchMock);
-<<<<<<< HEAD
     mockResolvedProviderKey("provider-key");
-=======
-    vi.mocked(authModule.resolveApiKeyForProvider).mockResolvedValue({
-      apiKey: "provider-key",
-      mode: "api-key",
-      source: "test",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const cfg = {
       models: {
@@ -285,14 +253,6 @@ describe("embedding provider remote overrides", () => {
 });
 
 describe("embedding provider auto selection", () => {
-<<<<<<< HEAD
-=======
-  afterEach(() => {
-    vi.resetAllMocks();
-    vi.unstubAllGlobals();
-  });
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("prefers openai when a key resolves", async () => {
     vi.mocked(authModule.resolveApiKeyForProvider).mockImplementation(async ({ provider }) => {
       if (provider === "openai") {
@@ -378,35 +338,13 @@ describe("embedding provider auto selection", () => {
 });
 
 describe("embedding provider local fallback", () => {
-<<<<<<< HEAD
   it("falls back to openai when node-llama-cpp is missing", async () => {
     mockMissingLocalEmbeddingDependency();
-=======
-  afterEach(() => {
-    vi.resetAllMocks();
-    vi.unstubAllGlobals();
-  });
-
-  it("falls back to openai when node-llama-cpp is missing", async () => {
-    importNodeLlamaCppMock.mockRejectedValue(
-      Object.assign(new Error("Cannot find package 'node-llama-cpp'"), {
-        code: "ERR_MODULE_NOT_FOUND",
-      }),
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const fetchMock = createFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
-<<<<<<< HEAD
     mockResolvedProviderKey("provider-key");
-=======
-    vi.mocked(authModule.resolveApiKeyForProvider).mockResolvedValue({
-      apiKey: "provider-key",
-      mode: "api-key",
-      source: "test",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const result = await createLocalProvider({ fallback: "openai" });
 
@@ -417,7 +355,6 @@ describe("embedding provider local fallback", () => {
   });
 
   it("throws a helpful error when local is requested and fallback is none", async () => {
-<<<<<<< HEAD
     mockMissingLocalEmbeddingDependency();
     await expect(createLocalProvider()).rejects.toThrow(/optional dependency node-llama-cpp/i);
   });
@@ -426,22 +363,6 @@ describe("embedding provider local fallback", () => {
     mockMissingLocalEmbeddingDependency();
     await expect(createLocalProvider()).rejects.toThrow(/provider = "gemini"/i);
     await expect(createLocalProvider()).rejects.toThrow(/provider = "mistral"/i);
-=======
-    importNodeLlamaCppMock.mockRejectedValue(
-      Object.assign(new Error("Cannot find package 'node-llama-cpp'"), {
-        code: "ERR_MODULE_NOT_FOUND",
-      }),
-    );
-
-    await expect(
-      createEmbeddingProvider({
-        config: {} as never,
-        provider: "local",
-        model: "text-embedding-3-small",
-        fallback: "none",
-      }),
-    ).rejects.toThrow(/optional dependency node-llama-cpp/i);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("mentions every remote provider in local setup guidance", async () => {
@@ -463,35 +384,8 @@ describe("embedding provider local fallback", () => {
 });
 
 describe("local embedding normalization", () => {
-<<<<<<< HEAD
   async function createLocalProviderForTest() {
     return createEmbeddingProvider({
-=======
-  afterEach(() => {
-    vi.resetAllMocks();
-    vi.unstubAllGlobals();
-  });
-
-  it("normalizes local embeddings to magnitude ~1.0", async () => {
-    const unnormalizedVector = [2.35, 3.45, 0.63, 4.3, 1.2, 5.1, 2.8, 3.9];
-    const resolveModelFileMock = vi.fn(async () => "/fake/model.gguf");
-
-    importNodeLlamaCppMock.mockResolvedValue({
-      getLlama: async () => ({
-        loadModel: vi.fn().mockResolvedValue({
-          createEmbeddingContext: vi.fn().mockResolvedValue({
-            getEmbeddingFor: vi.fn().mockResolvedValue({
-              vector: new Float32Array(unnormalizedVector),
-            }),
-          }),
-        }),
-      }),
-      resolveModelFile: resolveModelFileMock,
-      LlamaLogLevel: { error: 0 },
-    });
-
-    const result = await createEmbeddingProvider({
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       config: {} as never,
       provider: "local",
       model: "",
@@ -539,25 +433,9 @@ describe("local embedding normalization", () => {
   it("handles zero vector without division by zero", async () => {
     const zeroVector = [0, 0, 0, 0];
 
-<<<<<<< HEAD
     mockSingleLocalEmbeddingVector(zeroVector);
 
     const result = await createLocalProviderForTest();
-=======
-    importNodeLlamaCppMock.mockResolvedValue({
-      getLlama: async () => ({
-        loadModel: vi.fn().mockResolvedValue({
-          createEmbeddingContext: vi.fn().mockResolvedValue({
-            getEmbeddingFor: vi.fn().mockResolvedValue({
-              vector: new Float32Array(zeroVector),
-            }),
-          }),
-        }),
-      }),
-      resolveModelFile: async () => "/fake/model.gguf",
-      LlamaLogLevel: { error: 0 },
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const provider = requireProvider(result);
     const embedding = await provider.embedQuery("test");
@@ -569,25 +447,9 @@ describe("local embedding normalization", () => {
   it("sanitizes non-finite values before normalization", async () => {
     const nonFiniteVector = [1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
 
-<<<<<<< HEAD
     mockSingleLocalEmbeddingVector(nonFiniteVector);
 
     const result = await createLocalProviderForTest();
-=======
-    importNodeLlamaCppMock.mockResolvedValue({
-      getLlama: async () => ({
-        loadModel: vi.fn().mockResolvedValue({
-          createEmbeddingContext: vi.fn().mockResolvedValue({
-            getEmbeddingFor: vi.fn().mockResolvedValue({
-              vector: new Float32Array(nonFiniteVector),
-            }),
-          }),
-        }),
-      }),
-      resolveModelFile: async () => "/fake/model.gguf",
-      LlamaLogLevel: { error: 0 },
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const provider = requireProvider(result);
     const embedding = await provider.embedQuery("test");
@@ -617,16 +479,6 @@ describe("local embedding normalization", () => {
       }),
       resolveModelFile: async () => "/fake/model.gguf",
       LlamaLogLevel: { error: 0 },
-<<<<<<< HEAD
-=======
-    });
-
-    const result = await createEmbeddingProvider({
-      config: {} as never,
-      provider: "local",
-      model: "",
-      fallback: "none",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
 
     const result = await createLocalProviderForTest();

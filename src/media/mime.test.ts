@@ -1,9 +1,6 @@
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-<<<<<<< HEAD
 import { mediaKindFromMime } from "./constants.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   detectMime,
   extensionForMime,
@@ -108,7 +105,6 @@ describe("isAudioFileName", () => {
 });
 
 describe("normalizeMimeType", () => {
-<<<<<<< HEAD
   it.each([
     { input: "Audio/MP4; codecs=mp4a.40.2", expected: "audio/mp4" },
     { input: "   ", expected: undefined },
@@ -127,15 +123,5 @@ describe("mediaKindFromMime", () => {
     { mime: "model/gltf+json", expected: "unknown" },
   ] as const)("classifies $mime", ({ mime, expected }) => {
     expect(mediaKindFromMime(mime)).toBe(expected);
-=======
-  it("normalizes case and strips parameters", () => {
-    expect(normalizeMimeType("Audio/MP4; codecs=mp4a.40.2")).toBe("audio/mp4");
-  });
-
-  it("returns undefined for empty input", () => {
-    expect(normalizeMimeType("   ")).toBeUndefined();
-    expect(normalizeMimeType(null)).toBeUndefined();
-    expect(normalizeMimeType(undefined)).toBeUndefined();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

@@ -494,10 +494,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
         webhookSecret: account.config.webhookSecret,
         webhookPath: account.config.webhookPath,
         webhookHost: account.config.webhookHost,
-<<<<<<< HEAD
         webhookPort: account.config.webhookPort,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       });
     },
     logoutAccount: async ({ accountId, cfg }) => {

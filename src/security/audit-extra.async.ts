@@ -5,22 +5,12 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-<<<<<<< HEAD
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-=======
-import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
-import type { OpenClawConfig, ConfigFileSnapshot } from "../config/config.js";
-import type { AgentToolsConfig } from "../config/types.tools.js";
-import type { SkillScanFinding } from "./skill-scanner.js";
-import type { ExecFn } from "./windows-acl.js";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
 import {
   resolveSandboxConfigForAgent,
   resolveSandboxToolPolicyForAgent,
 } from "../agents/sandbox.js";
-<<<<<<< HEAD
 import { SANDBOX_BROWSER_SECURITY_HASH_EPOCH } from "../agents/sandbox/constants.js";
 import { execDockerRaw, type ExecDockerRawResult } from "../agents/sandbox/docker.js";
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
@@ -28,20 +18,13 @@ import { loadWorkspaceSkillEntries } from "../agents/skills.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import { formatCliCommand } from "../cli/command-format.js";
-=======
-import { loadWorkspaceSkillEntries } from "../agents/skills.js";
-import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { resolveNativeSkillsEnabled } from "../config/commands.js";
 import type { OpenClawConfig, ConfigFileSnapshot } from "../config/config.js";
 import { createConfigIO } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
 import { resolveOAuthDir } from "../config/paths.js";
-<<<<<<< HEAD
 import type { AgentToolsConfig } from "../config/types.tools.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {
@@ -50,15 +33,11 @@ import {
   inspectPathPermissions,
   safeStat,
 } from "./audit-fs.js";
-<<<<<<< HEAD
 import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
 import type { SkillScanFinding } from "./skill-scanner.js";
 import * as skillScanner from "./skill-scanner.js";
 import type { ExecFn } from "./windows-acl.js";
-=======
-import * as skillScanner from "./skill-scanner.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type SecurityAuditFinding = {
   checkId: string;
@@ -125,7 +104,6 @@ function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string):
     .join("\n");
 }
 
-<<<<<<< HEAD
 async function listInstalledPluginDirs(params: {
   stateDir: string;
   onReadError?: (error: unknown) => void;
@@ -144,36 +122,6 @@ async function listInstalledPluginDirs(params: {
     .map((entry) => entry.name)
     .filter(Boolean);
   return { extensionsDir, pluginDirs };
-=======
-function unionAllow(base?: string[], extra?: string[]): string[] | undefined {
-  if (!Array.isArray(extra) || extra.length === 0) {
-    return base;
-  }
-  if (!Array.isArray(base) || base.length === 0) {
-    return Array.from(new Set(["*", ...extra]));
-  }
-  return Array.from(new Set([...base, ...extra]));
-}
-
-function pickToolPolicy(config?: {
-  allow?: string[];
-  alsoAllow?: string[];
-  deny?: string[];
-}): SandboxToolPolicy | undefined {
-  if (!config) {
-    return undefined;
-  }
-  const allow = Array.isArray(config.allow)
-    ? unionAllow(config.allow, config.alsoAllow)
-    : Array.isArray(config.alsoAllow) && config.alsoAllow.length > 0
-      ? unionAllow(undefined, config.alsoAllow)
-      : undefined;
-  const deny = Array.isArray(config.deny) ? config.deny : undefined;
-  if (!allow && !deny) {
-    return undefined;
-  }
-  return { allow, deny };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 function resolveToolPolicies(params: {
@@ -186,13 +134,8 @@ function resolveToolPolicies(params: {
   const profilePolicy = resolveToolProfilePolicy(profile);
   const policies: Array<SandboxToolPolicy | undefined> = [
     profilePolicy,
-<<<<<<< HEAD
     pickSandboxToolPolicy(params.cfg.tools ?? undefined),
     pickSandboxToolPolicy(params.agentTools),
-=======
-    pickToolPolicy(params.cfg.tools ?? undefined),
-    pickToolPolicy(params.agentTools),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   ];
   if (params.sandboxMode === "all") {
     policies.push(resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined));
@@ -280,7 +223,6 @@ function hasProviderPluginAllow(params: {
   return false;
 }
 
-<<<<<<< HEAD
 function isPinnedRegistrySpec(spec: string): boolean {
   const value = spec.trim();
   if (!value) {
@@ -304,8 +246,6 @@ async function readInstalledPackageVersion(dir: string): Promise<string | undefi
   }
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 // --------------------------------------------------------------------------
 // Exported collectors
 // --------------------------------------------------------------------------

@@ -9,11 +9,7 @@ const hookMocks = vi.hoisted(() => ({
     runAfterToolCall: vi.fn(async () => {}),
   },
   isToolWrappedWithBeforeToolCallHook: vi.fn(() => false),
-<<<<<<< HEAD:src/agents/pi-tool-definition-adapter.after-tool-call.test.ts
   consumeAdjustedParamsForToolCall: vi.fn((_: string) => undefined as unknown),
-=======
-  consumeAdjustedParamsForToolCall: vi.fn(() => undefined),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tool-definition-adapter.after-tool-call.e2e.test.ts
   runBeforeToolCallHook: vi.fn(async ({ params }: { params: unknown }) => ({
     blocked: false,
     params,
@@ -73,19 +69,11 @@ describe("pi tool definition adapter after_tool_call", () => {
     hookMocks.runner.hasHooks.mockClear();
     hookMocks.runner.runAfterToolCall.mockClear();
     hookMocks.runner.runAfterToolCall.mockResolvedValue(undefined);
-<<<<<<< HEAD:src/agents/pi-tool-definition-adapter.after-tool-call.test.ts
     hookMocks.isToolWrappedWithBeforeToolCallHook.mockClear();
     hookMocks.isToolWrappedWithBeforeToolCallHook.mockReturnValue(false);
     hookMocks.consumeAdjustedParamsForToolCall.mockClear();
     hookMocks.consumeAdjustedParamsForToolCall.mockReturnValue(undefined);
     hookMocks.runBeforeToolCallHook.mockClear();
-=======
-    hookMocks.isToolWrappedWithBeforeToolCallHook.mockReset();
-    hookMocks.isToolWrappedWithBeforeToolCallHook.mockReturnValue(false);
-    hookMocks.consumeAdjustedParamsForToolCall.mockReset();
-    hookMocks.consumeAdjustedParamsForToolCall.mockReturnValue(undefined);
-    hookMocks.runBeforeToolCallHook.mockReset();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tool-definition-adapter.after-tool-call.e2e.test.ts
     hookMocks.runBeforeToolCallHook.mockImplementation(async ({ params }) => ({
       blocked: false,
       params,

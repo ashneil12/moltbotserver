@@ -47,6 +47,7 @@ import {
   getHookType,
   isExternalHookSession,
 } from "../../security/external-content.js";
+import { scanAndLog } from "../../security/scan-and-log.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import type { CronJob, CronRunOutcome, CronRunTelemetry } from "../types.js";
 import {
@@ -69,12 +70,6 @@ import { resolveCronSkillsSnapshot } from "./skills-snapshot.js";
 export type RunCronAgentTurnResult = {
   /** Last non-empty agent text output (not truncated). */
   outputText?: string;
-<<<<<<< HEAD
-=======
-  error?: string;
-  sessionId?: string;
-  sessionKey?: string;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   /**
    * `true` when the isolated run already delivered its output to the target
    * channel (via outbound payloads, the subagent announce flow, or a matching
@@ -83,12 +78,8 @@ export type RunCronAgentTurnResult = {
    * messages.  See: https://github.com/openclaw/openclaw/issues/15692
    */
   delivered?: boolean;
-<<<<<<< HEAD
 } & CronRunOutcome &
   CronRunTelemetry;
-=======
-};
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export async function runCronIsolatedAgentTurn(params: {
   cfg: OpenClawConfig;
@@ -332,7 +323,7 @@ export async function runCronIsolatedAgentTurn(params: {
   let commandBody: string;
 
   if (isExternalHook) {
-    // Log suspicious patterns for security monitoring
+    // Legacy pattern check — preserved for backward compatibility
     const suspiciousPatterns = detectSuspiciousPatterns(params.message);
     if (suspiciousPatterns.length > 0) {
       logWarn(
@@ -340,6 +331,13 @@ export async function runCronIsolatedAgentTurn(params: {
           `(session=${baseSessionKey}, patterns=${suspiciousPatterns.length}): ${suspiciousPatterns.slice(0, 3).join(", ")}`,
       );
     }
+    // Full content scanner — adds risk scoring, quarantine, and structured findings
+    scanAndLog(params.message, {
+      source: getHookType(baseSessionKey),
+      sender: baseSessionKey,
+      eventName: "security.content_scan",
+      extraData: { sessionKey: baseSessionKey },
+    });
   }
 
   if (shouldWrapExternal) {
@@ -567,17 +565,49 @@ export async function runCronIsolatedAgentTurn(params: {
   const embeddedRunError = hasErrorPayload
     ? (lastErrorPayloadText ?? "cron isolated run returned an error payload")
     : undefined;
-  const resolveRunOutcome = (params?: { delivered?: boolean }) =>
-    withRunSession({
+  const resolveRunOutcome = (outcomeOpts?: { delivered?: boolean }) => {
+    // Log cron run outcome to event logger
+    try {
+      import("../../logging/event-log.js")
+        .then(({ createEventLogger }) => {
+          createEventLogger({}).log({
+            event: hasErrorPayload ? "cron.failed" : "cron.completed",
+            level: hasErrorPayload ? "error" : "info",
+            data: {
+              jobId: params.job.id,
+              jobName: params.job.name,
+              status: hasErrorPayload ? "error" : "ok",
+              error: hasErrorPayload
+                ? (embeddedRunError ?? "cron isolated run returned an error payload")
+                : undefined,
+              durationMs: runEndedAt - runStartedAt,
+              model: telemetry?.model,
+              provider: telemetry?.provider,
+              inputTokens: telemetry?.usage?.input_tokens,
+              outputTokens: telemetry?.usage?.output_tokens,
+              delivered: outcomeOpts?.delivered,
+              agentId,
+            },
+            subsystem: "cron",
+          });
+        })
+        .catch(() => {
+          // Event logging must never block cron execution
+        });
+    } catch {
+      // Event logging must never block cron execution
+    }
+    return withRunSession({
       status: hasErrorPayload ? "error" : "ok",
       ...(hasErrorPayload
         ? { error: embeddedRunError ?? "cron isolated run returned an error payload" }
         : {}),
       summary,
       outputText,
-      delivered: params?.delivered,
+      delivered: outcomeOpts?.delivered,
       ...telemetry,
     });
+  };
 
   // Skip delivery for heartbeat-only responses (HEARTBEAT_OK with no real content).
   const ackMaxChars = resolveHeartbeatAckMaxChars(agentCfg);
@@ -593,7 +623,6 @@ export async function runCronIsolatedAgentTurn(params: {
       }),
     );
 
-<<<<<<< HEAD
   const deliveryResult = await dispatchCronDelivery({
     cfg: params.cfg,
     cfgWithAgentDefaults,
@@ -624,108 +653,6 @@ export async function runCronIsolatedAgentTurn(params: {
   if (deliveryResult.result) {
     if (!hasErrorPayload || deliveryResult.result.status !== "ok") {
       return deliveryResult.result;
-=======
-  // `true` means we confirmed at least one outbound send reached the target.
-  // Keep this strict so timer fallback can safely decide whether to wake main.
-  let delivered = skipMessagingToolDelivery;
-  if (deliveryRequested && !skipHeartbeatDelivery && !skipMessagingToolDelivery) {
-    if (resolvedDelivery.error) {
-      if (!deliveryBestEffort) {
-        return withRunSession({
-          status: "error",
-          error: resolvedDelivery.error.message,
-          summary,
-          outputText,
-        });
-      }
-      logWarn(`[cron:${params.job.id}] ${resolvedDelivery.error.message}`);
-      return withRunSession({ status: "ok", summary, outputText });
-    }
-    if (!resolvedDelivery.to) {
-      const message = "cron delivery target is missing";
-      if (!deliveryBestEffort) {
-        return withRunSession({
-          status: "error",
-          error: message,
-          summary,
-          outputText,
-        });
-      }
-      logWarn(`[cron:${params.job.id}] ${message}`);
-      return withRunSession({ status: "ok", summary, outputText });
-    }
-    // Shared subagent announce flow is text-based; keep direct outbound delivery
-    // for media/channel payloads so structured content is preserved.
-    if (deliveryPayloadHasStructuredContent) {
-      try {
-        const deliveryResults = await deliverOutboundPayloads({
-          cfg: cfgWithAgentDefaults,
-          channel: resolvedDelivery.channel,
-          to: resolvedDelivery.to,
-          accountId: resolvedDelivery.accountId,
-          threadId: resolvedDelivery.threadId,
-          payloads: deliveryPayloads,
-          bestEffort: deliveryBestEffort,
-          deps: createOutboundSendDeps(params.deps),
-        });
-        delivered = deliveryResults.length > 0;
-      } catch (err) {
-        if (!deliveryBestEffort) {
-          return withRunSession({ status: "error", summary, outputText, error: String(err) });
-        }
-      }
-    } else if (synthesizedText) {
-      const announceSessionKey = resolveAgentMainSessionKey({
-        cfg: params.cfg,
-        agentId,
-      });
-      const taskLabel =
-        typeof params.job.name === "string" && params.job.name.trim()
-          ? params.job.name.trim()
-          : `cron:${params.job.id}`;
-      try {
-        const didAnnounce = await runSubagentAnnounceFlow({
-          childSessionKey: runSessionKey,
-          childRunId: `${params.job.id}:${runSessionId}`,
-          requesterSessionKey: announceSessionKey,
-          requesterOrigin: {
-            channel: resolvedDelivery.channel,
-            to: resolvedDelivery.to,
-            accountId: resolvedDelivery.accountId,
-            threadId: resolvedDelivery.threadId,
-          },
-          requesterDisplayKey: announceSessionKey,
-          task: taskLabel,
-          timeoutMs,
-          cleanup: params.job.deleteAfterRun ? "delete" : "keep",
-          roundOneReply: synthesizedText,
-          waitForCompletion: false,
-          startedAt: runStartedAt,
-          endedAt: runEndedAt,
-          outcome: { status: "ok" },
-          announceType: "cron job",
-        });
-        if (didAnnounce) {
-          delivered = true;
-        } else {
-          const message = "cron announce delivery failed";
-          if (!deliveryBestEffort) {
-            return withRunSession({
-              status: "error",
-              summary,
-              outputText,
-              error: message,
-            });
-          }
-          logWarn(`[cron:${params.job.id}] ${message}`);
-        }
-      } catch (err) {
-        if (!deliveryBestEffort) {
-          return withRunSession({ status: "error", summary, outputText, error: String(err) });
-        }
-        logWarn(`[cron:${params.job.id}] ${String(err)}`);
-      }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     return resolveRunOutcome({ delivered: deliveryResult.result.delivered });
   }
@@ -733,9 +660,5 @@ export async function runCronIsolatedAgentTurn(params: {
   summary = deliveryResult.summary;
   outputText = deliveryResult.outputText;
 
-<<<<<<< HEAD
   return resolveRunOutcome({ delivered });
-=======
-  return withRunSession({ status: "ok", summary, outputText, delivered });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

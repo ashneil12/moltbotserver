@@ -1,23 +1,13 @@
 import { spinner } from "@clack/prompts";
-<<<<<<< HEAD
 import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type {
   UpdateRunResult,
   UpdateStepInfo,
   UpdateStepProgress,
 } from "../../infra/update-runner.js";
-<<<<<<< HEAD
 import { defaultRuntime } from "../../runtime.js";
 import { theme } from "../../terminal/theme.js";
 import type { UpdateCommandOptions } from "./shared.js";
-=======
-import type { UpdateCommandOptions } from "./shared.js";
-import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";
-import { defaultRuntime } from "../../runtime.js";
-import { theme } from "../../terminal/theme.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const STEP_LABELS: Record<string, string> = {
   "clean check": "Working directory is clean",

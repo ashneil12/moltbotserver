@@ -28,11 +28,7 @@ describe("thread-ownership plugin", () => {
     process.env.SLACK_BOT_USER_ID = "U999";
 
     originalFetch = globalThis.fetch;
-<<<<<<< HEAD
     globalThis.fetch = vi.fn() as unknown as typeof globalThis.fetch;
-=======
-    globalThis.fetch = vi.fn();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   afterEach(() => {

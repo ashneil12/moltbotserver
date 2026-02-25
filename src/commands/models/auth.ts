@@ -1,10 +1,4 @@
 import { confirm as clackConfirm, select as clackSelect, text as clackText } from "@clack/prompts";
-<<<<<<< HEAD
-=======
-import type { AuthProfileCredential } from "../../agents/auth-profiles/types.js";
-import type { ProviderAuthResult, ProviderPlugin } from "../../plugins/types.js";
-import type { RuntimeEnv } from "../../runtime.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
@@ -16,10 +10,6 @@ import { normalizeProviderId } from "../../agents/model-selection.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
-<<<<<<< HEAD
-=======
-import { readConfigFileSnapshot } from "../../config/config.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { logConfigUpdated } from "../../config/logging.js";
 import { resolvePluginProviders } from "../../plugins/providers.js";
 import type { ProviderAuthResult, ProviderPlugin } from "../../plugins/types.js";
@@ -37,11 +27,7 @@ import {
   pickAuthMethod,
   resolveProviderMatch,
 } from "../provider-auth-helpers.js";
-<<<<<<< HEAD
 import { loadValidConfigOrThrow, updateConfig } from "./shared.js";
-=======
-import { updateConfig } from "./shared.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const confirm = (params: Parameters<typeof clackConfirm>[0]) =>
   clackConfirm({

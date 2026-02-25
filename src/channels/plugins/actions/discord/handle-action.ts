@@ -61,7 +61,6 @@ export async function handleDiscordMessageAction(
       readStringParam(params, "media", { trim: false }) ??
       readStringParam(params, "path", { trim: false }) ??
       readStringParam(params, "filePath", { trim: false });
-<<<<<<< HEAD
     const filename = readStringParam(params, "filename");
     const replyTo = readStringParam(params, "replyTo");
     const rawEmbeds = params.embeds;
@@ -69,12 +68,6 @@ export async function handleDiscordMessageAction(
     const silent = params.silent === true;
     const sessionKey = readStringParam(params, "__sessionKey");
     const agentId = readStringParam(params, "__agentId");
-=======
-    const replyTo = readStringParam(params, "replyTo");
-    const embeds = Array.isArray(params.embeds) ? params.embeds : undefined;
-    const asVoice = params.asVoice === true;
-    const silent = params.silent === true;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return await handleDiscordAction(
       {
         action: "sendMessage",
@@ -88,11 +81,8 @@ export async function handleDiscordMessageAction(
         embeds,
         asVoice,
         silent,
-<<<<<<< HEAD
         __sessionKey: sessionKey ?? undefined,
         __agentId: agentId ?? undefined,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       },
       cfg,
       actionOptions,

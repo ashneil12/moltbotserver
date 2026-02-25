@@ -77,11 +77,6 @@ describe("pw-tools-core", () => {
       saveAs,
     };
 
-<<<<<<< HEAD
-=======
-    currentPage = { on, off };
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const targetPath = path.resolve("/tmp/file.bin");
     const p = mod.waitForDownloadViaPlaywright({
       cdpUrl: "http://127.0.0.1:18792",
@@ -111,11 +106,6 @@ describe("pw-tools-core", () => {
       saveAs,
     };
 
-<<<<<<< HEAD
-=======
-    currentPage = { on, off };
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const targetPath = path.resolve("/tmp/report.pdf");
     const p = mod.downloadViaPlaywright({
       cdpUrl: "http://127.0.0.1:18792",
@@ -137,18 +127,9 @@ describe("pw-tools-core", () => {
   });
   it("uses preferred tmp dir when waiting for download without explicit path", async () => {
     tmpDirMocks.resolvePreferredOpenClawTmpDir.mockReturnValue("/tmp/openclaw-preferred");
-<<<<<<< HEAD
     const { res, outPath } = await waitForImplicitDownloadOutput({
       downloadUrl: "https://example.com/file.bin",
       suggestedFilename: "file.bin",
-=======
-    currentPage = { on, off };
-
-    const p = mod.waitForDownloadViaPlaywright({
-      cdpUrl: "http://127.0.0.1:18792",
-      targetId: "T1",
-      timeoutMs: 1000,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
     expect(typeof outPath).toBe("string");
     const expectedRootedDownloadsDir = path.join(

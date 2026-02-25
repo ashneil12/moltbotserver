@@ -173,10 +173,7 @@
     "file-type": "^21.3.0",
     "grammy": "^1.40.0",
     "https-proxy-agent": "^7.0.6",
-<<<<<<< HEAD
     "ipaddr.js": "^2.3.0",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     "jiti": "^2.6.1",
     "json5": "^2.2.3",
     "jszip": "^3.10.1",

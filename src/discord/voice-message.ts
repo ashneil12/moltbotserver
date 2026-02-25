@@ -10,7 +10,6 @@
  * - No other content (text, embeds, etc.)
  */
 
-<<<<<<< HEAD
 import { execFile } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
@@ -19,16 +18,6 @@ import { promisify } from "node:util";
 import type { RequestClient } from "@buape/carbon";
 import type { RetryRunner } from "../infra/retry-policy.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
-=======
-import type { RequestClient } from "@buape/carbon";
-import { execFile } from "node:child_process";
-import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { promisify } from "node:util";
-import type { RetryRunner } from "../infra/retry-policy.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const execFileAsync = promisify(execFile);
 
@@ -84,11 +73,7 @@ export async function generateWaveform(filePath: string): Promise<string> {
  * Generate waveform by extracting raw PCM data and sampling amplitudes
  */
 async function generateWaveformFromPcm(filePath: string): Promise<string> {
-<<<<<<< HEAD
   const tempDir = resolvePreferredOpenClawTmpDir();
-=======
-  const tempDir = os.tmpdir();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const tempPcm = path.join(tempDir, `waveform-${crypto.randomUUID()}.raw`);
 
   try {
@@ -163,7 +148,6 @@ function generatePlaceholderWaveform(): string {
  * Returns path to the OGG file (may be same as input if already OGG/Opus)
  */
 export async function ensureOggOpus(filePath: string): Promise<{ path: string; cleanup: boolean }> {
-<<<<<<< HEAD
   const trimmed = filePath.trim();
   // Defense-in-depth: callers should never hand ffmpeg/ffprobe a URL/protocol path.
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) {
@@ -172,8 +156,6 @@ export async function ensureOggOpus(filePath: string): Promise<{ path: string; c
     );
   }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const ext = path.extname(filePath).toLowerCase();
 
   // Check if already OGG
@@ -200,11 +182,7 @@ export async function ensureOggOpus(filePath: string): Promise<{ path: string; c
   }
 
   // Convert to OGG/Opus
-<<<<<<< HEAD
   const tempDir = resolvePreferredOpenClawTmpDir();
-=======
-  const tempDir = os.tmpdir();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const outputPath = path.join(tempDir, `voice-${crypto.randomUUID()}.ogg`);
 
   await execFileAsync("ffmpeg", [

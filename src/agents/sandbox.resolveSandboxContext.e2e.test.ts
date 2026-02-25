@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
-<<<<<<< HEAD:src/agents/sandbox.resolveSandboxContext.test.ts
 import { ensureSandboxWorkspaceForSession, resolveSandboxContext } from "./sandbox/context.js";
-=======
-import { ensureSandboxWorkspaceForSession, resolveSandboxContext } from "./sandbox.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/sandbox.resolveSandboxContext.e2e.test.ts
 
 describe("resolveSandboxContext", () => {
   it("does not sandbox the agent main session in non-main mode", async () => {

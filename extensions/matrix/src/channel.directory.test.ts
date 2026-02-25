@@ -1,11 +1,5 @@
-<<<<<<< HEAD
 import type { PluginRuntime, RuntimeEnv } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-=======
-import type { PluginRuntime } from "openclaw/plugin-sdk";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CoreConfig } from "./types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { matrixPlugin } from "./channel.js";
 import { setMatrixRuntime } from "./runtime.js";
 import type { CoreConfig } from "./types.js";
@@ -165,19 +159,11 @@ describe("matrix directory", () => {
       },
     } as unknown as CoreConfig;
 
-<<<<<<< HEAD
     expect(matrixPlugin.groups!.resolveRequireMention!({ cfg, groupId: "!room:example.org" })).toBe(
       true,
     );
     expect(
       matrixPlugin.groups!.resolveRequireMention!({
-=======
-    expect(matrixPlugin.groups.resolveRequireMention({ cfg, groupId: "!room:example.org" })).toBe(
-      true,
-    );
-    expect(
-      matrixPlugin.groups.resolveRequireMention({
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         cfg,
         accountId: "assistant",
         groupId: "!room:example.org",

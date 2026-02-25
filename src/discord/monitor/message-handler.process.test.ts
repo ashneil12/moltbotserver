@@ -78,7 +78,6 @@ vi.mock("../../auto-reply/dispatch.js", () => ({
 }));
 
 vi.mock("../../auto-reply/reply/reply-dispatcher.js", () => ({
-<<<<<<< HEAD
   createReplyDispatcherWithTyping: vi.fn(
     (opts: { deliver: (payload: unknown, info: { kind: string }) => Promise<void> | void }) => ({
       dispatcher: {
@@ -108,20 +107,6 @@ vi.mock("../../channels/session.js", () => ({
 vi.mock("../../config/sessions.js", () => ({
   readSessionUpdatedAt,
   resolveStorePath,
-=======
-  createReplyDispatcherWithTyping: vi.fn(() => ({
-    dispatcher: {
-      sendToolResult: vi.fn(() => true),
-      sendBlockReply: vi.fn(() => true),
-      sendFinalReply: vi.fn(() => true),
-      waitForIdle: vi.fn(async () => {}),
-      getQueuedCounts: vi.fn(() => ({ tool: 0, block: 0, final: 0 })),
-      markComplete: vi.fn(),
-    },
-    replyOptions: {},
-    markDispatchIdle: vi.fn(),
-  })),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }));
 
 const { processDiscordMessage } = await import("./message-handler.process.js");

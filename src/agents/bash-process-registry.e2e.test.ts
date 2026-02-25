@@ -34,16 +34,7 @@ describe("bash process registry", () => {
   });
 
   it("captures output and truncates", () => {
-<<<<<<< HEAD:src/agents/bash-process-registry.test.ts
     const session = createRegistrySession({
-=======
-    const session: ProcessSession = {
-      id: "sess",
-      command: "echo test",
-      child: { pid: 123, removeAllListeners: vi.fn() } as ChildProcessWithoutNullStreams,
-      startedAt: Date.now(),
-      cwd: "/tmp",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/bash-process-registry.e2e.test.ts
       maxOutputChars: 10,
       pendingMaxOutputChars: 30_000,
       backgrounded: false,
@@ -58,16 +49,7 @@ describe("bash process registry", () => {
   });
 
   it("caps pending output to avoid runaway polls", () => {
-<<<<<<< HEAD:src/agents/bash-process-registry.test.ts
     const session = createRegistrySession({
-=======
-    const session: ProcessSession = {
-      id: "sess",
-      command: "echo test",
-      child: { pid: 123, removeAllListeners: vi.fn() } as ChildProcessWithoutNullStreams,
-      startedAt: Date.now(),
-      cwd: "/tmp",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/bash-process-registry.e2e.test.ts
       maxOutputChars: 100_000,
       pendingMaxOutputChars: 20_000,
       backgrounded: true,
@@ -85,16 +67,7 @@ describe("bash process registry", () => {
   });
 
   it("respects max output cap when pending cap is larger", () => {
-<<<<<<< HEAD:src/agents/bash-process-registry.test.ts
     const session = createRegistrySession({
-=======
-    const session: ProcessSession = {
-      id: "sess",
-      command: "echo test",
-      child: { pid: 123, removeAllListeners: vi.fn() } as ChildProcessWithoutNullStreams,
-      startedAt: Date.now(),
-      cwd: "/tmp",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/bash-process-registry.e2e.test.ts
       maxOutputChars: 5_000,
       pendingMaxOutputChars: 30_000,
       backgrounded: true,
@@ -109,16 +82,7 @@ describe("bash process registry", () => {
   });
 
   it("caps stdout and stderr independently", () => {
-<<<<<<< HEAD:src/agents/bash-process-registry.test.ts
     const session = createRegistrySession({
-=======
-    const session: ProcessSession = {
-      id: "sess",
-      command: "echo test",
-      child: { pid: 123, removeAllListeners: vi.fn() } as ChildProcessWithoutNullStreams,
-      startedAt: Date.now(),
-      cwd: "/tmp",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/bash-process-registry.e2e.test.ts
       maxOutputChars: 100,
       pendingMaxOutputChars: 10,
       backgrounded: true,
@@ -136,16 +100,7 @@ describe("bash process registry", () => {
   });
 
   it("only persists finished sessions when backgrounded", () => {
-<<<<<<< HEAD:src/agents/bash-process-registry.test.ts
     const session = createRegistrySession({
-=======
-    const session: ProcessSession = {
-      id: "sess",
-      command: "echo test",
-      child: { pid: 123, removeAllListeners: vi.fn() } as ChildProcessWithoutNullStreams,
-      startedAt: Date.now(),
-      cwd: "/tmp",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/bash-process-registry.e2e.test.ts
       maxOutputChars: 100,
       pendingMaxOutputChars: 30_000,
       backgrounded: false,

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-<<<<<<< HEAD
 import {
   DANGEROUS_SANDBOX_DOCKER_BOOLEAN_KEYS,
   resolveSandboxBrowserConfig,
@@ -9,12 +8,6 @@ import { validateConfigObject } from "./config.js";
 
 describe("sandbox docker config", () => {
   it("accepts safe binds array in sandbox.docker config", () => {
-=======
-import { validateConfigObject } from "./config.js";
-
-describe("sandbox docker config", () => {
-  it("accepts binds array in sandbox.docker config", () => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const res = validateConfigObject({
       agents: {
         defaults: {
@@ -49,7 +42,6 @@ describe("sandbox docker config", () => {
     }
   });
 
-<<<<<<< HEAD
   it("rejects network host mode via Zod schema validation", () => {
     const res = validateConfigObject({
       agents: {
@@ -151,8 +143,6 @@ describe("sandbox docker config", () => {
     expect(res.ok).toBe(false);
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("rejects non-string values in binds array", () => {
     const res = validateConfigObject({
       agents: {

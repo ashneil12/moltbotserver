@@ -40,7 +40,6 @@ describe("resolveTranscriptPolicy", () => {
       modelId: "gpt-4o",
       modelApi: "openai",
     });
-<<<<<<< HEAD
     expect(policy.sanitizeToolCallIds).toBe(false);
     expect(policy.toolCallIdMode).toBeUndefined();
   });
@@ -74,9 +73,5 @@ describe("resolveTranscriptPolicy", () => {
       modelApi: "openai-completions",
     });
     expect(policy.validateAnthropicTurns).toBe(false);
-=======
-    expect(policy.sanitizeToolCallIds).toBe(true);
-    expect(policy.toolCallIdMode).toBe("strict");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

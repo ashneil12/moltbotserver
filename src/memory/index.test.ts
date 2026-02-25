@@ -1,11 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-<<<<<<< HEAD
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-=======
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { getMemorySearchManager, type MemoryIndexManager } from "./index.js";
 import "./test-runtime-mocks.js";
 
@@ -36,7 +32,6 @@ vi.mock("./embeddings.js", () => {
 
 describe("memory index", () => {
   let fixtureRoot = "";
-<<<<<<< HEAD
   let workspaceDir = "";
   let memoryDir = "";
   let extraDir = "";
@@ -68,12 +63,6 @@ describe("memory index", () => {
     await Promise.all(Array.from(managersForCleanup).map((manager) => manager.close()));
     await fs.rm(fixtureRoot, { recursive: true, force: true });
   });
-=======
-  let fixtureCount = 0;
-  let workspaceDir: string;
-  let indexPath: string;
-  let manager: MemoryIndexManager | null = null;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   beforeAll(async () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mem-fixtures-"));
@@ -88,7 +77,6 @@ describe("memory index", () => {
     // Keep atomic reindex tests on the safe path.
     vi.stubEnv("OPENCLAW_TEST_MEMORY_UNSAFE_REINDEX", "1");
     embedBatchCalls = 0;
-<<<<<<< HEAD
 
     // Keep the workspace stable to allow manager reuse across tests.
     await fs.mkdir(memoryDir, { recursive: true });
@@ -109,24 +97,6 @@ describe("memory index", () => {
   }
 
   type TestCfg = Parameters<typeof getMemorySearchManager>[0]["cfg"];
-=======
-    workspaceDir = path.join(fixtureRoot, `case-${fixtureCount++}`);
-    await fs.mkdir(workspaceDir, { recursive: true });
-    indexPath = path.join(workspaceDir, "index.sqlite");
-    await fs.mkdir(path.join(workspaceDir, "memory"));
-    await fs.writeFile(
-      path.join(workspaceDir, "memory", "2026-01-12.md"),
-      "# Log\nAlpha memory line.\nZebra memory line.",
-    );
-  });
-
-  afterEach(async () => {
-    if (manager) {
-      await manager.close();
-      manager = null;
-    }
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   function createCfg(params: {
     storePath: string;
@@ -343,15 +313,9 @@ describe("memory index", () => {
     if (!first.manager) {
       throw new Error("manager missing");
     }
-<<<<<<< HEAD
     await first.manager.sync?.({ reason: "test" });
     const callsAfterFirstSync = embedBatchCalls;
     await first.manager.close?.();
-=======
-    await first.manager.sync({ force: true });
-    const callsAfterFirstSync = embedBatchCalls;
-    await first.manager.close();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const second = await getMemorySearchManager({
       cfg: {
@@ -373,19 +337,11 @@ describe("memory index", () => {
     if (!second.manager) {
       throw new Error("manager missing");
     }
-<<<<<<< HEAD
     await second.manager.sync?.({ reason: "test" });
     expect(embedBatchCalls).toBeGreaterThan(callsAfterFirstSync);
     const status = second.manager.status();
     expect(status.files).toBeGreaterThan(0);
     await second.manager.close?.();
-=======
-    manager = second.manager;
-    await second.manager.sync({ reason: "test" });
-    expect(embedBatchCalls).toBeGreaterThan(callsAfterFirstSync);
-    const status = second.manager.status();
-    expect(status.files).toBeGreaterThan(0);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("reuses cached embeddings on forced reindex", async () => {

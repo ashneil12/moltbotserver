@@ -134,23 +134,14 @@ export async function runCommandWithTimeout(
 
   const stdio = resolveCommandStdio({ hasInput, preferInherit: true });
   const resolvedCommand = resolveCommand(argv[0] ?? "");
-<<<<<<< HEAD
-=======
-  const commandExt = path.extname(resolvedCommand).toLowerCase();
-  const useShell = process.platform === "win32" && commandExt !== ".exe";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const child = spawn(resolvedCommand, argv.slice(1), {
     stdio,
     cwd,
     env: resolvedEnv,
     windowsVerbatimArguments,
-<<<<<<< HEAD
     ...(shouldSpawnWithShell({ resolvedCommand, platform: process.platform })
       ? { shell: true }
       : {}),
-=======
-    shell: useShell,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
   // Spawn with inherited stdin (TTY) so tools like `pi` stay interactive when needed.
   return await new Promise((resolve, reject) => {

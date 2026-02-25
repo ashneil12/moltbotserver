@@ -175,16 +175,7 @@ describe("before_message_write hook", () => {
       .filter((e) => e.type === "message")
       .map((e) => (e as { message: AgentMessage }).message);
 
-<<<<<<< HEAD:src/agents/session-tool-result-guard.tool-result-persist-hook.test.ts
     expect(messages).toHaveLength(1);
     expect(messages[0]?.role).toBe("user");
-=======
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const toolResult = messages.find((m) => (m as any).role === "toolResult") as any;
-    expect(toolResult).toBeTruthy();
-
-    // Hook registration should not break baseline persistence semantics.
-    expect(toolResult.details).toBeTruthy();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/session-tool-result-guard.tool-result-persist-hook.e2e.test.ts
   });
 });

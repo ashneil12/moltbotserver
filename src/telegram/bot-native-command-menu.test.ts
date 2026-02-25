@@ -50,7 +50,6 @@ describe("bot-native-command-menu", () => {
     expect(result.issues).toContain('Plugin command "/empty" is missing a description.');
   });
 
-<<<<<<< HEAD
   it("normalizes hyphenated plugin command names", () => {
     const result = buildPluginTelegramMenuCommands({
       specs: [{ name: "agent-run", description: "Run agent" }],
@@ -61,8 +60,6 @@ describe("bot-native-command-menu", () => {
     expect(result.issues).toEqual([]);
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("deletes stale commands before setting new menu", async () => {
     const callOrder: string[] = [];
     const deleteMyCommands = vi.fn(async () => {

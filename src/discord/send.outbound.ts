@@ -3,13 +3,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { serializePayload, type MessagePayloadObject, type RequestClient } from "@buape/carbon";
 import { ChannelType, Routes } from "discord-api-types/v10";
-<<<<<<< HEAD
-=======
-import fs from "node:fs/promises";
-import type { RetryConfig } from "../infra/retry.js";
-import type { PollInput } from "../polls.js";
-import type { DiscordSendResult } from "./send.types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveChunkMode } from "../auto-reply/chunk.js";
 import { loadConfig } from "../config/config.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
@@ -41,10 +34,7 @@ import {
   type DiscordSendComponents,
   type DiscordSendEmbeds,
 } from "./send.shared.js";
-<<<<<<< HEAD
 import type { DiscordSendResult } from "./send.types.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   ensureOggOpus,
   getVoiceMessageMetadata,
@@ -60,12 +50,8 @@ type DiscordSendOpts = {
   rest?: RequestClient;
   replyTo?: string;
   retry?: RetryConfig;
-<<<<<<< HEAD
   components?: DiscordSendComponents;
   embeds?: DiscordSendEmbeds;
-=======
-  embeds?: unknown[];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   silent?: boolean;
 };
 
@@ -227,7 +213,6 @@ export async function sendMessageDiscord(
           chunkMode,
           opts.silent,
         );
-<<<<<<< HEAD
         await sendDiscordThreadTextChunks({
           rest,
           threadId,
@@ -247,35 +232,6 @@ export async function sendMessageDiscord(
           chunkMode,
           silent: opts.silent,
         });
-=======
-        for (const chunk of afterMediaChunks) {
-          await sendDiscordText(
-            rest,
-            threadId,
-            chunk,
-            undefined,
-            request,
-            accountInfo.config.maxLinesPerMessage,
-            undefined,
-            chunkMode,
-            opts.silent,
-          );
-        }
-      } else {
-        for (const chunk of remainingChunks) {
-          await sendDiscordText(
-            rest,
-            threadId,
-            chunk,
-            undefined,
-            request,
-            accountInfo.config.maxLinesPerMessage,
-            undefined,
-            chunkMode,
-            opts.silent,
-          );
-        }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
     } catch (err) {
       throw await buildDiscordSendError(err, {

@@ -6,10 +6,6 @@ import {
 } from "../infra/diagnostic-events.js";
 import { resetDiagnosticSessionStateForTest } from "../logging/diagnostic-session-state.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
-<<<<<<< HEAD:src/agents/pi-tools.before-tool-call.test.ts
-=======
-import { toClientToolDefinitions, toToolDefinitions } from "./pi-tool-definition-adapter.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools.before-tool-call.e2e.test.ts
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
 import { CRITICAL_THRESHOLD, GLOBAL_CIRCUIT_BREAKER_THRESHOLD } from "./tool-loop-detection.js";
 import type { AnyAgentTool } from "./tools/common.js";
@@ -75,7 +71,6 @@ describe("before_tool_call loop detection behavior", () => {
     }
   }
 
-<<<<<<< HEAD:src/agents/pi-tools.before-tool-call.test.ts
   function createPingPongTools(options?: { withProgress?: boolean }) {
     const readExecute = options?.withProgress
       ? vi.fn().mockImplementation(async (toolCallId: string) => ({
@@ -98,100 +93,6 @@ describe("before_tool_call loop detection behavior", () => {
     return {
       readTool: createWrappedTool("read", readExecute),
       listTool: createWrappedTool("list", listExecute),
-=======
-    await expect(tool.execute("call-3", { cmd: "rm -rf /" }, undefined, undefined)).rejects.toThrow(
-      "blocked",
-    );
-    expect(execute).not.toHaveBeenCalled();
-  });
-
-  it("continues execution when hook throws", async () => {
-    hookRunner.hasHooks.mockReturnValue(true);
-    hookRunner.runBeforeToolCall.mockRejectedValue(new Error("boom"));
-    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any);
-
-    await tool.execute("call-4", { path: "/tmp/file" }, undefined, undefined);
-
-    expect(execute).toHaveBeenCalledWith("call-4", { path: "/tmp/file" }, undefined, undefined);
-  });
-
-  it("normalizes non-object params for hook contract", async () => {
-    hookRunner.hasHooks.mockReturnValue(true);
-    hookRunner.runBeforeToolCall.mockResolvedValue(undefined);
-    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const tool = wrapToolWithBeforeToolCallHook({ name: "ReAd", execute } as any, {
-      agentId: "main",
-      sessionKey: "main",
-    });
-
-    await tool.execute("call-5", "not-an-object", undefined, undefined);
-
-    expect(hookRunner.runBeforeToolCall).toHaveBeenCalledWith(
-      {
-        toolName: "read",
-        params: {},
-      },
-      {
-        toolName: "read",
-        agentId: "main",
-        sessionKey: "main",
-      },
-    );
-  });
-});
-
-describe("before_tool_call hook deduplication (#15502)", () => {
-  let hookRunner: {
-    hasHooks: ReturnType<typeof vi.fn>;
-    runBeforeToolCall: ReturnType<typeof vi.fn>;
-  };
-
-  beforeEach(() => {
-    hookRunner = {
-      hasHooks: vi.fn(() => true),
-      runBeforeToolCall: vi.fn(async () => undefined),
-    };
-    // oxlint-disable-next-line typescript/no-explicit-any
-    mockGetGlobalHookRunner.mockReturnValue(hookRunner as any);
-  });
-
-  it("fires hook exactly once when tool goes through wrap + toToolDefinitions", async () => {
-    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const baseTool = { name: "web_fetch", execute, description: "fetch", parameters: {} } as any;
-
-    const wrapped = wrapToolWithBeforeToolCallHook(baseTool, {
-      agentId: "main",
-      sessionKey: "main",
-    });
-    const [def] = toToolDefinitions([wrapped]);
-
-    await def.execute(
-      "call-dedup",
-      { url: "https://example.com" },
-      undefined,
-      undefined,
-      undefined,
-    );
-
-    expect(hookRunner.runBeforeToolCall).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("before_tool_call hook integration for client tools", () => {
-  let hookRunner: {
-    hasHooks: ReturnType<typeof vi.fn>;
-    runBeforeToolCall: ReturnType<typeof vi.fn>;
-  };
-
-  beforeEach(() => {
-    hookRunner = {
-      hasHooks: vi.fn(),
-      runBeforeToolCall: vi.fn(),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/pi-tools.before-tool-call.e2e.test.ts
     };
   }
 

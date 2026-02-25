@@ -322,10 +322,7 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     qianfan: "QIANFAN_API_KEY",
     ollama: "OLLAMA_API_KEY",
     vllm: "VLLM_API_KEY",
-<<<<<<< HEAD
     kilocode: "KILOCODE_API_KEY",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   };
   const envVar = envMap[normalized];
   if (!envVar) {

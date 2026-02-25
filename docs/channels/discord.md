@@ -720,11 +720,7 @@ Default slash command settings:
   </Accordion>
 
   <Accordion title="Gateway proxy">
-<<<<<<< HEAD
     Route Discord gateway WebSocket traffic and startup REST lookups (application ID + allowlist resolution) through an HTTP(S) proxy with `channels.discord.proxy`.
-=======
-    Route Discord gateway WebSocket traffic through an HTTP(S) proxy with `channels.discord.proxy`.
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 ```json5
 {
@@ -873,7 +869,6 @@ Default gate behavior:
 | moderation                                                                                                                                                               | disabled |
 | presence                                                                                                                                                                 | disabled |
 
-<<<<<<< HEAD
 ## Components v2 UI
 
 OpenClaw uses Discord components v2 for exec approvals and cross-context markers. Discord message actions can also accept `components` for custom UI (advanced; requires Carbon component instances), while legacy `embeds` remain available but are not recommended.
@@ -945,8 +940,6 @@ Notes:
 - OpenClaw also watches receive decrypt failures and auto-recovers by leaving/rejoining the voice channel after repeated failures in a short window.
 - If receive logs repeatedly show `DecryptionFailed(UnencryptedWhenPassthroughDisabled)`, this may be the upstream `@discordjs/voice` receive bug tracked in [discord.js #11419](https://github.com/discordjs/discord.js/issues/11419).
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 ## Voice messages
 
 Discord voice messages show a waveform preview and require OGG/Opus audio plus metadata. OpenClaw generates the waveform automatically, but it needs `ffmpeg` and `ffprobe` available on the gateway host to inspect and convert audio files.
@@ -1052,10 +1045,7 @@ High-signal Discord fields:
 - media/retry: `mediaMaxMb`, `retry`
 - actions: `actions.*`
 - presence: `activity`, `status`, `activityType`, `activityUrl`
-<<<<<<< HEAD
 - UI: `ui.components.accentColor`
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 - features: `pluralkit`, `execApprovals`, `intents`, `agentComponents`, `heartbeat`, `responsePrefix`
 
 ## Safety and operations

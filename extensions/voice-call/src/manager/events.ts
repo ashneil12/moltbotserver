@@ -92,12 +92,8 @@ function createInboundCall(params: {
 }
 
 export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
-<<<<<<< HEAD
   const dedupeKey = event.dedupeKey || event.id;
   if (ctx.processedEventIds.has(dedupeKey)) {
-=======
-  if (ctx.processedEventIds.has(event.id)) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return;
   }
   ctx.processedEventIds.add(dedupeKey);

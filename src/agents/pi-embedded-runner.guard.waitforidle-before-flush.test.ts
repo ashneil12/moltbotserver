@@ -43,18 +43,11 @@ describe("flushPendingToolResultsAfterIdle", () => {
 
   it("waits for idle so real tool results can land before flush", async () => {
     const sm = guardSessionManager(SessionManager.inMemory());
-<<<<<<< HEAD
     const appendMessage = sm.appendMessage.bind(sm) as unknown as (message: AgentMessage) => void;
     const idle = deferred<void>();
     const agent = { waitForIdle: () => idle.promise };
 
     appendMessage(assistantToolCall("call_retry_1"));
-=======
-    const idle = deferred<void>();
-    const agent = { waitForIdle: () => idle.promise };
-
-    sm.appendMessage(assistantToolCall("call_retry_1"));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const flushPromise = flushPendingToolResultsAfterIdle({
       agent,
       sessionManager: sm,
@@ -66,11 +59,7 @@ describe("flushPendingToolResultsAfterIdle", () => {
     expect(getMessages(sm).map((m) => m.role)).toEqual(["assistant"]);
 
     // Tool completes before idle wait finishes.
-<<<<<<< HEAD
     appendMessage(toolResult("call_retry_1", "command output here"));
-=======
-    sm.appendMessage(toolResult("call_retry_1", "command output here"));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     idle.resolve();
     await flushPromise;
 
@@ -84,18 +73,11 @@ describe("flushPendingToolResultsAfterIdle", () => {
 
   it("flushes pending tool call after timeout when idle never resolves", async () => {
     const sm = guardSessionManager(SessionManager.inMemory());
-<<<<<<< HEAD
     const appendMessage = sm.appendMessage.bind(sm) as unknown as (message: AgentMessage) => void;
     vi.useFakeTimers();
     const agent = { waitForIdle: () => new Promise<void>(() => {}) };
 
     appendMessage(assistantToolCall("call_orphan_1"));
-=======
-    vi.useFakeTimers();
-    const agent = { waitForIdle: () => new Promise<void>(() => {}) };
-
-    sm.appendMessage(assistantToolCall("call_orphan_1"));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const flushPromise = flushPendingToolResultsAfterIdle({
       agent,

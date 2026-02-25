@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import fs from "node:fs/promises";
 import path from "node:path";
 import { isNotFoundPathError, isPathInside } from "../../infra/path-guards.js";
@@ -11,12 +10,6 @@ import {
 } from "./fs-paths.js";
 import { isPathInsideContainerRoot, normalizeContainerPath } from "./path-utils.js";
 import type { SandboxContext, SandboxWorkspaceAccess } from "./types.js";
-=======
-import path from "node:path";
-import type { SandboxContext, SandboxWorkspaceAccess } from "./types.js";
-import { resolveSandboxPath } from "../sandbox-paths.js";
-import { execDockerRaw, type ExecDockerRawResult } from "./docker.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 type RunCommandOptions = {
   args?: string[];
@@ -25,15 +18,12 @@ type RunCommandOptions = {
   signal?: AbortSignal;
 };
 
-<<<<<<< HEAD
 type PathSafetyOptions = {
   action: string;
   allowFinalSymlink?: boolean;
   requireWritable?: boolean;
 };
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export type SandboxResolvedPath = {
   hostPath: string;
   relativePath: string;
@@ -79,7 +69,6 @@ export function createSandboxFsBridge(params: { sandbox: SandboxContext }): Sand
 
 class SandboxFsBridgeImpl implements SandboxFsBridge {
   private readonly sandbox: SandboxContext;
-<<<<<<< HEAD
   private readonly mounts: ReturnType<typeof buildSandboxFsMounts>;
   private readonly mountsByContainer: ReturnType<typeof buildSandboxFsMounts>;
 
@@ -98,19 +87,6 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
       relativePath: target.relativePath,
       containerPath: target.containerPath,
     };
-=======
-
-  constructor(sandbox: SandboxContext) {
-    this.sandbox = sandbox;
-  }
-
-  resolvePath(params: { filePath: string; cwd?: string }): SandboxResolvedPath {
-    return resolveSandboxFsPath({
-      sandbox: this.sandbox,
-      filePath: params.filePath,
-      cwd: params.cwd,
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   async readFile(params: {
@@ -118,12 +94,8 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
     cwd?: string;
     signal?: AbortSignal;
   }): Promise<Buffer> {
-<<<<<<< HEAD
     const target = this.resolveResolvedPath(params);
     await this.assertPathSafety(target, { action: "read files" });
-=======
-    const target = this.resolvePath(params);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const result = await this.runCommand('set -eu; cat -- "$1"', {
       args: [target.containerPath],
       signal: params.signal,
@@ -139,14 +111,9 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
     mkdir?: boolean;
     signal?: AbortSignal;
   }): Promise<void> {
-<<<<<<< HEAD
     const target = this.resolveResolvedPath(params);
     this.ensureWriteAccess(target, "write files");
     await this.assertPathSafety(target, { action: "write files", requireWritable: true });
-=======
-    this.ensureWriteAccess("write files");
-    const target = this.resolvePath(params);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const buffer = Buffer.isBuffer(params.data)
       ? params.data
       : Buffer.from(params.data, params.encoding ?? "utf8");
@@ -162,14 +129,9 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
   }
 
   async mkdirp(params: { filePath: string; cwd?: string; signal?: AbortSignal }): Promise<void> {
-<<<<<<< HEAD
     const target = this.resolveResolvedPath(params);
     this.ensureWriteAccess(target, "create directories");
     await this.assertPathSafety(target, { action: "create directories", requireWritable: true });
-=======
-    this.ensureWriteAccess("create directories");
-    const target = this.resolvePath(params);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await this.runCommand('set -eu; mkdir -p -- "$1"', {
       args: [target.containerPath],
       signal: params.signal,
@@ -183,7 +145,6 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
     force?: boolean;
     signal?: AbortSignal;
   }): Promise<void> {
-<<<<<<< HEAD
     const target = this.resolveResolvedPath(params);
     this.ensureWriteAccess(target, "remove files");
     await this.assertPathSafety(target, {
@@ -191,10 +152,6 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
       requireWritable: true,
       allowFinalSymlink: true,
     });
-=======
-    this.ensureWriteAccess("remove files");
-    const target = this.resolvePath(params);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const flags = [params.force === false ? "" : "-f", params.recursive ? "-r" : ""].filter(
       Boolean,
     );
@@ -211,7 +168,6 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
     cwd?: string;
     signal?: AbortSignal;
   }): Promise<void> {
-<<<<<<< HEAD
     const from = this.resolveResolvedPath({ filePath: params.from, cwd: params.cwd });
     const to = this.resolveResolvedPath({ filePath: params.to, cwd: params.cwd });
     this.ensureWriteAccess(from, "rename files");
@@ -225,11 +181,6 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
       action: "rename files",
       requireWritable: true,
     });
-=======
-    this.ensureWriteAccess("rename files");
-    const from = this.resolvePath({ filePath: params.from, cwd: params.cwd });
-    const to = this.resolvePath({ filePath: params.to, cwd: params.cwd });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await this.runCommand(
       'set -eu; dir=$(dirname -- "$2"); if [ "$dir" != "." ]; then mkdir -p -- "$dir"; fi; mv -- "$1" "$2"',
       {
@@ -244,12 +195,8 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
     cwd?: string;
     signal?: AbortSignal;
   }): Promise<SandboxFsStat | null> {
-<<<<<<< HEAD
     const target = this.resolveResolvedPath(params);
     await this.assertPathSafety(target, { action: "stat files" });
-=======
-    const target = this.resolvePath(params);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const result = await this.runCommand('set -eu; stat -c "%F|%s|%Y" -- "$1"', {
       args: [target.containerPath],
       signal: params.signal,
@@ -297,7 +244,6 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
     });
   }
 
-<<<<<<< HEAD
   private async assertPathSafety(target: SandboxResolvedFsPath, options: PathSafetyOptions) {
     const lexicalMount = this.resolveMountByContainerPath(target.containerPath);
     if (!lexicalMount) {
@@ -385,14 +331,6 @@ class SandboxFsBridgeImpl implements SandboxFsBridge {
       defaultContainerRoot: this.sandbox.containerWorkdir,
       mounts: this.mounts,
     });
-=======
-  private ensureWriteAccess(action: string) {
-    if (!allowsWrites(this.sandbox.workspaceAccess)) {
-      throw new Error(
-        `Sandbox workspace (${this.sandbox.workspaceAccess}) does not allow ${action}.`,
-      );
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 }
 
@@ -400,34 +338,6 @@ function allowsWrites(access: SandboxWorkspaceAccess): boolean {
   return access === "rw";
 }
 
-<<<<<<< HEAD
-=======
-function resolveSandboxFsPath(params: {
-  sandbox: SandboxContext;
-  filePath: string;
-  cwd?: string;
-}): SandboxResolvedPath {
-  const root = params.sandbox.workspaceDir;
-  const cwd = params.cwd ?? root;
-  const { resolved, relative } = resolveSandboxPath({
-    filePath: params.filePath,
-    cwd,
-    root,
-  });
-  const normalizedRelative = relative
-    ? relative.split(path.sep).filter(Boolean).join(path.posix.sep)
-    : "";
-  const containerPath = normalizedRelative
-    ? path.posix.join(params.sandbox.containerWorkdir, normalizedRelative)
-    : params.sandbox.containerWorkdir;
-  return {
-    hostPath: resolved,
-    relativePath: normalizedRelative,
-    containerPath,
-  };
-}
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function coerceStatType(typeRaw?: string): "file" | "directory" | "other" {
   if (!typeRaw) {
     return "other";
@@ -441,7 +351,6 @@ function coerceStatType(typeRaw?: string): "file" | "directory" | "other" {
   }
   return "other";
 }
-<<<<<<< HEAD
 
 async function assertNoHostSymlinkEscape(params: {
   absolutePath: string;
@@ -492,5 +401,3 @@ async function tryRealpath(value: string): Promise<string> {
     return path.resolve(value);
   }
 }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

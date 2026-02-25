@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-<<<<<<< HEAD:src/config/config.legacy-config-detection.rejects-routing-allowfrom.test.ts
 import type { OpenClawConfig } from "./config.js";
 import { migrateLegacyConfig, validateConfigObject } from "./config.js";
 
@@ -105,82 +104,6 @@ describe("legacy config detection", () => {
       );
       expect(getLegacyRouting(res.config)?.groupChat, testCase.name).toBeUndefined();
     }
-=======
-import { migrateLegacyConfig, validateConfigObject } from "./config.js";
-
-describe("legacy config detection", () => {
-  it("rejects routing.allowFrom", async () => {
-    const res = validateConfigObject({
-      routing: { allowFrom: ["+15555550123"] },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues[0]?.path).toBe("routing.allowFrom");
-    }
-  });
-  it("rejects routing.groupChat.requireMention", async () => {
-    const res = validateConfigObject({
-      routing: { groupChat: { requireMention: false } },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues[0]?.path).toBe("routing.groupChat.requireMention");
-    }
-  });
-  it("migrates routing.allowFrom to channels.whatsapp.allowFrom when whatsapp configured", async () => {
-    const res = migrateLegacyConfig({
-      routing: { allowFrom: ["+15555550123"] },
-      channels: { whatsapp: {} },
-    });
-    expect(res.changes).toContain("Moved routing.allowFrom → channels.whatsapp.allowFrom.");
-    expect(res.config?.channels?.whatsapp?.allowFrom).toEqual(["+15555550123"]);
-    expect(res.config?.routing?.allowFrom).toBeUndefined();
-  });
-  it("drops routing.allowFrom when whatsapp missing", async () => {
-    const res = migrateLegacyConfig({
-      routing: { allowFrom: ["+15555550123"] },
-    });
-    expect(res.changes).toContain("Removed routing.allowFrom (channels.whatsapp not configured).");
-    expect(res.config?.channels?.whatsapp).toBeUndefined();
-    expect(res.config?.routing?.allowFrom).toBeUndefined();
-  });
-  it("migrates routing.groupChat.requireMention to channels whatsapp/telegram/imessage groups when whatsapp configured", async () => {
-    const res = migrateLegacyConfig({
-      routing: { groupChat: { requireMention: false } },
-      channels: { whatsapp: {} },
-    });
-    expect(res.changes).toContain(
-      'Moved routing.groupChat.requireMention → channels.whatsapp.groups."*".requireMention.',
-    );
-    expect(res.changes).toContain(
-      'Moved routing.groupChat.requireMention → channels.telegram.groups."*".requireMention.',
-    );
-    expect(res.changes).toContain(
-      'Moved routing.groupChat.requireMention → channels.imessage.groups."*".requireMention.',
-    );
-    expect(res.config?.channels?.whatsapp?.groups?.["*"]?.requireMention).toBe(false);
-    expect(res.config?.channels?.telegram?.groups?.["*"]?.requireMention).toBe(false);
-    expect(res.config?.channels?.imessage?.groups?.["*"]?.requireMention).toBe(false);
-    expect(res.config?.routing?.groupChat?.requireMention).toBeUndefined();
-  });
-  it("migrates routing.groupChat.requireMention to telegram/imessage when whatsapp missing", async () => {
-    const res = migrateLegacyConfig({
-      routing: { groupChat: { requireMention: false } },
-    });
-    expect(res.changes).toContain(
-      'Moved routing.groupChat.requireMention → channels.telegram.groups."*".requireMention.',
-    );
-    expect(res.changes).toContain(
-      'Moved routing.groupChat.requireMention → channels.imessage.groups."*".requireMention.',
-    );
-    expect(res.changes).not.toContain(
-      'Moved routing.groupChat.requireMention → channels.whatsapp.groups."*".requireMention.',
-    );
-    expect(res.config?.channels?.whatsapp).toBeUndefined();
-    expect(res.config?.channels?.telegram?.groups?.["*"]?.requireMention).toBe(false);
-    expect(res.config?.channels?.imessage?.groups?.["*"]?.requireMention).toBe(false);
-    expect(res.config?.routing?.groupChat?.requireMention).toBeUndefined();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.rejects-routing-allowfrom.e2e.test.ts
   });
   it("migrates routing.groupChat.mentionPatterns to messages.groupChat.mentionPatterns", async () => {
     const res = migrateLegacyConfig({
@@ -485,58 +408,12 @@ describe("legacy config detection", () => {
       expect(validated.config.gateway?.bind).toBe("tailnet");
     }
   });
-<<<<<<< HEAD:src/config/config.legacy-config-detection.rejects-routing-allowfrom.test.ts
   it('enforces dmPolicy="open" allowFrom wildcard for supported providers', async () => {
     const cases = [
       {
         provider: "telegram",
         allowFrom: ["123456789"],
         expectedIssuePath: "channels.telegram.allowFrom",
-=======
-  it('rejects telegram.dmPolicy="open" without allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: { telegram: { dmPolicy: "open", allowFrom: ["123456789"] } },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues[0]?.path).toBe("channels.telegram.allowFrom");
-    }
-  });
-  it('accepts telegram.dmPolicy="open" with allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
-    });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.telegram?.dmPolicy).toBe("open");
-    }
-  });
-  it("defaults telegram.dmPolicy to pairing when telegram section exists", async () => {
-    const res = validateConfigObject({ channels: { telegram: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.telegram?.dmPolicy).toBe("pairing");
-    }
-  });
-  it("defaults telegram.groupPolicy to allowlist when telegram section exists", async () => {
-    const res = validateConfigObject({ channels: { telegram: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.telegram?.groupPolicy).toBe("allowlist");
-    }
-  });
-  it("defaults telegram.streamMode to partial when telegram section exists", async () => {
-    const res = validateConfigObject({ channels: { telegram: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.telegram?.streamMode).toBe("partial");
-    }
-  });
-  it('rejects whatsapp.dmPolicy="open" without allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: {
-        whatsapp: { dmPolicy: "open", allowFrom: ["+15555550123"] },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.rejects-routing-allowfrom.e2e.test.ts
       },
       {
         provider: "whatsapp",
@@ -566,7 +443,6 @@ describe("legacy config detection", () => {
       }
     }
   });
-<<<<<<< HEAD:src/config/config.legacy-config-detection.rejects-routing-allowfrom.test.ts
 
   it('accepts dmPolicy="open" when allowFrom includes wildcard', async () => {
     const providers = ["telegram", "whatsapp", "signal"] as const;
@@ -767,61 +643,6 @@ describe("legacy config detection", () => {
       if (res.ok) {
         testCase.assert(res.config);
       }
-=======
-  it('accepts whatsapp.dmPolicy="open" with allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: { whatsapp: { dmPolicy: "open", allowFrom: ["*"] } },
-    });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.whatsapp?.dmPolicy).toBe("open");
-    }
-  });
-  it("defaults whatsapp.dmPolicy to pairing when whatsapp section exists", async () => {
-    const res = validateConfigObject({ channels: { whatsapp: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.whatsapp?.dmPolicy).toBe("pairing");
-    }
-  });
-  it("defaults whatsapp.groupPolicy to allowlist when whatsapp section exists", async () => {
-    const res = validateConfigObject({ channels: { whatsapp: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.whatsapp?.groupPolicy).toBe("allowlist");
-    }
-  });
-  it('rejects signal.dmPolicy="open" without allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: { signal: { dmPolicy: "open", allowFrom: ["+15555550123"] } },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues[0]?.path).toBe("channels.signal.allowFrom");
-    }
-  });
-  it('accepts signal.dmPolicy="open" with allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: { signal: { dmPolicy: "open", allowFrom: ["*"] } },
-    });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.signal?.dmPolicy).toBe("open");
-    }
-  });
-  it("defaults signal.dmPolicy to pairing when signal section exists", async () => {
-    const res = validateConfigObject({ channels: { signal: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.signal?.dmPolicy).toBe("pairing");
-    }
-  });
-  it("defaults signal.groupPolicy to allowlist when signal section exists", async () => {
-    const res = validateConfigObject({ channels: { signal: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.signal?.groupPolicy).toBe("allowlist");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.rejects-routing-allowfrom.e2e.test.ts
     }
   });
   it("accepts historyLimit overrides per provider and account", async () => {
@@ -851,18 +672,4 @@ describe("legacy config detection", () => {
       expect(res.config.channels?.discord?.historyLimit).toBe(3);
     }
   });
-<<<<<<< HEAD:src/config/config.legacy-config-detection.rejects-routing-allowfrom.test.ts
-=======
-  it('rejects imessage.dmPolicy="open" without allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: {
-        imessage: { dmPolicy: "open", allowFrom: ["+15555550123"] },
-      },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues[0]?.path).toBe("channels.imessage.allowFrom");
-    }
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.rejects-routing-allowfrom.e2e.test.ts
 });

@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveEnvApiKey } from "../agents/model-auth.js";
 import { upsertSharedEnvVar } from "../infra/env-file.js";
 import {
@@ -121,7 +117,6 @@ export async function applyAuthChoiceOpenAI(
       return { config: nextConfig, agentModelOverride };
     }
     if (creds) {
-<<<<<<< HEAD
       const profileId = await writeOAuthCredentials("openai-codex", creds, params.agentDir, {
         syncSiblingAgents: true,
       });
@@ -130,14 +125,6 @@ export async function applyAuthChoiceOpenAI(
         provider: "openai-codex",
         mode: "oauth",
       });
-=======
-      await writeOAuthCredentials("openai-codex", creds, params.agentDir);
-      nextConfig = applyAuthProfileConfig(nextConfig, {
-        profileId: "openai-codex:default",
-        provider: "openai-codex",
-        mode: "oauth",
-      });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       if (params.setDefaultModel) {
         const applied = applyOpenAICodexModelDefault(nextConfig);
         nextConfig = applied.next;

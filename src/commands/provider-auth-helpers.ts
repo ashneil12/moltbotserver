@@ -1,12 +1,6 @@
-<<<<<<< HEAD
 import { normalizeProviderId } from "../agents/model-selection.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ProviderAuthMethod, ProviderPlugin } from "../plugins/types.js";
-=======
-import type { OpenClawConfig } from "../config/config.js";
-import type { ProviderAuthMethod, ProviderPlugin } from "../plugins/types.js";
-import { normalizeProviderId } from "../agents/model-selection.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function resolveProviderMatch(
   providers: ProviderPlugin[],

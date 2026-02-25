@@ -5,15 +5,8 @@ import {
   type ServerResponse,
 } from "node:http";
 import { createServer as createHttpsServer } from "node:https";
-<<<<<<< HEAD
 import type { TlsOptions } from "node:tls";
 import type { WebSocketServer } from "ws";
-=======
-import type { CanvasHostHandler } from "../canvas-host/server.js";
-import type { createSubsystemLogger } from "../logging/subsystem.js";
-import type { AuthRateLimiter } from "./auth-rate-limit.js";
-import type { GatewayWsClient } from "./server/ws-types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveAgentAvatar } from "../agents/identity-avatar.js";
 import {
   A2UI_PATH,
@@ -27,7 +20,6 @@ import type { createSubsystemLogger } from "../logging/subsystem.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
 import { handleSlackHttpRequest } from "../slack/http/index.js";
 import {
-<<<<<<< HEAD
   AUTH_RATE_LIMIT_SCOPE_HOOK_AUTH,
   createAuthRateLimiter,
   normalizeRateLimitClientIp,
@@ -35,17 +27,11 @@ import {
 } from "./auth-rate-limit.js";
 import {
   authorizeHttpGatewayConnect,
-=======
-  authorizeGatewayConnect,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   isLocalDirectRequest,
   type GatewayAuthResult,
   type ResolvedGatewayAuth,
 } from "./auth.js";
-<<<<<<< HEAD
 import { CANVAS_CAPABILITY_TTL_MS, normalizeCanvasScopedUrl } from "./canvas-capability.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   handleControlUiAvatarRequest,
   handleControlUiHttpRequest,
@@ -68,14 +54,8 @@ import {
   resolveHookChannel,
   resolveHookDeliver,
 } from "./hooks.js";
-<<<<<<< HEAD
 import { sendGatewayAuthFailure, setDefaultSecurityHeaders } from "./http-common.js";
 import { getBearerToken } from "./http-utils.js";
-=======
-import { sendGatewayAuthFailure } from "./http-common.js";
-import { getBearerToken, getHeader } from "./http-utils.js";
-import { isPrivateOrLoopbackAddress, resolveGatewayClientIp } from "./net.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { handleOpenAiHttpRequest } from "./openai-http.js";
 import { handleOpenResponsesHttpRequest } from "./openresponses-http.js";
 import { GATEWAY_CLIENT_MODES, normalizeGatewayClientMode } from "./protocol/client-info.js";
@@ -145,7 +125,6 @@ async function authorizeCanvasRequest(params: {
   trustedProxies: string[];
   allowRealIpFallback: boolean;
   clients: Set<GatewayWsClient>;
-<<<<<<< HEAD
   canvasCapability?: string;
   malformedScopedPath?: boolean;
   rateLimiter?: AuthRateLimiter;
@@ -164,12 +143,6 @@ async function authorizeCanvasRequest(params: {
     return { ok: false, reason: "unauthorized" };
   }
   if (isLocalDirectRequest(req, trustedProxies, allowRealIpFallback)) {
-=======
-  rateLimiter?: AuthRateLimiter;
-}): Promise<GatewayAuthResult> {
-  const { req, auth, trustedProxies, clients, rateLimiter } = params;
-  if (isLocalDirectRequest(req, trustedProxies)) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return { ok: true };
   }
 
@@ -181,10 +154,7 @@ async function authorizeCanvasRequest(params: {
       connectAuth: { token, password: token },
       req,
       trustedProxies,
-<<<<<<< HEAD
       allowRealIpFallback,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       rateLimiter,
     });
     if (authResult.ok) {
@@ -193,31 +163,9 @@ async function authorizeCanvasRequest(params: {
     lastAuthFailure = authResult;
   }
 
-<<<<<<< HEAD
   if (canvasCapability && hasAuthorizedNodeWsClientForCanvasCapability(clients, canvasCapability)) {
     return { ok: true };
   }
-=======
-  const clientIp = resolveGatewayClientIp({
-    remoteAddr: req.socket?.remoteAddress ?? "",
-    forwardedFor: getHeader(req, "x-forwarded-for"),
-    realIp: getHeader(req, "x-real-ip"),
-    trustedProxies,
-  });
-  if (!clientIp) {
-    return lastAuthFailure ?? { ok: false, reason: "unauthorized" };
-  }
-
-  // IP-based fallback is only safe for machine-scoped addresses.
-  // Only allow IP-based fallback for private/loopback addresses to prevent
-  // cross-session access in shared-IP environments (corporate NAT, cloud).
-  if (!isPrivateOrLoopbackAddress(clientIp)) {
-    return lastAuthFailure ?? { ok: false, reason: "unauthorized" };
-  }
-  if (hasAuthorizedWsClientForIp(clients, clientIp)) {
-    return { ok: true };
-  }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return lastAuthFailure ?? { ok: false, reason: "unauthorized" };
 }
 
@@ -271,59 +219,7 @@ export function createHooksRequestHandler(
   });
 
   const resolveHookClientKey = (req: IncomingMessage): string => {
-<<<<<<< HEAD
     return normalizeRateLimitClientIp(req.socket?.remoteAddress);
-=======
-    return req.socket?.remoteAddress?.trim() || "unknown";
-  };
-
-  const recordHookAuthFailure = (
-    clientKey: string,
-    nowMs: number,
-  ): { throttled: boolean; retryAfterSeconds?: number } => {
-    if (!hookAuthFailures.has(clientKey) && hookAuthFailures.size >= HOOK_AUTH_FAILURE_TRACK_MAX) {
-      // Prune expired entries instead of clearing all state.
-      for (const [key, entry] of hookAuthFailures) {
-        if (nowMs - entry.windowStartedAtMs >= HOOK_AUTH_FAILURE_WINDOW_MS) {
-          hookAuthFailures.delete(key);
-        }
-      }
-      // If still at capacity after pruning, drop the oldest half.
-      if (hookAuthFailures.size >= HOOK_AUTH_FAILURE_TRACK_MAX) {
-        let toRemove = Math.floor(hookAuthFailures.size / 2);
-        for (const key of hookAuthFailures.keys()) {
-          if (toRemove <= 0) {
-            break;
-          }
-          hookAuthFailures.delete(key);
-          toRemove--;
-        }
-      }
-    }
-    const current = hookAuthFailures.get(clientKey);
-    const expired = !current || nowMs - current.windowStartedAtMs >= HOOK_AUTH_FAILURE_WINDOW_MS;
-    const next: HookAuthFailure = expired
-      ? { count: 1, windowStartedAtMs: nowMs }
-      : { count: current.count + 1, windowStartedAtMs: current.windowStartedAtMs };
-    // Delete-before-set refreshes Map insertion order so recently-active
-    // clients are not evicted before dormant ones during oldest-half eviction.
-    if (hookAuthFailures.has(clientKey)) {
-      hookAuthFailures.delete(clientKey);
-    }
-    hookAuthFailures.set(clientKey, next);
-    if (next.count <= HOOK_AUTH_FAILURE_LIMIT) {
-      return { throttled: false };
-    }
-    const retryAfterMs = Math.max(1, next.windowStartedAtMs + HOOK_AUTH_FAILURE_WINDOW_MS - nowMs);
-    return {
-      throttled: true,
-      retryAfterSeconds: Math.ceil(retryAfterMs / 1000),
-    };
-  };
-
-  const clearHookAuthFailure = (clientKey: string) => {
-    hookAuthFailures.delete(clientKey);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   };
 
   return async (req, res) => {
@@ -582,10 +478,7 @@ export function createGatewayHttpServer(opts: {
         await handleToolsInvokeHttpRequest(req, res, {
           auth: resolvedAuth,
           trustedProxies,
-<<<<<<< HEAD
           allowRealIpFallback,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           rateLimiter,
         })
       ) {
@@ -605,10 +498,7 @@ export function createGatewayHttpServer(opts: {
             connectAuth: token ? { token, password: token } : null,
             req,
             trustedProxies,
-<<<<<<< HEAD
             allowRealIpFallback,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             rateLimiter,
           });
           if (!authResult.ok) {
@@ -626,10 +516,7 @@ export function createGatewayHttpServer(opts: {
             auth: resolvedAuth,
             config: openResponsesConfig,
             trustedProxies,
-<<<<<<< HEAD
             allowRealIpFallback,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             rateLimiter,
           })
         ) {
@@ -641,10 +528,7 @@ export function createGatewayHttpServer(opts: {
           await handleOpenAiHttpRequest(req, res, {
             auth: resolvedAuth,
             trustedProxies,
-<<<<<<< HEAD
             allowRealIpFallback,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             rateLimiter,
           })
         ) {
@@ -659,11 +543,8 @@ export function createGatewayHttpServer(opts: {
             trustedProxies,
             allowRealIpFallback,
             clients,
-<<<<<<< HEAD
             canvasCapability: scopedCanvas.capability,
             malformedScopedPath: scopedCanvas.malformedScopedPath,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             rateLimiter,
           });
           if (!ok.ok) {
@@ -744,11 +625,8 @@ export function attachGatewayUpgradeHandler(opts: {
             trustedProxies,
             allowRealIpFallback,
             clients,
-<<<<<<< HEAD
             canvasCapability: scopedCanvas.capability,
             malformedScopedPath: scopedCanvas.malformedScopedPath,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
             rateLimiter,
           });
           if (!ok.ok) {

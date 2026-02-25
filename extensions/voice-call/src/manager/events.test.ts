@@ -2,16 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-<<<<<<< HEAD
 import { VoiceCallConfigSchema } from "../config.js";
 import type { VoiceCallProvider } from "../providers/base.js";
 import type { HangupCallInput, NormalizedEvent } from "../types.js";
 import type { CallManagerContext } from "./context.js";
-=======
-import type { HangupCallInput, NormalizedEvent } from "../types.js";
-import type { CallManagerContext } from "./context.js";
-import { VoiceCallConfigSchema } from "../config.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { processEvent } from "./events.js";
 
 function createContext(overrides: Partial<CallManagerContext> = {}): CallManagerContext {
@@ -30,17 +24,13 @@ function createContext(overrides: Partial<CallManagerContext> = {}): CallManager
     }),
     storePath,
     webhookUrl: null,
-<<<<<<< HEAD
     activeTurnCalls: new Set(),
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     transcriptWaiters: new Map(),
     maxDurationTimers: new Map(),
     ...overrides,
   };
 }
 
-<<<<<<< HEAD
 function createProvider(overrides: Partial<VoiceCallProvider> = {}): VoiceCallProvider {
   return {
     name: "plivo",
@@ -106,37 +96,6 @@ describe("processEvent (functional)", () => {
       providerCallId: "prov-1",
       from: "+15559999999",
     });
-=======
-describe("processEvent (functional)", () => {
-  it("calls provider hangup when rejecting inbound call", () => {
-    const hangupCalls: HangupCallInput[] = [];
-    const provider = {
-      name: "plivo" as const,
-      async hangupCall(input: HangupCallInput): Promise<void> {
-        hangupCalls.push(input);
-      },
-    };
-
-    const ctx = createContext({
-      config: VoiceCallConfigSchema.parse({
-        enabled: true,
-        provider: "plivo",
-        fromNumber: "+15550000000",
-        inboundPolicy: "disabled",
-      }),
-      provider,
-    });
-    const event: NormalizedEvent = {
-      id: "evt-1",
-      type: "call.initiated",
-      callId: "prov-1",
-      providerCallId: "prov-1",
-      timestamp: Date.now(),
-      direction: "inbound",
-      from: "+15559999999",
-      to: "+15550000000",
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     processEvent(ctx, event);
 
@@ -151,7 +110,6 @@ describe("processEvent (functional)", () => {
 
   it("does not call hangup when provider is null", () => {
     const ctx = createContext({
-<<<<<<< HEAD
       config: createInboundDisabledConfig(),
       provider: null,
     });
@@ -160,26 +118,6 @@ describe("processEvent (functional)", () => {
       providerCallId: "prov-2",
       from: "+15551111111",
     });
-=======
-      config: VoiceCallConfigSchema.parse({
-        enabled: true,
-        provider: "plivo",
-        fromNumber: "+15550000000",
-        inboundPolicy: "disabled",
-      }),
-      provider: null,
-    });
-    const event: NormalizedEvent = {
-      id: "evt-2",
-      type: "call.initiated",
-      callId: "prov-2",
-      providerCallId: "prov-2",
-      timestamp: Date.now(),
-      direction: "inbound",
-      from: "+15551111111",
-      to: "+15550000000",
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     processEvent(ctx, event);
 
@@ -187,41 +125,12 @@ describe("processEvent (functional)", () => {
   });
 
   it("calls hangup only once for duplicate events for same rejected call", () => {
-<<<<<<< HEAD
     const { ctx, hangupCalls } = createRejectingInboundContext();
     const event1 = createInboundInitiatedEvent({
       id: "evt-init",
       providerCallId: "prov-dup",
       from: "+15552222222",
     });
-=======
-    const hangupCalls: HangupCallInput[] = [];
-    const provider = {
-      name: "plivo" as const,
-      async hangupCall(input: HangupCallInput): Promise<void> {
-        hangupCalls.push(input);
-      },
-    };
-    const ctx = createContext({
-      config: VoiceCallConfigSchema.parse({
-        enabled: true,
-        provider: "plivo",
-        fromNumber: "+15550000000",
-        inboundPolicy: "disabled",
-      }),
-      provider,
-    });
-    const event1: NormalizedEvent = {
-      id: "evt-init",
-      type: "call.initiated",
-      callId: "prov-dup",
-      providerCallId: "prov-dup",
-      timestamp: Date.now(),
-      direction: "inbound",
-      from: "+15552222222",
-      to: "+15550000000",
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const event2: NormalizedEvent = {
       id: "evt-ring",
       type: "call.ringing",
@@ -307,7 +216,6 @@ describe("processEvent (functional)", () => {
   });
 
   it("when hangup throws, logs and does not throw", () => {
-<<<<<<< HEAD
     const provider = createProvider({
       hangupCall: async (): Promise<void> => {
         throw new Error("provider down");
@@ -322,38 +230,10 @@ describe("processEvent (functional)", () => {
       providerCallId: "prov-fail",
       from: "+15553333333",
     });
-=======
-    const provider = {
-      name: "plivo" as const,
-      async hangupCall(): Promise<void> {
-        throw new Error("provider down");
-      },
-    };
-    const ctx = createContext({
-      config: VoiceCallConfigSchema.parse({
-        enabled: true,
-        provider: "plivo",
-        fromNumber: "+15550000000",
-        inboundPolicy: "disabled",
-      }),
-      provider,
-    });
-    const event: NormalizedEvent = {
-      id: "evt-fail",
-      type: "call.initiated",
-      callId: "prov-fail",
-      providerCallId: "prov-fail",
-      timestamp: Date.now(),
-      direction: "inbound",
-      from: "+15553333333",
-      to: "+15550000000",
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(() => processEvent(ctx, event)).not.toThrow();
     expect(ctx.activeCalls.size).toBe(0);
   });
-<<<<<<< HEAD
 
   it("deduplicates by dedupeKey even when event IDs differ", () => {
     const now = Date.now();
@@ -399,6 +279,4 @@ describe("processEvent (functional)", () => {
     expect(call?.transcript).toHaveLength(1);
     expect(Array.from(ctx.processedEventIds)).toEqual(["stable-key-1"]);
   });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

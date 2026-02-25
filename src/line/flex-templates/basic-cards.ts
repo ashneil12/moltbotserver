@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import { attachFooterText } from "./common.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type {
   Action,
   CardAction,
@@ -80,26 +77,7 @@ export function createInfoCard(title: string, body: string, footer?: string): Fl
   };
 
   if (footer) {
-<<<<<<< HEAD
     attachFooterText(bubble, footer);
-=======
-    bubble.footer = {
-      type: "box",
-      layout: "vertical",
-      contents: [
-        {
-          type: "text",
-          text: footer,
-          size: "xs",
-          color: "#AAAAAA",
-          wrap: true,
-          align: "center",
-        } as FlexText,
-      ],
-      paddingAll: "lg",
-      backgroundColor: "#FAFAFA",
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   return bubble;

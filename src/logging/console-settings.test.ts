@@ -57,10 +57,6 @@ afterEach(async () => {
   console.debug = snapshot.debug;
   console.trace = snapshot.trace;
   Object.defineProperty(process.stdout, "isTTY", { value: originalIsTty, configurable: true });
-<<<<<<< HEAD
-=======
-  const logging = await import("../logging.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   logging.setConsoleConfigLoaderForTests();
   vi.restoreAllMocks();
 });

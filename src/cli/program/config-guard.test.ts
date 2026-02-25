@@ -29,7 +29,6 @@ function makeRuntime() {
 }
 
 describe("ensureConfigReady", () => {
-<<<<<<< HEAD
   async function loadEnsureConfigReady() {
     vi.resetModules();
     return await import("./config-guard.js");
@@ -52,14 +51,11 @@ describe("ensureConfigReady", () => {
     });
   }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   beforeEach(() => {
     vi.clearAllMocks();
     readConfigFileSnapshotMock.mockResolvedValue(makeSnapshot());
   });
 
-<<<<<<< HEAD
   it.each([
     {
       name: "skips doctor flow for read-only fast path commands",
@@ -102,19 +98,6 @@ describe("ensureConfigReady", () => {
     await ensureConfigReady({ runtime: runtimeA as never, commandPath: ["message"] });
     await ensureConfigReady({ runtime: runtimeB as never, commandPath: ["message"] });
 
-=======
-  it("skips doctor flow for read-only fast path commands", async () => {
-    vi.resetModules();
-    const { ensureConfigReady } = await import("./config-guard.js");
-    await ensureConfigReady({ runtime: makeRuntime() as never, commandPath: ["status"] });
-    expect(loadAndMaybeMigrateDoctorConfigMock).not.toHaveBeenCalled();
-  });
-
-  it("runs doctor flow for commands that may mutate state", async () => {
-    vi.resetModules();
-    const { ensureConfigReady } = await import("./config-guard.js");
-    await ensureConfigReady({ runtime: makeRuntime() as never, commandPath: ["message"] });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(loadAndMaybeMigrateDoctorConfigMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,16 +1,9 @@
 import type { Bot } from "grammy";
-<<<<<<< HEAD
-=======
-import type { RuntimeEnv } from "../runtime.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   normalizeTelegramCommandName,
   TELEGRAM_COMMAND_NAME_PATTERN,
 } from "../config/telegram-custom-commands.js";
-<<<<<<< HEAD
 import type { RuntimeEnv } from "../runtime.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 
 export const TELEGRAM_MAX_COMMANDS = 100;
@@ -107,11 +100,7 @@ export function syncTelegramMenuCommands(params: {
     });
   };
 
-<<<<<<< HEAD
   void sync().catch((err) => {
     runtime.error?.(`Telegram command sync failed: ${String(err)}`);
   });
-=======
-  void sync().catch(() => {});
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }

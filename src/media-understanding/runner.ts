@@ -60,37 +60,6 @@ import type {
   MediaUnderstandingOutput,
   MediaUnderstandingProvider,
 } from "./types.js";
-<<<<<<< HEAD
-=======
-import { resolveApiKeyForProvider } from "../agents/model-auth.js";
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
-import { logVerbose, shouldLogVerbose } from "../globals.js";
-import { runExec } from "../process/exec.js";
-import { MediaAttachmentCache, normalizeAttachments, selectAttachments } from "./attachments.js";
-import {
-  AUTO_AUDIO_KEY_PROVIDERS,
-  AUTO_IMAGE_KEY_PROVIDERS,
-  AUTO_VIDEO_KEY_PROVIDERS,
-  DEFAULT_IMAGE_MODELS,
-} from "./defaults.js";
-import { isMediaUnderstandingSkipError } from "./errors.js";
-import {
-  buildMediaUnderstandingRegistry,
-  getMediaUnderstandingProvider,
-  normalizeMediaProviderId,
-} from "./providers/index.js";
-import { resolveModelEntries, resolveScopeDecision } from "./resolve.js";
-import {
-  buildModelDecision,
-  formatDecisionSummary,
-  runCliEntry,
-  runProviderEntry,
-} from "./runner.entries.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type ActiveMediaModel = {
   provider: string;
@@ -237,48 +206,6 @@ async function hasBinary(name: string): Promise<boolean> {
   return Boolean(await findBinary(name));
 }
 
-<<<<<<< HEAD
-=======
-async function fileExists(filePath?: string | null): Promise<boolean> {
-  if (!filePath) {
-    return false;
-  }
-  try {
-    await fs.stat(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function extractLastJsonObject(raw: string): unknown {
-  const trimmed = raw.trim();
-  const start = trimmed.lastIndexOf("{");
-  if (start === -1) {
-    return null;
-  }
-  const slice = trimmed.slice(start);
-  try {
-    return JSON.parse(slice);
-  } catch {
-    return null;
-  }
-}
-
-function extractGeminiResponse(raw: string): string | null {
-  const payload = extractLastJsonObject(raw);
-  if (!payload || typeof payload !== "object") {
-    return null;
-  }
-  const response = (payload as { response?: unknown }).response;
-  if (typeof response !== "string") {
-    return null;
-  }
-  const trimmed = response.trim();
-  return trimmed || null;
-}
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 async function probeGeminiCli(): Promise<boolean> {
   const cached = geminiProbeCache.get("gemini");
   if (cached) {

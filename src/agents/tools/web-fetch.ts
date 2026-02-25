@@ -4,6 +4,7 @@ import { fetchWithSsrFGuard } from "../../infra/net/fetch-guard.js";
 import { SsrFBlockedError } from "../../infra/net/ssrf.js";
 import { logDebug } from "../../logger.js";
 import { wrapExternalContent, wrapWebContent } from "../../security/external-content.js";
+import { scanAndLog } from "../../security/scan-and-log.js";
 import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
 import { stringEnum } from "../schema/typebox.js";
 import type { AnyAgentTool } from "./common.js";
@@ -256,6 +257,10 @@ function wrapWebFetchContent(
   if (maxChars <= 0) {
     return { text: "", truncated: true, rawLength: 0, wrappedLength: 0 };
   }
+
+  // Security: scan fetched web content before wrapping
+  scanAndLog(value, { source: "web_fetch" });
+
   const includeWarning = maxChars >= WEB_FETCH_WRAPPER_WITH_WARNING_OVERHEAD;
   const wrapperOverhead = includeWarning
     ? WEB_FETCH_WRAPPER_WITH_WARNING_OVERHEAD

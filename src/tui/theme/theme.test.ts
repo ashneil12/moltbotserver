@@ -7,12 +7,8 @@ const cliHighlightMocks = vi.hoisted(() => ({
 
 vi.mock("cli-highlight", () => cliHighlightMocks);
 
-<<<<<<< HEAD
 const { markdownTheme, searchableSelectListTheme, selectListTheme, theme } =
   await import("./theme.js");
-=======
-const { markdownTheme } = await import("./theme.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const stripAnsi = (str: string) =>
   str.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g"), "");
@@ -20,13 +16,8 @@ const stripAnsi = (str: string) =>
 describe("markdownTheme", () => {
   describe("highlightCode", () => {
     beforeEach(() => {
-<<<<<<< HEAD
       cliHighlightMocks.highlight.mockClear();
       cliHighlightMocks.supportsLanguage.mockClear();
-=======
-      cliHighlightMocks.highlight.mockReset();
-      cliHighlightMocks.supportsLanguage.mockReset();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       cliHighlightMocks.highlight.mockImplementation((code: string) => code);
       cliHighlightMocks.supportsLanguage.mockReturnValue(true);
     });

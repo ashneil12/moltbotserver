@@ -1,12 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-<<<<<<< HEAD
 import { ensureAuthProfileStore } from "./auth-profiles.js";
 import type { AuthProfileCredential } from "./auth-profiles/types.js";
 import { normalizeProviderId } from "./model-selection.js";
-=======
-import { ensureAuthProfileStore, listProfilesForProvider } from "./auth-profiles.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 type AuthJsonCredential =
   | {
@@ -37,7 +33,6 @@ async function readAuthJson(filePath: string): Promise<AuthJsonShape> {
 }
 
 /**
-<<<<<<< HEAD
  * Convert an OpenClaw auth-profiles credential to pi-coding-agent auth.json format.
  * Returns null if the credential cannot be converted.
  */
@@ -115,23 +110,12 @@ function credentialsEqual(a: AuthJsonCredential | undefined, b: AuthJsonCredenti
  * registry/catalog output.
  *
  * Syncs all credential types: api_key, token (as api_key), and oauth.
-=======
- * pi-coding-agent's ModelRegistry/AuthStorage expects OAuth credentials in auth.json.
- *
- * OpenClaw stores OAuth credentials in auth-profiles.json instead. This helper
- * bridges a subset of credentials into agentDir/auth.json so pi-coding-agent can
- * (a) consider the provider authenticated and (b) include built-in models in its
- * registry/catalog output.
- *
- * Currently used for openai-codex.
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
  */
 export async function ensurePiAuthJsonFromAuthProfiles(agentDir: string): Promise<{
   wrote: boolean;
   authPath: string;
 }> {
   const store = ensureAuthProfileStore(agentDir, { allowKeychainPrompt: false });
-<<<<<<< HEAD
   const authPath = path.join(agentDir, "auth.json");
 
   // Group profiles by provider, taking the first valid profile for each
@@ -169,58 +153,6 @@ export async function ensurePiAuthJsonFromAuthProfiles(agentDir: string): Promis
 
   await fs.mkdir(agentDir, { recursive: true, mode: 0o700 });
   await fs.writeFile(authPath, `${JSON.stringify(existing, null, 2)}\n`, { mode: 0o600 });
-=======
-  const codexProfiles = listProfilesForProvider(store, "openai-codex");
-  if (codexProfiles.length === 0) {
-    return { wrote: false, authPath: path.join(agentDir, "auth.json") };
-  }
-
-  const profileId = codexProfiles[0];
-  const cred = profileId ? store.profiles[profileId] : undefined;
-  if (!cred || cred.type !== "oauth") {
-    return { wrote: false, authPath: path.join(agentDir, "auth.json") };
-  }
-
-  const accessRaw = (cred as { access?: unknown }).access;
-  const refreshRaw = (cred as { refresh?: unknown }).refresh;
-  const expiresRaw = (cred as { expires?: unknown }).expires;
-
-  const access = typeof accessRaw === "string" ? accessRaw.trim() : "";
-  const refresh = typeof refreshRaw === "string" ? refreshRaw.trim() : "";
-  const expires = typeof expiresRaw === "number" ? expiresRaw : Number.NaN;
-
-  if (!access || !refresh || !Number.isFinite(expires) || expires <= 0) {
-    return { wrote: false, authPath: path.join(agentDir, "auth.json") };
-  }
-
-  const authPath = path.join(agentDir, "auth.json");
-  const next = await readAuthJson(authPath);
-
-  const existing = next["openai-codex"];
-  const desired: AuthJsonCredential = {
-    type: "oauth",
-    access,
-    refresh,
-    expires,
-  };
-
-  const isSame =
-    existing &&
-    typeof existing === "object" &&
-    (existing as { type?: unknown }).type === "oauth" &&
-    (existing as { access?: unknown }).access === access &&
-    (existing as { refresh?: unknown }).refresh === refresh &&
-    (existing as { expires?: unknown }).expires === expires;
-
-  if (isSame) {
-    return { wrote: false, authPath };
-  }
-
-  next["openai-codex"] = desired;
-
-  await fs.mkdir(agentDir, { recursive: true, mode: 0o700 });
-  await fs.writeFile(authPath, `${JSON.stringify(next, null, 2)}\n`, { mode: 0o600 });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   return { wrote: true, authPath };
 }

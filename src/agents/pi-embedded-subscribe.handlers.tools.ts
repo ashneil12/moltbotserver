@@ -1,9 +1,4 @@
 import type { AgentEvent } from "@mariozechner/pi-agent-core";
-<<<<<<< HEAD
-=======
-import type { PluginHookAfterToolCallEvent } from "../plugins/types.js";
-import type { EmbeddedPiSubscribeContext } from "./pi-embedded-subscribe.handlers.types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import type { PluginHookAfterToolCallEvent } from "../plugins/types.js";

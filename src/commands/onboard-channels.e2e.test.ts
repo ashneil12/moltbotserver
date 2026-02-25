@@ -92,7 +92,6 @@ describe("setupChannels", () => {
     expect(multiselect).not.toHaveBeenCalled();
   });
 
-<<<<<<< HEAD:src/commands/onboard-channels.test.ts
   it("continues Telegram onboarding even when plugin registry is empty (avoids 'plugin not available' block)", async () => {
     // Simulate missing registry entries (the scenario reported in #25545).
     setActivePluginRegistry(createEmptyPluginRegistry());
@@ -145,36 +144,6 @@ describe("setupChannels", () => {
     });
 
     const runtime = createExitThrowingRuntime();
-=======
-  it("shows explicit dmScope config command in channel primer", async () => {
-    const note = vi.fn(async () => {});
-    const select = vi.fn(async () => "__done__");
-    const multiselect = vi.fn(async () => {
-      throw new Error("unexpected multiselect");
-    });
-    const text = vi.fn(async ({ message }: { message: string }) => {
-      throw new Error(`unexpected text prompt: ${message}`);
-    });
-
-    const prompter: WizardPrompter = {
-      intro: vi.fn(async () => {}),
-      outro: vi.fn(async () => {}),
-      note,
-      select,
-      multiselect,
-      text: text as unknown as WizardPrompter["text"],
-      confirm: vi.fn(async () => false),
-      progress: vi.fn(() => ({ update: vi.fn(), stop: vi.fn() })),
-    };
-
-    const runtime: RuntimeEnv = {
-      log: vi.fn(),
-      error: vi.fn(),
-      exit: vi.fn((code: number) => {
-        throw new Error(`exit:${code}`);
-      }),
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/onboard-channels.e2e.test.ts
 
     await setupChannels({} as OpenClawConfig, runtime, prompter, {
       skipConfirm: true,

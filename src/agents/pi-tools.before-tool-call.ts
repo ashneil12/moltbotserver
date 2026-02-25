@@ -18,7 +18,6 @@ const log = createSubsystemLogger("agents/tools");
 const BEFORE_TOOL_CALL_WRAPPED = Symbol("beforeToolCallWrapped");
 const adjustedParamsByToolCallId = new Map<string, unknown>();
 const MAX_TRACKED_ADJUSTED_PARAMS = 1024;
-<<<<<<< HEAD
 const LOOP_WARNING_BUCKET_SIZE = 10;
 const MAX_LOOP_WARNING_KEYS = 256;
 
@@ -71,8 +70,6 @@ async function recordLoopOutcome(args: {
     log.warn(`tool loop outcome tracking failed: tool=${args.toolName} error=${String(err)}`);
   }
 }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export async function runBeforeToolCallHook(args: {
   toolName: string;
@@ -205,7 +202,6 @@ export function wrapToolWithBeforeToolCallHook(
           }
         }
       }
-<<<<<<< HEAD
       const normalizedToolName = normalizeToolName(toolName || "tool");
       try {
         const result = await execute(toolCallId, outcome.params, signal, onUpdate);
@@ -227,18 +223,11 @@ export function wrapToolWithBeforeToolCallHook(
         });
         throw err;
       }
-=======
-      return await execute(toolCallId, outcome.params, signal, onUpdate);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     },
   };
   Object.defineProperty(wrappedTool, BEFORE_TOOL_CALL_WRAPPED, {
     value: true,
-<<<<<<< HEAD
     enumerable: true,
-=======
-    enumerable: false,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
   return wrappedTool;
 }

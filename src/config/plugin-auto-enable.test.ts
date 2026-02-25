@@ -21,11 +21,7 @@ function makeRegistry(plugins: Array<{ id: string; channels: string[] }>): Plugi
 }
 
 describe("applyPluginAutoEnable", () => {
-<<<<<<< HEAD
   it("auto-enables built-in channels and appends to existing allowlist", () => {
-=======
-  it("auto-enables channel plugins and updates allowlist", () => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const result = applyPluginAutoEnable({
       config: {
         channels: { slack: { botToken: "x" } },
@@ -34,7 +30,6 @@ describe("applyPluginAutoEnable", () => {
       env: {},
     });
 
-<<<<<<< HEAD
     expect(result.config.channels?.slack?.enabled).toBe(true);
     expect(result.config.plugins?.entries?.slack).toBeUndefined();
     expect(result.config.plugins?.allow).toEqual(["telegram", "slack"]);
@@ -87,11 +82,6 @@ describe("applyPluginAutoEnable", () => {
     expect(result.config.channels?.whatsapp?.enabled).toBe(true);
     const validated = validateConfigObject(result.config);
     expect(validated.ok).toBe(true);
-=======
-    expect(result.config.plugins?.entries?.slack?.enabled).toBe(true);
-    expect(result.config.plugins?.allow).toEqual(["telegram", "slack"]);
-    expect(result.changes.join("\n")).toContain("Slack configured, enabled automatically.");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("respects explicit disable", () => {
@@ -107,7 +97,6 @@ describe("applyPluginAutoEnable", () => {
     expect(result.changes).toEqual([]);
   });
 
-<<<<<<< HEAD
   it("respects built-in channel explicit disable via channels.<id>.enabled", () => {
     const result = applyPluginAutoEnable({
       config: {
@@ -121,8 +110,6 @@ describe("applyPluginAutoEnable", () => {
     expect(result.changes).toEqual([]);
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("auto-enables irc when configured via env", () => {
     const result = applyPluginAutoEnable({
       config: {},
@@ -132,11 +119,7 @@ describe("applyPluginAutoEnable", () => {
       },
     });
 
-<<<<<<< HEAD
     expect(result.config.channels?.irc?.enabled).toBe(true);
-=======
-    expect(result.config.plugins?.entries?.irc?.enabled).toBe(true);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(result.changes.join("\n")).toContain("IRC configured, enabled automatically.");
   });
 
@@ -155,11 +138,7 @@ describe("applyPluginAutoEnable", () => {
       env: {},
     });
 
-<<<<<<< HEAD
     expect(result.config.plugins?.entries?.["google-gemini-cli-auth"]?.enabled).toBe(true);
-=======
-    expect(result.config.plugins?.entries?.["google-antigravity-auth"]?.enabled).toBe(true);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("skips when plugins are globally disabled", () => {
@@ -283,11 +262,7 @@ describe("applyPluginAutoEnable", () => {
       });
 
       expect(result.config.plugins?.entries?.bluebubbles?.enabled).toBe(false);
-<<<<<<< HEAD
       expect(result.config.channels?.imessage?.enabled).toBe(true);
-=======
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBe(true);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       expect(result.changes.join("\n")).toContain("iMessage configured, enabled automatically.");
     });
 
@@ -304,11 +279,7 @@ describe("applyPluginAutoEnable", () => {
       });
 
       expect(result.config.plugins?.entries?.bluebubbles?.enabled).toBeUndefined();
-<<<<<<< HEAD
       expect(result.config.channels?.imessage?.enabled).toBe(true);
-=======
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBe(true);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
 
     it("auto-enables imessage when only imessage is configured", () => {
@@ -319,11 +290,7 @@ describe("applyPluginAutoEnable", () => {
         env: {},
       });
 
-<<<<<<< HEAD
       expect(result.config.channels?.imessage?.enabled).toBe(true);
-=======
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBe(true);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       expect(result.changes.join("\n")).toContain("iMessage configured, enabled automatically.");
     });
   });

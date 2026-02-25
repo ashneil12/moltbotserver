@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 import fs from "node:fs/promises";
 import path from "node:path";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 
 export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {

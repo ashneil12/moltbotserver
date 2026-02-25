@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { inspect } from "node:util";
 import {
   Client,
@@ -11,14 +10,6 @@ import {
 import { GatewayCloseCodes, type GatewayPlugin } from "@buape/carbon/gateway";
 import { VoicePlugin } from "@buape/carbon/voice";
 import { Routes } from "discord-api-types/v10";
-=======
-import type { GatewayPlugin } from "@buape/carbon/gateway";
-import { Client, ReadyListener, type BaseMessageInteractiveComponent } from "@buape/carbon";
-import { Routes } from "discord-api-types/v10";
-import { inspect } from "node:util";
-import type { HistoryEntry } from "../../auto-reply/reply/history.js";
-import type { OpenClawConfig, ReplyToMode } from "../../config/config.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveTextChunkLimit } from "../../auto-reply/chunk.js";
 import { listNativeCommandSpecsForConfig } from "../../auto-reply/commands-registry.js";
 import type { HistoryEntry } from "../../auto-reply/reply/history.js";
@@ -61,10 +52,6 @@ import {
 import { resolveDiscordSlashCommandConfig } from "./commands.js";
 import { createExecApprovalButton, DiscordExecApprovalHandler } from "./exec-approvals.js";
 import { createDiscordGatewayPlugin } from "./gateway-plugin.js";
-<<<<<<< HEAD
-=======
-import { registerGateway, unregisterGateway } from "./gateway-registry.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   DiscordMessageListener,
   DiscordPresenceListener,
@@ -80,14 +67,11 @@ import {
   createDiscordNativeCommand,
 } from "./native-command.js";
 import { resolveDiscordPresenceUpdate } from "./presence.js";
-<<<<<<< HEAD
 import { resolveDiscordAllowlistConfig } from "./provider.allowlist.js";
 import { runDiscordGatewayLifecycle } from "./provider.lifecycle.js";
 import { resolveDiscordRestFetch } from "./rest-fetch.js";
 import { createNoopThreadBindingManager, createThreadBindingManager } from "./thread-bindings.js";
 import { formatThreadBindingTtlLabel } from "./thread-bindings.messages.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type MonitorDiscordOpts = {
   token?: string;
@@ -235,7 +219,6 @@ function formatDiscordDeployErrorDetails(err: unknown): string {
   return details.length > 0 ? ` (${details.join(", ")})` : "";
 }
 
-<<<<<<< HEAD
 const DISCORD_DISALLOWED_INTENTS_CODE = GatewayCloseCodes.DisallowedIntents;
 
 function isDiscordDisallowedIntentsError(err: unknown): boolean {
@@ -246,8 +229,6 @@ function isDiscordDisallowedIntentsError(err: unknown): boolean {
   return message.includes(String(DISCORD_DISALLOWED_INTENTS_CODE));
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   const cfg = opts.config ?? loadConfig();
   const account = resolveDiscordAccount({
@@ -329,7 +310,6 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   const ephemeralDefault = slashCommand.ephemeral;
   const voiceEnabled = discordCfg.voice?.enabled !== false;
 
-<<<<<<< HEAD
   const allowlistResolved = await resolveDiscordAllowlistConfig({
     token,
     guildEntries,
@@ -339,215 +319,6 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   });
   guildEntries = allowlistResolved.guildEntries;
   allowFrom = allowlistResolved.allowFrom;
-=======
-  if (token) {
-    if (guildEntries && Object.keys(guildEntries).length > 0) {
-      try {
-        const entries: Array<{ input: string; guildKey: string; channelKey?: string }> = [];
-        for (const [guildKey, guildCfg] of Object.entries(guildEntries)) {
-          if (guildKey === "*") {
-            continue;
-          }
-          const channels = guildCfg?.channels ?? {};
-          const channelKeys = Object.keys(channels).filter((key) => key !== "*");
-          if (channelKeys.length === 0) {
-            const input = /^\d+$/.test(guildKey) ? `guild:${guildKey}` : guildKey;
-            entries.push({ input, guildKey });
-            continue;
-          }
-          for (const channelKey of channelKeys) {
-            entries.push({
-              input: `${guildKey}/${channelKey}`,
-              guildKey,
-              channelKey,
-            });
-          }
-        }
-        if (entries.length > 0) {
-          const resolved = await resolveDiscordChannelAllowlist({
-            token,
-            entries: entries.map((entry) => entry.input),
-          });
-          const nextGuilds = { ...guildEntries };
-          const mapping: string[] = [];
-          const unresolved: string[] = [];
-          for (const entry of resolved) {
-            const source = entries.find((item) => item.input === entry.input);
-            if (!source) {
-              continue;
-            }
-            const sourceGuild = guildEntries?.[source.guildKey] ?? {};
-            if (!entry.resolved || !entry.guildId) {
-              unresolved.push(entry.input);
-              continue;
-            }
-            mapping.push(
-              entry.channelId
-                ? `${entry.input}→${entry.guildId}/${entry.channelId}`
-                : `${entry.input}→${entry.guildId}`,
-            );
-            const existing = nextGuilds[entry.guildId] ?? {};
-            const mergedChannels = { ...sourceGuild.channels, ...existing.channels };
-            const mergedGuild = { ...sourceGuild, ...existing, channels: mergedChannels };
-            nextGuilds[entry.guildId] = mergedGuild;
-            if (source.channelKey && entry.channelId) {
-              const sourceChannel = sourceGuild.channels?.[source.channelKey];
-              if (sourceChannel) {
-                nextGuilds[entry.guildId] = {
-                  ...mergedGuild,
-                  channels: {
-                    ...mergedChannels,
-                    [entry.channelId]: {
-                      ...sourceChannel,
-                      ...mergedChannels?.[entry.channelId],
-                    },
-                  },
-                };
-              }
-            }
-          }
-          guildEntries = nextGuilds;
-          summarizeMapping("discord channels", mapping, unresolved, runtime);
-        }
-      } catch (err) {
-        runtime.log?.(
-          `discord channel resolve failed; using config entries. ${formatErrorMessage(err)}`,
-        );
-      }
-    }
-
-    const allowEntries =
-      allowFrom?.filter((entry) => String(entry).trim() && String(entry).trim() !== "*") ?? [];
-    if (allowEntries.length > 0) {
-      try {
-        const resolvedUsers = await resolveDiscordUserAllowlist({
-          token,
-          entries: allowEntries.map((entry) => String(entry)),
-        });
-        const mapping: string[] = [];
-        const unresolved: string[] = [];
-        const additions: string[] = [];
-        for (const entry of resolvedUsers) {
-          if (entry.resolved && entry.id) {
-            mapping.push(`${entry.input}→${entry.id}`);
-            additions.push(entry.id);
-          } else {
-            unresolved.push(entry.input);
-          }
-        }
-        allowFrom = mergeAllowlist({ existing: allowFrom, additions });
-        summarizeMapping("discord users", mapping, unresolved, runtime);
-      } catch (err) {
-        runtime.log?.(
-          `discord user resolve failed; using config entries. ${formatErrorMessage(err)}`,
-        );
-      }
-    }
-
-    if (guildEntries && Object.keys(guildEntries).length > 0) {
-      const userEntries = new Set<string>();
-      for (const guild of Object.values(guildEntries)) {
-        if (!guild || typeof guild !== "object") {
-          continue;
-        }
-        const users = (guild as { users?: Array<string | number> }).users;
-        if (Array.isArray(users)) {
-          for (const entry of users) {
-            const trimmed = String(entry).trim();
-            if (trimmed && trimmed !== "*") {
-              userEntries.add(trimmed);
-            }
-          }
-        }
-        const channels = (guild as { channels?: Record<string, unknown> }).channels ?? {};
-        for (const channel of Object.values(channels)) {
-          if (!channel || typeof channel !== "object") {
-            continue;
-          }
-          const channelUsers = (channel as { users?: Array<string | number> }).users;
-          if (!Array.isArray(channelUsers)) {
-            continue;
-          }
-          for (const entry of channelUsers) {
-            const trimmed = String(entry).trim();
-            if (trimmed && trimmed !== "*") {
-              userEntries.add(trimmed);
-            }
-          }
-        }
-      }
-
-      if (userEntries.size > 0) {
-        try {
-          const resolvedUsers = await resolveDiscordUserAllowlist({
-            token,
-            entries: Array.from(userEntries),
-          });
-          const resolvedMap = new Map(resolvedUsers.map((entry) => [entry.input, entry]));
-          const mapping = resolvedUsers
-            .filter((entry) => entry.resolved && entry.id)
-            .map((entry) => `${entry.input}→${entry.id}`);
-          const unresolved = resolvedUsers
-            .filter((entry) => !entry.resolved)
-            .map((entry) => entry.input);
-
-          const nextGuilds = { ...guildEntries };
-          for (const [guildKey, guildConfig] of Object.entries(guildEntries ?? {})) {
-            if (!guildConfig || typeof guildConfig !== "object") {
-              continue;
-            }
-            const nextGuild = { ...guildConfig } as Record<string, unknown>;
-            const users = (guildConfig as { users?: Array<string | number> }).users;
-            if (Array.isArray(users) && users.length > 0) {
-              const additions: string[] = [];
-              for (const entry of users) {
-                const trimmed = String(entry).trim();
-                const resolved = resolvedMap.get(trimmed);
-                if (resolved?.resolved && resolved.id) {
-                  additions.push(resolved.id);
-                }
-              }
-              nextGuild.users = mergeAllowlist({ existing: users, additions });
-            }
-            const channels = (guildConfig as { channels?: Record<string, unknown> }).channels ?? {};
-            if (channels && typeof channels === "object") {
-              const nextChannels: Record<string, unknown> = { ...channels };
-              for (const [channelKey, channelConfig] of Object.entries(channels)) {
-                if (!channelConfig || typeof channelConfig !== "object") {
-                  continue;
-                }
-                const channelUsers = (channelConfig as { users?: Array<string | number> }).users;
-                if (!Array.isArray(channelUsers) || channelUsers.length === 0) {
-                  continue;
-                }
-                const additions: string[] = [];
-                for (const entry of channelUsers) {
-                  const trimmed = String(entry).trim();
-                  const resolved = resolvedMap.get(trimmed);
-                  if (resolved?.resolved && resolved.id) {
-                    additions.push(resolved.id);
-                  }
-                }
-                nextChannels[channelKey] = {
-                  ...channelConfig,
-                  users: mergeAllowlist({ existing: channelUsers, additions }),
-                };
-              }
-              nextGuild.channels = nextChannels;
-            }
-            nextGuilds[guildKey] = nextGuild;
-          }
-          guildEntries = nextGuilds;
-          summarizeMapping("discord channel users", mapping, unresolved, runtime);
-        } catch (err) {
-          runtime.log?.(
-            `discord channel user resolve failed; using config entries. ${formatErrorMessage(err)}`,
-          );
-        }
-      }
-    }
-  }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   if (shouldLogVerbose()) {
     logVerbose(
@@ -765,82 +536,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       cfg,
       discordConfig: discordCfg,
       accountId: account.accountId,
-<<<<<<< HEAD
       token,
-=======
-      sessionPrefix,
-    }),
-  ];
-
-  if (execApprovalsHandler) {
-    components.push(createExecApprovalButton({ handler: execApprovalsHandler }));
-  }
-
-  if (agentComponentsEnabled) {
-    components.push(
-      createAgentComponentButton({
-        cfg,
-        accountId: account.accountId,
-        guildEntries,
-        allowFrom,
-        dmPolicy,
-      }),
-    );
-    components.push(
-      createAgentSelectMenu({
-        cfg,
-        accountId: account.accountId,
-        guildEntries,
-        allowFrom,
-        dmPolicy,
-      }),
-    );
-  }
-
-  class DiscordStatusReadyListener extends ReadyListener {
-    async handle(_data: unknown, client: Client) {
-      const gateway = client.getPlugin<GatewayPlugin>("gateway");
-      if (!gateway) {
-        return;
-      }
-
-      const presence = resolveDiscordPresenceUpdate(discordCfg);
-      if (!presence) {
-        return;
-      }
-
-      gateway.updatePresence(presence);
-    }
-  }
-
-  const client = new Client(
-    {
-      baseUrl: "http://localhost",
-      deploySecret: "a",
-      clientId: applicationId,
-      publicKey: "a",
-      token,
-      autoDeploy: false,
-    },
-    {
-      commands,
-      listeners: [new DiscordStatusReadyListener()],
-      components,
-    },
-    [createDiscordGatewayPlugin({ discordConfig: discordCfg, runtime })],
-  );
-
-  await deployDiscordCommands({ client, runtime, enabled: nativeEnabled });
-
-  const logger = createSubsystemLogger("discord/monitor");
-  const guildHistories = new Map<string, HistoryEntry[]>();
-  let botUserId: string | undefined;
-
-  if (nativeDisabledExplicit) {
-    await clearDiscordNativeCommands({
-      client,
-      applicationId,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       runtime,
       botUserId,
       guildHistories,
@@ -929,12 +625,9 @@ async function clearDiscordNativeCommands(params: {
 
 export const __testing = {
   createDiscordGatewayPlugin,
-<<<<<<< HEAD
   dedupeSkillCommandsForDiscord,
   resolveDiscordRuntimeGroupPolicy: resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   resolveDiscordRestFetch,
   resolveThreadBindingsEnabled,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 };

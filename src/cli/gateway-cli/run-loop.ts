@@ -13,10 +13,7 @@ import {
   waitForActiveTasks,
 } from "../../process/command-queue.js";
 import { createRestartIterationHook } from "../../process/restart-recovery.js";
-<<<<<<< HEAD
 import type { defaultRuntime } from "../../runtime.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const gatewayLog = createSubsystemLogger("gateway");
 

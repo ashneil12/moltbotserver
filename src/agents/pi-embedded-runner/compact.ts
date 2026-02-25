@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 import fs from "node:fs/promises";
 import os from "node:os";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import {
   createAgentSession,
@@ -16,10 +13,7 @@ import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/thinking.js";
 import { resolveChannelCapabilities } from "../../config/channel-capabilities.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { getMachineDisplayName } from "../../infra/machine-name.js";
-<<<<<<< HEAD
 import { generateSecureToken } from "../../infra/secure-random.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { type enqueueCommand, enqueueCommandInLane } from "../../process/command-queue.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../../routing/session-key.js";
@@ -88,10 +82,7 @@ import {
 } from "./system-prompt.js";
 import { collectAllowedToolNames } from "./tool-name-allowlist.js";
 import { splitSdkTools } from "./tool-split.js";
-<<<<<<< HEAD
 import type { EmbeddedPiCompactResult } from "./types.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { describeUnknownError, mapThinkingLevel } from "./utils.js";
 import { flushPendingToolResultsAfterIdle } from "./wait-for-idle-before-flush.js";
 
@@ -124,11 +115,7 @@ export type CompactEmbeddedPiSessionParams = {
   reasoningLevel?: ReasoningLevel;
   bashElevated?: ExecElevatedDefaults;
   customInstructions?: string;
-<<<<<<< HEAD
   trigger?: "overflow" | "manual";
-=======
-  trigger?: "overflow" | "manual" | "cache_ttl" | "safeguard";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   diagId?: string;
   attempt?: number;
   maxAttempts?: number;
@@ -147,11 +134,7 @@ type CompactionMessageMetrics = {
 };
 
 function createCompactionDiagId(): string {
-<<<<<<< HEAD
   return `cmp-${Date.now().toString(36)}-${generateSecureToken(4)}`;
-=======
-  return `cmp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 function getMessageTextChars(msg: AgentMessage): number {
@@ -299,21 +282,7 @@ export async function compactEmbeddedPiSessionDirect(
   );
   if (!model) {
     const reason = error ?? `Unknown model: ${provider}/${modelId}`;
-<<<<<<< HEAD
     return fail(reason);
-=======
-    log.warn(
-      `[compaction-diag] end runId=${runId} sessionKey=${params.sessionKey ?? params.sessionId} ` +
-        `diagId=${diagId} trigger=${trigger} provider=${provider}/${modelId} ` +
-        `attempt=${attempt} maxAttempts=${maxAttempts} outcome=failed reason=${classifyCompactionReason(reason)} ` +
-        `durationMs=${Date.now() - startedAt}`,
-    );
-    return {
-      ok: false,
-      compacted: false,
-      reason,
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
   try {
     const apiKeyInfo = await getApiKeyForModel({
@@ -340,21 +309,7 @@ export async function compactEmbeddedPiSessionDirect(
     }
   } catch (err) {
     const reason = describeUnknownError(err);
-<<<<<<< HEAD
     return fail(reason);
-=======
-    log.warn(
-      `[compaction-diag] end runId=${runId} sessionKey=${params.sessionKey ?? params.sessionId} ` +
-        `diagId=${diagId} trigger=${trigger} provider=${provider}/${modelId} ` +
-        `attempt=${attempt} maxAttempts=${maxAttempts} outcome=failed reason=${classifyCompactionReason(reason)} ` +
-        `durationMs=${Date.now() - startedAt}`,
-    );
-    return {
-      ok: false,
-      compacted: false,
-      reason,
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   await fs.mkdir(resolvedWorkspace, { recursive: true });
@@ -706,13 +661,9 @@ export async function compactEmbeddedPiSessionDirect(
         }
 
         const compactStartedAt = Date.now();
-<<<<<<< HEAD
         const result = await compactWithSafetyTimeout(() =>
           session.compact(params.customInstructions),
         );
-=======
-        const result = await session.compact(params.customInstructions);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         // Estimate tokens after compaction by summing token estimates for remaining messages
         let tokensAfter: number | undefined;
         try {
@@ -785,21 +736,7 @@ export async function compactEmbeddedPiSessionDirect(
     }
   } catch (err) {
     const reason = describeUnknownError(err);
-<<<<<<< HEAD
     return fail(reason);
-=======
-    log.warn(
-      `[compaction-diag] end runId=${runId} sessionKey=${params.sessionKey ?? params.sessionId} ` +
-        `diagId=${diagId} trigger=${trigger} provider=${provider}/${modelId} ` +
-        `attempt=${attempt} maxAttempts=${maxAttempts} outcome=failed reason=${classifyCompactionReason(reason)} ` +
-        `durationMs=${Date.now() - startedAt}`,
-    );
-    return {
-      ok: false,
-      compacted: false,
-      reason,
-    };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   } finally {
     restoreSkillEnv?.();
     process.chdir(prevCwd);

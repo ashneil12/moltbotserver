@@ -57,18 +57,6 @@ describe("buildGatewayAuthConfig", () => {
   });
 
   it("does not silently omit password when literal string is provided", () => {
-<<<<<<< HEAD:src/commands/configure.gateway-auth.test.ts
-=======
-    const result = buildGatewayAuthConfig({
-      mode: "password",
-      password: "undefined",
-    });
-
-    expect(result).toEqual({ mode: "password", password: "undefined" });
-  });
-
-  it("generates random token when token param is undefined", () => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/configure.gateway-auth.e2e.test.ts
     const result = buildGatewayAuthConfig({
       mode: "password",
       password: "undefined",

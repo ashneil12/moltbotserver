@@ -2,12 +2,7 @@ import { loadConfig } from "../config/config.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 import { convertMarkdownTables } from "../markdown/tables.js";
 import { mediaKindFromMime } from "../media/constants.js";
-<<<<<<< HEAD
 import { resolveOutboundAttachmentFromUrl } from "../media/outbound-attachment.js";
-=======
-import { saveMediaBuffer } from "../media/store.js";
-import { loadWebMedia } from "../web/media.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveIMessageAccount, type ResolvedIMessageAccount } from "./accounts.js";
 import { createIMessageRpcClient, type IMessageRpcClient } from "./client.js";
 import { formatIMessageChatTarget, type IMessageService, parseIMessageTarget } from "./targets.js";
@@ -30,10 +25,7 @@ export type IMessageSendOpts = {
   resolveAttachmentImpl?: (
     mediaUrl: string,
     maxBytes: number,
-<<<<<<< HEAD
     options?: { localRoots?: readonly string[] },
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   ) => Promise<{ path: string; contentType?: string }>;
   createClient?: (params: { cliPath: string; dbPath?: string }) => Promise<IMessageRpcClient>;
 };
@@ -131,15 +123,10 @@ export async function sendMessageIMessage(
   let filePath: string | undefined;
 
   if (opts.mediaUrl?.trim()) {
-<<<<<<< HEAD
     const resolveAttachmentFn = opts.resolveAttachmentImpl ?? resolveOutboundAttachmentFromUrl;
     const resolved = await resolveAttachmentFn(opts.mediaUrl.trim(), maxBytes, {
       localRoots: opts.mediaLocalRoots,
     });
-=======
-    const resolveAttachmentFn = opts.resolveAttachmentImpl ?? resolveAttachment;
-    const resolved = await resolveAttachmentFn(opts.mediaUrl.trim(), maxBytes);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     filePath = resolved.path;
     if (!message.trim()) {
       const kind = mediaKindFromMime(resolved.contentType ?? undefined);

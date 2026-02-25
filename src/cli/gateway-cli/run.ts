@@ -1,12 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-<<<<<<< HEAD
 import type { Command } from "commander";
 import type { GatewayAuthMode, GatewayTailscaleMode } from "../../config/config.js";
-=======
-import type { GatewayAuthMode } from "../../config/config.js";
-import type { GatewayWsLogStyle } from "../../gateway/ws-logging.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   CONFIG_PATH,
   loadConfig,

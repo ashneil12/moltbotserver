@@ -3,15 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
-<<<<<<< HEAD:src/agents/tools/image-tool.test.ts
 import type { ModelDefinitionConfig } from "../../config/types.models.js";
 import { withFetchPreconnect } from "../../test-utils/fetch-mock.js";
 import { createOpenClawCodingTools } from "../pi-tools.js";
 import { createHostSandboxFsBridge } from "../test-helpers/host-sandbox-fs-bridge.js";
 import { createUnsafeMountedSandbox } from "../test-helpers/unsafe-mounted-sandbox.js";
-=======
-import { createHostSandboxFsBridge } from "../test-helpers/host-sandbox-fs-bridge.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/tools/image-tool.e2e.test.ts
 import { __testing, createImageTool, resolveImageModelConfigForTool } from "./image-tool.js";
 
 async function writeAuthProfiles(agentDir: string, profiles: unknown) {
@@ -497,15 +493,7 @@ describe("image tool implicit imageModel config", () => {
     const cfg: OpenClawConfig = {
       agents: { defaults: { model: { primary: "minimax/MiniMax-M2.1" } } },
     };
-<<<<<<< HEAD:src/agents/tools/image-tool.test.ts
     const tool = requireImageTool(createImageTool({ config: cfg, agentDir, sandbox }));
-=======
-    const tool = createImageTool({ config: cfg, agentDir, sandbox });
-    expect(tool).not.toBeNull();
-    if (!tool) {
-      throw new Error("expected image tool");
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/tools/image-tool.e2e.test.ts
 
     await expect(tool.execute("t1", { image: "https://example.com/a.png" })).rejects.toThrow(
       /Sandboxed image tool does not allow remote URLs/i,
@@ -585,15 +573,7 @@ describe("image tool implicit imageModel config", () => {
       },
     };
     const sandbox = { root: sandboxRoot, bridge: createHostSandboxFsBridge(sandboxRoot) };
-<<<<<<< HEAD:src/agents/tools/image-tool.test.ts
     const tool = requireImageTool(createImageTool({ config: cfg, agentDir, sandbox }));
-=======
-    const tool = createImageTool({ config: cfg, agentDir, sandbox });
-    expect(tool).not.toBeNull();
-    if (!tool) {
-      throw new Error("expected image tool");
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/tools/image-tool.e2e.test.ts
 
     const res = await tool.execute("t1", {
       prompt: "Describe the image.",
@@ -749,7 +729,6 @@ describe("image tool MiniMax VLM routing", () => {
 });
 
 describe("image tool response validation", () => {
-<<<<<<< HEAD:src/agents/tools/image-tool.test.ts
   function zeroUsage() {
     return {
       input: 0,
@@ -808,50 +787,6 @@ describe("image tool response validation", () => {
     },
   ])("$name", ({ maxOutputTokens, expected }) => {
     expect(__testing.resolveImageToolMaxTokens(maxOutputTokens)).toBe(expected);
-=======
-  it("caps image-tool max tokens by model capability", () => {
-    expect(__testing.resolveImageToolMaxTokens(4000)).toBe(4000);
-  });
-
-  it("keeps requested image-tool max tokens when model capability is higher", () => {
-    expect(__testing.resolveImageToolMaxTokens(8192)).toBe(4096);
-  });
-
-  it("falls back to requested image-tool max tokens when model capability is missing", () => {
-    expect(__testing.resolveImageToolMaxTokens(undefined)).toBe(4096);
-  });
-
-  it("rejects image-model responses with no final text", () => {
-    expect(() =>
-      __testing.coerceImageAssistantText({
-        provider: "openai",
-        model: "gpt-5-mini",
-        message: {
-          role: "assistant",
-          api: "openai-responses",
-          provider: "openai",
-          model: "gpt-5-mini",
-          stopReason: "stop",
-          timestamp: Date.now(),
-          usage: {
-            input: 0,
-            output: 0,
-            cacheRead: 0,
-            cacheWrite: 0,
-            totalTokens: 0,
-            cost: {
-              input: 0,
-              output: 0,
-              cacheRead: 0,
-              cacheWrite: 0,
-              total: 0,
-            },
-          },
-          content: [{ type: "thinking", thinking: "hmm" }],
-        },
-      }),
-    ).toThrow(/returned no text/i);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/tools/image-tool.e2e.test.ts
   });
 
   it.each([

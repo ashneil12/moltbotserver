@@ -9,18 +9,11 @@ import {
   resolveIsNixMode,
   resolveStateDir,
 } from "./config.js";
-<<<<<<< HEAD:src/config/config.nix-integration-u3-u5-u9.test.ts
 import { withTempHome, withTempHomeConfig } from "./test-helpers.js";
 
 function envWith(overrides: Record<string, string | undefined>): NodeJS.ProcessEnv {
   // Hermetic env: don't inherit process.env because other tests may mutate it.
   return { ...overrides };
-=======
-import { withTempHome } from "./test-helpers.js";
-
-function envWith(overrides: Record<string, string | undefined>): NodeJS.ProcessEnv {
-  return { ...process.env, ...overrides };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.nix-integration-u3-u5-u9.e2e.test.ts
 }
 
 function loadConfigForHome(home: string) {
@@ -29,7 +22,6 @@ function loadConfigForHome(home: string) {
     homedir: () => home,
   }).loadConfig();
 }
-<<<<<<< HEAD:src/config/config.nix-integration-u3-u5-u9.test.ts
 
 async function withLoadedConfigForHome(
   config: unknown,
@@ -40,8 +32,6 @@ async function withLoadedConfigForHome(
     await run(cfg);
   });
 }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.nix-integration-u3-u5-u9.e2e.test.ts
 
 describe("Nix integration (U3, U5, U9)", () => {
   describe("U3: isNixMode env var detection", () => {
@@ -231,7 +221,6 @@ describe("Nix integration (U3, U5, U9)", () => {
 
   describe("U9: telegram.tokenFile schema validation", () => {
     it("accepts config with only botToken", async () => {
-<<<<<<< HEAD:src/config/config.nix-integration-u3-u5-u9.test.ts
       await withLoadedConfigForHome(
         {
           channels: { telegram: { botToken: "123:ABC" } },
@@ -253,41 +242,6 @@ describe("Nix integration (U3, U5, U9)", () => {
           expect(cfg.channels?.telegram?.botToken).toBeUndefined();
         },
       );
-=======
-      await withTempHome(async (home) => {
-        const configDir = path.join(home, ".openclaw");
-        await fs.mkdir(configDir, { recursive: true });
-        await fs.writeFile(
-          path.join(configDir, "openclaw.json"),
-          JSON.stringify({
-            channels: { telegram: { botToken: "123:ABC" } },
-          }),
-          "utf-8",
-        );
-
-        const cfg = loadConfigForHome(home);
-        expect(cfg.channels?.telegram?.botToken).toBe("123:ABC");
-        expect(cfg.channels?.telegram?.tokenFile).toBeUndefined();
-      });
-    });
-
-    it("accepts config with only tokenFile", async () => {
-      await withTempHome(async (home) => {
-        const configDir = path.join(home, ".openclaw");
-        await fs.mkdir(configDir, { recursive: true });
-        await fs.writeFile(
-          path.join(configDir, "openclaw.json"),
-          JSON.stringify({
-            channels: { telegram: { tokenFile: "/run/agenix/telegram-token" } },
-          }),
-          "utf-8",
-        );
-
-        const cfg = loadConfigForHome(home);
-        expect(cfg.channels?.telegram?.tokenFile).toBe("/run/agenix/telegram-token");
-        expect(cfg.channels?.telegram?.botToken).toBeUndefined();
-      });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.nix-integration-u3-u5-u9.e2e.test.ts
     });
 
     it("accepts config with both botToken and tokenFile", async () => {
@@ -298,7 +252,6 @@ describe("Nix integration (U3, U5, U9)", () => {
               botToken: "fallback:token",
               tokenFile: "/run/agenix/telegram-token",
             },
-<<<<<<< HEAD:src/config/config.nix-integration-u3-u5-u9.test.ts
           },
         },
         async (cfg) => {
@@ -306,16 +259,6 @@ describe("Nix integration (U3, U5, U9)", () => {
           expect(cfg.channels?.telegram?.tokenFile).toBe("/run/agenix/telegram-token");
         },
       );
-=======
-          }),
-          "utf-8",
-        );
-
-        const cfg = loadConfigForHome(home);
-        expect(cfg.channels?.telegram?.botToken).toBe("fallback:token");
-        expect(cfg.channels?.telegram?.tokenFile).toBe("/run/agenix/telegram-token");
-      });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.nix-integration-u3-u5-u9.e2e.test.ts
     });
   });
 });

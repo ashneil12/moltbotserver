@@ -70,15 +70,9 @@ describe("after_tool_call hook wiring", () => {
   beforeEach(() => {
     hookMocks.runner.hasHooks.mockClear();
     hookMocks.runner.hasHooks.mockReturnValue(false);
-<<<<<<< HEAD:src/plugins/wired-hooks-after-tool-call.test.ts
     hookMocks.runner.runBeforeToolCall.mockClear();
     hookMocks.runner.runBeforeToolCall.mockResolvedValue(undefined);
     hookMocks.runner.runAfterToolCall.mockClear();
-=======
-    hookMocks.runner.runBeforeToolCall.mockReset();
-    hookMocks.runner.runBeforeToolCall.mockResolvedValue(undefined);
-    hookMocks.runner.runAfterToolCall.mockReset();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/plugins/wired-hooks-after-tool-call.e2e.test.ts
     hookMocks.runner.runAfterToolCall.mockResolvedValue(undefined);
   });
 

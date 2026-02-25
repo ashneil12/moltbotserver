@@ -26,10 +26,7 @@ describe("extractLinksFromMessage", () => {
 
   it("blocks localhost and common loopback addresses", () => {
     expect(extractLinksFromMessage("http://localhost/secret")).toEqual([]);
-<<<<<<< HEAD
     expect(extractLinksFromMessage("http://localhost.localdomain/secret")).toEqual([]);
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(extractLinksFromMessage("http://foo.localhost/secret")).toEqual([]);
     expect(extractLinksFromMessage("http://service.local/secret")).toEqual([]);
     expect(extractLinksFromMessage("http://service.internal/secret")).toEqual([]);
@@ -57,10 +54,7 @@ describe("extractLinksFromMessage", () => {
 
   it("blocks private and mapped IPv6 addresses", () => {
     expect(extractLinksFromMessage("http://[::ffff:127.0.0.1]/secret")).toEqual([]);
-<<<<<<< HEAD
     expect(extractLinksFromMessage("http://[2001:db8:1234::5efe:127.0.0.1]/secret")).toEqual([]);
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(extractLinksFromMessage("http://[fe80::1]/secret")).toEqual([]);
     expect(extractLinksFromMessage("http://[fc00::1]/secret")).toEqual([]);
   });

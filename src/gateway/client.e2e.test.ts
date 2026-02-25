@@ -160,7 +160,6 @@ describe("GatewayClient security checks", () => {
       onConnectError,
     });
 
-<<<<<<< HEAD:src/gateway/client.test.ts
     client.start();
 
     expectSecurityConnectError(onConnectError, { expectTailscaleHint: true });
@@ -173,16 +172,6 @@ describe("GatewayClient security checks", () => {
     const client = new GatewayClient({
       url: "not-a-valid-url",
       onConnectError,
-=======
-    const closed = new Promise<{ code: number; reason: string }>((resolve) => {
-      const client = new GatewayClient({
-        url: `ws://127.0.0.1:${port}`,
-        connectDelayMs: 0,
-        tickWatchMinIntervalMs: 5,
-        onClose: (code, reason) => resolve({ code, reason }),
-      });
-      client.start();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/client.e2e.test.ts
     });
 
     // Should not throw
@@ -200,7 +189,6 @@ describe("GatewayClient security checks", () => {
       onConnectError,
     });
 
-<<<<<<< HEAD:src/gateway/client.test.ts
     client.start();
 
     expect(onConnectError).not.toHaveBeenCalled();
@@ -213,38 +201,6 @@ describe("GatewayClient security checks", () => {
     const client = new GatewayClient({
       url: "wss://remote.example.com:18789",
       onConnectError,
-=======
-    let client: GatewayClient | null = null;
-    const error = await new Promise<Error>((resolve) => {
-      let settled = false;
-      const finish = (err: Error) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        resolve(err);
-      };
-      const timeout = setTimeout(() => {
-        client?.stop();
-        finish(new Error("timeout waiting for tls error"));
-      }, 2000);
-      client = new GatewayClient({
-        url: `wss://127.0.0.1:${port}`,
-        connectDelayMs: 0,
-        tlsFingerprint: "deadbeef",
-        onConnectError: (err) => {
-          clearTimeout(timeout);
-          client?.stop();
-          finish(err);
-        },
-        onClose: () => {
-          clearTimeout(timeout);
-          client?.stop();
-          finish(new Error("closed without tls error"));
-        },
-      });
-      client.start();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/client.e2e.test.ts
     });
 
     client.start();

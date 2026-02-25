@@ -1,15 +1,10 @@
-<<<<<<< HEAD
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-=======
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../test/helpers/envelope-timestamp.js";
 import { expectInboundContextContract } from "../../test/helpers/inbound-contract.js";
 import {
   listNativeCommandSpecs,
   listNativeCommandSpecsForConfig,
 } from "../auto-reply/commands-registry.js";
-<<<<<<< HEAD
 import { normalizeTelegramCommandName } from "../config/telegram-custom-commands.js";
 import {
   answerCallbackQuerySpy,
@@ -19,16 +14,6 @@ import {
   getLoadConfigMock,
   getReadChannelAllowFromStoreMock,
   getOnHandler,
-=======
-import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
-import { createTelegramBot } from "./bot.js";
-
-let replyModule: typeof import("../auto-reply/reply.js");
-const { listSkillCommandsForAgents } = vi.hoisted(() => ({
-  listSkillCommandsForAgents: vi.fn(() => []),
-}));
-vi.mock("../auto-reply/skill-commands.js", () => ({
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   listSkillCommandsForAgents,
   onSpy,
   replySpy,
@@ -48,151 +33,6 @@ function resolveSkillCommands(config: Parameters<typeof listNativeCommandSpecsFo
   >["skillCommands"];
 }
 
-<<<<<<< HEAD
-=======
-const { loadWebMedia } = vi.hoisted(() => ({
-  loadWebMedia: vi.fn(),
-}));
-
-vi.mock("../web/media.js", () => ({
-  loadWebMedia,
-}));
-
-const { loadConfig } = vi.hoisted(() => ({
-  loadConfig: vi.fn(() => ({})),
-}));
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
-  return {
-    ...actual,
-    loadConfig,
-  };
-});
-
-vi.mock("../config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/sessions.js")>();
-  return {
-    ...actual,
-    resolveStorePath: vi.fn((storePath) => storePath ?? sessionStorePath),
-  };
-});
-
-const { readChannelAllowFromStore, upsertChannelPairingRequest } = vi.hoisted(() => ({
-  readChannelAllowFromStore: vi.fn(async () => [] as string[]),
-  upsertChannelPairingRequest: vi.fn(async () => ({
-    code: "PAIRCODE",
-    created: true,
-  })),
-}));
-
-vi.mock("../pairing/pairing-store.js", () => ({
-  readChannelAllowFromStore,
-  upsertChannelPairingRequest,
-}));
-
-const { enqueueSystemEvent } = vi.hoisted(() => ({
-  enqueueSystemEvent: vi.fn(),
-}));
-vi.mock("../infra/system-events.js", () => ({
-  enqueueSystemEvent,
-}));
-
-const { wasSentByBot } = vi.hoisted(() => ({
-  wasSentByBot: vi.fn(() => false),
-}));
-vi.mock("./sent-message-cache.js", () => ({
-  wasSentByBot,
-  recordSentMessage: vi.fn(),
-  clearSentMessageCache: vi.fn(),
-}));
-
-const useSpy = vi.fn();
-const middlewareUseSpy = vi.fn();
-const onSpy = vi.fn();
-const stopSpy = vi.fn();
-const commandSpy = vi.fn();
-const botCtorSpy = vi.fn();
-const answerCallbackQuerySpy = vi.fn(async () => undefined);
-const sendChatActionSpy = vi.fn();
-const editMessageTextSpy = vi.fn(async () => ({ message_id: 88 }));
-const setMessageReactionSpy = vi.fn(async () => undefined);
-const setMyCommandsSpy = vi.fn(async () => undefined);
-const sendMessageSpy = vi.fn(async () => ({ message_id: 77 }));
-const sendAnimationSpy = vi.fn(async () => ({ message_id: 78 }));
-const sendPhotoSpy = vi.fn(async () => ({ message_id: 79 }));
-type ApiStub = {
-  config: { use: (arg: unknown) => void };
-  answerCallbackQuery: typeof answerCallbackQuerySpy;
-  sendChatAction: typeof sendChatActionSpy;
-  editMessageText: typeof editMessageTextSpy;
-  setMessageReaction: typeof setMessageReactionSpy;
-  setMyCommands: typeof setMyCommandsSpy;
-  sendMessage: typeof sendMessageSpy;
-  sendAnimation: typeof sendAnimationSpy;
-  sendPhoto: typeof sendPhotoSpy;
-};
-const apiStub: ApiStub = {
-  config: { use: useSpy },
-  answerCallbackQuery: answerCallbackQuerySpy,
-  sendChatAction: sendChatActionSpy,
-  editMessageText: editMessageTextSpy,
-  setMessageReaction: setMessageReactionSpy,
-  setMyCommands: setMyCommandsSpy,
-  sendMessage: sendMessageSpy,
-  sendAnimation: sendAnimationSpy,
-  sendPhoto: sendPhotoSpy,
-};
-
-vi.mock("grammy", () => ({
-  Bot: class {
-    api = apiStub;
-    use = middlewareUseSpy;
-    on = onSpy;
-    stop = stopSpy;
-    command = commandSpy;
-    catch = vi.fn();
-    constructor(
-      public token: string,
-      public options?: { client?: { fetch?: typeof fetch } },
-    ) {
-      botCtorSpy(token, options);
-    }
-  },
-  InputFile: class {},
-  webhookCallback: vi.fn(),
-}));
-
-const sequentializeMiddleware = vi.fn();
-const sequentializeSpy = vi.fn(() => sequentializeMiddleware);
-vi.mock("@grammyjs/runner", () => ({
-  sequentialize: (_keyFn: (ctx: unknown) => string) => {
-    return sequentializeSpy();
-  },
-}));
-
-const throttlerSpy = vi.fn(() => "throttler");
-
-vi.mock("@grammyjs/transformer-throttler", () => ({
-  apiThrottler: () => throttlerSpy(),
-}));
-
-vi.mock("../auto-reply/reply.js", () => {
-  const replySpy = vi.fn(async (_ctx, opts) => {
-    await opts?.onReplyStart?.();
-    return undefined;
-  });
-  return { getReplyFromConfig: replySpy, __replySpy: replySpy };
-});
-
-const getOnHandler = (event: string) => {
-  const handler = onSpy.mock.calls.find((call) => call[0] === event)?.[1];
-  if (!handler) {
-    throw new Error(`Missing handler for event: ${event}`);
-  }
-  return handler as (ctx: Record<string, unknown>) => Promise<void>;
-};
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const ORIGINAL_TZ = process.env.TZ;
 describe("createTelegramBot", () => {
   beforeEach(() => {
@@ -207,20 +47,6 @@ describe("createTelegramBot", () => {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },
     });
-<<<<<<< HEAD
-=======
-    loadWebMedia.mockReset();
-    sendAnimationSpy.mockReset();
-    sendPhotoSpy.mockReset();
-    setMessageReactionSpy.mockReset();
-    answerCallbackQuerySpy.mockReset();
-    editMessageTextSpy.mockReset();
-    setMyCommandsSpy.mockReset();
-    wasSentByBot.mockReset();
-    middlewareUseSpy.mockReset();
-    sequentializeSpy.mockReset();
-    botCtorSpy.mockReset();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
   afterEach(() => {
     process.env.TZ = ORIGINAL_TZ;
@@ -599,7 +425,6 @@ describe("createTelegramBot", () => {
     expect(payload.ReplyToSender).toBe("Ada");
   });
 
-<<<<<<< HEAD
   it("propagates forwarded origin from external_reply targets", async () => {
     onSpy.mockReset();
     sendMessageSpy.mockReset();
@@ -650,8 +475,6 @@ describe("createTelegramBot", () => {
     );
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("accepts group replies to the bot without explicit mention when requireMention is enabled", async () => {
     onSpy.mockClear();
     replySpy.mockClear();

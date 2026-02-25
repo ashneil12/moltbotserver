@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { describe, expect, it, vi } from "vitest";
-=======
-import { describe, expect, it } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { bindAbortRelay } from "../utils/fetch-timeout.js";
 
 /**
@@ -29,7 +25,6 @@ describe("abort pattern: .bind() vs arrow closure (#7174)", () => {
   });
 
   it("bound abort works with setTimeout", async () => {
-<<<<<<< HEAD
     vi.useFakeTimers();
     try {
       const controller = new AbortController();
@@ -41,14 +36,6 @@ describe("abort pattern: .bind() vs arrow closure (#7174)", () => {
     } finally {
       vi.useRealTimers();
     }
-=======
-    const controller = new AbortController();
-    const timer = setTimeout(controller.abort.bind(controller), 10);
-    expect(controller.signal.aborted).toBe(false);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(controller.signal.aborted).toBe(true);
-    clearTimeout(timer);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("bindAbortRelay() preserves default AbortError reason when used as event listener", () => {

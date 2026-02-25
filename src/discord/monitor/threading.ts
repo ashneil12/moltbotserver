@@ -309,7 +309,6 @@ export async function resolveDiscordAutoThreadReplyPlan(params: {
   agentId: string;
   channel: string;
 }): Promise<DiscordAutoThreadReplyPlan> {
-<<<<<<< HEAD
   const messageChannelId = (
     params.messageChannelId ||
     resolveDiscordMessageChannelId({
@@ -318,10 +317,6 @@ export async function resolveDiscordAutoThreadReplyPlan(params: {
   ).trim();
   // Prefer the resolved thread channel ID when available so replies stay in-thread.
   const targetChannelId = params.threadChannel?.id ?? (messageChannelId || "unknown");
-=======
-  // Prefer the resolved thread channel ID when available so replies stay in-thread.
-  const targetChannelId = params.threadChannel?.id ?? params.message.channelId;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const originalReplyTarget = `channel:${targetChannelId}`;
   const createdThreadId = await maybeCreateDiscordAutoThread({
     client: params.client,
@@ -409,30 +404,18 @@ export async function maybeCreateDiscordAutoThread(params: {
     return createdId || undefined;
   } catch (err) {
     logVerbose(
-<<<<<<< HEAD
       `discord: autoThread creation failed for ${messageChannelId}/${params.message.id}: ${String(err)}`,
-=======
-      `discord: autoThread creation failed for ${params.message.channelId}/${params.message.id}: ${String(err)}`,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     );
     // Race condition: another agent may have already created a thread on this
     // message. Re-fetch the message to check for an existing thread.
     try {
       const msg = (await params.client.rest.get(
-<<<<<<< HEAD
         Routes.channelMessage(messageChannelId, params.message.id),
-=======
-        Routes.channelMessage(params.message.channelId, params.message.id),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       )) as { thread?: { id?: string } };
       const existingThreadId = msg?.thread?.id ? String(msg.thread.id) : "";
       if (existingThreadId) {
         logVerbose(
-<<<<<<< HEAD
           `discord: autoThread reusing existing thread ${existingThreadId} on ${messageChannelId}/${params.message.id}`,
-=======
-          `discord: autoThread reusing existing thread ${existingThreadId} on ${params.message.channelId}/${params.message.id}`,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         );
         return existingThreadId;
       }

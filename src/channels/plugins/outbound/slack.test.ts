@@ -1,14 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD
 import type { OpenClawConfig } from "../../../config/config.js";
 
 vi.mock("../../../slack/send.js", () => ({
   sendMessageSlack: vi.fn().mockResolvedValue({ messageId: "1234.5678", channelId: "C123" }),
-=======
-
-vi.mock("../../../slack/send.js", () => ({
-  sendMessageSlack: vi.fn().mockResolvedValue({ ts: "1234.5678", channel: "C123" }),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }));
 
 vi.mock("../../../plugins/hook-runner-global.js", () => ({
@@ -19,7 +13,6 @@ import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
 import { sendMessageSlack } from "../../../slack/send.js";
 import { slackOutbound } from "./slack.js";
 
-<<<<<<< HEAD
 type SlackSendTextCtx = {
   to: string;
   text: string;
@@ -72,8 +65,6 @@ const expectSlackSendCalledWith = (
   });
 };
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 describe("slack outbound hook wiring", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -86,7 +77,6 @@ describe("slack outbound hook wiring", () => {
   it("calls send without hooks when no hooks registered", async () => {
     vi.mocked(getGlobalHookRunner).mockReturnValue(null);
 
-<<<<<<< HEAD
     await sendSlackTextWithDefaults({ text: "hello" });
     expectSlackSendCalledWith("hello");
   });
@@ -118,18 +108,6 @@ describe("slack outbound hook wiring", () => {
 
     expectSlackSendCalledWith("hello", {
       identity: { iconEmoji: ":lobster:" },
-=======
-    await slackOutbound.sendText({
-      to: "C123",
-      text: "hello",
-      accountId: "default",
-      replyToId: "1111.2222",
-    });
-
-    expect(sendMessageSlack).toHaveBeenCalledWith("C123", "hello", {
-      threadTs: "1111.2222",
-      accountId: "default",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   });
 
@@ -141,30 +119,14 @@ describe("slack outbound hook wiring", () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     vi.mocked(getGlobalHookRunner).mockReturnValue(mockRunner as any);
 
-<<<<<<< HEAD
     await sendSlackTextWithDefaults({ text: "hello" });
-=======
-    await slackOutbound.sendText({
-      to: "C123",
-      text: "hello",
-      accountId: "default",
-      replyToId: "1111.2222",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(mockRunner.hasHooks).toHaveBeenCalledWith("message_sending");
     expect(mockRunner.runMessageSending).toHaveBeenCalledWith(
       { to: "C123", content: "hello", metadata: { threadTs: "1111.2222", channelId: "C123" } },
       { channelId: "slack", accountId: "default" },
     );
-<<<<<<< HEAD
     expectSlackSendCalledWith("hello");
-=======
-    expect(sendMessageSlack).toHaveBeenCalledWith("C123", "hello", {
-      threadTs: "1111.2222",
-      accountId: "default",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("cancels send when hook returns cancel:true", async () => {
@@ -175,16 +137,7 @@ describe("slack outbound hook wiring", () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     vi.mocked(getGlobalHookRunner).mockReturnValue(mockRunner as any);
 
-<<<<<<< HEAD
     const result = await sendSlackTextWithDefaults({ text: "hello" });
-=======
-    const result = await slackOutbound.sendText({
-      to: "C123",
-      text: "hello",
-      accountId: "default",
-      replyToId: "1111.2222",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(sendMessageSlack).not.toHaveBeenCalled();
     expect(result.channel).toBe("slack");
@@ -198,22 +151,8 @@ describe("slack outbound hook wiring", () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     vi.mocked(getGlobalHookRunner).mockReturnValue(mockRunner as any);
 
-<<<<<<< HEAD
     await sendSlackTextWithDefaults({ text: "original" });
     expectSlackSendCalledWith("modified");
-=======
-    await slackOutbound.sendText({
-      to: "C123",
-      text: "original",
-      accountId: "default",
-      replyToId: "1111.2222",
-    });
-
-    expect(sendMessageSlack).toHaveBeenCalledWith("C123", "modified", {
-      threadTs: "1111.2222",
-      accountId: "default",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("skips hooks when runner has no message_sending hooks", async () => {
@@ -224,16 +163,7 @@ describe("slack outbound hook wiring", () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     vi.mocked(getGlobalHookRunner).mockReturnValue(mockRunner as any);
 
-<<<<<<< HEAD
     await sendSlackTextWithDefaults({ text: "hello" });
-=======
-    await slackOutbound.sendText({
-      to: "C123",
-      text: "hello",
-      accountId: "default",
-      replyToId: "1111.2222",
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(mockRunner.runMessageSending).not.toHaveBeenCalled();
     expect(sendMessageSlack).toHaveBeenCalled();

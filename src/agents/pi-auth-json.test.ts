@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { saveAuthProfileStore } from "./auth-profiles.js";
 import { ensurePiAuthJsonFromAuthProfiles } from "./pi-auth-json.js";
 
-<<<<<<< HEAD
 type AuthProfileStore = Parameters<typeof saveAuthProfileStore>[0];
 
 async function createAgentDir() {
@@ -40,37 +39,11 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
         expires: Date.now() + 60_000,
       },
     });
-=======
-describe("ensurePiAuthJsonFromAuthProfiles", () => {
-  it("writes openai-codex oauth credentials into auth.json for pi-coding-agent discovery", async () => {
-    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-"));
-
-    saveAuthProfileStore(
-      {
-        version: 1,
-        profiles: {
-          "openai-codex:default": {
-            type: "oauth",
-            provider: "openai-codex",
-            access: "access-token",
-            refresh: "refresh-token",
-            expires: Date.now() + 60_000,
-          },
-        },
-      },
-      agentDir,
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     const first = await ensurePiAuthJsonFromAuthProfiles(agentDir);
     expect(first.wrote).toBe(true);
 
-<<<<<<< HEAD
     const auth = await readAuthJson(agentDir);
-=======
-    const authPath = path.join(agentDir, "auth.json");
-    const auth = JSON.parse(await fs.readFile(authPath, "utf8")) as Record<string, unknown>;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(auth["openai-codex"]).toMatchObject({
       type: "oauth",
       access: "access-token",
@@ -80,7 +53,6 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
     const second = await ensurePiAuthJsonFromAuthProfiles(agentDir);
     expect(second.wrote).toBe(false);
   });
-<<<<<<< HEAD
 
   it("writes api_key credentials into auth.json", async () => {
     const agentDir = await createAgentDir();
@@ -231,6 +203,4 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
     expect(auth["legacy-provider"]).toMatchObject({ type: "api_key", key: "legacy-key" });
     expect(auth["openrouter"]).toMatchObject({ type: "api_key", key: "new-key" });
   });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

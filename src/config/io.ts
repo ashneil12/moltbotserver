@@ -33,11 +33,7 @@ import {
   containsEnvVarReference,
   resolveConfigEnvVars,
 } from "./env-substitution.js";
-<<<<<<< HEAD
 import { applyConfigEnvVars } from "./env-vars.js";
-=======
-import { collectConfigEnvVars } from "./env-vars.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { ConfigIncludeError, resolveConfigIncludes } from "./includes.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import { applyMergePatch } from "./merge-patch.js";
@@ -77,13 +73,9 @@ const SHELL_ENV_EXPECTED_KEYS = [
   "OPENCLAW_GATEWAY_PASSWORD",
 ];
 
-<<<<<<< HEAD
 const OPEN_DM_POLICY_ALLOW_FROM_RE =
   /^(?<policyPath>[a-z0-9_.-]+)\s*=\s*"open"\s+requires\s+(?<allowPath>[a-z0-9_.-]+)(?:\s+\(or\s+[a-z0-9_.-]+\))?\s+to include "\*"$/i;
 
-=======
-const CONFIG_BACKUP_COUNT = 5;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const CONFIG_AUDIT_LOG_FILENAME = "config-audit.jsonl";
 const loggedInvalidConfigs = new Set<string>();
 
@@ -130,14 +122,11 @@ export type ConfigWriteOptions = {
    * same config file path that produced the snapshot.
    */
   expectedConfigPath?: string;
-<<<<<<< HEAD
   /**
    * Paths that must be explicitly removed from the persisted file payload,
    * even if schema/default normalization reintroduces them.
    */
   unsetPaths?: string[][];
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 };
 
 export type ReadConfigFileSnapshotForWriteResult = {
@@ -372,8 +361,6 @@ function collectEnvRefPaths(value: unknown, path: string, output: Map<string, st
     if (containsEnvVarReference(value)) {
       output.set(path, value);
     }
-<<<<<<< HEAD
-=======
     return;
   }
   if (Array.isArray(value)) {
@@ -493,179 +480,6 @@ function restoreEnvRefsFromMap(
     return changed ? next : value;
   }
   return value;
-}
-
-async function rotateConfigBackups(configPath: string, ioFs: typeof fs.promises): Promise<void> {
-  if (CONFIG_BACKUP_COUNT <= 1) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
-    return;
-  }
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      collectEnvRefPaths(item, `${path}[${index}]`, output);
-    });
-    return;
-  }
-  if (isPlainObject(value)) {
-    for (const [key, child] of Object.entries(value)) {
-      const childPath = path ? `${path}.${key}` : key;
-      collectEnvRefPaths(child, childPath, output);
-    }
-  }
-}
-
-function collectChangedPaths(
-  base: unknown,
-  target: unknown,
-  path: string,
-  output: Set<string>,
-): void {
-  if (Array.isArray(base) && Array.isArray(target)) {
-    const max = Math.max(base.length, target.length);
-    for (let index = 0; index < max; index += 1) {
-      const childPath = path ? `${path}[${index}]` : `[${index}]`;
-      if (index >= base.length || index >= target.length) {
-        output.add(childPath);
-        continue;
-      }
-      collectChangedPaths(base[index], target[index], childPath, output);
-    }
-    return;
-  }
-  if (isPlainObject(base) && isPlainObject(target)) {
-    const keys = new Set([...Object.keys(base), ...Object.keys(target)]);
-    for (const key of keys) {
-      const childPath = path ? `${path}.${key}` : key;
-      const hasBase = key in base;
-      const hasTarget = key in target;
-      if (!hasTarget || !hasBase) {
-        output.add(childPath);
-        continue;
-      }
-      collectChangedPaths(base[key], target[key], childPath, output);
-    }
-    return;
-  }
-  if (!isDeepStrictEqual(base, target)) {
-    output.add(path);
-  }
-}
-
-function parentPath(value: string): string {
-  if (!value) {
-    return "";
-  }
-  if (value.endsWith("]")) {
-    const index = value.lastIndexOf("[");
-    return index > 0 ? value.slice(0, index) : "";
-  }
-  const index = value.lastIndexOf(".");
-  return index >= 0 ? value.slice(0, index) : "";
-}
-
-function isPathChanged(path: string, changedPaths: Set<string>): boolean {
-  if (changedPaths.has(path)) {
-    return true;
-  }
-  let current = parentPath(path);
-  while (current) {
-    if (changedPaths.has(current)) {
-      return true;
-    }
-    current = parentPath(current);
-  }
-  return changedPaths.has("");
-}
-
-function restoreEnvRefsFromMap(
-  value: unknown,
-  path: string,
-  envRefMap: Map<string, string>,
-  changedPaths: Set<string>,
-): unknown {
-  if (typeof value === "string") {
-    if (!isPathChanged(path, changedPaths)) {
-      const original = envRefMap.get(path);
-      if (original !== undefined) {
-        return original;
-      }
-    }
-    return value;
-  }
-  if (Array.isArray(value)) {
-    let changed = false;
-    const next = value.map((item, index) => {
-      const updated = restoreEnvRefsFromMap(item, `${path}[${index}]`, envRefMap, changedPaths);
-      if (updated !== item) {
-        changed = true;
-      }
-      return updated;
-    });
-    return changed ? next : value;
-  }
-  if (isPlainObject(value)) {
-    let changed = false;
-    const next: Record<string, unknown> = {};
-    for (const [key, child] of Object.entries(value)) {
-      const childPath = path ? `${path}.${key}` : key;
-      const updated = restoreEnvRefsFromMap(child, childPath, envRefMap, changedPaths);
-      if (updated !== child) {
-        changed = true;
-      }
-      next[key] = updated;
-    }
-    return changed ? next : value;
-  }
-  return value;
-}
-
-function resolveConfigAuditLogPath(env: NodeJS.ProcessEnv, homedir: () => string): string {
-  return path.join(resolveStateDir(env, homedir), "logs", CONFIG_AUDIT_LOG_FILENAME);
-}
-
-function resolveConfigWriteSuspiciousReasons(params: {
-  existsBefore: boolean;
-  previousBytes: number | null;
-  nextBytes: number | null;
-  hasMetaBefore: boolean;
-  gatewayModeBefore: string | null;
-  gatewayModeAfter: string | null;
-}): string[] {
-  const reasons: string[] = [];
-  if (!params.existsBefore) {
-    return reasons;
-  }
-  if (
-    typeof params.previousBytes === "number" &&
-    typeof params.nextBytes === "number" &&
-    params.previousBytes >= 512 &&
-    params.nextBytes < Math.floor(params.previousBytes * 0.5)
-  ) {
-    reasons.push(`size-drop:${params.previousBytes}->${params.nextBytes}`);
-  }
-  if (!params.hasMetaBefore) {
-    reasons.push("missing-meta-before-write");
-  }
-  if (params.gatewayModeBefore && !params.gatewayModeAfter) {
-    reasons.push("gateway-mode-removed");
-  }
-  return reasons;
-}
-
-async function appendConfigWriteAuditRecord(
-  deps: Required<ConfigIoDeps>,
-  record: ConfigWriteAuditRecord,
-): Promise<void> {
-  try {
-    const auditPath = resolveConfigAuditLogPath(deps.env, deps.homedir);
-    await deps.fs.promises.mkdir(path.dirname(auditPath), { recursive: true, mode: 0o700 });
-    await deps.fs.promises.appendFile(auditPath, `${JSON.stringify(record)}\n`, {
-      encoding: "utf-8",
-      mode: 0o600,
-    });
-  } catch {
-    // best-effort
-  }
 }
 
 function resolveConfigAuditLogPath(env: NodeJS.ProcessEnv, homedir: () => string): string {
@@ -830,11 +644,7 @@ function resolveConfigForRead(
 ): ConfigReadResolution {
   // Apply config.env to process.env BEFORE substitution so ${VAR} can reference config-defined vars.
   if (resolvedIncludes && typeof resolvedIncludes === "object" && "env" in resolvedIncludes) {
-<<<<<<< HEAD
     applyConfigEnvVars(resolvedIncludes as OpenClawConfig, env);
-=======
-    applyConfigEnv(resolvedIncludes as OpenClawConfig, env);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   return {
@@ -1126,7 +936,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
 
       warnIfConfigFromFuture(validated.config, deps.logger);
-<<<<<<< HEAD
       const snapshotConfig = normalizeConfigPaths(
         applyTalkApiKey(
           applyTalkConfigNormalization(
@@ -1150,29 +959,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           resolved: coerceConfig(resolvedConfigRaw),
           valid: true,
           config: snapshotConfig,
-=======
-      return {
-        snapshot: {
-          path: configPath,
-          exists: true,
-          raw,
-          parsed: parsedRes.parsed,
-          // Use resolvedConfigRaw (after $include and ${ENV} substitution but BEFORE runtime defaults)
-          // for config set/unset operations (issue #6070)
-          resolved: coerceConfig(resolvedConfigRaw),
-          valid: true,
-          config: normalizeConfigPaths(
-            applyTalkApiKey(
-              applyModelDefaults(
-                applyAgentDefaults(
-                  applySessionDefaults(
-                    applyLoggingDefaults(applyMessageDefaults(validated.config)),
-                  ),
-                ),
-              ),
-            ),
-          ),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           hash,
           issues: [],
           warnings: validated.warnings,
@@ -1210,11 +996,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           valid: false,
           config: {},
           hash: hashConfigRaw(null),
-<<<<<<< HEAD
           issues: [{ path: "", message }],
-=======
-          issues: [{ path: "", message: `read failed: ${String(err)}` }],
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           warnings: [],
           legacyIssues: [],
         },
@@ -1310,7 +1092,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
 
     const dir = path.dirname(configPath);
     await deps.fs.promises.mkdir(dir, { recursive: true, mode: 0o700 });
-<<<<<<< HEAD
     const outputConfigBase =
       envRefMap && changedPaths
         ? (restoreEnvRefsFromMap(cfgToWrite, "", envRefMap, changedPaths) as OpenClawConfig)
@@ -1327,12 +1108,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         }
       }
     }
-=======
-    const outputConfig =
-      envRefMap && changedPaths
-        ? (restoreEnvRefsFromMap(cfgToWrite, "", envRefMap, changedPaths) as OpenClawConfig)
-        : cfgToWrite;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     // Do NOT apply runtime defaults when writing — user config should only contain
     // explicitly set values. Runtime defaults are applied when loading (issue #6070).
     const stampedOutputConfig = stampConfigVersion(outputConfig);
@@ -1374,15 +1149,12 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       if (suspiciousReasons.length === 0) {
         return;
       }
-<<<<<<< HEAD
       // Tests often write minimal configs (missing meta, etc); keep output quiet unless requested.
       const isVitest = deps.env.VITEST === "true";
       const shouldLogInVitest = deps.env.OPENCLAW_TEST_CONFIG_WRITE_ANOMALY_LOG === "1";
       if (isVitest && !shouldLogInVitest) {
         return;
       }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       deps.logger.warn(`Config write anomaly: ${configPath} (${suspiciousReasons.join(", ")})`);
     };
     const auditRecordBase = {
@@ -1576,9 +1348,6 @@ export async function writeConfigFile(
     options.expectedConfigPath === undefined || options.expectedConfigPath === io.configPath;
   await io.writeConfigFile(cfg, {
     envSnapshotForRestore: sameConfigPath ? options.envSnapshotForRestore : undefined,
-<<<<<<< HEAD
     unsetPaths: options.unsetPaths,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 }

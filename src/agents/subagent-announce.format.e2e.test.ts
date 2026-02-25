@@ -1390,14 +1390,9 @@ describe("subagent announce formatting", () => {
       }),
     ]);
 
-<<<<<<< HEAD:src/agents/subagent-announce.format.test.ts
     await vi.waitFor(() => {
       expect(agentSpy).toHaveBeenCalledTimes(2);
     });
-=======
-    await expect.poll(() => agentSpy.mock.calls.length).toBe(2);
-    expect(agentSpy).toHaveBeenCalledTimes(2);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/subagent-announce.format.e2e.test.ts
     const accountIds = agentSpy.mock.calls.map(
       (call) => (call?.[0] as { params?: { accountId?: string } })?.params?.accountId,
     );
@@ -1728,7 +1723,6 @@ describe("subagent announce formatting", () => {
     expect(call?.params?.channel).toBe("telegram");
     expect(call?.params?.to).toBe("telegram:123");
   });
-<<<<<<< HEAD:src/agents/subagent-announce.format.test.ts
 
   it("routes or falls back for ended parent subagent sessions (#18037)", async () => {
     const cases = [
@@ -1822,6 +1816,4 @@ describe("subagent announce formatting", () => {
       expect(call?.params?.channel, testCase.name).toBe(testCase.expectedChannel);
     }
   });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/subagent-announce.format.e2e.test.ts
 });

@@ -1,10 +1,4 @@
-<<<<<<< HEAD
 import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-=======
-import { normalizeAccountId } from "openclaw/plugin-sdk";
-import type { CoreConfig } from "../../types.js";
-import type { MatrixActionClient, MatrixActionClientOpts } from "./types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { getMatrixRuntime } from "../../runtime.js";
 import type { CoreConfig } from "../../types.js";
 import { getActiveMatrixClient } from "../active-client.js";
@@ -44,18 +38,9 @@ export async function resolveActionClient(
     cfg: getMatrixRuntime().config.loadConfig() as CoreConfig,
     accountId,
   });
-<<<<<<< HEAD
   const client = await createPreparedMatrixClient({
     auth,
     timeoutMs: opts.timeoutMs,
-=======
-  const client = await createMatrixClient({
-    homeserver: auth.homeserver,
-    userId: auth.userId,
-    accessToken: auth.accessToken,
-    encryption: auth.encryption,
-    localTimeoutMs: opts.timeoutMs,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     accountId,
   });
   return { client, stopOnDone: true };

@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-<<<<<<< HEAD
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolveProviderAuths } from "./provider-usage.auth.js";
 
@@ -110,15 +109,6 @@ describe("resolveProviderAuths key normalization", () => {
 
   it("strips embedded CR/LF from env keys", async () => {
     await withSuiteHome(
-=======
-import { describe, expect, it } from "vitest";
-import { withTempHome } from "../../test/helpers/temp-home.js";
-import { resolveProviderAuths } from "./provider-usage.auth.js";
-
-describe("resolveProviderAuths key normalization", () => {
-  it("strips embedded CR/LF from env keys", async () => {
-    await withTempHome(
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       async () => {
         const auths = await resolveProviderAuths({
           providers: ["zai", "minimax", "xiaomi"],
@@ -140,30 +130,10 @@ describe("resolveProviderAuths key normalization", () => {
   it("strips embedded CR/LF from stored auth profiles (token + api_key)", async () => {
     await withSuiteHome(
       async (home) => {
-<<<<<<< HEAD
         await writeAuthProfiles(home, {
           "minimax:default": { type: "token", provider: "minimax", token: "mini-\r\nmax" },
           "xiaomi:default": { type: "api_key", provider: "xiaomi", key: "xiao-\r\nmi" },
         });
-=======
-        const agentDir = path.join(home, ".openclaw", "agents", "main", "agent");
-        await fs.mkdir(agentDir, { recursive: true });
-        await fs.writeFile(
-          path.join(agentDir, "auth-profiles.json"),
-          `${JSON.stringify(
-            {
-              version: 1,
-              profiles: {
-                "minimax:default": { type: "token", provider: "minimax", token: "mini-\r\nmax" },
-                "xiaomi:default": { type: "api_key", provider: "xiaomi", key: "xiao-\r\nmi" },
-              },
-            },
-            null,
-            2,
-          )}\n`,
-          "utf8",
-        );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
         const auths = await resolveProviderAuths({
           providers: ["minimax", "xiaomi"],

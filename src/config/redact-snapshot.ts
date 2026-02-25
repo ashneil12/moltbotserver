@@ -154,14 +154,8 @@ function redactObjectWithLookup(
   if (Array.isArray(obj)) {
     const path = `${prefix}[]`;
     if (!lookup.has(path)) {
-<<<<<<< HEAD
       // Keep behavior symmetric with object fallback: if hints miss the path,
       // still run pattern-based guessing for non-extension arrays.
-=======
-      if (!isExtensionPath(prefix)) {
-        return obj;
-      }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       return redactObjectGuessing(obj, prefix, values, hints);
     }
     return obj.map((item) => {
@@ -193,14 +187,10 @@ function redactObjectWithLookup(
           break;
         }
       }
-<<<<<<< HEAD
       if (!matched) {
         // Fall back to pattern-based guessing for paths not covered by schema
         // hints. This catches dynamic keys inside catchall objects (for example
         // env.GROQ_API_KEY) and extension/plugin config alike.
-=======
-      if (!matched && isExtensionPath(path)) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         const markedNonSensitive = isExplicitlyNonSensitivePath(hints, [path, wildcardPath]);
         if (
           typeof value === "string" &&
@@ -367,62 +357,6 @@ export function restoreRedactedValues(
   original: unknown,
   hints?: ConfigUiHints,
 ): RedactionResult {
-<<<<<<< HEAD
-=======
-  if (incoming === null || incoming === undefined) {
-    return { ok: false, error: "no input" };
-  }
-  if (typeof incoming !== "object") {
-    return { ok: false, error: "input not an object" };
-  }
-  try {
-    if (hints) {
-      const lookup = buildRedactionLookup(hints);
-      if (lookup.has("")) {
-        return {
-          ok: true,
-          result: restoreRedactedValuesWithLookup(incoming, original, lookup, "", hints),
-        };
-      } else {
-        return { ok: true, result: restoreRedactedValuesGuessing(incoming, original, "", hints) };
-      }
-    } else {
-      return { ok: true, result: restoreRedactedValuesGuessing(incoming, original, "") };
-    }
-  } catch (err) {
-    if (err instanceof RedactionError) {
-      return {
-        ok: false,
-        humanReadableMessage: `Sentinel value "${REDACTED_SENTINEL}" in key ${err.key} is not valid as real data`,
-      };
-    }
-    throw err; // some coding error, pass through
-  }
-}
-
-class RedactionError extends Error {
-  public readonly key: string;
-
-  constructor(key: string) {
-    super("internal error class---should never escape");
-    this.key = key;
-    this.name = "RedactionError";
-    Object.setPrototypeOf(this, RedactionError.prototype);
-  }
-}
-
-/**
- * Worker for restoreRedactedValues().
- * Used when there are ConfigUiHints available.
- */
-function restoreRedactedValuesWithLookup(
-  incoming: unknown,
-  original: unknown,
-  lookup: Set<string>,
-  prefix: string,
-  hints: ConfigUiHints,
-): unknown {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (incoming === null || incoming === undefined) {
     return { ok: false, error: "no input" };
   }
@@ -587,18 +521,13 @@ function restoreRedactedValuesWithLookup(
   if (shouldPassThroughRestoreValue(incoming)) {
     return incoming;
   }
-<<<<<<< HEAD
 
   const arrayContext = toRestoreArrayContext(incoming, prefix);
   if (arrayContext) {
-=======
-  if (Array.isArray(incoming)) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     // Note: If the user removed an item in the middle of the array,
     // we have no way of knowing which one. In this case, the last
     // element(s) get(s) chopped off. Not good, so please don't put
     // sensitive string array in the config...
-<<<<<<< HEAD
     const { incoming: incomingArray, path } = arrayContext;
     if (!lookup.has(path)) {
       // Keep behavior symmetric with object fallback: if hints miss the path,
@@ -618,24 +547,6 @@ function restoreRedactedValuesWithLookup(
           path,
           hints,
         }),
-=======
-    const path = `${prefix}[]`;
-    if (!lookup.has(path)) {
-      if (!isExtensionPath(prefix)) {
-        return incoming;
-      }
-      return restoreRedactedValuesGuessing(incoming, original, prefix, hints);
-    }
-    const origArr = Array.isArray(original) ? original : [];
-    if (incoming.length < origArr.length) {
-      log.warn(`Redacted config array key ${path} has been truncated`);
-    }
-    return incoming.map((item, i) => {
-      if (item === REDACTED_SENTINEL) {
-        return origArr[i];
-      }
-      return restoreRedactedValuesWithLookup(item, origArr[i], lookup, path, hints);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   }
   const orig = toObjectRecord(original);
@@ -649,21 +560,11 @@ function restoreRedactedValuesWithLookup(
       if (lookup.has(candidate)) {
         matched = true;
         if (value === REDACTED_SENTINEL) {
-<<<<<<< HEAD
           result[key] = restoreOriginalValueOrThrow({ key, path: candidate, original: orig });
-=======
-          if (key in orig) {
-            result[key] = orig[key];
-          } else {
-            log.warn(`Cannot un-redact config key ${candidate} as it doesn't have any value`);
-            throw new RedactionError(candidate);
-          }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         } else if (typeof value === "object" && value !== null) {
           result[key] = restoreRedactedValuesWithLookup(value, orig[key], lookup, candidate, hints);
         }
         break;
-<<<<<<< HEAD
       }
     }
     if (!matched) {
@@ -712,83 +613,6 @@ function restoreRedactedValuesGuessing(
       value === REDACTED_SENTINEL
     ) {
       result[key] = restoreOriginalValueOrThrow({ key, path, original: orig });
-=======
-      }
-    }
-    if (!matched && isExtensionPath(path)) {
-      const markedNonSensitive = isExplicitlyNonSensitivePath(hints, [path, wildcardPath]);
-      if (!markedNonSensitive && isSensitivePath(path) && value === REDACTED_SENTINEL) {
-        if (key in orig) {
-          result[key] = orig[key];
-        } else {
-          log.warn(`Cannot un-redact config key ${path} as it doesn't have any value`);
-          throw new RedactionError(path);
-        }
-      } else if (typeof value === "object" && value !== null) {
-        result[key] = restoreRedactedValuesGuessing(value, orig[key], path, hints);
-      }
-    }
-  }
-  return result;
-}
-
-/**
- * Worker for restoreRedactedValues().
- * Used when ConfigUiHints are NOT available.
- */
-function restoreRedactedValuesGuessing(
-  incoming: unknown,
-  original: unknown,
-  prefix: string,
-  hints?: ConfigUiHints,
-): unknown {
-  if (incoming === null || incoming === undefined) {
-    return incoming;
-  }
-  if (typeof incoming !== "object") {
-    return incoming;
-  }
-  if (Array.isArray(incoming)) {
-    // Note: If the user removed an item in the middle of the array,
-    // we have no way of knowing which one. In this case, the last
-    // element(s) get(s) chopped off. Not good, so please don't put
-    // sensitive string array in the config...
-    const origArr = Array.isArray(original) ? original : [];
-    return incoming.map((item, i) => {
-      const path = `${prefix}[]`;
-      if (incoming.length < origArr.length) {
-        log.warn(`Redacted config array key ${path} has been truncated`);
-      }
-      if (
-        !isExplicitlyNonSensitivePath(hints, [path]) &&
-        isSensitivePath(path) &&
-        item === REDACTED_SENTINEL
-      ) {
-        return origArr[i];
-      }
-      return restoreRedactedValuesGuessing(item, origArr[i], path, hints);
-    });
-  }
-  const orig =
-    original && typeof original === "object" && !Array.isArray(original)
-      ? (original as Record<string, unknown>)
-      : {};
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(incoming as Record<string, unknown>)) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    const wildcardPath = prefix ? `${prefix}.*` : "*";
-    if (
-      !isExplicitlyNonSensitivePath(hints, [path, wildcardPath]) &&
-      isSensitivePath(path) &&
-      value === REDACTED_SENTINEL
-    ) {
-      if (key in orig) {
-        result[key] = orig[key];
-      } else {
-        log.warn(`Cannot un-redact config key ${path} as it doesn't have any value`);
-        throw new RedactionError(path);
-      }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     } else if (typeof value === "object" && value !== null) {
       result[key] = restoreRedactedValuesGuessing(value, orig[key], path, hints);
     } else {

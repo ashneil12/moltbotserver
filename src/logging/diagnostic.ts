@@ -304,6 +304,7 @@ export function logActiveRuns() {
 }
 
 let heartbeatInterval: NodeJS.Timeout | null = null;
+let healthCheckCycleCount = 0;
 
 export function startDiagnosticHeartbeat() {
   if (heartbeatInterval) {
@@ -360,6 +361,48 @@ export function startDiagnosticHeartbeat() {
         diag.debug(`command-poll-backoff prune failed: ${String(err)}`);
       });
 
+    // Periodic health check: every ~5 minutes (every 10th heartbeat at 30s intervals)
+    healthCheckCycleCount += 1;
+    if (healthCheckCycleCount >= 10) {
+      healthCheckCycleCount = 0;
+      import("./diagnostics-toolkit.js")
+        .then(({ runHealthCheck }) =>
+          runHealthCheck({ errorWindowHours: 1, errorThreshold: 50 }),
+        )
+        .then((report) => {
+          if (!report.healthy) {
+            diag.warn?.(
+              `[health] System health check FAILED: ${report.checks
+                .filter((c) => c.status === "fail")
+                .map((c) => `${c.name}: ${c.detail}`)
+                .join("; ")}`,
+            );
+          }
+          import("./event-log.js")
+            .then(({ createEventLogger }) => {
+              const eventLogger = createEventLogger({});
+              eventLogger.log({
+                event: "system.health_check",
+                level: report.healthy ? "info" : "warn",
+                data: {
+                  healthy: report.healthy,
+                  summary: report.summary,
+                  failedChecks: report.checks
+                    .filter((c) => c.status === "fail")
+                    .map((c) => ({ name: c.name, detail: c.detail })),
+                },
+                subsystem: "diagnostics",
+              });
+            })
+            .catch(() => {
+              /* event logging must never block */
+            });
+        })
+        .catch((err) => {
+          diag.debug(`health check failed: ${String(err)}`);
+        });
+    }
+
     for (const [, state] of diagnosticSessionStates) {
       const ageMs = now - state.lastActivity;
       if (state.state === "processing" && ageMs > 120_000) {
@@ -393,6 +436,7 @@ export function resetDiagnosticStateForTest(): void {
   webhookStats.errors = 0;
   webhookStats.lastReceived = 0;
   lastActivityAt = 0;
+  healthCheckCycleCount = 0;
   stopDiagnosticHeartbeat();
 }
 

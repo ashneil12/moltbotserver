@@ -56,7 +56,6 @@ export type CronServiceDeps = {
     reason?: string;
     agentId?: string;
     sessionKey?: string;
-<<<<<<< HEAD
   }) => Promise<HeartbeatRunResult>;
   /**
    * WakeMode=now: max time to wait for runHeartbeatOnce to stop returning
@@ -84,15 +83,6 @@ export type CronServiceDeps = {
     } & CronRunOutcome &
       CronRunTelemetry
   >;
-=======
-    /**
-     * `true` when the isolated run already delivered its output to the target
-     * channel (including matching messaging-tool sends). See:
-     * https://github.com/openclaw/openclaw/issues/15692
-     */
-    delivered?: boolean;
-  }>;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   onEvent?: (evt: CronEvent) => void;
 };
 

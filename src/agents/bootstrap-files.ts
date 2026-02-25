@@ -58,12 +58,7 @@ export async function resolveBootstrapFilesForRun(params: {
     : await loadWorkspaceBootstrapFiles(params.workspaceDir);
   const bootstrapFiles = filterBootstrapFilesForSession(rawFiles, sessionKey);
 
-<<<<<<< HEAD
   const updated = await applyBootstrapHookOverrides({
-=======
-
-  return applyBootstrapHookOverrides({
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     files: bootstrapFiles,
     workspaceDir: params.workspaceDir,
     config: params.config,

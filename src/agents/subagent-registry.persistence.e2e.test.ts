@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD:src/agents/subagent-registry.persistence.test.ts
 import "./subagent-registry.mocks.shared.js";
 import { captureEnv } from "../test-utils/env.js";
 import {
@@ -10,10 +9,6 @@ import {
   clearSubagentRunSteerRestart,
   initSubagentRegistry,
   listSubagentRunsForRequester,
-=======
-import {
-  initSubagentRegistry,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/subagent-registry.persistence.e2e.test.ts
   registerSubagentRun,
   resetSubagentRegistryForTests,
 } from "./subagent-registry.js";
@@ -318,13 +313,7 @@ describe("subagent registry persistence", () => {
     const registryPath = await writePersistedRegistry(persisted);
 
     announceSpy.mockResolvedValueOnce(false);
-<<<<<<< HEAD:src/agents/subagent-registry.persistence.test.ts
     await restartRegistryAndFlush();
-=======
-    resetSubagentRegistryForTests({ persist: false });
-    initSubagentRegistry();
-    await new Promise((r) => setTimeout(r, 0));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/subagent-registry.persistence.e2e.test.ts
 
     expect(announceSpy).toHaveBeenCalledTimes(1);
     const afterFirst = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
@@ -334,13 +323,7 @@ describe("subagent registry persistence", () => {
     expect(afterFirst.runs["run-3"].cleanupCompletedAt).toBeUndefined();
 
     announceSpy.mockResolvedValueOnce(true);
-<<<<<<< HEAD:src/agents/subagent-registry.persistence.test.ts
     await restartRegistryAndFlush();
-=======
-    resetSubagentRegistryForTests({ persist: false });
-    initSubagentRegistry();
-    await new Promise((r) => setTimeout(r, 0));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/subagent-registry.persistence.e2e.test.ts
 
     expect(announceSpy).toHaveBeenCalledTimes(2);
     const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
@@ -359,13 +342,7 @@ describe("subagent registry persistence", () => {
     const registryPath = await writePersistedRegistry(persisted);
 
     announceSpy.mockResolvedValueOnce(false);
-<<<<<<< HEAD:src/agents/subagent-registry.persistence.test.ts
     await restartRegistryAndFlush();
-=======
-    resetSubagentRegistryForTests({ persist: false });
-    initSubagentRegistry();
-    await new Promise((r) => setTimeout(r, 0));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/subagent-registry.persistence.e2e.test.ts
 
     expect(announceSpy).toHaveBeenCalledTimes(1);
     const afterFirst = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
@@ -374,13 +351,7 @@ describe("subagent registry persistence", () => {
     expect(afterFirst.runs["run-4"]?.cleanupHandled).toBe(false);
 
     announceSpy.mockResolvedValueOnce(true);
-<<<<<<< HEAD:src/agents/subagent-registry.persistence.test.ts
     await restartRegistryAndFlush();
-=======
-    resetSubagentRegistryForTests({ persist: false });
-    initSubagentRegistry();
-    await new Promise((r) => setTimeout(r, 0));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/subagent-registry.persistence.e2e.test.ts
 
     expect(announceSpy).toHaveBeenCalledTimes(2);
     const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {

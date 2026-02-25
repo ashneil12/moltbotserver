@@ -1,14 +1,6 @@
-<<<<<<< HEAD
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "./config.js";
 import { withTempHomeConfig } from "./test-helpers.js";
-=======
-import fs from "node:fs/promises";
-import path from "node:path";
-import { describe, expect, it } from "vitest";
-import { loadConfig } from "./config.js";
-import { withTempHome } from "./test-helpers.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 describe("config compaction settings", () => {
   it("preserves memory flush config values", async () => {
@@ -32,7 +24,6 @@ describe("config compaction settings", () => {
       async () => {
         const cfg = loadConfig();
 
-<<<<<<< HEAD
         expect(cfg.agents?.defaults?.compaction?.reserveTokensFloor).toBe(12_345);
         expect(cfg.agents?.defaults?.compaction?.mode).toBe("safeguard");
         expect(cfg.agents?.defaults?.compaction?.reserveTokens).toBeUndefined();
@@ -46,9 +37,6 @@ describe("config compaction settings", () => {
       },
     );
   });
-=======
-      const cfg = loadConfig();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   it("preserves pi compaction override values", async () => {
     await withTempHomeConfig(
@@ -84,17 +72,9 @@ describe("config compaction settings", () => {
       async () => {
         const cfg = loadConfig();
 
-<<<<<<< HEAD
         expect(cfg.agents?.defaults?.compaction?.mode).toBe("safeguard");
         expect(cfg.agents?.defaults?.compaction?.reserveTokensFloor).toBe(9000);
       },
     );
-=======
-      const cfg = loadConfig();
-
-      expect(cfg.agents?.defaults?.compaction?.mode).toBe("safeguard");
-      expect(cfg.agents?.defaults?.compaction?.reserveTokensFloor).toBe(9000);
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

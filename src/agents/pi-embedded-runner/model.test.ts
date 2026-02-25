@@ -206,7 +206,6 @@ describe("resolveModel", () => {
     });
   });
 
-<<<<<<< HEAD
   it("builds an anthropic forward-compat fallback for claude-sonnet-4-6", () => {
     mockDiscoveredModel({
       provider: "anthropic",
@@ -217,32 +216,9 @@ describe("resolveModel", () => {
         provider: "anthropic",
         api: "anthropic-messages",
         baseUrl: "https://api.anthropic.com",
-=======
-  it("builds an antigravity forward-compat fallback for claude-opus-4-6-thinking", () => {
-    const templateModel = {
-      id: "claude-opus-4-5-thinking",
-      name: "Claude Opus 4.5 Thinking",
-      provider: "google-antigravity",
-      api: "google-gemini-cli",
-      baseUrl: "https://daily-cloudcode-pa.sandbox.googleapis.com",
-      reasoning: true,
-      input: ["text", "image"] as const,
-      cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
-      contextWindow: 200000,
-      maxTokens: 64000,
-    };
-
-    vi.mocked(discoverModels).mockReturnValue({
-      find: vi.fn((provider: string, modelId: string) => {
-        if (provider === "google-antigravity" && modelId === "claude-opus-4-5-thinking") {
-          return templateModel;
-        }
-        return null;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }),
     });
 
-<<<<<<< HEAD
     expectResolvedForwardCompatFallback({
       provider: "anthropic",
       id: "claude-sonnet-4-6",
@@ -253,56 +229,6 @@ describe("resolveModel", () => {
         baseUrl: "https://api.anthropic.com",
         reasoning: true,
       },
-=======
-    const result = resolveModel("google-antigravity", "claude-opus-4-6-thinking", "/tmp/agent");
-
-    expect(result.error).toBeUndefined();
-    expect(result.model).toMatchObject({
-      provider: "google-antigravity",
-      id: "claude-opus-4-6-thinking",
-      api: "google-gemini-cli",
-      baseUrl: "https://daily-cloudcode-pa.sandbox.googleapis.com",
-      reasoning: true,
-      contextWindow: 200000,
-      maxTokens: 64000,
-    });
-  });
-
-  it("builds an antigravity forward-compat fallback for claude-opus-4-6", () => {
-    const templateModel = {
-      id: "claude-opus-4-5",
-      name: "Claude Opus 4.5",
-      provider: "google-antigravity",
-      api: "google-gemini-cli",
-      baseUrl: "https://daily-cloudcode-pa.sandbox.googleapis.com",
-      reasoning: true,
-      input: ["text", "image"] as const,
-      cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
-      contextWindow: 200000,
-      maxTokens: 64000,
-    };
-
-    vi.mocked(discoverModels).mockReturnValue({
-      find: vi.fn((provider: string, modelId: string) => {
-        if (provider === "google-antigravity" && modelId === "claude-opus-4-5") {
-          return templateModel;
-        }
-        return null;
-      }),
-    } as unknown as ReturnType<typeof discoverModels>);
-
-    const result = resolveModel("google-antigravity", "claude-opus-4-6", "/tmp/agent");
-
-    expect(result.error).toBeUndefined();
-    expect(result.model).toMatchObject({
-      provider: "google-antigravity",
-      id: "claude-opus-4-6",
-      api: "google-gemini-cli",
-      baseUrl: "https://daily-cloudcode-pa.sandbox.googleapis.com",
-      reasoning: true,
-      contextWindow: 200000,
-      maxTokens: 64000,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   });
 
@@ -336,33 +262,11 @@ describe("resolveModel", () => {
   });
 
   it("keeps unknown-model errors when no antigravity thinking template exists", () => {
-<<<<<<< HEAD
     expectUnknownModelError("google-antigravity", "claude-opus-4-6-thinking");
   });
 
   it("keeps unknown-model errors when no antigravity non-thinking template exists", () => {
     expectUnknownModelError("google-antigravity", "claude-opus-4-6");
-=======
-    vi.mocked(discoverModels).mockReturnValue({
-      find: vi.fn(() => null),
-    } as unknown as ReturnType<typeof discoverModels>);
-
-    const result = resolveModel("google-antigravity", "claude-opus-4-6-thinking", "/tmp/agent");
-
-    expect(result.model).toBeUndefined();
-    expect(result.error).toBe("Unknown model: google-antigravity/claude-opus-4-6-thinking");
-  });
-
-  it("keeps unknown-model errors when no antigravity non-thinking template exists", () => {
-    vi.mocked(discoverModels).mockReturnValue({
-      find: vi.fn(() => null),
-    } as unknown as ReturnType<typeof discoverModels>);
-
-    const result = resolveModel("google-antigravity", "claude-opus-4-6", "/tmp/agent");
-
-    expect(result.model).toBeUndefined();
-    expect(result.error).toBe("Unknown model: google-antigravity/claude-opus-4-6");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("keeps unknown-model errors for non-gpt-5 openai-codex ids", () => {

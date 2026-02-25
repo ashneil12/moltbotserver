@@ -8,7 +8,6 @@ import {
   resolveLaunchAgentPlistPath,
 } from "./launchd.js";
 
-<<<<<<< HEAD
 const state = vi.hoisted(() => ({
   launchctlCalls: [] as string[][],
   listOutput: "",
@@ -21,115 +20,6 @@ const defaultProgramArguments = ["node", "-e", "process.exit(0)"];
 function normalizeLaunchctlArgs(file: string, args: string[]): string[] {
   if (file === "launchctl") {
     return args;
-=======
-function parseLaunchctlCalls(raw: string): string[][] {
-  return raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.split(/\s+/));
-}
-
-async function writeLaunchctlStub(binDir: string) {
-  if (process.platform === "win32") {
-    const stubJsPath = path.join(binDir, "launchctl.js");
-    await fs.writeFile(
-      stubJsPath,
-      [
-        'import fs from "node:fs";',
-        "const args = process.argv.slice(2);",
-        "const logPath = process.env.OPENCLAW_TEST_LAUNCHCTL_LOG;",
-        "if (logPath) {",
-        '  fs.appendFileSync(logPath, args.join("\\t") + "\\n", "utf8");',
-        "}",
-        'if (args[0] === "list") {',
-        '  const output = process.env.OPENCLAW_TEST_LAUNCHCTL_LIST_OUTPUT || "";',
-        "  process.stdout.write(output);",
-        "}",
-        "process.exit(0);",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-    await fs.writeFile(
-      path.join(binDir, "launchctl.cmd"),
-      `@echo off\r\nnode "%~dp0\\launchctl.js" %*\r\n`,
-      "utf8",
-    );
-    return;
-  }
-
-  const shPath = path.join(binDir, "launchctl");
-  await fs.writeFile(
-    shPath,
-    [
-      "#!/bin/sh",
-      'log_path="${OPENCLAW_TEST_LAUNCHCTL_LOG:-}"',
-      'if [ -n "$log_path" ]; then',
-      '  line=""',
-      '  for arg in "$@"; do',
-      '    if [ -n "$line" ]; then',
-      '      line="$line $arg"',
-      "    else",
-      '      line="$arg"',
-      "    fi",
-      "  done",
-      '  printf \'%s\\n\' "$line" >> "$log_path"',
-      "fi",
-      'if [ "$1" = "list" ]; then',
-      "  printf '%s' \"${OPENCLAW_TEST_LAUNCHCTL_LIST_OUTPUT:-}\"",
-      "fi",
-      "exit 0",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
-  await fs.chmod(shPath, 0o755);
-}
-
-async function withLaunchctlStub(
-  options: { listOutput?: string },
-  run: (context: { env: Record<string, string | undefined>; logPath: string }) => Promise<void>,
-) {
-  const originalPath = process.env.PATH;
-  const originalLogPath = process.env.OPENCLAW_TEST_LAUNCHCTL_LOG;
-  const originalListOutput = process.env.OPENCLAW_TEST_LAUNCHCTL_LIST_OUTPUT;
-
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-launchctl-test-"));
-  try {
-    const binDir = path.join(tmpDir, "bin");
-    const homeDir = path.join(tmpDir, "home");
-    const logPath = path.join(tmpDir, "launchctl.log");
-    await fs.mkdir(binDir, { recursive: true });
-    await fs.mkdir(homeDir, { recursive: true });
-
-    await writeLaunchctlStub(binDir);
-
-    process.env.OPENCLAW_TEST_LAUNCHCTL_LOG = logPath;
-    process.env.OPENCLAW_TEST_LAUNCHCTL_LIST_OUTPUT = options.listOutput ?? "";
-    process.env.PATH = `${binDir}${path.delimiter}${originalPath ?? ""}`;
-
-    await run({
-      env: {
-        HOME: homeDir,
-        OPENCLAW_PROFILE: "default",
-      },
-      logPath,
-    });
-  } finally {
-    process.env.PATH = originalPath;
-    if (originalLogPath === undefined) {
-      delete process.env.OPENCLAW_TEST_LAUNCHCTL_LOG;
-    } else {
-      process.env.OPENCLAW_TEST_LAUNCHCTL_LOG = originalLogPath;
-    }
-    if (originalListOutput === undefined) {
-      delete process.env.OPENCLAW_TEST_LAUNCHCTL_LIST_OUTPUT;
-    } else {
-      process.env.OPENCLAW_TEST_LAUNCHCTL_LIST_OUTPUT = originalListOutput;
-    }
-    await fs.rm(tmpDir, { recursive: true, force: true });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
   const idx = args.indexOf("launchctl");
   if (idx >= 0) {
@@ -231,13 +121,9 @@ describe("launchd bootstrap repair", () => {
     const repair = await repairLaunchAgentBootstrap({ env });
     expect(repair.ok).toBe(true);
 
-<<<<<<< HEAD
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
     const label = "ai.openclaw.gateway";
     const plistPath = resolveLaunchAgentPlistPath(env);
-=======
-      const calls = parseLaunchctlCalls(await fs.readFile(logPath, "utf8"));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(state.launchctlCalls).toContainEqual(["bootstrap", domain, plistPath]);
     expect(state.launchctlCalls).toContainEqual(["kickstart", "-k", `${domain}/${label}`]);
@@ -298,60 +184,13 @@ describe("launchd install", () => {
     const env = createDefaultLaunchdEnv();
     let message = "";
     try {
-<<<<<<< HEAD
-=======
-      const binDir = path.join(tmpDir, "bin");
-      const homeDir = path.join(tmpDir, "home");
-      const logPath = path.join(tmpDir, "launchctl.log");
-      await fs.mkdir(binDir, { recursive: true });
-      await fs.mkdir(homeDir, { recursive: true });
-
-      await writeLaunchctlStub(binDir);
-
-      process.env.OPENCLAW_TEST_LAUNCHCTL_LOG = logPath;
-      process.env.PATH = `${binDir}${path.delimiter}${originalPath ?? ""}`;
-
-      const env: Record<string, string | undefined> = {
-        HOME: homeDir,
-        OPENCLAW_PROFILE: "default",
-      };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       await installLaunchAgent({
         env,
         stdout: new PassThrough(),
         programArguments: defaultProgramArguments,
       });
-<<<<<<< HEAD
     } catch (error) {
       message = String(error);
-=======
-
-      const calls = parseLaunchctlCalls(await fs.readFile(logPath, "utf8"));
-
-      const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-      const label = "ai.openclaw.gateway";
-      const plistPath = resolveLaunchAgentPlistPath(env);
-      const serviceId = `${domain}/${label}`;
-
-      const enableCalls = calls.filter((c) => c[0] === "enable" && c[1] === serviceId);
-      expect(enableCalls).toHaveLength(1);
-
-      const enableIndex = calls.findIndex((c) => c[0] === "enable" && c[1] === serviceId);
-      const bootstrapIndex = calls.findIndex(
-        (c) => c[0] === "bootstrap" && c[1] === domain && c[2] === plistPath,
-      );
-      expect(enableIndex).toBeGreaterThanOrEqual(0);
-      expect(bootstrapIndex).toBeGreaterThanOrEqual(0);
-      expect(enableIndex).toBeLessThan(bootstrapIndex);
-    } finally {
-      process.env.PATH = originalPath;
-      if (originalLogPath === undefined) {
-        delete process.env.OPENCLAW_TEST_LAUNCHCTL_LOG;
-      } else {
-        process.env.OPENCLAW_TEST_LAUNCHCTL_LOG = originalLogPath;
-      }
-      await fs.rm(tmpDir, { recursive: true, force: true });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
     expect(message).toContain("logged-in macOS GUI session");
     expect(message).toContain("wrong user (including sudo)");

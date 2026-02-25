@@ -1,16 +1,12 @@
-<<<<<<< HEAD
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./docker.js", () => ({
   execDockerRaw: vi.fn(),
 }));
 
-<<<<<<< HEAD
 import { execDockerRaw } from "./docker.js";
 import { createSandboxFsBridge } from "./fs-bridge.js";
 import { createSandboxTestContext } from "./test-fixtures.js";
@@ -65,48 +61,6 @@ describe("sandbox fs bridge shell compatibility", () => {
           code: 0,
         };
       }
-=======
-import type { SandboxContext } from "./types.js";
-import { execDockerRaw } from "./docker.js";
-import { createSandboxFsBridge } from "./fs-bridge.js";
-
-const mockedExecDockerRaw = vi.mocked(execDockerRaw);
-
-const sandbox: SandboxContext = {
-  enabled: true,
-  sessionKey: "sandbox:test",
-  workspaceDir: "/tmp/workspace",
-  agentWorkspaceDir: "/tmp/workspace",
-  workspaceAccess: "rw",
-  containerName: "moltbot-sbx-test",
-  containerWorkdir: "/workspace",
-  docker: {
-    image: "moltbot-sandbox:bookworm-slim",
-    containerPrefix: "moltbot-sbx-",
-    network: "none",
-    user: "1000:1000",
-    workdir: "/workspace",
-    readOnlyRoot: false,
-    tmpfs: [],
-    capDrop: [],
-    seccompProfile: "",
-    apparmorProfile: "",
-    setupCommand: "",
-    binds: [],
-    dns: [],
-    extraHosts: [],
-    pidsLimit: 0,
-  },
-  tools: { allow: ["*"], deny: [] },
-  browserAllowHostControl: false,
-};
-
-describe("sandbox fs bridge shell compatibility", () => {
-  beforeEach(() => {
-    mockedExecDockerRaw.mockReset();
-    mockedExecDockerRaw.mockImplementation(async (args) => {
-      const script = args[5] ?? "";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       if (script.includes('stat -c "%F|%s|%Y"')) {
         return {
           stdout: Buffer.from("regular file|1|2"),
@@ -130,11 +84,7 @@ describe("sandbox fs bridge shell compatibility", () => {
   });
 
   it("uses POSIX-safe shell prologue in all bridge commands", async () => {
-<<<<<<< HEAD
     const bridge = createSandboxFsBridge({ sandbox: createSandbox() });
-=======
-    const bridge = createSandboxFsBridge({ sandbox });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await bridge.readFile({ filePath: "a.txt" });
     await bridge.writeFile({ filePath: "b.txt", data: "hello" });
@@ -145,7 +95,6 @@ describe("sandbox fs bridge shell compatibility", () => {
 
     expect(mockedExecDockerRaw).toHaveBeenCalled();
 
-<<<<<<< HEAD
     const scripts = getScriptsFromCalls();
     const executables = mockedExecDockerRaw.mock.calls.map(([args]) => args[3] ?? "");
 
@@ -275,13 +224,4 @@ describe("sandbox fs bridge shell compatibility", () => {
     const scripts = getScriptsFromCalls();
     expect(scripts.some((script) => script.includes('cat -- "$1"'))).toBe(false);
   });
-=======
-    const scripts = mockedExecDockerRaw.mock.calls.map(([args]) => args[5] ?? "");
-    const executables = mockedExecDockerRaw.mock.calls.map(([args]) => args[3] ?? "");
-
-    expect(executables.every((shell) => shell === "sh")).toBe(true);
-    expect(scripts.every((script) => script.includes("set -eu;"))).toBe(true);
-    expect(scripts.some((script) => script.includes("pipefail"))).toBe(false);
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

@@ -1,12 +1,8 @@
-<<<<<<< HEAD
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 let modelsListCommand: typeof import("./models/list.list-command.js").modelsListCommand;
 let loadModelRegistry: typeof import("./models/list.registry.js").loadModelRegistry;
 let toModelRow: typeof import("./models/list.registry.js").toModelRow;
-=======
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const loadConfig = vi.fn();
 const ensureOpenClawModelsJson = vi.fn().mockResolvedValue(undefined);
@@ -30,11 +26,7 @@ const modelRegistryState = {
   getAllError: undefined as unknown,
   getAvailableError: undefined as unknown,
 };
-<<<<<<< HEAD
 let previousExitCode: typeof process.exitCode;
-=======
-let previousExitCode: number | undefined;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 vi.mock("../config/config.js", () => ({
   CONFIG_PATH: "/tmp/openclaw.json",
@@ -68,7 +60,6 @@ vi.mock("../agents/model-auth.js", () => ({
   getCustomProviderApiKey,
 }));
 
-<<<<<<< HEAD
 vi.mock("../agents/pi-model-discovery.js", () => {
   class MockModelRegistry {
     find(provider: string, id: string) {
@@ -76,17 +67,6 @@ vi.mock("../agents/pi-model-discovery.js", () => {
         modelRegistryState.models.find((model) => model.provider === provider && model.id === id) ??
         null
       );
-=======
-vi.mock("@mariozechner/pi-coding-agent", async () => {
-  class MockAuthStorage {}
-
-  class MockModelRegistry {
-    find(provider: string, id: string) {
-      const found =
-        modelRegistryState.models.find((model) => model.provider === provider && model.id === id) ??
-        null;
-      return found;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
 
     getAll() {
@@ -105,7 +85,6 @@ vi.mock("@mariozechner/pi-coding-agent", async () => {
   }
 
   return {
-<<<<<<< HEAD
     discoverAuthStorage: () => ({}) as unknown,
     discoverModels: () => new MockModelRegistry() as unknown,
   };
@@ -116,12 +95,6 @@ vi.mock("../agents/pi-embedded-runner/model.js", () => ({
     throw new Error("resolveModel should not be called from models.list tests");
   },
 }));
-=======
-    AuthStorage: MockAuthStorage,
-    ModelRegistry: MockModelRegistry,
-  };
-});
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function makeRuntime() {
   return {
@@ -131,7 +104,6 @@ function makeRuntime() {
   };
 }
 
-<<<<<<< HEAD
 function expectModelRegistryUnavailable(
   runtime: ReturnType<typeof makeRuntime>,
   expectedDetail: string,
@@ -143,18 +115,13 @@ function expectModelRegistryUnavailable(
   expect(process.exitCode).toBe(1);
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 beforeEach(() => {
   previousExitCode = process.exitCode;
   process.exitCode = undefined;
   modelRegistryState.getAllError = undefined;
   modelRegistryState.getAvailableError = undefined;
   listProfilesForProvider.mockReturnValue([]);
-<<<<<<< HEAD
   ensurePiAuthJsonFromAuthProfiles.mockClear();
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });
 
 afterEach(() => {
@@ -162,7 +129,6 @@ afterEach(() => {
 });
 
 describe("models list/status", () => {
-<<<<<<< HEAD
   const ZAI_MODEL = {
     provider: "zai",
     id: "glm-4.7",
@@ -266,28 +232,10 @@ describe("models list/status", () => {
     expect(ensurePiAuthJsonFromAuthProfiles).toHaveBeenCalledWith("/tmp/openclaw-agent");
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("models list outputs canonical zai key for configured z.ai model", async () => {
     setDefaultZaiRegistry();
     const runtime = makeRuntime();
 
-<<<<<<< HEAD
-=======
-    const model = {
-      provider: "zai",
-      id: "glm-4.7",
-      name: "GLM-4.7",
-      input: ["text"],
-      baseUrl: "https://api.z.ai/v1",
-      contextWindow: 128000,
-    };
-
-    modelRegistryState.models = [model];
-    modelRegistryState.available = [model];
-
-    const { modelsListCommand } = await import("./models/list.list-command.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await modelsListCommand({ json: true }, runtime);
 
     const payload = parseJsonLog(runtime);
@@ -300,149 +248,20 @@ describe("models list/status", () => {
     });
     const runtime = makeRuntime();
 
-<<<<<<< HEAD
     modelRegistryState.models = [ZAI_MODEL];
     modelRegistryState.available = [ZAI_MODEL];
-=======
-    const model = {
-      provider: "zai",
-      id: "glm-4.7",
-      name: "GLM-4.7",
-      input: ["text"],
-      baseUrl: "https://api.z.ai/v1",
-      contextWindow: 128000,
-    };
-
-    modelRegistryState.models = [model];
-    modelRegistryState.available = [model];
-
-    const { modelsListCommand } = await import("./models/list.list-command.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     await modelsListCommand({ plain: true }, runtime);
 
     expect(runtime.log).toHaveBeenCalledTimes(1);
     expect(runtime.log.mock.calls[0]?.[0]).toBe("zai/glm-4.7");
   });
 
-<<<<<<< HEAD
   it.each(["z.ai", "Z.AI", "z-ai"] as const)(
     "models list provider filter normalizes %s alias",
     async (provider) => {
       await expectZaiProviderFilter(provider);
     },
   );
-=======
-  it("models list provider filter normalizes z.ai alias", async () => {
-    loadConfig.mockReturnValue({
-      agents: { defaults: { model: "z.ai/glm-4.7" } },
-    });
-    const runtime = makeRuntime();
-
-    const models = [
-      {
-        provider: "zai",
-        id: "glm-4.7",
-        name: "GLM-4.7",
-        input: ["text"],
-        baseUrl: "https://api.z.ai/v1",
-        contextWindow: 128000,
-      },
-      {
-        provider: "openai",
-        id: "gpt-4.1-mini",
-        name: "GPT-4.1 mini",
-        input: ["text"],
-        baseUrl: "https://api.openai.com/v1",
-        contextWindow: 128000,
-      },
-    ];
-
-    modelRegistryState.models = models;
-    modelRegistryState.available = models;
-
-    const { modelsListCommand } = await import("./models/list.list-command.js");
-    await modelsListCommand({ all: true, provider: "z.ai", json: true }, runtime);
-
-    expect(runtime.log).toHaveBeenCalledTimes(1);
-    const payload = JSON.parse(String(runtime.log.mock.calls[0]?.[0]));
-    expect(payload.count).toBe(1);
-    expect(payload.models[0]?.key).toBe("zai/glm-4.7");
-  });
-
-  it("models list provider filter normalizes Z.AI alias casing", async () => {
-    loadConfig.mockReturnValue({
-      agents: { defaults: { model: "z.ai/glm-4.7" } },
-    });
-    const runtime = makeRuntime();
-
-    const models = [
-      {
-        provider: "zai",
-        id: "glm-4.7",
-        name: "GLM-4.7",
-        input: ["text"],
-        baseUrl: "https://api.z.ai/v1",
-        contextWindow: 128000,
-      },
-      {
-        provider: "openai",
-        id: "gpt-4.1-mini",
-        name: "GPT-4.1 mini",
-        input: ["text"],
-        baseUrl: "https://api.openai.com/v1",
-        contextWindow: 128000,
-      },
-    ];
-
-    modelRegistryState.models = models;
-    modelRegistryState.available = models;
-
-    const { modelsListCommand } = await import("./models/list.list-command.js");
-    await modelsListCommand({ all: true, provider: "Z.AI", json: true }, runtime);
-
-    expect(runtime.log).toHaveBeenCalledTimes(1);
-    const payload = JSON.parse(String(runtime.log.mock.calls[0]?.[0]));
-    expect(payload.count).toBe(1);
-    expect(payload.models[0]?.key).toBe("zai/glm-4.7");
-  });
-
-  it("models list provider filter normalizes z-ai alias", async () => {
-    loadConfig.mockReturnValue({
-      agents: { defaults: { model: "z.ai/glm-4.7" } },
-    });
-    const runtime = makeRuntime();
-
-    const models = [
-      {
-        provider: "zai",
-        id: "glm-4.7",
-        name: "GLM-4.7",
-        input: ["text"],
-        baseUrl: "https://api.z.ai/v1",
-        contextWindow: 128000,
-      },
-      {
-        provider: "openai",
-        id: "gpt-4.1-mini",
-        name: "GPT-4.1 mini",
-        input: ["text"],
-        baseUrl: "https://api.openai.com/v1",
-        contextWindow: 128000,
-      },
-    ];
-
-    modelRegistryState.models = models;
-    modelRegistryState.available = models;
-
-    const { modelsListCommand } = await import("./models/list.list-command.js");
-    await modelsListCommand({ all: true, provider: "z-ai", json: true }, runtime);
-
-    expect(runtime.log).toHaveBeenCalledTimes(1);
-    const payload = JSON.parse(String(runtime.log.mock.calls[0]?.[0]));
-    expect(payload.count).toBe(1);
-    expect(payload.models[0]?.key).toBe("zai/glm-4.7");
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   it("models list marks auth as unavailable when ZAI key is missing", async () => {
     setDefaultZaiRegistry({ available: false });
@@ -478,13 +297,8 @@ describe("models list/status", () => {
     modelRegistryState.available = [];
     await modelsListCommand({ json: true }, runtime);
 
-<<<<<<< HEAD
     expectModelRegistryUnavailable(runtime, "model discovery unavailable");
   });
-=======
-    const { modelsListCommand } = await import("./models/list.list-command.js");
-    await modelsListCommand({ all: true, json: true }, runtime);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   it("loadModelRegistry throws when model discovery is unavailable", async () => {
     modelRegistryState.getAllError = Object.assign(new Error("model discovery unavailable"), {

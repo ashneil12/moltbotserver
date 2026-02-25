@@ -18,7 +18,6 @@ function buildModel(): Model<"openai-responses"> {
   };
 }
 
-<<<<<<< HEAD
 function extractInput(payload: Record<string, unknown> | undefined) {
   return Array.isArray(payload?.input) ? payload.input : [];
 }
@@ -112,46 +111,11 @@ describe("openai-responses reasoning replay", () => {
       stopReason: "toolUse",
       content: [
         buildReasoningPart(),
-=======
-describe("openai-responses reasoning replay", () => {
-  it("replays reasoning for tool-call-only turns (OpenAI requires it)", async () => {
-    const model = buildModel();
-    const controller = new AbortController();
-    controller.abort();
-    let payload: Record<string, unknown> | undefined;
-
-    const assistantToolOnly: AssistantMessage = {
-      role: "assistant",
-      api: "openai-responses",
-      provider: "openai",
-      model: "gpt-5.2",
-      usage: {
-        input: 0,
-        output: 0,
-        cacheRead: 0,
-        cacheWrite: 0,
-        totalTokens: 0,
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-      },
-      stopReason: "toolUse",
-      timestamp: Date.now(),
-      content: [
-        {
-          type: "thinking",
-          thinking: "internal",
-          thinkingSignature: JSON.stringify({
-            type: "reasoning",
-            id: "rs_test",
-            summary: [],
-          }),
-        },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         {
           type: "toolCall",
           id: "call_123|fc_123",
           name: "noop",
           arguments: {},
-<<<<<<< HEAD
         },
       ],
     });
@@ -188,69 +152,10 @@ describe("openai-responses reasoning replay", () => {
         },
       ],
     });
-=======
-        },
-      ],
-    };
-
-    const toolResult: ToolResultMessage = {
-      role: "toolResult",
-      toolCallId: "call_123|fc_123",
-      toolName: "noop",
-      content: [{ type: "text", text: "ok" }],
-      isError: false,
-      timestamp: Date.now(),
-    };
-
-    const stream = streamOpenAIResponses(
-      model,
-      {
-        systemPrompt: "system",
-        messages: [
-          {
-            role: "user",
-            content: "Call noop.",
-            timestamp: Date.now(),
-          },
-          assistantToolOnly,
-          toolResult,
-          {
-            role: "user",
-            content: "Now reply with ok.",
-            timestamp: Date.now(),
-          },
-        ],
-        tools: [
-          {
-            name: "noop",
-            description: "no-op",
-            parameters: Type.Object({}, { additionalProperties: false }),
-          },
-        ],
-      },
-      {
-        apiKey: "test",
-        signal: controller.signal,
-        onPayload: (nextPayload) => {
-          payload = nextPayload as Record<string, unknown>;
-        },
-      },
-    );
-
-    await stream.result();
-
-    const input = Array.isArray(payload?.input) ? payload?.input : [];
-    const types = input
-      .map((item) =>
-        item && typeof item === "object" ? (item as Record<string, unknown>).type : undefined,
-      )
-      .filter((t): t is string => typeof t === "string");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(types).toContain("reasoning");
     expect(types).toContain("function_call");
     expect(types.indexOf("reasoning")).toBeLessThan(types.indexOf("function_call"));
-<<<<<<< HEAD
 
     const functionCall = input.find(
       (item) =>
@@ -275,72 +180,6 @@ describe("openai-responses reasoning replay", () => {
         { role: "user", content: "Ok", timestamp: Date.now() },
       ],
     });
-=======
-  });
-
-  it("still replays reasoning when paired with an assistant message", async () => {
-    const model = buildModel();
-    const controller = new AbortController();
-    controller.abort();
-    let payload: Record<string, unknown> | undefined;
-
-    const assistantWithText: AssistantMessage = {
-      role: "assistant",
-      api: "openai-responses",
-      provider: "openai",
-      model: "gpt-5.2",
-      usage: {
-        input: 0,
-        output: 0,
-        cacheRead: 0,
-        cacheWrite: 0,
-        totalTokens: 0,
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-      },
-      stopReason: "stop",
-      timestamp: Date.now(),
-      content: [
-        {
-          type: "thinking",
-          thinking: "internal",
-          thinkingSignature: JSON.stringify({
-            type: "reasoning",
-            id: "rs_test",
-            summary: [],
-          }),
-        },
-        { type: "text", text: "hello", textSignature: "msg_test" },
-      ],
-    };
-
-    const stream = streamOpenAIResponses(
-      model,
-      {
-        systemPrompt: "system",
-        messages: [
-          { role: "user", content: "Hi", timestamp: Date.now() },
-          assistantWithText,
-          { role: "user", content: "Ok", timestamp: Date.now() },
-        ],
-      },
-      {
-        apiKey: "test",
-        signal: controller.signal,
-        onPayload: (nextPayload) => {
-          payload = nextPayload as Record<string, unknown>;
-        },
-      },
-    );
-
-    await stream.result();
-
-    const input = Array.isArray(payload?.input) ? payload?.input : [];
-    const types = input
-      .map((item) =>
-        item && typeof item === "object" ? (item as Record<string, unknown>).type : undefined,
-      )
-      .filter((t): t is string => typeof t === "string");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(types).toContain("reasoning");
     expect(types).toContain("message");

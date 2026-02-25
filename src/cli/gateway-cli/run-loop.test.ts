@@ -1,29 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD
 import type { GatewayBonjourBeacon } from "../../infra/bonjour-discovery.js";
 import { pickBeaconHost, pickGatewayPort } from "./discover.js";
 
 const acquireGatewayLock = vi.fn(async (_opts?: { port?: number }) => ({
-=======
-
-const acquireGatewayLock = vi.fn(async () => ({
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   release: vi.fn(async () => {}),
 }));
 const consumeGatewaySigusr1RestartAuthorization = vi.fn(() => true);
 const isGatewaySigusr1RestartExternallyAllowed = vi.fn(() => false);
 const markGatewaySigusr1RestartHandled = vi.fn();
 const getActiveTaskCount = vi.fn(() => 0);
-<<<<<<< HEAD
 const waitForActiveTasks = vi.fn(async (_timeoutMs: number) => ({ drained: true }));
 const resetAllLanes = vi.fn();
 const restartGatewayProcessWithFreshPid = vi.fn<
   () => { mode: "spawned" | "supervised" | "disabled" | "failed"; pid?: number; detail?: string }
 >(() => ({ mode: "disabled" }));
-=======
-const waitForActiveTasks = vi.fn(async () => ({ drained: true }));
-const resetAllLanes = vi.fn();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const DRAIN_TIMEOUT_LOG = "drain timeout reached; proceeding with restart";
 const gatewayLog = {
   info: vi.fn(),
@@ -32,11 +22,7 @@ const gatewayLog = {
 };
 
 vi.mock("../../infra/gateway-lock.js", () => ({
-<<<<<<< HEAD
   acquireGatewayLock: (opts?: { port?: number }) => acquireGatewayLock(opts),
-=======
-  acquireGatewayLock: () => acquireGatewayLock(),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }));
 
 vi.mock("../../infra/restart.js", () => ({
@@ -45,13 +31,10 @@ vi.mock("../../infra/restart.js", () => ({
   markGatewaySigusr1RestartHandled: () => markGatewaySigusr1RestartHandled(),
 }));
 
-<<<<<<< HEAD
 vi.mock("../../infra/process-respawn.js", () => ({
   restartGatewayProcessWithFreshPid: () => restartGatewayProcessWithFreshPid(),
 }));
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 vi.mock("../../process/command-queue.js", () => ({
   getActiveTaskCount: () => getActiveTaskCount(),
   waitForActiveTasks: (timeoutMs: number) => waitForActiveTasks(timeoutMs),
@@ -74,7 +57,6 @@ function removeNewSignalListeners(
   }
 }
 
-<<<<<<< HEAD
 async function withIsolatedSignals(run: () => Promise<void>) {
   const beforeSigterm = new Set(
     process.listeners("SIGTERM") as Array<(...args: unknown[]) => void>,
@@ -229,55 +211,6 @@ describe("runGatewayLoop", () => {
       await startedSecond;
       expect(start).toHaveBeenCalledTimes(2);
       await new Promise<void>((resolve) => setImmediate(resolve));
-=======
-describe("runGatewayLoop", () => {
-  it("restarts after SIGUSR1 even when drain times out, and resets lanes for the new iteration", async () => {
-    vi.clearAllMocks();
-    getActiveTaskCount.mockReturnValueOnce(2).mockReturnValueOnce(0);
-    waitForActiveTasks.mockResolvedValueOnce({ drained: false });
-
-    type StartServer = () => Promise<{
-      close: (opts: { reason: string; restartExpectedMs: number | null }) => Promise<void>;
-    }>;
-
-    const closeFirst = vi.fn(async () => {});
-    const closeSecond = vi.fn(async () => {});
-    const start = vi
-      .fn<StartServer>()
-      .mockResolvedValueOnce({ close: closeFirst })
-      .mockResolvedValueOnce({ close: closeSecond })
-      .mockRejectedValueOnce(new Error("stop-loop"));
-
-    const beforeSigterm = new Set(
-      process.listeners("SIGTERM") as Array<(...args: unknown[]) => void>,
-    );
-    const beforeSigint = new Set(
-      process.listeners("SIGINT") as Array<(...args: unknown[]) => void>,
-    );
-    const beforeSigusr1 = new Set(
-      process.listeners("SIGUSR1") as Array<(...args: unknown[]) => void>,
-    );
-
-    const loopPromise = import("./run-loop.js").then(({ runGatewayLoop }) =>
-      runGatewayLoop({
-        start,
-        runtime: {
-          exit: vi.fn(),
-        } as { exit: (code: number) => never },
-      }),
-    );
-
-    try {
-      await vi.waitFor(() => {
-        expect(start).toHaveBeenCalledTimes(1);
-      });
-
-      process.emit("SIGUSR1");
-
-      await vi.waitFor(() => {
-        expect(start).toHaveBeenCalledTimes(2);
-      });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       expect(waitForActiveTasks).toHaveBeenCalledWith(30_000);
       expect(gatewayLog.warn).toHaveBeenCalledWith(DRAIN_TIMEOUT_LOG);
@@ -297,7 +230,6 @@ describe("runGatewayLoop", () => {
       });
       expect(markGatewaySigusr1RestartHandled).toHaveBeenCalledTimes(2);
       expect(resetAllLanes).toHaveBeenCalledTimes(2);
-<<<<<<< HEAD
       expect(acquireGatewayLock).toHaveBeenCalledTimes(3);
     });
   });
@@ -422,12 +354,5 @@ describe("gateway discover routing helpers", () => {
     };
     expect(pickBeaconHost(beacon)).toBe("test-host.local");
     expect(pickGatewayPort(beacon)).toBe(18789);
-=======
-    } finally {
-      removeNewSignalListeners("SIGTERM", beforeSigterm);
-      removeNewSignalListeners("SIGINT", beforeSigint);
-      removeNewSignalListeners("SIGUSR1", beforeSigusr1);
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

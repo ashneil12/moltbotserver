@@ -194,7 +194,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       const port = getPseudoPort(40_000);
       const workspace = path.join(stateDir, "openclaw");
 
-<<<<<<< HEAD:src/commands/onboard-non-interactive.gateway.test.ts
       await runNonInteractiveOnboarding(
         {
           nonInteractive: true,
@@ -224,47 +223,5 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       expect(cfg.gateway?.auth?.mode).toBe("token");
       expect((cfg.gateway?.auth?.token ?? "").length).toBeGreaterThan(8);
     });
-=======
-    const { runNonInteractiveOnboarding } = await import("./onboard-non-interactive.js");
-    await runNonInteractiveOnboarding(
-      {
-        nonInteractive: true,
-        mode: "local",
-        workspace,
-        authChoice: "skip",
-        skipSkills: true,
-        skipHealth: true,
-        installDaemon: false,
-        gatewayPort: port,
-        gatewayBind: "lan",
-      },
-      runtime,
-    );
-
-    const { resolveConfigPath } = await import("../config/paths.js");
-    const configPath = resolveConfigPath(process.env, stateDir);
-    const cfg = JSON.parse(await fs.readFile(configPath, "utf8")) as {
-      gateway?: {
-        bind?: string;
-        port?: number;
-        auth?: { mode?: string; token?: string };
-      };
-    };
-
-    expect(cfg.gateway?.bind).toBe("lan");
-    expect(cfg.gateway?.port).toBe(port);
-    expect(cfg.gateway?.auth?.mode).toBe("token");
-    const token = cfg.gateway?.auth?.token ?? "";
-    expect(token.length).toBeGreaterThan(8);
-
-    const { authorizeGatewayConnect, resolveGatewayAuth } = await import("../gateway/auth.js");
-    const auth = resolveGatewayAuth({ authConfig: cfg.gateway?.auth, env: process.env });
-    const resNoToken = await authorizeGatewayConnect({ auth, connectAuth: { token: undefined } });
-    expect(resNoToken.ok).toBe(false);
-    const resToken = await authorizeGatewayConnect({ auth, connectAuth: { token } });
-    expect(resToken.ok).toBe(true);
-
-    await fs.rm(stateDir, { recursive: true, force: true });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/onboard-non-interactive.gateway.e2e.test.ts
   }, 60_000);
 });

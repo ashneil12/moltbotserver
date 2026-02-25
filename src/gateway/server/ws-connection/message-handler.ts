@@ -1,13 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import os from "node:os";
-<<<<<<< HEAD
 import type { WebSocket } from "ws";
-=======
-import type { createSubsystemLogger } from "../../../logging/subsystem.js";
-import type { GatewayAuthResult, ResolvedGatewayAuth } from "../../auth.js";
-import type { GatewayRequestContext, GatewayRequestHandlers } from "../../server-methods/types.js";
-import type { GatewayWsClient } from "../ws-types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { loadConfig } from "../../../config/config.js";
 import {
   deriveDeviceIdFromPublicKey,
@@ -30,7 +23,6 @@ import { rawDataToString } from "../../../infra/ws.js";
 import type { createSubsystemLogger } from "../../../logging/subsystem.js";
 import { roleScopesAllow } from "../../../shared/operator-scope-compat.js";
 import { isGatewayCliClient, isWebchatClient } from "../../../utils/message-channel.js";
-<<<<<<< HEAD
 import { resolveRuntimeServiceVersion } from "../../../version.js";
 import type { AuthRateLimiter } from "../../auth-rate-limit.js";
 import type { GatewayAuthResult, ResolvedGatewayAuth } from "../../auth.js";
@@ -40,14 +32,6 @@ import {
   CANVAS_CAPABILITY_TTL_MS,
   mintCanvasCapabilityToken,
 } from "../../canvas-capability.js";
-=======
-import {
-  AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN,
-  AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET,
-  type AuthRateLimiter,
-} from "../../auth-rate-limit.js";
-import { authorizeGatewayConnect, isLocalDirectRequest } from "../../auth.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { buildDeviceAuthPayload } from "../../device-auth.js";
 import {
   isLocalishHost,
@@ -86,7 +70,6 @@ import {
   incrementPresenceVersion,
   refreshGatewayHealthSnapshot,
 } from "../health-state.js";
-<<<<<<< HEAD
 import type { GatewayWsClient } from "../ws-types.js";
 import { resolveConnectAuthDecision, resolveConnectAuthState } from "./auth-context.js";
 import { formatGatewayAuthFailureMessage, type AuthProvidedKind } from "./auth-messages.js";
@@ -100,17 +83,6 @@ import { isUnauthorizedRoleError, UnauthorizedFloodGuard } from "./unauthorized-
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 
 const DEVICE_SIGNATURE_SKEW_MS = 2 * 60 * 1000;
-=======
-import {
-  formatGatewayAuthFailureMessage,
-  resolveHostName,
-  type AuthProvidedKind,
-} from "./auth-messages.js";
-
-type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
-
-const DEVICE_SIGNATURE_SKEW_MS = 10 * 60 * 1000;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function attachGatewayWsMessageHandler(params: {
   socket: WebSocket;
@@ -391,7 +363,6 @@ export function attachGatewayWsMessageHandler(params: {
         });
         const device = controlUiAuthPolicy.device;
 
-<<<<<<< HEAD
         let {
           authResult,
           authOk,
@@ -401,16 +372,10 @@ export function attachGatewayWsMessageHandler(params: {
           deviceTokenCandidateSource,
         } = await resolveConnectAuthState({
           resolvedAuth,
-=======
-        const hasDeviceTokenCandidate = Boolean(connectParams.auth?.token && device);
-        let authResult: GatewayAuthResult = await authorizeGatewayConnect({
-          auth: resolvedAuth,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           connectAuth: connectParams.auth,
           hasDeviceIdentity: Boolean(device),
           req: upgradeReq,
           trustedProxies,
-<<<<<<< HEAD
           allowRealIpFallback,
           rateLimiter,
           clientIp,
@@ -419,57 +384,6 @@ export function attachGatewayWsMessageHandler(params: {
           markHandshakeFailure("unauthorized", {
             authMode: resolvedAuth.mode,
             authProvided: connectParams.auth?.password
-=======
-          rateLimiter: hasDeviceTokenCandidate ? undefined : rateLimiter,
-          clientIp,
-          rateLimitScope: AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET,
-        });
-
-        if (
-          hasDeviceTokenCandidate &&
-          authResult.ok &&
-          rateLimiter &&
-          (authResult.method === "token" || authResult.method === "password")
-        ) {
-          const sharedRateCheck = rateLimiter.check(clientIp, AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET);
-          if (!sharedRateCheck.allowed) {
-            authResult = {
-              ok: false,
-              reason: "rate_limited",
-              rateLimited: true,
-              retryAfterMs: sharedRateCheck.retryAfterMs,
-            };
-          } else {
-            rateLimiter.reset(clientIp, AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET);
-          }
-        }
-
-        let authOk = authResult.ok;
-        let authMethod =
-          authResult.method ?? (resolvedAuth.mode === "password" ? "password" : "token");
-        const sharedAuthResult = hasSharedAuth
-          ? await authorizeGatewayConnect({
-              auth: { ...resolvedAuth, allowTailscale: false },
-              connectAuth: connectParams.auth,
-              req: upgradeReq,
-              trustedProxies,
-              // Shared-auth probe only; rate-limit side effects are handled in
-              // the primary auth flow (or deferred for device-token candidates).
-              rateLimitScope: AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET,
-            })
-          : null;
-        const sharedAuthOk =
-          sharedAuthResult?.ok === true &&
-          (sharedAuthResult.method === "token" || sharedAuthResult.method === "password");
-        const rejectUnauthorized = (failedAuth: GatewayAuthResult) => {
-          setHandshakeState("failed");
-          logWsControl.warn(
-            `unauthorized conn=${connId} remote=${remoteAddr ?? "?"} client=${clientLabel} ${connectParams.client.mode} v${connectParams.client.version} reason=${failedAuth.reason ?? "unknown"}`,
-          );
-          const authProvided: AuthProvidedKind = connectParams.auth?.token
-            ? "token"
-            : connectParams.auth?.password
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
               ? "password"
               : connectParams.auth?.token
                 ? "token"
@@ -495,29 +409,11 @@ export function attachGatewayWsMessageHandler(params: {
             reason: failedAuth.reason,
             client: connectParams.client,
           });
-<<<<<<< HEAD
           sendHandshakeErrorResponse(ErrorCodes.INVALID_REQUEST, authMessage, {
             details: {
               code: resolveAuthConnectErrorDetailCode(failedAuth.reason),
               authReason: failedAuth.reason,
             },
-=======
-          setCloseCause("unauthorized", {
-            authMode: resolvedAuth.mode,
-            authProvided,
-            authReason: failedAuth.reason,
-            allowTailscale: resolvedAuth.allowTailscale,
-            client: connectParams.client.id,
-            clientDisplayName: connectParams.client.displayName,
-            mode: connectParams.client.mode,
-            version: connectParams.client.version,
-          });
-          send({
-            type: "res",
-            id: frame.id,
-            ok: false,
-            error: errorShape(ErrorCodes.INVALID_REQUEST, authMessage),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           });
           close(1008, truncateCloseReason(authMessage));
         };
@@ -564,33 +460,9 @@ export function attachGatewayWsMessageHandler(params: {
             return false;
           }
 
-<<<<<<< HEAD
           if (decision.kind === "reject-unauthorized") {
             rejectUnauthorized(authResult);
             return false;
-=======
-          // Allow shared-secret authenticated connections (e.g., control-ui) to skip device identity
-          if (!canSkipDevice) {
-            if (!authOk && hasSharedAuth) {
-              rejectUnauthorized(authResult);
-              return;
-            }
-            setHandshakeState("failed");
-            setCloseCause("device-required", {
-              client: connectParams.client.id,
-              clientDisplayName: connectParams.client.displayName,
-              mode: connectParams.client.mode,
-              version: connectParams.client.version,
-            });
-            send({
-              type: "res",
-              id: frame.id,
-              ok: false,
-              error: errorShape(ErrorCodes.NOT_PAIRED, "device identity required"),
-            });
-            close(1008, "device identity required");
-            return;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           }
 
           markHandshakeFailure("device-required");
@@ -670,7 +542,6 @@ export function attachGatewayWsMessageHandler(params: {
           }
         }
 
-<<<<<<< HEAD
         ({ authResult, authOk, authMethod } = await resolveConnectAuthDecision({
           state: {
             authResult,
@@ -689,37 +560,6 @@ export function attachGatewayWsMessageHandler(params: {
           clientIp,
           verifyDeviceToken,
         }));
-=======
-        if (!authOk && connectParams.auth?.token && device) {
-          if (rateLimiter) {
-            const deviceRateCheck = rateLimiter.check(clientIp, AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN);
-            if (!deviceRateCheck.allowed) {
-              authResult = {
-                ok: false,
-                reason: "rate_limited",
-                rateLimited: true,
-                retryAfterMs: deviceRateCheck.retryAfterMs,
-              };
-            }
-          }
-          if (!authResult.rateLimited) {
-            const tokenCheck = await verifyDeviceToken({
-              deviceId: device.id,
-              token: connectParams.auth.token,
-              role,
-              scopes,
-            });
-            if (tokenCheck.ok) {
-              authOk = true;
-              authMethod = "device-token";
-              rateLimiter?.reset(clientIp, AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN);
-            } else {
-              authResult = { ok: false, reason: "device_token_mismatch" };
-              rateLimiter?.recordFailure(clientIp, AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN);
-            }
-          }
-        }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         if (!authOk) {
           rejectUnauthorized(authResult);
           return;

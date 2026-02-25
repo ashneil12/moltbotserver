@@ -1,7 +1,6 @@
 import { IRC_FIELD_LABELS } from "./schema.irc.js";
 
 export const FIELD_LABELS: Record<string, string> = {
-<<<<<<< HEAD
   meta: "Metadata",
   "meta.lastTouchedVersion": "Config Last Touched Version",
   "meta.lastTouchedAt": "Config Last Touched At",
@@ -33,12 +32,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "update.auto.stableDelayHours": "Auto Update Stable Delay (hours)",
   "update.auto.stableJitterHours": "Auto Update Stable Jitter (hours)",
   "update.auto.betaCheckIntervalHours": "Auto Update Beta Check Interval (hours)",
-=======
-  "meta.lastTouchedVersion": "Config Last Touched Version",
-  "meta.lastTouchedAt": "Config Last Touched At",
-  "update.channel": "Update Channel",
-  "update.checkOnStart": "Update Check on Start",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "diagnostics.enabled": "Diagnostics Enabled",
   "diagnostics.flags": "Diagnostics Flags",
   "diagnostics.otel.enabled": "OpenTelemetry Enabled",
@@ -58,7 +51,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "diagnostics.cacheTrace.includeSystem": "Cache Trace Include System",
   "agents.list.*.identity.avatar": "Identity Avatar",
   "agents.list.*.skills": "Agent Skill Filter",
-<<<<<<< HEAD
   agents: "Agents",
   "agents.defaults": "Agent Defaults",
   "agents.list": "Agent List",
@@ -96,8 +88,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.http.endpoints": "Gateway HTTP Endpoints",
   "gateway.http.securityHeaders": "Gateway HTTP Security Headers",
   "gateway.http.securityHeaders.strictTransportSecurity": "Strict Transport Security Header",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "gateway.remote.url": "Remote Gateway URL",
   "gateway.remote.sshTarget": "Remote Gateway SSH Target",
   "gateway.remote.sshIdentity": "Remote Gateway SSH Identity",
@@ -106,7 +96,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.remote.tlsFingerprint": "Remote Gateway TLS Fingerprint",
   "gateway.auth.token": "Gateway Token",
   "gateway.auth.password": "Gateway Password",
-<<<<<<< HEAD
   browser: "Browser",
   "browser.enabled": "Browser Enabled",
   "browser.cdpUrl": "Browser CDP URL",
@@ -126,8 +115,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.deny": "Tool Denylist",
   "tools.web": "Web Tools",
   "tools.exec": "Exec Tool",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "tools.media.image.enabled": "Enable Image Understanding",
   "tools.media.image.maxBytes": "Image Understanding Max Bytes",
   "tools.media.image.maxChars": "Image Understanding Max Chars",
@@ -167,7 +154,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.byProvider": "Tool Policy by Provider",
   "agents.list[].tools.byProvider": "Agent Tool Policy by Provider",
   "tools.exec.applyPatch.enabled": "Enable apply_patch",
-<<<<<<< HEAD
   "tools.exec.applyPatch.workspaceOnly": "apply_patch Workspace-Only",
   "tools.exec.applyPatch.allowModels": "apply_patch Model Allowlist",
   "tools.loopDetection.enabled": "Tool-loop Detection",
@@ -182,16 +168,11 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.sessions.visibility": "Session Tools Visibility",
   "tools.exec.notifyOnExit": "Exec Notify On Exit",
   "tools.exec.notifyOnExitEmptySuccess": "Exec Notify On Empty Success",
-=======
-  "tools.exec.applyPatch.allowModels": "apply_patch Model Allowlist",
-  "tools.exec.notifyOnExit": "Exec Notify On Exit",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "tools.exec.approvalRunningNoticeMs": "Exec Approval Running Notice (ms)",
   "tools.exec.host": "Exec Host",
   "tools.exec.security": "Exec Security",
   "tools.exec.ask": "Exec Ask",
   "tools.exec.node": "Exec Node Binding",
-<<<<<<< HEAD
   "tools.agentToAgent": "Agent-to-Agent Tool Access",
   "tools.agentToAgent.enabled": "Enable Agent-to-Agent Tool",
   "tools.agentToAgent.allow": "Agent-to-Agent Target Allowlist",
@@ -217,10 +198,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "approvals.exec.targets[].to": "Approval Target Destination",
   "approvals.exec.targets[].accountId": "Approval Target Account ID",
   "approvals.exec.targets[].threadId": "Approval Target Thread ID",
-=======
-  "tools.exec.pathPrepend": "Exec PATH Prepend",
-  "tools.exec.safeBins": "Exec Safe Bins",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "tools.message.allowCrossContextSend": "Allow Cross-Context Messaging",
   "tools.message.crossContext.allowWithinProvider": "Allow Cross-Context (Same Provider)",
   "tools.message.crossContext.allowAcrossProviders": "Allow Cross-Context (Across Providers)",
@@ -234,7 +211,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.web.search.maxResults": "Web Search Max Results",
   "tools.web.search.timeoutSeconds": "Web Search Timeout (sec)",
   "tools.web.search.cacheTtlMinutes": "Web Search Cache TTL (min)",
-<<<<<<< HEAD
   "tools.web.search.perplexity.apiKey": "Perplexity API Key",
   "tools.web.search.perplexity.baseUrl": "Perplexity Base URL",
   "tools.web.search.perplexity.model": "Perplexity Model",
@@ -248,15 +224,10 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.web.fetch.enabled": "Enable Web Fetch Tool",
   "tools.web.fetch.maxChars": "Web Fetch Max Chars",
   "tools.web.fetch.maxCharsCap": "Web Fetch Hard Max Chars",
-=======
-  "tools.web.fetch.enabled": "Enable Web Fetch Tool",
-  "tools.web.fetch.maxChars": "Web Fetch Max Chars",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "tools.web.fetch.timeoutSeconds": "Web Fetch Timeout (sec)",
   "tools.web.fetch.cacheTtlMinutes": "Web Fetch Cache TTL (min)",
   "tools.web.fetch.maxRedirects": "Web Fetch Max Redirects",
   "tools.web.fetch.userAgent": "Web Fetch User-Agent",
-<<<<<<< HEAD
   "tools.web.fetch.readability": "Web Fetch Readability Extraction",
   "tools.web.fetch.firecrawl.enabled": "Enable Firecrawl Fallback",
   "tools.web.fetch.firecrawl.apiKey": "Firecrawl API Key",
@@ -270,12 +241,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback":
     "Dangerously Allow Host-Header Origin Fallback",
   "gateway.controlUi.allowInsecureAuth": "Insecure Control UI Auth Toggle",
-=======
-  "gateway.controlUi.basePath": "Control UI Base Path",
-  "gateway.controlUi.root": "Control UI Assets Root",
-  "gateway.controlUi.allowedOrigins": "Control UI Allowed Origins",
-  "gateway.controlUi.allowInsecureAuth": "Allow Insecure Control UI Auth",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "gateway.controlUi.dangerouslyDisableDeviceAuth": "Dangerously Disable Control UI Device Auth",
   "gateway.http.endpoints.chatCompletions.enabled": "OpenAI Chat Completions Endpoint",
   "gateway.reload.mode": "Config Reload Mode",
@@ -284,7 +249,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.nodes.browser.node": "Gateway Node Browser Pin",
   "gateway.nodes.allowCommands": "Gateway Node Allowlist (Extra Commands)",
   "gateway.nodes.denyCommands": "Gateway Node Denylist",
-<<<<<<< HEAD
   nodeHost: "Node Host",
   "nodeHost.browserProxy": "Node Browser Proxy",
   "nodeHost.browserProxy.enabled": "Node Browser Proxy Enabled",
@@ -309,19 +273,12 @@ export const FIELD_LABELS: Record<string, string> = {
   broadcast: "Broadcast",
   "broadcast.strategy": "Broadcast Strategy",
   "broadcast.*": "Broadcast Destination List",
-=======
-  "nodeHost.browserProxy.enabled": "Node Browser Proxy Enabled",
-  "nodeHost.browserProxy.allowProfiles": "Node Browser Proxy Allowed Profiles",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "skills.load.watch": "Watch Skills",
   "skills.load.watchDebounceMs": "Skills Watch Debounce (ms)",
   "agents.defaults.workspace": "Workspace",
   "agents.defaults.repoRoot": "Repo Root",
   "agents.defaults.bootstrapMaxChars": "Bootstrap Max Chars",
-<<<<<<< HEAD
   "agents.defaults.bootstrapTotalMaxChars": "Bootstrap Total Max Chars",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "agents.defaults.envelopeTimezone": "Envelope Timezone",
   "agents.defaults.envelopeTimestamp": "Envelope Timestamp",
   "agents.defaults.envelopeElapsed": "Envelope Elapsed",
@@ -335,15 +292,11 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.memorySearch.remote.baseUrl": "Remote Embedding Base URL",
   "agents.defaults.memorySearch.remote.apiKey": "Remote Embedding API Key",
   "agents.defaults.memorySearch.remote.headers": "Remote Embedding Headers",
-<<<<<<< HEAD
   "agents.defaults.memorySearch.remote.batch.enabled": "Remote Batch Embedding Enabled",
   "agents.defaults.memorySearch.remote.batch.wait": "Remote Batch Wait for Completion",
   "agents.defaults.memorySearch.remote.batch.concurrency": "Remote Batch Concurrency",
   "agents.defaults.memorySearch.remote.batch.pollIntervalMs": "Remote Batch Poll Interval (ms)",
   "agents.defaults.memorySearch.remote.batch.timeoutMinutes": "Remote Batch Timeout (min)",
-=======
-  "agents.defaults.memorySearch.remote.batch.concurrency": "Remote Batch Concurrency",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "agents.defaults.memorySearch.model": "Memory Search Model",
   "agents.defaults.memorySearch.fallback": "Memory Search Fallback",
   "agents.defaults.memorySearch.local.modelPath": "Local Embedding Model Path",
@@ -365,28 +318,22 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.memorySearch.query.hybrid.textWeight": "Memory Search Text Weight",
   "agents.defaults.memorySearch.query.hybrid.candidateMultiplier":
     "Memory Search Hybrid Candidate Multiplier",
-<<<<<<< HEAD
   "agents.defaults.memorySearch.query.hybrid.mmr.enabled": "Memory Search MMR Re-ranking",
   "agents.defaults.memorySearch.query.hybrid.mmr.lambda": "Memory Search MMR Lambda",
   "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled": "Memory Search Temporal Decay",
   "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays":
     "Memory Search Temporal Decay Half-life (Days)",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "agents.defaults.memorySearch.cache.enabled": "Memory Search Embedding Cache",
   "agents.defaults.memorySearch.cache.maxEntries": "Memory Search Embedding Cache Max Entries",
   memory: "Memory",
   "memory.backend": "Memory Backend",
   "memory.citations": "Memory Citations Mode",
   "memory.qmd.command": "QMD Binary",
-<<<<<<< HEAD
   "memory.qmd.mcporter": "QMD MCPorter",
   "memory.qmd.mcporter.enabled": "QMD MCPorter Enabled",
   "memory.qmd.mcporter.serverName": "QMD MCPorter Server Name",
   "memory.qmd.mcporter.startDaemon": "QMD MCPorter Start Daemon",
   "memory.qmd.searchMode": "QMD Search Mode",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "memory.qmd.includeDefaultMemory": "QMD Include Default Memory",
   "memory.qmd.paths": "QMD Extra Paths",
   "memory.qmd.paths.path": "QMD Path",
@@ -408,7 +355,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "memory.qmd.limits.maxInjectedChars": "QMD Max Injected Chars",
   "memory.qmd.limits.timeoutMs": "QMD Search Timeout (ms)",
   "memory.qmd.scope": "QMD Surface Scope",
-<<<<<<< HEAD
   auth: "Auth",
   "auth.profiles": "Auth Profiles",
   "auth.order": "Auth Profile Order",
@@ -430,10 +376,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "models.bedrockDiscovery.refreshInterval": "Bedrock Discovery Refresh Interval (s)",
   "models.bedrockDiscovery.defaultContextWindow": "Bedrock Default Context Window",
   "models.bedrockDiscovery.defaultMaxTokens": "Bedrock Default Max Tokens",
-=======
-  "auth.profiles": "Auth Profiles",
-  "auth.order": "Auth Profile Order",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "auth.cooldowns.billingBackoffHours": "Billing Backoff (hours)",
   "auth.cooldowns.billingBackoffHoursByProvider": "Billing Backoff Overrides",
   "auth.cooldowns.billingMaxHours": "Billing Backoff Cap (hours)",
@@ -443,15 +385,11 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.model.fallbacks": "Model Fallbacks",
   "agents.defaults.imageModel.primary": "Image Model",
   "agents.defaults.imageModel.fallbacks": "Image Model Fallbacks",
-<<<<<<< HEAD
   "agents.defaults.imageMaxDimensionPx": "Image Max Dimension (px)",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "agents.defaults.humanDelay.mode": "Human Delay Mode",
   "agents.defaults.humanDelay.minMs": "Human Delay Min (ms)",
   "agents.defaults.humanDelay.maxMs": "Human Delay Max (ms)",
   "agents.defaults.cliBackends": "CLI Backends",
-<<<<<<< HEAD
   "agents.defaults.compaction": "Compaction",
   "agents.defaults.compaction.mode": "Compaction Mode",
   "agents.defaults.compaction.reserveTokens": "Compaction Reserve Tokens",
@@ -470,8 +408,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.sandbox.docker.dangerouslyAllowContainerNamespaceJoin":
     "Sandbox Docker Allow Container Namespace Join",
   commands: "Commands",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "commands.native": "Native Commands",
   "commands.nativeSkills": "Native Skill Commands",
   "commands.text": "Text Commands",
@@ -482,22 +418,17 @@ export const FIELD_LABELS: Record<string, string> = {
   "commands.restart": "Allow Restart",
   "commands.useAccessGroups": "Use Access Groups",
   "commands.ownerAllowFrom": "Command Owners",
-<<<<<<< HEAD
   "commands.ownerDisplay": "Owner ID Display",
   "commands.ownerDisplaySecret": "Owner ID Hash Secret",
   "commands.allowFrom": "Command Elevated Access Rules",
   ui: "UI",
   "ui.seamColor": "Accent Color",
   "ui.assistant": "Assistant Appearance",
-=======
-  "ui.seamColor": "Accent Color",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "ui.assistant.name": "Assistant Name",
   "ui.assistant.avatar": "Assistant Avatar",
   "browser.evaluateEnabled": "Browser Evaluate Enabled",
   "browser.snapshotDefaults": "Browser Snapshot Defaults",
   "browser.snapshotDefaults.mode": "Browser Snapshot Mode",
-<<<<<<< HEAD
   "browser.ssrfPolicy": "Browser SSRF Policy",
   "browser.ssrfPolicy.allowPrivateNetwork": "Browser Allow Private Network",
   "browser.ssrfPolicy.dangerouslyAllowPrivateNetwork": "Browser Dangerously Allow Private Network",
@@ -686,16 +617,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.defaults.heartbeat.showOk": "Heartbeat Show OK",
   "channels.defaults.heartbeat.showAlerts": "Heartbeat Show Alerts",
   "channels.defaults.heartbeat.useIndicator": "Heartbeat Use Indicator",
-=======
-  "browser.remoteCdpTimeoutMs": "Remote CDP Timeout (ms)",
-  "browser.remoteCdpHandshakeTimeoutMs": "Remote CDP Handshake Timeout (ms)",
-  "session.dmScope": "DM Session Scope",
-  "session.agentToAgent.maxPingPongTurns": "Agent-to-Agent Ping-Pong Turns",
-  "messages.ackReaction": "Ack Reaction Emoji",
-  "messages.ackReactionScope": "Ack Reaction Scope",
-  "messages.inbound.debounceMs": "Inbound Message Debounce (ms)",
-  "talk.apiKey": "Talk API Key",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.whatsapp": "WhatsApp",
   "channels.telegram": "Telegram",
   "channels.telegram.customCommands": "Telegram Custom Commands",
@@ -706,7 +627,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.imessage": "iMessage",
   "channels.bluebubbles": "BlueBubbles",
   "channels.msteams": "MS Teams",
-<<<<<<< HEAD
   "channels.modelByChannel": "Channel Model Overrides",
   ...IRC_FIELD_LABELS,
   "channels.telegram.botToken": "Telegram Bot Token",
@@ -715,15 +635,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.telegram.commands.native": "Telegram Native Commands",
   "channels.telegram.commands.nativeSkills": "Telegram Native Skill Commands",
   "channels.telegram.streaming": "Telegram Streaming Mode",
-=======
-  ...IRC_FIELD_LABELS,
-  "channels.telegram.botToken": "Telegram Bot Token",
-  "channels.telegram.dmPolicy": "Telegram DM Policy",
-  "channels.telegram.streamMode": "Telegram Draft Stream Mode",
-  "channels.telegram.draftChunk.minChars": "Telegram Draft Chunk Min Chars",
-  "channels.telegram.draftChunk.maxChars": "Telegram Draft Chunk Max Chars",
-  "channels.telegram.draftChunk.breakPreference": "Telegram Draft Chunk Break Preference",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.telegram.retry.attempts": "Telegram Retry Attempts",
   "channels.telegram.retry.minDelayMs": "Telegram Retry Min Delay (ms)",
   "channels.telegram.retry.maxDelayMs": "Telegram Retry Max Delay (ms)",
@@ -734,7 +645,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.whatsapp.dmPolicy": "WhatsApp DM Policy",
   "channels.whatsapp.selfChatMode": "WhatsApp Self-Phone Mode",
   "channels.whatsapp.debounceMs": "WhatsApp Message Debounce (ms)",
-<<<<<<< HEAD
   "channels.whatsapp.configWrites": "WhatsApp Config Writes",
   "channels.signal.dmPolicy": "Signal DM Policy",
   "channels.signal.configWrites": "Signal Config Writes",
@@ -754,18 +664,11 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.discord.draftChunk.minChars": "Discord Draft Chunk Min Chars",
   "channels.discord.draftChunk.maxChars": "Discord Draft Chunk Max Chars",
   "channels.discord.draftChunk.breakPreference": "Discord Draft Chunk Break Preference",
-=======
-  "channels.signal.dmPolicy": "Signal DM Policy",
-  "channels.imessage.dmPolicy": "iMessage DM Policy",
-  "channels.bluebubbles.dmPolicy": "BlueBubbles DM Policy",
-  "channels.discord.dm.policy": "Discord DM Policy",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.discord.retry.attempts": "Discord Retry Attempts",
   "channels.discord.retry.minDelayMs": "Discord Retry Min Delay (ms)",
   "channels.discord.retry.maxDelayMs": "Discord Retry Max Delay (ms)",
   "channels.discord.retry.jitter": "Discord Retry Jitter",
   "channels.discord.maxLinesPerMessage": "Discord Max Lines Per Message",
-<<<<<<< HEAD
   "channels.discord.threadBindings.enabled": "Discord Thread Binding Enabled",
   "channels.discord.threadBindings.ttlHours": "Discord Thread Binding TTL (hours)",
   "channels.discord.threadBindings.spawnSubagentSessions": "Discord Thread-Bound Subagent Spawn",
@@ -777,10 +680,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.discord.voice.daveEncryption": "Discord Voice DAVE Encryption",
   "channels.discord.voice.decryptionFailureTolerance": "Discord Voice Decrypt Failure Tolerance",
   "channels.discord.voice.tts": "Discord Voice Text-to-Speech",
-=======
-  "channels.discord.intents.presence": "Discord Presence Intent",
-  "channels.discord.intents.guildMembers": "Discord Guild Members Intent",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.discord.pluralkit.enabled": "Discord PluralKit Enabled",
   "channels.discord.pluralkit.token": "Discord PluralKit Token",
   "channels.discord.activity": "Discord Presence Activity",
@@ -788,34 +687,25 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.discord.activityType": "Discord Presence Activity Type",
   "channels.discord.activityUrl": "Discord Presence Activity URL",
   "channels.slack.dm.policy": "Slack DM Policy",
-<<<<<<< HEAD
   "channels.slack.dmPolicy": "Slack DM Policy",
   "channels.slack.configWrites": "Slack Config Writes",
   "channels.slack.commands.native": "Slack Native Commands",
   "channels.slack.commands.nativeSkills": "Slack Native Skill Commands",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.slack.allowBots": "Slack Allow Bot Messages",
   "channels.discord.token": "Discord Bot Token",
   "channels.slack.botToken": "Slack Bot Token",
   "channels.slack.appToken": "Slack App Token",
   "channels.slack.userToken": "Slack User Token",
   "channels.slack.userTokenReadOnly": "Slack User Token Read Only",
-<<<<<<< HEAD
   "channels.slack.streaming": "Slack Streaming Mode",
   "channels.slack.nativeStreaming": "Slack Native Streaming",
   "channels.slack.streamMode": "Slack Stream Mode (Legacy)",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.slack.thread.historyScope": "Slack Thread History Scope",
   "channels.slack.thread.inheritParent": "Slack Thread Parent Inheritance",
   "channels.slack.thread.initialHistoryLimit": "Slack Thread Initial History Limit",
   "channels.mattermost.botToken": "Mattermost Bot Token",
   "channels.mattermost.baseUrl": "Mattermost Base URL",
-<<<<<<< HEAD
   "channels.mattermost.configWrites": "Mattermost Config Writes",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "channels.mattermost.chatmode": "Mattermost Chat Mode",
   "channels.mattermost.oncharPrefixes": "Mattermost Onchar Prefixes",
   "channels.mattermost.requireMention": "Mattermost Require Mention",
@@ -823,7 +713,6 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.imessage.cliPath": "iMessage CLI Path",
   "agents.list[].skills": "Agent Skill Filter",
   "agents.list[].identity.avatar": "Agent Avatar",
-<<<<<<< HEAD
   "agents.list[].heartbeat.suppressToolErrorWarnings":
     "Agent Heartbeat Suppress Tool Error Warnings",
   "agents.list[].sandbox.browser.network": "Agent Sandbox Browser Network",
@@ -836,22 +725,13 @@ export const FIELD_LABELS: Record<string, string> = {
   "plugins.allow": "Plugin Allowlist",
   "plugins.deny": "Plugin Denylist",
   "plugins.load": "Plugin Loader",
-=======
-  "discovery.mdns.mode": "mDNS Discovery Mode",
-  "plugins.enabled": "Enable Plugins",
-  "plugins.allow": "Plugin Allowlist",
-  "plugins.deny": "Plugin Denylist",
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "plugins.load.paths": "Plugin Load Paths",
   "plugins.slots": "Plugin Slots",
   "plugins.slots.memory": "Memory Plugin",
   "plugins.entries": "Plugin Entries",
   "plugins.entries.*.enabled": "Plugin Enabled",
-<<<<<<< HEAD
   "plugins.entries.*.apiKey": "Plugin API Key",
   "plugins.entries.*.env": "Plugin Environment Variables",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "plugins.entries.*.config": "Plugin Config",
   "plugins.installs": "Plugin Install Records",
   "plugins.installs.*.source": "Plugin Install Source",
@@ -859,14 +739,11 @@ export const FIELD_LABELS: Record<string, string> = {
   "plugins.installs.*.sourcePath": "Plugin Install Source Path",
   "plugins.installs.*.installPath": "Plugin Install Path",
   "plugins.installs.*.version": "Plugin Install Version",
-<<<<<<< HEAD
   "plugins.installs.*.resolvedName": "Plugin Resolved Package Name",
   "plugins.installs.*.resolvedVersion": "Plugin Resolved Package Version",
   "plugins.installs.*.resolvedSpec": "Plugin Resolved Package Spec",
   "plugins.installs.*.integrity": "Plugin Resolved Integrity",
   "plugins.installs.*.shasum": "Plugin Resolved Shasum",
   "plugins.installs.*.resolvedAt": "Plugin Resolution Time",
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   "plugins.installs.*.installedAt": "Plugin Install Time",
 };

@@ -8,10 +8,7 @@ import {
   parseCameraClipPayload,
   parseCameraSnapPayload,
   writeBase64ToFile,
-<<<<<<< HEAD
   writeCameraClipPayloadToFile,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   writeUrlToFile,
 } from "../nodes-camera.js";
 import { parseDurationMs } from "../parse-duration.js";
@@ -227,14 +224,6 @@ export function registerNodesCameraCommands(nodes: Command) {
             payload,
             facing,
           });
-<<<<<<< HEAD
-=======
-          if (payload.url) {
-            await writeUrlToFile(filePath, payload.url);
-          } else if (payload.base64) {
-            await writeBase64ToFile(filePath, payload.base64);
-          }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
           if (opts.json) {
             defaultRuntime.log(

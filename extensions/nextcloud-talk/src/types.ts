@@ -169,10 +169,7 @@ export type NextcloudTalkWebhookServerOptions = {
   path: string;
   secret: string;
   maxBodyBytes?: number;
-<<<<<<< HEAD
   readBody?: (req: import("node:http").IncomingMessage, maxBodyBytes: number) => Promise<string>;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   onMessage: (message: NextcloudTalkInboundMessage) => void | Promise<void>;
   onError?: (error: Error) => void;
   abortSignal?: AbortSignal;

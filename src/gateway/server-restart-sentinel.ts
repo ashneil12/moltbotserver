@@ -1,13 +1,9 @@
 import { resolveSessionAgentId } from "../agents/agent-scope.js";
 import { resolveAnnounceTargetFromKey } from "../agents/tools/sessions-send-helpers.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
-<<<<<<< HEAD
 import type { CliDeps } from "../cli/deps.js";
 import { resolveMainSessionKeyFromConfig } from "../config/sessions.js";
 import { parseSessionThreadInfo } from "../config/sessions/delivery-info.js";
-=======
-import { resolveMainSessionKeyFromConfig } from "../config/sessions.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { deliverOutboundPayloads } from "../infra/outbound/deliver.js";
 import { resolveOutboundTarget } from "../infra/outbound/targets.js";
 import {
@@ -94,15 +90,10 @@ export async function scheduleRestartSentinelWake(_params: { deps: CliDeps }) {
       channel,
       to: resolved.to,
       accountId: origin?.accountId,
-<<<<<<< HEAD
       replyToId,
       threadId: resolvedThreadId,
       payloads: [{ text: message }],
       agentId: resolveSessionAgentId({ sessionKey, config: cfg }),
-=======
-      threadId,
-      payloads: [{ text: message }],
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       bestEffort: true,
     });
   } catch (err) {

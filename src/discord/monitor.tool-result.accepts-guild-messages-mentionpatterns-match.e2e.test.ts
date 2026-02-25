@@ -1,7 +1,6 @@
 import type { Client } from "@buape/carbon";
 import { ChannelType, MessageType } from "@buape/carbon";
 import { Routes } from "discord-api-types/v10";
-<<<<<<< HEAD:src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.test.ts
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createReplyDispatcherWithTyping } from "../auto-reply/reply/reply-dispatcher.js";
 import {
@@ -11,10 +10,6 @@ import {
   updateLastRouteMock,
   upsertPairingRequestMock,
 } from "./monitor.tool-result.test-harness.js";
-=======
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createReplyDispatcherWithTyping } from "../auto-reply/reply/reply-dispatcher.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.e2e.test.ts
 import { __resetDiscordChannelInfoCacheForTest } from "./monitor/message-utils.js";
 import { createNoopThreadBindingManager } from "./monitor/thread-bindings.js";
 const loadConfigMock = vi.fn();
@@ -29,15 +24,9 @@ vi.mock("../config/config.js", async (importOriginal) => {
 
 beforeEach(() => {
   vi.useRealTimers();
-<<<<<<< HEAD:src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.test.ts
   sendMock.mockClear().mockResolvedValue(undefined);
   updateLastRouteMock.mockClear();
   dispatchMock.mockClear().mockImplementation(async (params: unknown) => {
-=======
-  sendMock.mockReset().mockResolvedValue(undefined);
-  updateLastRouteMock.mockReset();
-  dispatchMock.mockReset().mockImplementation(async (params: unknown) => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.e2e.test.ts
     if (
       typeof params === "object" &&
       params !== null &&
@@ -307,10 +296,6 @@ describe("discord tool result dispatch", () => {
     "skips tool results for native slash commands",
     { timeout: MENTION_PATTERNS_TEST_TIMEOUT_MS },
     async () => {
-<<<<<<< HEAD:src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.test.ts
-=======
-      const { createDiscordNativeCommand } = await import("./monitor.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.e2e.test.ts
       const cfg = {
         agents: {
           defaults: {
@@ -320,13 +305,9 @@ describe("discord tool result dispatch", () => {
           },
         },
         session: { store: "/tmp/openclaw-sessions.json" },
-<<<<<<< HEAD:src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.test.ts
         channels: {
           discord: { dm: { enabled: true, policy: "open" } },
         },
-=======
-        discord: { dm: { enabled: true, policy: "open" } },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.e2e.test.ts
       } as ReturnType<typeof import("../config/config.js").loadConfig>;
 
       const command = createDiscordNativeCommand({
@@ -336,29 +317,17 @@ describe("discord tool result dispatch", () => {
           acceptsArgs: true,
         },
         cfg,
-<<<<<<< HEAD:src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.test.ts
         discordConfig: cfg.channels!.discord!,
         accountId: "default",
         sessionPrefix: "discord:slash",
         ephemeralDefault: true,
         threadBindings: createNoopThreadBindingManager("default"),
-=======
-        discordConfig: cfg.discord,
-        accountId: "default",
-        token: "token",
-        sessionPrefix: "discord:slash",
-        ephemeralDefault: true,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.e2e.test.ts
       });
 
       const reply = vi.fn().mockResolvedValue(undefined);
       const followUp = vi.fn().mockResolvedValue(undefined);
 
-<<<<<<< HEAD:src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.test.ts
       const interaction = {
-=======
-      await command.run({
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.e2e.test.ts
         user: { id: "u1", username: "Ada", globalName: "Ada" },
         channel: { type: ChannelType.DM },
         guild: null,
@@ -366,13 +335,9 @@ describe("discord tool result dispatch", () => {
         options: { getString: vi.fn().mockReturnValue("on") },
         reply,
         followUp,
-<<<<<<< HEAD:src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.test.ts
       } as unknown as Parameters<typeof command.run>[0];
 
       await command.run(interaction);
-=======
-      });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/discord/monitor.tool-result.accepts-guild-messages-mentionpatterns-match.e2e.test.ts
 
       expect(dispatchMock).toHaveBeenCalledTimes(1);
       expect(reply).toHaveBeenCalledTimes(1);

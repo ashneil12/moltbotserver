@@ -2,17 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
-<<<<<<< HEAD
 import { applyUpdateHunk } from "./apply-patch-update.js";
 import { assertSandboxPath, resolveSandboxInputPath } from "./sandbox-paths.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
-=======
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
-import { applyUpdateHunk } from "./apply-patch-update.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const BEGIN_PATCH_MARKER = "*** Begin Patch";
 const END_PATCH_MARKER = "*** End Patch";
@@ -74,11 +66,8 @@ type SandboxApplyPatchConfig = {
 type ApplyPatchOptions = {
   cwd: string;
   sandbox?: SandboxApplyPatchConfig;
-<<<<<<< HEAD
   /** Restrict patch paths to the workspace root (cwd). Default: true. Set false to opt out. */
   workspaceOnly?: boolean;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   signal?: AbortSignal;
 };
 
@@ -89,18 +78,11 @@ const applyPatchSchema = Type.Object({
 });
 
 export function createApplyPatchTool(
-<<<<<<< HEAD
   options: { cwd?: string; sandbox?: SandboxApplyPatchConfig; workspaceOnly?: boolean } = {},
 ): AgentTool<typeof applyPatchSchema, ApplyPatchToolDetails> {
   const cwd = options.cwd ?? process.cwd();
   const sandbox = options.sandbox;
   const workspaceOnly = options.workspaceOnly !== false;
-=======
-  options: { cwd?: string; sandbox?: SandboxApplyPatchConfig } = {},
-): AgentTool<typeof applyPatchSchema, ApplyPatchToolDetails> {
-  const cwd = options.cwd ?? process.cwd();
-  const sandbox = options.sandbox;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   return {
     name: "apply_patch",
@@ -123,10 +105,7 @@ export function createApplyPatchTool(
       const result = await applyPatch(input, {
         cwd,
         sandbox,
-<<<<<<< HEAD
         workspaceOnly,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         signal,
       });
 
@@ -175,11 +154,7 @@ export async function applyPatch(
     }
 
     if (hunk.kind === "delete") {
-<<<<<<< HEAD
       const target = await resolvePatchPath(hunk.path, options, "unlink");
-=======
-      const target = await resolvePatchPath(hunk.path, options);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       await fileOps.remove(target.resolved);
       recordSummary(summary, seen, "deleted", target.display);
       continue;

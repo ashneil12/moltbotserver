@@ -17,11 +17,8 @@ vi.mock("./hooks.js", async (importOriginal) => {
 
 import { createHooksRequestHandler } from "./server-http.js";
 
-<<<<<<< HEAD
 type HooksHandlerDeps = Parameters<typeof createHooksRequestHandler>[0];
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function createHooksConfig(): HooksConfigResolved {
   return {
     basePath: "/hooks",
@@ -41,28 +38,18 @@ function createHooksConfig(): HooksConfigResolved {
   };
 }
 
-<<<<<<< HEAD
 function createRequest(params?: {
   authorization?: string;
   remoteAddress?: string;
 }): IncomingMessage {
-=======
-function createRequest(): IncomingMessage {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   return {
     method: "POST",
     url: "/hooks/wake",
     headers: {
       host: "127.0.0.1:18789",
-<<<<<<< HEAD
       authorization: params?.authorization ?? "Bearer hook-secret",
     },
     socket: { remoteAddress: params?.remoteAddress ?? "127.0.0.1" },
-=======
-      authorization: "Bearer hook-secret",
-    },
-    socket: { remoteAddress: "127.0.0.1" },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   } as IncomingMessage;
 }
 
@@ -81,7 +68,6 @@ function createResponse(): {
   return { res, end, setHeader };
 }
 
-<<<<<<< HEAD
 function createHandler(params?: {
   dispatchWakeHook?: HooksHandlerDeps["dispatchWakeHook"];
   dispatchAgentHook?: HooksHandlerDeps["dispatchAgentHook"];
@@ -109,34 +95,13 @@ function createHandler(params?: {
 describe("createHooksRequestHandler timeout status mapping", () => {
   beforeEach(() => {
     readJsonBodyMock.mockClear();
-=======
-describe("createHooksRequestHandler timeout status mapping", () => {
-  beforeEach(() => {
-    readJsonBodyMock.mockReset();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   test("returns 408 for request body timeout", async () => {
     readJsonBodyMock.mockResolvedValue({ ok: false, error: "request body timeout" });
     const dispatchWakeHook = vi.fn();
     const dispatchAgentHook = vi.fn(() => "run-1");
-<<<<<<< HEAD
     const handler = createHandler({ dispatchWakeHook, dispatchAgentHook });
-=======
-    const handler = createHooksRequestHandler({
-      getHooksConfig: () => createHooksConfig(),
-      bindHost: "127.0.0.1",
-      port: 18789,
-      logHooks: {
-        warn: vi.fn(),
-        debug: vi.fn(),
-        info: vi.fn(),
-        error: vi.fn(),
-      } as unknown as ReturnType<typeof createSubsystemLogger>,
-      dispatchWakeHook,
-      dispatchAgentHook,
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const req = createRequest();
     const { res, end } = createResponse();
 
@@ -148,7 +113,6 @@ describe("createHooksRequestHandler timeout status mapping", () => {
     expect(dispatchWakeHook).not.toHaveBeenCalled();
     expect(dispatchAgentHook).not.toHaveBeenCalled();
   });
-<<<<<<< HEAD
 
   test("shares hook auth rate-limit bucket across ipv4 and ipv4-mapped ipv6 forms", async () => {
     const handler = createHandler();
@@ -175,6 +139,4 @@ describe("createHooksRequestHandler timeout status mapping", () => {
     expect(mappedRes.statusCode).toBe(429);
     expect(setHeader).toHaveBeenCalledWith("Retry-After", expect.any(String));
   });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 });

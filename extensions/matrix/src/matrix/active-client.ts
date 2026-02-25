@@ -1,9 +1,5 @@
 import type { MatrixClient } from "@vector-im/matrix-bot-sdk";
-<<<<<<< HEAD
 import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-=======
-import { normalizeAccountId } from "openclaw/plugin-sdk";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 // Support multiple active clients for multi-account
 const activeClients = new Map<string, MatrixClient>();

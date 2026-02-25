@@ -1,11 +1,4 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
-<<<<<<< HEAD
-=======
-import type { AuthProfileStore } from "../../agents/auth-profiles.js";
-import type { ModelRegistry } from "../../agents/pi-model-discovery.js";
-import type { OpenClawConfig } from "../../config/config.js";
-import type { ModelRow } from "./list.types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { resolveOpenClawAgentDir } from "../../agents/agent-paths.js";
 import type { AuthProfileStore } from "../../agents/auth-profiles.js";
 import { listProfilesForProvider } from "../../agents/auth-profiles.js";
@@ -22,19 +15,13 @@ import { ensureOpenClawModelsJson } from "../../agents/models-config.js";
 import { ensurePiAuthJsonFromAuthProfiles } from "../../agents/pi-auth-json.js";
 import type { ModelRegistry } from "../../agents/pi-model-discovery.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/pi-model-discovery.js";
-<<<<<<< HEAD
 import type { OpenClawConfig } from "../../config/config.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   formatErrorWithStack,
   MODEL_AVAILABILITY_UNAVAILABLE_CODE,
   shouldFallbackToAuthHeuristics,
 } from "./list.errors.js";
-<<<<<<< HEAD
 import type { ModelRow } from "./list.types.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { isLocalBaseUrl, modelKey } from "./shared.js";
 
 const hasAuthForProvider = (
@@ -118,27 +105,13 @@ export async function loadModelRegistry(cfg: OpenClawConfig) {
   await ensurePiAuthJsonFromAuthProfiles(agentDir);
   const authStorage = discoverAuthStorage(agentDir);
   const registry = discoverModels(authStorage, agentDir);
-<<<<<<< HEAD
   const models = registry.getAll();
-=======
-  const appended = appendAntigravityForwardCompatModels(registry.getAll(), registry);
-  const models = appended.models;
-  const synthesizedForwardCompat = appended.synthesizedForwardCompat;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   let availableKeys: Set<string> | undefined;
   let availabilityErrorMessage: string | undefined;
 
   try {
     const availableModels = loadAvailableModels(registry);
     availableKeys = new Set(availableModels.map((model) => modelKey(model.provider, model.id)));
-<<<<<<< HEAD
-=======
-    for (const synthesized of synthesizedForwardCompat) {
-      if (hasAvailableTemplate(availableKeys, synthesized.templatePrefixes)) {
-        availableKeys.add(synthesized.key);
-      }
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   } catch (err) {
     if (!shouldFallbackToAuthHeuristics(err)) {
       throw err;
@@ -152,55 +125,6 @@ export async function loadModelRegistry(cfg: OpenClawConfig) {
     }
   }
   return { registry, models, availableKeys, availabilityErrorMessage };
-<<<<<<< HEAD
-=======
-}
-
-type SynthesizedForwardCompat = {
-  key: string;
-  templatePrefixes: readonly string[];
-};
-
-function appendAntigravityForwardCompatModels(
-  models: Model<Api>[],
-  modelRegistry: ModelRegistry,
-): { models: Model<Api>[]; synthesizedForwardCompat: SynthesizedForwardCompat[] } {
-  const nextModels = [...models];
-  const synthesizedForwardCompat: SynthesizedForwardCompat[] = [];
-
-  for (const candidate of ANTIGRAVITY_OPUS_46_FORWARD_COMPAT_CANDIDATES) {
-    const key = modelKey("google-antigravity", candidate.id);
-    const hasForwardCompat = nextModels.some((model) => modelKey(model.provider, model.id) === key);
-    if (hasForwardCompat) {
-      continue;
-    }
-
-    const fallback = resolveForwardCompatModel("google-antigravity", candidate.id, modelRegistry);
-    if (!fallback) {
-      continue;
-    }
-
-    nextModels.push(fallback);
-    synthesizedForwardCompat.push({
-      key,
-      templatePrefixes: candidate.templatePrefixes,
-    });
-  }
-
-  return { models: nextModels, synthesizedForwardCompat };
-}
-
-function hasAvailableTemplate(
-  availableKeys: Set<string>,
-  templatePrefixes: readonly string[],
-): boolean {
-  for (const key of availableKeys) {
-    if (templatePrefixes.some((prefix) => key.startsWith(prefix))) {
-      return true;
-    }
-  }
-  return false;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export function toModelRow(params: {

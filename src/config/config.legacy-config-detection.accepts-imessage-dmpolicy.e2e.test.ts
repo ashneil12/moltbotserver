@@ -1,10 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
 import { resolveAgentModelFallbackValues, resolveAgentModelPrimaryValue } from "./model-input.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
 
 const { loadConfig, migrateLegacyConfig, readConfigFileSnapshot, validateConfigObject } =
   await vi.importActual<typeof import("./config.js")>("./config.js");
@@ -91,7 +88,6 @@ describe("legacy config detection", () => {
       expect(res.config.channels?.imessage?.dmPolicy).toBe("open");
     }
   });
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
   it.each([
     [
       "defaults imessage.dmPolicy to pairing when imessage section exists",
@@ -135,42 +131,6 @@ describe("legacy config detection", () => {
     ],
   ])("defaults: %s", (_name, config, readValue, expectedValue) => {
     expectValidConfigValue({ config, readValue, expectedValue });
-=======
-  it("defaults imessage.dmPolicy to pairing when imessage section exists", async () => {
-    const res = validateConfigObject({ channels: { imessage: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.imessage?.dmPolicy).toBe("pairing");
-    }
-  });
-  it("defaults imessage.groupPolicy to allowlist when imessage section exists", async () => {
-    const res = validateConfigObject({ channels: { imessage: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.imessage?.groupPolicy).toBe("allowlist");
-    }
-  });
-  it("defaults discord.groupPolicy to allowlist when discord section exists", async () => {
-    const res = validateConfigObject({ channels: { discord: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.discord?.groupPolicy).toBe("allowlist");
-    }
-  });
-  it("defaults slack.groupPolicy to allowlist when slack section exists", async () => {
-    const res = validateConfigObject({ channels: { slack: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.slack?.groupPolicy).toBe("allowlist");
-    }
-  });
-  it("defaults msteams.groupPolicy to allowlist when msteams section exists", async () => {
-    const res = validateConfigObject({ channels: { msteams: {} } });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config.channels?.msteams?.groupPolicy).toBe("allowlist");
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
   });
   it("rejects unsafe executable config values", async () => {
     const res = validateConfigObject({
@@ -199,7 +159,6 @@ describe("legacy config detection", () => {
     });
     expect(res.ok).toBe(true);
   });
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
   it.each([
     [
       'rejects discord.dm.policy="open" without allowFrom "*"',
@@ -241,25 +200,6 @@ describe("legacy config detection", () => {
   ])("$name", ({ config }) => {
     const res = validateConfigObject(config);
     expect(res.ok).toBe(true);
-=======
-  it('rejects discord.dm.policy="open" without allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: { discord: { dm: { policy: "open", allowFrom: ["123"] } } },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues[0]?.path).toBe("channels.discord.dm.allowFrom");
-    }
-  });
-  it('rejects slack.dm.policy="open" without allowFrom "*"', async () => {
-    const res = validateConfigObject({
-      channels: { slack: { dm: { policy: "open", allowFrom: ["U123"] } } },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues[0]?.path).toBe("channels.slack.dm.allowFrom");
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
   });
   it("rejects legacy agent.model string", async () => {
     const res = validateConfigObject({
@@ -321,32 +261,8 @@ describe("legacy config detection", () => {
     expect((res.config as { agent?: unknown } | undefined)?.agent).toBeUndefined();
   });
   it("flags legacy config in snapshot", async () => {
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
     await withSnapshotForConfig({ routing: { allowFrom: ["+15555550123"] } }, async (ctx) => {
       expectRoutingAllowFromLegacySnapshot(ctx, ["+15555550123"]);
-=======
-    await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify({ routing: { allowFrom: ["+15555550123"] } }),
-        "utf-8",
-      );
-
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.legacyIssues.some((issue) => issue.path === "routing.allowFrom")).toBe(true);
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        routing?: { allowFrom?: string[] };
-        channels?: unknown;
-      };
-      expect(parsed.routing?.allowFrom).toEqual(["+15555550123"]);
-      expect(parsed.channels).toBeUndefined();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
     });
   });
   it("flags top-level memorySearch as legacy in snapshot", async () => {
@@ -363,19 +279,12 @@ describe("legacy config detection", () => {
       expect(ctx.snapshot.valid).toBe(false);
       expect(ctx.snapshot.legacyIssues.some((issue) => issue.path === "whatsapp")).toBe(true);
 
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
       const parsed = ctx.parsed as {
         channels?: unknown;
         whatsapp?: unknown;
       };
       expect(parsed.channels).toBeUndefined();
       expect(parsed.whatsapp).toBeTruthy();
-=======
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.legacyIssues.some((issue) => issue.path === "memorySearch")).toBe(true);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
     });
   });
   it("does not auto-migrate claude-cli auth profile mode on load", async () => {
@@ -408,7 +317,6 @@ describe("legacy config detection", () => {
       expect(parsed.auth?.profiles?.["anthropic:claude-cli"]?.mode).toBe("token");
     });
   });
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
   it("flags routing.allowFrom in snapshot", async () => {
     await withSnapshotForConfig({ routing: { allowFrom: ["+1666"] } }, async (ctx) => {
       expectRoutingAllowFromLegacySnapshot(ctx, ["+1666"]);
@@ -444,110 +352,6 @@ describe("legacy config detection", () => {
       readValue: (config) =>
         (config as { bindings?: Array<{ comment?: string }> }).bindings?.[0]?.comment,
       expectedValue: "primary route",
-=======
-  it("flags legacy provider sections in snapshot", async () => {
-    await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify({ whatsapp: { allowFrom: ["+1555"] } }, null, 2),
-        "utf-8",
-      );
-
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.legacyIssues.some((issue) => issue.path === "whatsapp")).toBe(true);
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        channels?: unknown;
-        whatsapp?: unknown;
-      };
-      expect(parsed.channels).toBeUndefined();
-      expect(parsed.whatsapp).toBeTruthy();
-    });
-  });
-  it("flags routing.allowFrom in snapshot", async () => {
-    await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify({ routing: { allowFrom: ["+1666"] } }, null, 2),
-        "utf-8",
-      );
-
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.legacyIssues.some((issue) => issue.path === "routing.allowFrom")).toBe(true);
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        channels?: unknown;
-        routing?: { allowFrom?: string[] };
-      };
-      expect(parsed.channels).toBeUndefined();
-      expect(parsed.routing?.allowFrom).toEqual(["+1666"]);
-    });
-  });
-  it("rejects bindings[].match.provider on load", async () => {
-    await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify(
-          {
-            bindings: [{ agentId: "main", match: { provider: "slack" } }],
-          },
-          null,
-          2,
-        ),
-        "utf-8",
-      );
-
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.issues.length).toBeGreaterThan(0);
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        bindings?: Array<{ match?: { provider?: string } }>;
-      };
-      expect(parsed.bindings?.[0]?.match?.provider).toBe("slack");
-    });
-  });
-  it("rejects bindings[].match.accountID on load", async () => {
-    await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify(
-          {
-            bindings: [{ agentId: "main", match: { channel: "telegram", accountID: "work" } }],
-          },
-          null,
-          2,
-        ),
-        "utf-8",
-      );
-
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.issues.length).toBeGreaterThan(0);
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        bindings?: Array<{ match?: { accountID?: string } }>;
-      };
-      expect(parsed.bindings?.[0]?.match?.accountID).toBe("work");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
     });
   });
   it("rejects session.sendPolicy.rules[].match.provider on load", async () => {
@@ -557,7 +361,6 @@ describe("legacy config detection", () => {
           sendPolicy: {
             rules: [{ action: "deny", match: { provider: "telegram" } }],
           },
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
         },
       },
       async (ctx) => {
@@ -569,25 +372,6 @@ describe("legacy config detection", () => {
         expect(parsed.session?.sendPolicy?.rules?.[0]?.match?.provider).toBe("telegram");
       },
     );
-=======
-          null,
-          2,
-        ),
-        "utf-8",
-      );
-
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.issues.length).toBeGreaterThan(0);
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        session?: { sendPolicy?: { rules?: Array<{ match?: { provider?: string } }> } };
-      };
-      expect(parsed.session?.sendPolicy?.rules?.[0]?.match?.provider).toBe("telegram");
-    });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
   });
   it("rejects messages.queue.byProvider on load", async () => {
     await withSnapshotForConfig(
@@ -596,24 +380,11 @@ describe("legacy config detection", () => {
         expect(ctx.snapshot.valid).toBe(false);
         expect(ctx.snapshot.issues.length).toBeGreaterThan(0);
 
-<<<<<<< HEAD:src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.test.ts
         const parsed = ctx.parsed as {
           messages?: {
             queue?: {
               byProvider?: Record<string, unknown>;
             };
-=======
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.issues.length).toBeGreaterThan(0);
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        messages?: {
-          queue?: {
-            byProvider?: Record<string, unknown>;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/config/config.legacy-config-detection.accepts-imessage-dmpolicy.e2e.test.ts
           };
         };
         expect(parsed.messages?.queue?.byProvider?.whatsapp).toBe("queue");

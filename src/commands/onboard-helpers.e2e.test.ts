@@ -128,16 +128,8 @@ describe("normalizeGatewayTokenInput", () => {
     expect(normalizeGatewayTokenInput(123)).toBe("");
   });
 
-<<<<<<< HEAD:src/commands/onboard-helpers.test.ts
   it('rejects literal string coercion artifacts ("undefined"/"null")', () => {
     expect(normalizeGatewayTokenInput("undefined")).toBe("");
-=======
-  it('rejects the literal string "undefined"', () => {
-    expect(normalizeGatewayTokenInput("undefined")).toBe("");
-  });
-
-  it('rejects the literal string "null"', () => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/onboard-helpers.e2e.test.ts
     expect(normalizeGatewayTokenInput("null")).toBe("");
   });
 });

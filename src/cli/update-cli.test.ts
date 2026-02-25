@@ -1,11 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-<<<<<<< HEAD
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig, ConfigFileSnapshot } from "../config/types.openclaw.js";
-=======
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import type { UpdateRunResult } from "../infra/update-runner.js";
 import { withEnvAsync } from "../test-utils/env.js";
 
@@ -130,18 +126,13 @@ const { readConfigFileSnapshot, writeConfigFile } = await import("../config/conf
 const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } =
   await import("../infra/update-check.js");
 const { runCommandWithTimeout } = await import("../process/exec.js");
-<<<<<<< HEAD
 const { runDaemonRestart, runDaemonInstall } = await import("./daemon-cli.js");
 const { doctorCommand } = await import("../commands/doctor.js");
-=======
-const { runDaemonRestart } = await import("./daemon-cli.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const { defaultRuntime } = await import("../runtime.js");
 const { updateCommand, registerUpdateCli, updateStatusCommand, updateWizardCommand } =
   await import("./update-cli.js");
 
 describe("update-cli", () => {
-<<<<<<< HEAD
   const fixtureRoot = "/tmp/openclaw-update-tests";
   let fixtureCount = 0;
 
@@ -158,26 +149,6 @@ describe("update-cli", () => {
     raw: "{}",
     parsed: {},
     resolved: baseConfig,
-=======
-  let fixtureRoot = "";
-  let fixtureCount = 0;
-
-  const createCaseDir = async (prefix: string) => {
-    const dir = path.join(fixtureRoot, `${prefix}-${fixtureCount++}`);
-    await fs.mkdir(dir, { recursive: true });
-    return dir;
-  };
-
-  beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-tests-"));
-  });
-
-  afterAll(async () => {
-    await fs.rm(fixtureRoot, { recursive: true, force: true });
-  });
-
-  const baseSnapshot = {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     valid: true,
     config: baseConfig,
     issues: [],
@@ -199,7 +170,6 @@ describe("update-cli", () => {
     });
   };
 
-<<<<<<< HEAD
   const mockPackageInstallStatus = (root: string) => {
     vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(root);
     vi.mocked(checkUpdateStatus).mockResolvedValue({
@@ -299,10 +269,6 @@ describe("update-cli", () => {
     inspectPortUsage.mockClear();
     classifyPortListener.mockClear();
     formatPortDiagnostics.mockClear();
-=======
-  beforeEach(() => {
-    vi.clearAllMocks();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(process.cwd());
     vi.mocked(readConfigFileSnapshot).mockResolvedValue(baseSnapshot);
     vi.mocked(fetchNpmTagVersion).mockResolvedValue({
@@ -408,7 +374,6 @@ describe("update-cli", () => {
     expect(defaultRuntime.log).toHaveBeenCalled();
   });
 
-<<<<<<< HEAD
   it("updateCommand --dry-run previews without mutating", async () => {
     vi.mocked(defaultRuntime.log).mockClear();
     serviceLoaded.mockResolvedValue(true);
@@ -426,8 +391,6 @@ describe("update-cli", () => {
     expect(logs.join("\n")).toContain("No changes were applied.");
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("updateStatusCommand prints table output", async () => {
     await updateStatusCommand({ json: false });
 
@@ -444,7 +407,6 @@ describe("update-cli", () => {
     expect(parsed.channel.value).toBe("stable");
   });
 
-<<<<<<< HEAD
   it.each([
     {
       name: "defaults to dev channel for git installs when unset",
@@ -497,103 +459,11 @@ describe("update-cli", () => {
     vi.mocked(readConfigFileSnapshot).mockResolvedValue({
       ...baseSnapshot,
       config: { update: { channel: "beta" } } as OpenClawConfig,
-=======
-  it("defaults to dev channel for git installs when unset", async () => {
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "git",
-      steps: [],
-      durationMs: 100,
-    });
-
-    await updateCommand({});
-
-    const call = vi.mocked(runGatewayUpdate).mock.calls[0]?.[0];
-    expect(call?.channel).toBe("dev");
-  });
-
-  it("defaults to stable channel for package installs when unset", async () => {
-    const tempDir = await createCaseDir("openclaw-update");
-    await fs.writeFile(
-      path.join(tempDir, "package.json"),
-      JSON.stringify({ name: "openclaw", version: "1.0.0" }),
-      "utf-8",
-    );
-
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
-    vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: tempDir,
-      installKind: "package",
-      packageManager: "npm",
-      deps: {
-        manager: "npm",
-        status: "ok",
-        lockfilePath: null,
-        markerPath: null,
-      },
-    });
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "npm",
-      steps: [],
-      durationMs: 100,
-    });
-
-    await updateCommand({ yes: true });
-
-    const call = vi.mocked(runGatewayUpdate).mock.calls[0]?.[0];
-    expect(call?.channel).toBe("stable");
-    expect(call?.tag).toBe("latest");
-  });
-
-  it("uses stored beta channel when configured", async () => {
-    vi.mocked(readConfigFileSnapshot).mockResolvedValue({
-      ...baseSnapshot,
-      config: { update: { channel: "beta" } },
-    });
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "git",
-      steps: [],
-      durationMs: 100,
-    });
-
-    await updateCommand({});
-
-    const call = vi.mocked(runGatewayUpdate).mock.calls[0]?.[0];
-    expect(call?.channel).toBe("beta");
-  });
-
-  it("falls back to latest when beta tag is older than release", async () => {
-    const tempDir = await createCaseDir("openclaw-update");
-    await fs.writeFile(
-      path.join(tempDir, "package.json"),
-      JSON.stringify({ name: "openclaw", version: "1.0.0" }),
-      "utf-8",
-    );
-
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
-    vi.mocked(readConfigFileSnapshot).mockResolvedValue({
-      ...baseSnapshot,
-      config: { update: { channel: "beta" } },
-    });
-    vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: tempDir,
-      installKind: "package",
-      packageManager: "npm",
-      deps: {
-        manager: "npm",
-        status: "ok",
-        lockfilePath: null,
-        markerPath: null,
-      },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
     vi.mocked(resolveNpmChannelTag).mockResolvedValue({
       tag: "latest",
       version: "1.2.3-1",
     });
-<<<<<<< HEAD
     vi.mocked(runGatewayUpdate).mockResolvedValue(
       makeOkUpdateResult({
         mode: "npm",
@@ -603,24 +473,10 @@ describe("update-cli", () => {
     await updateCommand({});
 
     const call = expectUpdateCallChannel("beta");
-=======
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "npm",
-      steps: [],
-      durationMs: 100,
-    });
-
-    await updateCommand({});
-
-    const call = vi.mocked(runGatewayUpdate).mock.calls[0]?.[0];
-    expect(call?.channel).toBe("beta");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     expect(call?.tag).toBe("latest");
   });
 
   it("honors --tag override", async () => {
-<<<<<<< HEAD
     const tempDir = createCaseDir("openclaw-update");
 
     vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
@@ -632,42 +488,12 @@ describe("update-cli", () => {
 
     await updateCommand({ tag: "next" });
 
-=======
-    const tempDir = await createCaseDir("openclaw-update");
-    await fs.writeFile(
-      path.join(tempDir, "package.json"),
-      JSON.stringify({ name: "openclaw", version: "1.0.0" }),
-      "utf-8",
-    );
-
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "npm",
-      steps: [],
-      durationMs: 100,
-    });
-
-    await updateCommand({ tag: "next" });
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const call = vi.mocked(runGatewayUpdate).mock.calls[0]?.[0];
     expect(call?.tag).toBe("next");
   });
 
   it("updateCommand outputs JSON when --json is set", async () => {
-<<<<<<< HEAD
     vi.mocked(runGatewayUpdate).mockResolvedValue(makeOkUpdateResult());
-=======
-    const mockResult: UpdateRunResult = {
-      status: "ok",
-      mode: "git",
-      steps: [],
-      durationMs: 100,
-    };
-
-    vi.mocked(runGatewayUpdate).mockResolvedValue(mockResult);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     vi.mocked(defaultRuntime.log).mockClear();
 
     await updateCommand({ json: true });
@@ -702,18 +528,7 @@ describe("update-cli", () => {
   });
 
   it("updateCommand restarts daemon by default", async () => {
-<<<<<<< HEAD
     vi.mocked(runGatewayUpdate).mockResolvedValue(makeOkUpdateResult());
-=======
-    const mockResult: UpdateRunResult = {
-      status: "ok",
-      mode: "git",
-      steps: [],
-      durationMs: 100,
-    };
-
-    vi.mocked(runGatewayUpdate).mockResolvedValue(mockResult);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     vi.mocked(runDaemonRestart).mockResolvedValue(true);
 
     await updateCommand({});
@@ -721,11 +536,7 @@ describe("update-cli", () => {
     expect(runDaemonRestart).toHaveBeenCalled();
   });
 
-<<<<<<< HEAD
   it("updateCommand refreshes gateway service env when service is already installed", async () => {
-=======
-  it("updateCommand skips restart when --no-restart is set", async () => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const mockResult: UpdateRunResult = {
       status: "ok",
       mode: "git",
@@ -747,17 +558,12 @@ describe("update-cli", () => {
     expect(runDaemonRestart).not.toHaveBeenCalled();
   });
 
-<<<<<<< HEAD
   it("updateCommand refreshes service env from updated install root when available", async () => {
     const root = createCaseDir("openclaw-updated-root");
     await fs.mkdir(path.join(root, "dist"), { recursive: true });
     await fs.writeFile(path.join(root, "dist", "entry.js"), "console.log('ok');\n", "utf8");
 
     vi.mocked(runGatewayUpdate).mockResolvedValue({
-=======
-  it("updateCommand skips success message when restart does not run", async () => {
-    const mockResult: UpdateRunResult = {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       status: "ok",
       mode: "npm",
       root,
@@ -841,7 +647,6 @@ describe("update-cli", () => {
     expect(logLines.some((line) => line.includes("Daemon restarted successfully."))).toBe(false);
   });
 
-<<<<<<< HEAD
   it.each([
     {
       name: "update command",
@@ -860,9 +665,6 @@ describe("update-cli", () => {
     },
   ])("validates timeout option for $name", async ({ run, requireTty }) => {
     setTty(requireTty);
-=======
-  it("updateCommand validates timeout option", async () => {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     vi.mocked(defaultRuntime.error).mockClear();
     vi.mocked(defaultRuntime.exit).mockClear();
 
@@ -873,18 +675,7 @@ describe("update-cli", () => {
   });
 
   it("persists update channel when --channel is set", async () => {
-<<<<<<< HEAD
     vi.mocked(runGatewayUpdate).mockResolvedValue(makeOkUpdateResult());
-=======
-    const mockResult: UpdateRunResult = {
-      status: "ok",
-      mode: "git",
-      steps: [],
-      durationMs: 100,
-    };
-
-    vi.mocked(runGatewayUpdate).mockResolvedValue(mockResult);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     await updateCommand({ channel: "beta" });
 
@@ -895,7 +686,6 @@ describe("update-cli", () => {
     expect(call?.update?.channel).toBe("beta");
   });
 
-<<<<<<< HEAD
   it.each([
     {
       name: "requires confirmation without --yes",
@@ -931,90 +721,6 @@ describe("update-cli", () => {
 
     expect(vi.mocked(defaultRuntime.exit).mock.calls.some((call) => call[0] === 1)).toBe(false);
     expect(runGatewayUpdate).not.toHaveBeenCalled();
-=======
-  it("requires confirmation on downgrade when non-interactive", async () => {
-    const tempDir = await createCaseDir("openclaw-update");
-    setTty(false);
-    await fs.writeFile(
-      path.join(tempDir, "package.json"),
-      JSON.stringify({ name: "openclaw", version: "2.0.0" }),
-      "utf-8",
-    );
-
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
-    vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: tempDir,
-      installKind: "package",
-      packageManager: "npm",
-      deps: {
-        manager: "npm",
-        status: "ok",
-        lockfilePath: null,
-        markerPath: null,
-      },
-    });
-    vi.mocked(resolveNpmChannelTag).mockResolvedValue({
-      tag: "latest",
-      version: "0.0.1",
-    });
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "npm",
-      steps: [],
-      durationMs: 100,
-    });
-    vi.mocked(defaultRuntime.error).mockClear();
-    vi.mocked(defaultRuntime.exit).mockClear();
-
-    await updateCommand({});
-
-    expect(defaultRuntime.error).toHaveBeenCalledWith(
-      expect.stringContaining("Downgrade confirmation required."),
-    );
-    expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
-  });
-
-  it("allows downgrade with --yes in non-interactive mode", async () => {
-    const tempDir = await createCaseDir("openclaw-update");
-    setTty(false);
-    await fs.writeFile(
-      path.join(tempDir, "package.json"),
-      JSON.stringify({ name: "openclaw", version: "2.0.0" }),
-      "utf-8",
-    );
-
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
-    vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: tempDir,
-      installKind: "package",
-      packageManager: "npm",
-      deps: {
-        manager: "npm",
-        status: "ok",
-        lockfilePath: null,
-        markerPath: null,
-      },
-    });
-    vi.mocked(resolveNpmChannelTag).mockResolvedValue({
-      tag: "latest",
-      version: "0.0.1",
-    });
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "npm",
-      steps: [],
-      durationMs: 100,
-    });
-    vi.mocked(defaultRuntime.error).mockClear();
-    vi.mocked(defaultRuntime.exit).mockClear();
-
-    await updateCommand({ yes: true });
-
-    expect(defaultRuntime.error).not.toHaveBeenCalledWith(
-      expect.stringContaining("Downgrade confirmation required."),
-    );
-    expect(runGatewayUpdate).toHaveBeenCalled();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("updateWizardCommand requires a TTY", async () => {
@@ -1031,17 +737,9 @@ describe("update-cli", () => {
   });
 
   it("updateWizardCommand offers dev checkout and forwards selections", async () => {
-<<<<<<< HEAD
     const tempDir = createCaseDir("openclaw-update-wizard");
     await withEnvAsync({ OPENCLAW_GIT_DIR: tempDir }, async () => {
       setTty(true);
-=======
-    const tempDir = await createCaseDir("openclaw-update-wizard");
-    const previousGitDir = process.env.OPENCLAW_GIT_DIR;
-    try {
-      setTty(true);
-      process.env.OPENCLAW_GIT_DIR = tempDir;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
       vi.mocked(checkUpdateStatus).mockResolvedValue({
         root: "/test/path",
@@ -1067,12 +765,6 @@ describe("update-cli", () => {
 
       const call = vi.mocked(runGatewayUpdate).mock.calls[0]?.[0];
       expect(call?.channel).toBe("dev");
-<<<<<<< HEAD
     });
-=======
-    } finally {
-      process.env.OPENCLAW_GIT_DIR = previousGitDir;
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });

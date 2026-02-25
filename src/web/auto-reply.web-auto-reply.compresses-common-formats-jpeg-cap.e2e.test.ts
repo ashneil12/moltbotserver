@@ -11,83 +11,7 @@ import {
 } from "./auto-reply.test-harness.js";
 import type { WebInboundMessage } from "./inbound.js";
 
-<<<<<<< HEAD:src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.test.ts
 installWebAutoReplyTestHomeHooks();
-=======
-let previousHome: string | undefined;
-let tempHome: string | undefined;
-
-const rmDirWithRetries = async (dir: string): Promise<void> => {
-  // Some tests can leave async session-store writes in-flight; recursive deletion can race and throw ENOTEMPTY.
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    try {
-      await fs.rm(dir, { recursive: true, force: true });
-      return;
-    } catch (err) {
-      const code =
-        err && typeof err === "object" && "code" in err
-          ? String((err as { code?: unknown }).code)
-          : null;
-      if (code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM") {
-        await new Promise((resolve) => setTimeout(resolve, 5));
-        continue;
-      }
-      throw err;
-    }
-  }
-
-  await fs.rm(dir, { recursive: true, force: true });
-};
-
-beforeEach(async () => {
-  resetInboundDedupe();
-  previousHome = process.env.HOME;
-  tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-web-home-"));
-  process.env.HOME = tempHome;
-});
-
-afterEach(async () => {
-  process.env.HOME = previousHome;
-  if (tempHome) {
-    await rmDirWithRetries(tempHome);
-    tempHome = undefined;
-  }
-});
-
-const _makeSessionStore = async (
-  entries: Record<string, unknown> = {},
-): Promise<{ storePath: string; cleanup: () => Promise<void> }> => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-"));
-  const storePath = path.join(dir, "sessions.json");
-  await fs.writeFile(storePath, JSON.stringify(entries));
-  const cleanup = async () => {
-    // Session store writes can be in-flight when the test finishes (e.g. updateLastRoute
-    // after a message flush). `fs.rm({ recursive })` can race and throw ENOTEMPTY.
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      try {
-        await fs.rm(dir, { recursive: true, force: true });
-        return;
-      } catch (err) {
-        const code =
-          err && typeof err === "object" && "code" in err
-            ? String((err as { code?: unknown }).code)
-            : null;
-        if (code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM") {
-          await new Promise((resolve) => setTimeout(resolve, 5));
-          continue;
-        }
-        throw err;
-      }
-    }
-
-    await fs.rm(dir, { recursive: true, force: true });
-  };
-  return {
-    storePath,
-    cleanup,
-  };
-};
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.e2e.test.ts
 
 describe("web auto-reply", () => {
   installWebAutoReplyUnitTestHooks({ pinDns: true });
@@ -228,7 +152,6 @@ describe("web auto-reply", () => {
       },
     ] as const;
 
-<<<<<<< HEAD:src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.test.ts
     const width = 320;
     const height = 320;
     const sharedRaw = crypto.randomBytes(width * height * 3);
@@ -247,54 +170,6 @@ describe("web auto-reply", () => {
           text: "hi",
           mediaUrl: "https://example.com/big.image",
         },
-=======
-    const width = 1200;
-    const height = 1200;
-    const sharedRaw = crypto.randomBytes(width * height * 3);
-
-    for (const fmt of formats) {
-      // Force a small cap to ensure compression is exercised for every format.
-      setLoadConfigMock(() => ({ agents: { defaults: { mediaMaxMb: 1 } } }));
-      const sendMedia = vi.fn();
-      const reply = vi.fn().mockResolvedValue(undefined);
-      const sendComposing = vi.fn();
-      const resolver = vi.fn().mockResolvedValue({
-        text: "hi",
-        mediaUrl: `https://example.com/big.${fmt.name}`,
-      });
-
-      let capturedOnMessage:
-        | ((msg: import("./inbound.js").WebInboundMessage) => Promise<void>)
-        | undefined;
-      const listenerFactory = async (opts: {
-        onMessage: (msg: import("./inbound.js").WebInboundMessage) => Promise<void>;
-      }) => {
-        capturedOnMessage = opts.onMessage;
-        return { close: vi.fn() };
-      };
-
-      const big = await fmt.make(sharedRaw, { width, height });
-      expect(big.length).toBeGreaterThan(1 * 1024 * 1024);
-
-      const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-        ok: true,
-        body: true,
-        arrayBuffer: async () => big.buffer.slice(big.byteOffset, big.byteOffset + big.byteLength),
-        headers: { get: () => fmt.mime },
-        status: 200,
-      } as Response);
-
-      await monitorWebChannel(false, listenerFactory, false, resolver);
-      expect(capturedOnMessage).toBeDefined();
-
-      await capturedOnMessage?.({
-        body: "hello",
-        from: "+1",
-        to: "+2",
-        id: `msg-${fmt.name}`,
-        sendComposing,
-        reply,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.e2e.test.ts
         sendMedia,
       });
       let fetchIndex = 0;
@@ -343,13 +218,8 @@ describe("web auto-reply", () => {
   it("honors mediaMaxMb from config", async () => {
     const bigPng = await sharp({
       create: {
-<<<<<<< HEAD:src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.test.ts
         width: 256,
         height: 256,
-=======
-        width: 1800,
-        height: 1800,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.e2e.test.ts
         channels: 3,
         background: { r: 0, g: 0, b: 255 },
       },

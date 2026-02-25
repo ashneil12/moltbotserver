@@ -132,12 +132,9 @@ jobs:
             }
 
             const invalidLabel = "invalid";
-<<<<<<< HEAD
             const dirtyLabel = "dirty";
             const noisyPrMessage =
               "Closing this PR because it looks dirty (too many unrelated or unexpected changes). This usually happens when a branch picks up unrelated commits or a merge went sideways. Please recreate the PR from a clean branch.";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
             const pullRequest = context.payload.pull_request;
             if (pullRequest) {
@@ -156,7 +153,6 @@ jobs:
                 });
                 return;
               }
-<<<<<<< HEAD
               const labelCount = labelSet.size;
               if (labelCount > 20) {
                 await github.rest.issues.createComment({
@@ -173,8 +169,6 @@ jobs:
                 });
                 return;
               }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
               if (labelSet.has(invalidLabel)) {
                 await github.rest.issues.update({
                   owner: context.repo.owner,

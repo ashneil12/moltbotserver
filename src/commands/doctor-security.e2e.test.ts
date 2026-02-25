@@ -104,7 +104,6 @@ describe("noteSecurityWarnings gateway exposure", () => {
     const message = lastMessage();
     expect(message).toContain('config set session.dmScope "per-channel-peer"');
   });
-<<<<<<< HEAD:src/commands/doctor-security.test.ts
 
   it("clarifies approvals.exec forwarding-only behavior", async () => {
     const cfg = {
@@ -120,6 +119,4 @@ describe("noteSecurityWarnings gateway exposure", () => {
     expect(message).toContain("exec-approvals.json");
     expect(message).toContain("openclaw approvals get --gateway");
   });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/commands/doctor-security.e2e.test.ts
 });

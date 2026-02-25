@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { HISTORY_CONTEXT_MARKER } from "../auto-reply/reply/history.js";
 import { CURRENT_MESSAGE_MARKER } from "../auto-reply/reply/mentions.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
-<<<<<<< HEAD:src/gateway/openai-http.test.ts
 import { buildAssistantDeltaResult } from "./test-helpers.agent-results.js";
 import {
   agentCommand,
@@ -11,9 +10,6 @@ import {
   testState,
   withGatewayServer,
 } from "./test-helpers.js";
-=======
-import { agentCommand, getFreePort, installGatewayTestHooks, testState } from "./test-helpers.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/openai-http.e2e.test.ts
 
 installGatewayTestHooks({ scope: "suite" });
 
@@ -371,17 +367,12 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
   });
 
   it("returns 429 for repeated failed auth when gateway.auth.rateLimit is configured", async () => {
-<<<<<<< HEAD:src/gateway/openai-http.test.ts
-=======
-    const { startGatewayServer } = await import("./server.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/openai-http.e2e.test.ts
     testState.gatewayAuth = {
       mode: "token",
       token: "secret",
       rateLimit: { maxAttempts: 1, windowMs: 60_000, lockoutMs: 60_000, exemptLoopback: false },
       // oxlint-disable-next-line typescript/no-explicit-any
     } as any;
-<<<<<<< HEAD:src/gateway/openai-http.test.ts
     await withGatewayServer(
       async ({ port }) => {
         const headers = {
@@ -416,41 +407,6 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         },
       },
     );
-=======
-    const port = await getFreePort();
-    const server = await startGatewayServer(port, {
-      host: "127.0.0.1",
-      controlUiEnabled: false,
-      openAiChatCompletionsEnabled: true,
-    });
-    try {
-      const headers = {
-        "content-type": "application/json",
-        authorization: "Bearer wrong",
-      };
-      const body = {
-        model: "openclaw",
-        messages: [{ role: "user", content: "hi" }],
-      };
-
-      const first = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      });
-      expect(first.status).toBe(401);
-
-      const second = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      });
-      expect(second.status).toBe(429);
-      expect(second.headers.get("retry-after")).toBeTruthy();
-    } finally {
-      await server.close({ reason: "rate-limit auth test done" });
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/gateway/openai-http.e2e.test.ts
   });
 
   it("streams SSE chunks when stream=true", async () => {

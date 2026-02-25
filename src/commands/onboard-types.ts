@@ -54,18 +54,12 @@ export type AuthChoice =
 export type AuthChoiceGroupId =
   | "openai"
   | "anthropic"
-<<<<<<< HEAD
   | "chutes"
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   | "vllm"
   | "google"
   | "copilot"
   | "openrouter"
-<<<<<<< HEAD
   | "kilocode"
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   | "litellm"
   | "ai-gateway"
   | "cloudflare-ai-gateway"

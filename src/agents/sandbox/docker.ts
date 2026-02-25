@@ -1,9 +1,6 @@
 import { spawn } from "node:child_process";
-<<<<<<< HEAD
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { sanitizeEnvVars } from "./sanitize-env-vars.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 type ExecDockerRawOptions = {
   allowFailure?: boolean;
@@ -109,10 +106,6 @@ export function execDockerRaw(
   });
 }
 
-<<<<<<< HEAD
-=======
-import type { SandboxConfig, SandboxDockerConfig, SandboxWorkspaceAccess } from "./types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { formatCliCommand } from "../../cli/command-format.js";
 import { defaultRuntime } from "../../runtime.js";
 import { computeSandboxConfigHash } from "./config-hash.js";
@@ -135,7 +128,6 @@ export async function execDocker(args: string[], opts?: ExecDockerOptions) {
     stderr: result.stderr.toString("utf8"),
     code: result.code,
   };
-<<<<<<< HEAD
 }
 
 export async function readDockerContainerLabel(
@@ -173,8 +165,6 @@ export async function readDockerContainerEnvVar(
     }
   }
   return null;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function readDockerPort(containerName: string, port: number) {

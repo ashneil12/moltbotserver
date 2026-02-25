@@ -2,30 +2,19 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-<<<<<<< HEAD
 import { resolveStateDir } from "../../config/paths.js";
 import { resolveOpenClawPackageRoot } from "../../infra/openclaw-root.js";
 import { readPackageName, readPackageVersion } from "../../infra/package-json.js";
-=======
-import type { UpdateStepProgress, UpdateStepResult } from "../../infra/update-runner.js";
-import { resolveStateDir } from "../../config/paths.js";
-import { resolveOpenClawPackageRoot } from "../../infra/openclaw-root.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { trimLogTail } from "../../infra/restart-sentinel.js";
 import { parseSemver } from "../../infra/runtime-guard.js";
 import { fetchNpmTagVersion } from "../../infra/update-check.js";
 import {
   detectGlobalInstallManagerByPresence,
   detectGlobalInstallManagerForRoot,
-<<<<<<< HEAD
   type CommandRunner,
   type GlobalInstallManager,
 } from "../../infra/update-global.js";
 import type { UpdateStepProgress, UpdateStepResult } from "../../infra/update-runner.js";
-=======
-  type GlobalInstallManager,
-} from "../../infra/update-global.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { runCommandWithTimeout } from "../../process/exec.js";
 import { defaultRuntime } from "../../runtime.js";
 import { theme } from "../../terminal/theme.js";
@@ -34,10 +23,7 @@ import { pathExists } from "../../utils.js";
 export type UpdateCommandOptions = {
   json?: boolean;
   restart?: boolean;
-<<<<<<< HEAD
   dryRun?: boolean;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   channel?: string;
   tag?: string;
   timeout?: string;
@@ -53,7 +39,6 @@ export type UpdateWizardOptions = {
   timeout?: string;
 };
 
-<<<<<<< HEAD
 const INVALID_TIMEOUT_ERROR = "--timeout must be a positive integer (seconds)";
 
 export function parseTimeoutMsOrExit(timeout?: string): number | undefined | null {
@@ -66,8 +51,6 @@ export function parseTimeoutMsOrExit(timeout?: string): number | undefined | nul
   return timeoutMs;
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 const OPENCLAW_REPO_URL = "https://github.com/openclaw/openclaw.git";
 const MAX_LOG_CHARS = 8000;
 
@@ -100,19 +83,7 @@ export function normalizeVersionTag(tag: string): string | null {
   return parseSemver(cleaned) ? cleaned : null;
 }
 
-<<<<<<< HEAD
 export { readPackageName, readPackageVersion };
-=======
-export async function readPackageVersion(root: string): Promise<string | null> {
-  try {
-    const raw = await fs.readFile(path.join(root, "package.json"), "utf-8");
-    const parsed = JSON.parse(raw) as { version?: string };
-    return typeof parsed.version === "string" ? parsed.version : null;
-  } catch {
-    return null;
-  }
-}
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export async function resolveTargetVersion(
   tag: string,
@@ -135,20 +106,6 @@ export async function isGitCheckout(root: string): Promise<boolean> {
   }
 }
 
-<<<<<<< HEAD
-=======
-export async function readPackageName(root: string): Promise<string | null> {
-  try {
-    const raw = await fs.readFile(path.join(root, "package.json"), "utf-8");
-    const parsed = JSON.parse(raw) as { name?: string };
-    const name = parsed?.name?.trim();
-    return name ? name : null;
-  } catch {
-    return null;
-  }
-}
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export async function isCorePackage(root: string): Promise<boolean> {
   const name = await readPackageName(root);
   return Boolean(name && CORE_PACKAGE_NAMES.has(name));
@@ -281,14 +238,7 @@ export async function resolveGlobalManager(params: {
   installKind: "git" | "package" | "unknown";
   timeoutMs: number;
 }): Promise<GlobalInstallManager> {
-<<<<<<< HEAD
   const runCommand = createGlobalCommandRunner();
-=======
-  const runCommand = async (argv: string[], options: { timeoutMs: number }) => {
-    const res = await runCommandWithTimeout(argv, options);
-    return { stdout: res.stdout, stderr: res.stderr, code: res.code };
-  };
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   if (params.installKind === "package") {
     const detected = await detectGlobalInstallManagerForRoot(
@@ -330,7 +280,6 @@ export async function tryWriteCompletionCache(root: string, jsonMode: boolean): 
     defaultRuntime.log(theme.warn(`Completion cache update failed${detail}.`));
   }
 }
-<<<<<<< HEAD
 
 export function createGlobalCommandRunner(): CommandRunner {
   return async (argv, options) => {
@@ -338,5 +287,3 @@ export function createGlobalCommandRunner(): CommandRunner {
     return { stdout: res.stdout, stderr: res.stderr, code: res.code };
   };
 }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)

@@ -2,10 +2,7 @@ import type { Command } from "commander";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
-<<<<<<< HEAD
 import { inheritOptionFromParent } from "./command-options.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { formatHelpExamples } from "./help-format.js";
 import {
   type UpdateCommandOptions,
@@ -18,7 +15,6 @@ import { updateWizardCommand } from "./update-cli/wizard.js";
 
 export { updateCommand, updateStatusCommand, updateWizardCommand };
 export type { UpdateCommandOptions, UpdateStatusOptions, UpdateWizardOptions };
-<<<<<<< HEAD
 
 function inheritedUpdateJson(command?: Command): boolean {
   return Boolean(inheritOptionFromParent<boolean>(command, "json"));
@@ -34,8 +30,6 @@ function inheritedUpdateTimeout(
   }
   return inheritOptionFromParent<string>(command, "timeout");
 }
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export function registerUpdateCli(program: Command) {
   const update = program

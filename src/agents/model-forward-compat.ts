@@ -1,15 +1,8 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
-<<<<<<< HEAD
 import { DEFAULT_CONTEXT_TOKENS } from "./defaults.js";
 import { normalizeModelCompat } from "./model-compat.js";
 import { normalizeProviderId } from "./model-selection.js";
 import type { ModelRegistry } from "./pi-model-discovery.js";
-=======
-import type { ModelRegistry } from "./pi-model-discovery.js";
-import { DEFAULT_CONTEXT_TOKENS } from "./defaults.js";
-import { normalizeModelCompat } from "./model-compat.js";
-import { normalizeProviderId } from "./model-selection.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const OPENAI_CODEX_GPT_53_MODEL_ID = "gpt-5.3-codex";
 const OPENAI_CODEX_TEMPLATE_MODEL_IDS = ["gpt-5.2-codex"] as const;
@@ -17,17 +10,13 @@ const OPENAI_CODEX_TEMPLATE_MODEL_IDS = ["gpt-5.2-codex"] as const;
 const ANTHROPIC_OPUS_46_MODEL_ID = "claude-opus-4-6";
 const ANTHROPIC_OPUS_46_DOT_MODEL_ID = "claude-opus-4.6";
 const ANTHROPIC_OPUS_TEMPLATE_MODEL_IDS = ["claude-opus-4-5", "claude-opus-4.5"] as const;
-<<<<<<< HEAD
 const ANTHROPIC_SONNET_46_MODEL_ID = "claude-sonnet-4-6";
 const ANTHROPIC_SONNET_46_DOT_MODEL_ID = "claude-sonnet-4.6";
 const ANTHROPIC_SONNET_TEMPLATE_MODEL_IDS = ["claude-sonnet-4-5", "claude-sonnet-4.5"] as const;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const ZAI_GLM5_MODEL_ID = "glm-5";
 const ZAI_GLM5_TEMPLATE_MODEL_IDS = ["glm-4.7"] as const;
 
-<<<<<<< HEAD
 function cloneFirstTemplateModel(params: {
   normalizedProvider: string;
   trimmedModelId: string;
@@ -50,31 +39,6 @@ function cloneFirstTemplateModel(params: {
   }
   return undefined;
 }
-=======
-const ANTIGRAVITY_OPUS_46_MODEL_ID = "claude-opus-4-6";
-const ANTIGRAVITY_OPUS_46_DOT_MODEL_ID = "claude-opus-4.6";
-const ANTIGRAVITY_OPUS_TEMPLATE_MODEL_IDS = ["claude-opus-4-5", "claude-opus-4.5"] as const;
-const ANTIGRAVITY_OPUS_46_THINKING_MODEL_ID = "claude-opus-4-6-thinking";
-const ANTIGRAVITY_OPUS_46_DOT_THINKING_MODEL_ID = "claude-opus-4.6-thinking";
-const ANTIGRAVITY_OPUS_THINKING_TEMPLATE_MODEL_IDS = [
-  "claude-opus-4-5-thinking",
-  "claude-opus-4.5-thinking",
-] as const;
-
-export const ANTIGRAVITY_OPUS_46_FORWARD_COMPAT_CANDIDATES = [
-  {
-    id: ANTIGRAVITY_OPUS_46_THINKING_MODEL_ID,
-    templatePrefixes: [
-      "google-antigravity/claude-opus-4-5-thinking",
-      "google-antigravity/claude-opus-4.5-thinking",
-    ],
-  },
-  {
-    id: ANTIGRAVITY_OPUS_46_MODEL_ID,
-    templatePrefixes: ["google-antigravity/claude-opus-4-5", "google-antigravity/claude-opus-4.5"],
-  },
-] as const;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 function resolveOpenAICodexGpt53FallbackModel(
   provider: string,
@@ -116,7 +80,6 @@ function resolveOpenAICodexGpt53FallbackModel(
   } as Model<Api>);
 }
 
-<<<<<<< HEAD
 function resolveAnthropic46ForwardCompatModel(params: {
   provider: string;
   modelId: string;
@@ -128,13 +91,6 @@ function resolveAnthropic46ForwardCompatModel(params: {
   fallbackTemplateIds: readonly string[];
 }): Model<Api> | undefined {
   const { provider, modelId, modelRegistry, dashModelId, dotModelId } = params;
-=======
-function resolveAnthropicOpus46ForwardCompatModel(
-  provider: string,
-  modelId: string,
-  modelRegistry: ModelRegistry,
-): Model<Api> | undefined {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const normalizedProvider = normalizeProviderId(provider);
   if (normalizedProvider !== "anthropic") {
     return undefined;
@@ -142,26 +98,16 @@ function resolveAnthropicOpus46ForwardCompatModel(
 
   const trimmedModelId = modelId.trim();
   const lower = trimmedModelId.toLowerCase();
-<<<<<<< HEAD
   const is46Model =
     lower === dashModelId ||
     lower === dotModelId ||
     lower.startsWith(`${dashModelId}-`) ||
     lower.startsWith(`${dotModelId}-`);
   if (!is46Model) {
-=======
-  const isOpus46 =
-    lower === ANTHROPIC_OPUS_46_MODEL_ID ||
-    lower === ANTHROPIC_OPUS_46_DOT_MODEL_ID ||
-    lower.startsWith(`${ANTHROPIC_OPUS_46_MODEL_ID}-`) ||
-    lower.startsWith(`${ANTHROPIC_OPUS_46_DOT_MODEL_ID}-`);
-  if (!isOpus46) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return undefined;
   }
 
   const templateIds: string[] = [];
-<<<<<<< HEAD
   if (lower.startsWith(dashModelId)) {
     templateIds.push(lower.replace(dashModelId, params.dashTemplateId));
   }
@@ -210,29 +156,6 @@ function resolveAnthropicSonnet46ForwardCompatModel(
     dotTemplateId: "claude-sonnet-4.5",
     fallbackTemplateIds: ANTHROPIC_SONNET_TEMPLATE_MODEL_IDS,
   });
-=======
-  if (lower.startsWith(ANTHROPIC_OPUS_46_MODEL_ID)) {
-    templateIds.push(lower.replace(ANTHROPIC_OPUS_46_MODEL_ID, "claude-opus-4-5"));
-  }
-  if (lower.startsWith(ANTHROPIC_OPUS_46_DOT_MODEL_ID)) {
-    templateIds.push(lower.replace(ANTHROPIC_OPUS_46_DOT_MODEL_ID, "claude-opus-4.5"));
-  }
-  templateIds.push(...ANTHROPIC_OPUS_TEMPLATE_MODEL_IDS);
-
-  for (const templateId of [...new Set(templateIds)].filter(Boolean)) {
-    const template = modelRegistry.find(normalizedProvider, templateId) as Model<Api> | null;
-    if (!template) {
-      continue;
-    }
-    return normalizeModelCompat({
-      ...template,
-      id: trimmedModelId,
-      name: trimmedModelId,
-    } as Model<Api>);
-  }
-
-  return undefined;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 // Z.ai's GLM-5 may not be present in pi-ai's built-in model catalog yet.
@@ -277,70 +200,6 @@ function resolveZaiGlm5ForwardCompatModel(
   } as Model<Api>);
 }
 
-<<<<<<< HEAD
-=======
-function resolveAntigravityOpus46ForwardCompatModel(
-  provider: string,
-  modelId: string,
-  modelRegistry: ModelRegistry,
-): Model<Api> | undefined {
-  const normalizedProvider = normalizeProviderId(provider);
-  if (normalizedProvider !== "google-antigravity") {
-    return undefined;
-  }
-
-  const trimmedModelId = modelId.trim();
-  const lower = trimmedModelId.toLowerCase();
-  const isOpus46 =
-    lower === ANTIGRAVITY_OPUS_46_MODEL_ID ||
-    lower === ANTIGRAVITY_OPUS_46_DOT_MODEL_ID ||
-    lower.startsWith(`${ANTIGRAVITY_OPUS_46_MODEL_ID}-`) ||
-    lower.startsWith(`${ANTIGRAVITY_OPUS_46_DOT_MODEL_ID}-`);
-  const isOpus46Thinking =
-    lower === ANTIGRAVITY_OPUS_46_THINKING_MODEL_ID ||
-    lower === ANTIGRAVITY_OPUS_46_DOT_THINKING_MODEL_ID ||
-    lower.startsWith(`${ANTIGRAVITY_OPUS_46_THINKING_MODEL_ID}-`) ||
-    lower.startsWith(`${ANTIGRAVITY_OPUS_46_DOT_THINKING_MODEL_ID}-`);
-  if (!isOpus46 && !isOpus46Thinking) {
-    return undefined;
-  }
-
-  const templateIds: string[] = [];
-  if (lower.startsWith(ANTIGRAVITY_OPUS_46_MODEL_ID)) {
-    templateIds.push(lower.replace(ANTIGRAVITY_OPUS_46_MODEL_ID, "claude-opus-4-5"));
-  }
-  if (lower.startsWith(ANTIGRAVITY_OPUS_46_DOT_MODEL_ID)) {
-    templateIds.push(lower.replace(ANTIGRAVITY_OPUS_46_DOT_MODEL_ID, "claude-opus-4.5"));
-  }
-  if (lower.startsWith(ANTIGRAVITY_OPUS_46_THINKING_MODEL_ID)) {
-    templateIds.push(
-      lower.replace(ANTIGRAVITY_OPUS_46_THINKING_MODEL_ID, "claude-opus-4-5-thinking"),
-    );
-  }
-  if (lower.startsWith(ANTIGRAVITY_OPUS_46_DOT_THINKING_MODEL_ID)) {
-    templateIds.push(
-      lower.replace(ANTIGRAVITY_OPUS_46_DOT_THINKING_MODEL_ID, "claude-opus-4.5-thinking"),
-    );
-  }
-  templateIds.push(...ANTIGRAVITY_OPUS_TEMPLATE_MODEL_IDS);
-  templateIds.push(...ANTIGRAVITY_OPUS_THINKING_TEMPLATE_MODEL_IDS);
-
-  for (const templateId of [...new Set(templateIds)].filter(Boolean)) {
-    const template = modelRegistry.find(normalizedProvider, templateId) as Model<Api> | null;
-    if (!template) {
-      continue;
-    }
-    return normalizeModelCompat({
-      ...template,
-      id: trimmedModelId,
-      name: trimmedModelId,
-    } as Model<Api>);
-  }
-
-  return undefined;
-}
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function resolveForwardCompatModel(
   provider: string,
   modelId: string,
@@ -349,12 +208,7 @@ export function resolveForwardCompatModel(
   return (
     resolveOpenAICodexGpt53FallbackModel(provider, modelId, modelRegistry) ??
     resolveAnthropicOpus46ForwardCompatModel(provider, modelId, modelRegistry) ??
-<<<<<<< HEAD
     resolveAnthropicSonnet46ForwardCompatModel(provider, modelId, modelRegistry) ??
     resolveZaiGlm5ForwardCompatModel(provider, modelId, modelRegistry)
-=======
-    resolveZaiGlm5ForwardCompatModel(provider, modelId, modelRegistry) ??
-    resolveAntigravityOpus46ForwardCompatModel(provider, modelId, modelRegistry)
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   );
 }

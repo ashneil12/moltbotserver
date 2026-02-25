@@ -8,16 +8,7 @@ import { pathToFileURL } from "node:url";
 const compiler = "tsdown";
 const compilerArgs = ["exec", compiler, "--no-clean"];
 
-<<<<<<< HEAD
 export const runNodeWatchedPaths = ["src", "tsconfig.json", "package.json"];
-=======
-const distRoot = path.join(cwd, "dist");
-const distEntry = path.join(distRoot, "/entry.js");
-const buildStampPath = path.join(distRoot, ".buildstamp");
-const srcRoot = path.join(cwd, "src");
-const configFiles = [path.join(cwd, "tsconfig.json"), path.join(cwd, "package.json")];
-const gitWatchedPaths = ["src", "tsconfig.json", "package.json"];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 const statMtime = (filePath, fsImpl = fs) => {
   try {
@@ -77,17 +68,10 @@ const findLatestMtime = (dirPath, shouldSkip, deps) => {
   return latest;
 };
 
-<<<<<<< HEAD
 const runGit = (gitArgs, deps) => {
   try {
     const result = deps.spawnSync("git", gitArgs, {
       cwd: deps.cwd,
-=======
-const runGit = (args) => {
-  try {
-    const result = spawnSync("git", args, {
-      cwd,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     });
@@ -100,7 +84,6 @@ const runGit = (args) => {
   }
 };
 
-<<<<<<< HEAD
 const resolveGitHead = (deps) => {
   const head = runGit(["rev-parse", "HEAD"], deps);
   return head || null;
@@ -111,43 +94,19 @@ const hasDirtySourceTree = (deps) => {
     ["status", "--porcelain", "--untracked-files=normal", "--", ...runNodeWatchedPaths],
     deps,
   );
-=======
-const resolveGitHead = () => {
-  const head = runGit(["rev-parse", "HEAD"]);
-  return head || null;
-};
-
-const hasDirtySourceTree = () => {
-  const output = runGit([
-    "status",
-    "--porcelain",
-    "--untracked-files=normal",
-    "--",
-    ...gitWatchedPaths,
-  ]);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (output === null) {
     return null;
   }
   return output.length > 0;
 };
 
-<<<<<<< HEAD
 const readBuildStamp = (deps) => {
   const mtime = statMtime(deps.buildStampPath, deps.fs);
-=======
-const readBuildStamp = () => {
-  const mtime = statMtime(buildStampPath);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (mtime == null) {
     return { mtime: null, head: null };
   }
   try {
-<<<<<<< HEAD
     const raw = deps.fs.readFileSync(deps.buildStampPath, "utf8").trim();
-=======
-    const raw = fs.readFileSync(buildStampPath, "utf8").trim();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (!raw.startsWith("{")) {
       return { mtime, head: null };
     }
@@ -159,7 +118,6 @@ const readBuildStamp = () => {
   }
 };
 
-<<<<<<< HEAD
 const hasSourceMtimeChanged = (stampMtime, deps) => {
   const srcMtime = findLatestMtime(
     deps.srcRoot,
@@ -174,18 +132,6 @@ const shouldBuild = (deps) => {
     return true;
   }
   const stamp = readBuildStamp(deps);
-=======
-const hasSourceMtimeChanged = (stampMtime) => {
-  const srcMtime = findLatestMtime(srcRoot, isExcludedSource);
-  return srcMtime != null && srcMtime > stampMtime;
-};
-
-const shouldBuild = () => {
-  if (env.OPENCLAW_FORCE_BUILD === "1") {
-    return true;
-  }
-  const stamp = readBuildStamp();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   if (stamp.mtime == null) {
     return true;
   }
@@ -193,19 +139,13 @@ const shouldBuild = () => {
     return true;
   }
 
-<<<<<<< HEAD
   for (const filePath of deps.configFiles) {
     const mtime = statMtime(filePath, deps.fs);
-=======
-  for (const filePath of configFiles) {
-    const mtime = statMtime(filePath);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (mtime != null && mtime > stamp.mtime) {
       return true;
     }
   }
 
-<<<<<<< HEAD
   const currentHead = resolveGitHead(deps);
   if (currentHead && !stamp.head) {
     return hasSourceMtimeChanged(stamp.mtime, deps);
@@ -215,17 +155,6 @@ const shouldBuild = () => {
   }
   if (currentHead) {
     const dirty = hasDirtySourceTree(deps);
-=======
-  const currentHead = resolveGitHead();
-  if (currentHead && !stamp.head) {
-    return hasSourceMtimeChanged(stamp.mtime);
-  }
-  if (currentHead && stamp.head && currentHead !== stamp.head) {
-    return hasSourceMtimeChanged(stamp.mtime);
-  }
-  if (currentHead) {
-    const dirty = hasDirtySourceTree();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (dirty === true) {
       return true;
     }
@@ -234,11 +163,7 @@ const shouldBuild = () => {
     }
   }
 
-<<<<<<< HEAD
   if (hasSourceMtimeChanged(stamp.mtime, deps)) {
-=======
-  if (hasSourceMtimeChanged(stamp.mtime)) {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     return true;
   }
   return false;
@@ -270,21 +195,12 @@ const runOpenClaw = async (deps) => {
 
 const writeBuildStamp = (deps) => {
   try {
-<<<<<<< HEAD
     deps.fs.mkdirSync(deps.distRoot, { recursive: true });
     const stamp = {
       builtAt: Date.now(),
       head: resolveGitHead(deps),
     };
     deps.fs.writeFileSync(deps.buildStampPath, `${JSON.stringify(stamp)}\n`);
-=======
-    fs.mkdirSync(distRoot, { recursive: true });
-    const stamp = {
-      builtAt: Date.now(),
-      head: resolveGitHead(),
-    };
-    fs.writeFileSync(buildStampPath, `${JSON.stringify(stamp)}\n`);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   } catch (error) {
     // Best-effort stamp; still allow the runner to start.
     logRunner(`Failed to write build stamp: ${error?.message ?? "unknown error"}`, deps);

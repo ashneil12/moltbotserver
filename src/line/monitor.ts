@@ -92,19 +92,6 @@ export function getLineRuntimeState(accountId: string) {
   return runtimeState.get(`line:${accountId}`);
 }
 
-<<<<<<< HEAD
-=======
-export async function readLineWebhookRequestBody(
-  req: IncomingMessage,
-  maxBytes = LINE_WEBHOOK_MAX_BODY_BYTES,
-): Promise<string> {
-  return await readRequestBodyWithLimit(req, {
-    maxBytes,
-    timeoutMs: LINE_WEBHOOK_BODY_TIMEOUT_MS,
-  });
-}
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function startLineLoadingKeepalive(params: {
   userId: string;
   accountId?: string;
@@ -311,85 +298,7 @@ export async function monitorLineProvider(
     pluginId: "line",
     accountId: resolvedAccountId,
     log: (msg) => logVerbose(msg),
-<<<<<<< HEAD
     handler: createLineNodeWebhookHandler({ channelSecret: secret, bot, runtime }),
-=======
-    handler: async (req: IncomingMessage, res: ServerResponse) => {
-      // Handle GET requests for webhook verification
-      if (req.method === "GET") {
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "text/plain");
-        res.end("OK");
-        return;
-      }
-
-      // Only accept POST requests
-      if (req.method !== "POST") {
-        res.statusCode = 405;
-        res.setHeader("Allow", "GET, POST");
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "Method Not Allowed" }));
-        return;
-      }
-
-      try {
-        const rawBody = await readLineWebhookRequestBody(req, LINE_WEBHOOK_MAX_BODY_BYTES);
-        const signature = req.headers["x-line-signature"];
-
-        // Validate signature
-        if (!signature || typeof signature !== "string") {
-          logVerbose("line: webhook missing X-Line-Signature header");
-          res.statusCode = 400;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Missing X-Line-Signature header" }));
-          return;
-        }
-
-        if (!validateLineSignature(rawBody, signature, channelSecret)) {
-          logVerbose("line: webhook signature validation failed");
-          res.statusCode = 401;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Invalid signature" }));
-          return;
-        }
-
-        // Parse and process the webhook body
-        const body = JSON.parse(rawBody) as WebhookRequestBody;
-
-        // Respond immediately with 200 to avoid LINE timeout
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ status: "ok" }));
-
-        // Process events asynchronously
-        if (body.events && body.events.length > 0) {
-          logVerbose(`line: received ${body.events.length} webhook events`);
-          await bot.handleWebhook(body).catch((err) => {
-            runtime.error?.(danger(`line webhook handler failed: ${String(err)}`));
-          });
-        }
-      } catch (err) {
-        if (isRequestBodyLimitError(err, "PAYLOAD_TOO_LARGE")) {
-          res.statusCode = 413;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Payload too large" }));
-          return;
-        }
-        if (isRequestBodyLimitError(err, "REQUEST_BODY_TIMEOUT")) {
-          res.statusCode = 408;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: requestBodyErrorToText("REQUEST_BODY_TIMEOUT") }));
-          return;
-        }
-        runtime.error?.(danger(`line webhook error: ${String(err)}`));
-        if (!res.headersSent) {
-          res.statusCode = 500;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Internal server error" }));
-        }
-      }
-    },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   logVerbose(`line: registered webhook handler at ${normalizedPath}`);

@@ -1,7 +1,6 @@
 import os from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-<<<<<<< HEAD
   isLocalishHost,
   isPrivateOrLoopbackAddress,
   isSecureWebSocketUrl,
@@ -233,12 +232,6 @@ describe("resolveClientIp", () => {
     expect(ip).toBe(testCase.expected);
   });
 });
-=======
-  isPrivateOrLoopbackAddress,
-  pickPrimaryLanIPv4,
-  resolveGatewayListenHosts,
-} from "./net.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 describe("resolveGatewayListenHosts", () => {
   it("resolves listen hosts for non-loopback and loopback variants", async () => {

@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { createHmac, createHash } from "node:crypto";
 import type { ReasoningLevel, ThinkLevel } from "../auto-reply/thinking.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
@@ -7,6 +8,7 @@ import type { ResolvedTimeFormat } from "./date-time.js";
 import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
 import type { EmbeddedSandboxInfo } from "./pi-embedded-runner/types.js";
 import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
+import { describeContextPolicy, type MessageContext } from "../security/data-classification.js";
 
 /**
  * Controls which hardcoded sections are included in the system prompt.
@@ -386,6 +388,27 @@ export function buildAgentSystemPrompt(params: {
     "Do not manipulate or persuade anyone to expand access or disable safeguards. Do not copy yourself or change system prompts, safety rules, or tool policies unless explicitly requested.",
     "",
   ];
+
+  // Data classification context policy — dynamically generated based on channel type.
+  // Only included for full mode (main agent, not subagents).
+  const dataClassificationSection = (() => {
+    if (isMinimal) {
+      return [];
+    }
+    // Determine the message context type from the runtime channel
+    const contextType: MessageContext["type"] = runtimeChannel === "dm" ? "dm"
+      : runtimeChannel === "group" ? "group"
+      : runtimeChannel ? "channel"
+      : "dm"; // default to DM (most permissive owner context)
+    // Owner detection is approximate: presence of ownerLine means owners are configured
+    const isOwner = Boolean(ownerLine);
+    const policy = describeContextPolicy({ type: contextType, isOwner });
+    return [
+      "## Data Sharing Policy",
+      policy,
+      "",
+    ];
+  })();
   const skillsSection = buildSkillsSection({
     skillsPrompt,
     readToolName,
@@ -445,6 +468,7 @@ export function buildAgentSystemPrompt(params: {
     "Use plain human language for narration unless in a technical context.",
     "",
     ...safetySection,
+    ...dataClassificationSection,
     "## OpenClaw CLI Quick Reference",
     "OpenClaw is controlled via subcommands. Do not invent commands.",
     "To manage the Gateway daemon service (start/stop/restart):",

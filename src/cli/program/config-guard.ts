@@ -49,11 +49,7 @@ export async function ensureConfigReady(params: {
     });
   }
 
-<<<<<<< HEAD
   const snapshot = await getConfigSnapshot();
-=======
-  const snapshot = await readConfigFileSnapshot();
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const commandName = commandPath[0];
   const subcommandName = commandPath[1];
   const allowInvalid = commandName

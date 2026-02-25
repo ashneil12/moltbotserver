@@ -123,7 +123,6 @@ export function containsEnvVarReference(value: string): boolean {
       continue;
     }
 
-<<<<<<< HEAD
     const token = parseEnvTokenAt(value, i);
     if (token?.kind === "escaped") {
       i = token.end;
@@ -131,34 +130,6 @@ export function containsEnvVarReference(value: string): boolean {
     }
     if (token?.kind === "substitution") {
       return true;
-=======
-    const next = value[i + 1];
-    const afterNext = value[i + 2];
-
-    // Escaped: $${VAR} -> ${VAR}
-    if (next === "$" && afterNext === "{") {
-      const start = i + 3;
-      const end = value.indexOf("}", start);
-      if (end !== -1) {
-        const name = value.slice(start, end);
-        if (ENV_VAR_NAME_PATTERN.test(name)) {
-          i = end;
-          continue;
-        }
-      }
-    }
-
-    // Substitution: ${VAR} -> value
-    if (next === "{") {
-      const start = i + 2;
-      const end = value.indexOf("}", start);
-      if (end !== -1) {
-        const name = value.slice(start, end);
-        if (ENV_VAR_NAME_PATTERN.test(name)) {
-          return true;
-        }
-      }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     }
   }
 

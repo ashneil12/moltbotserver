@@ -58,7 +58,6 @@ vi.mock("../infra/exec-approvals.js", async () => {
 
 const { registerExecApprovalsCli } = await import("./exec-approvals-cli.js");
 const execApprovals = await import("../infra/exec-approvals.js");
-<<<<<<< HEAD
 
 describe("exec approvals CLI", () => {
   const createProgram = () => {
@@ -81,46 +80,18 @@ describe("exec approvals CLI", () => {
 
   it("routes get command to local, gateway, and node modes", async () => {
     await runApprovalsCommand(["approvals", "get"]);
-=======
-
-describe("exec approvals CLI", () => {
-  const createProgram = () => {
-    const program = new Command();
-    program.exitOverride();
-    registerExecApprovalsCli(program);
-    return program;
-  };
-
-  it("routes get command to local, gateway, and node modes", async () => {
-    runtimeLogs.length = 0;
-    runtimeErrors.length = 0;
-    callGatewayFromCli.mockClear();
-
-    const localProgram = createProgram();
-    await localProgram.parseAsync(["approvals", "get"], { from: "user" });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(callGatewayFromCli).not.toHaveBeenCalled();
     expect(runtimeErrors).toHaveLength(0);
     callGatewayFromCli.mockClear();
 
-<<<<<<< HEAD
     await runApprovalsCommand(["approvals", "get", "--gateway"]);
-=======
-    const gatewayProgram = createProgram();
-    await gatewayProgram.parseAsync(["approvals", "get", "--gateway"], { from: "user" });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(callGatewayFromCli).toHaveBeenCalledWith("exec.approvals.get", expect.anything(), {});
     expect(runtimeErrors).toHaveLength(0);
     callGatewayFromCli.mockClear();
 
-<<<<<<< HEAD
     await runApprovalsCommand(["approvals", "get", "--node", "macbook"]);
-=======
-    const nodeProgram = createProgram();
-    await nodeProgram.parseAsync(["approvals", "get", "--node", "macbook"], { from: "user" });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(callGatewayFromCli).toHaveBeenCalledWith("exec.approvals.node.get", expect.anything(), {
       nodeId: "node-1",
@@ -129,25 +100,10 @@ describe("exec approvals CLI", () => {
   });
 
   it("defaults allowlist add to wildcard agent", async () => {
-<<<<<<< HEAD
     const saveExecApprovals = vi.mocked(execApprovals.saveExecApprovals);
     saveExecApprovals.mockClear();
 
     await runApprovalsCommand(["approvals", "allowlist", "add", "/usr/bin/uname"]);
-=======
-    runtimeLogs.length = 0;
-    runtimeErrors.length = 0;
-    callGatewayFromCli.mockClear();
-
-    const saveExecApprovals = vi.mocked(execApprovals.saveExecApprovals);
-    saveExecApprovals.mockClear();
-
-    const program = new Command();
-    program.exitOverride();
-    registerExecApprovalsCli(program);
-
-    await program.parseAsync(["approvals", "allowlist", "add", "/usr/bin/uname"], { from: "user" });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(callGatewayFromCli).not.toHaveBeenCalledWith(
       "exec.approvals.set",

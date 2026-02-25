@@ -1,8 +1,4 @@
 import { html, nothing } from "lit";
-<<<<<<< HEAD
-=======
-import type { AppViewState } from "./app-view-state.ts";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { parseAgentSessionKey } from "../../../src/routing/session-key.js";
 import { t } from "../i18n/index.ts";
 import { refreshChatAvatar } from "./app-chat.ts";
@@ -66,10 +62,7 @@ import {
   updateSkillEdit,
   updateSkillEnabled,
 } from "./controllers/skills.ts";
-<<<<<<< HEAD
 import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "./external-link.ts";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { icons } from "./icons.ts";
 import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.ts";
 import { renderAgents } from "./views/agents.ts";

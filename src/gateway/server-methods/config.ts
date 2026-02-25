@@ -19,10 +19,7 @@ import {
 } from "../../config/redact-snapshot.js";
 import { buildConfigSchema, type ConfigSchemaResponse } from "../../config/schema.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
-<<<<<<< HEAD
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   formatDoctorNonInteractiveHint,
   type RestartSentinelPayload,
@@ -96,7 +93,6 @@ function requireConfigBaseHash(
   return true;
 }
 
-<<<<<<< HEAD
 function parseRawConfigOrRespond(
   params: unknown,
   requestName: string,
@@ -212,8 +208,6 @@ async function tryWriteRestartSentinelPayload(
   }
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function loadSchemaWithPlugins(): ConfigSchemaResponse {
   const cfg = loadConfig();
   const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
@@ -276,47 +270,13 @@ export const configHandlers: GatewayRequestHandlers = {
     if (!parsed) {
       return;
     }
-<<<<<<< HEAD
     await writeConfigFile(parsed.config, writeOptions);
-=======
-    const parsedRes = parseConfigJson5(rawValue);
-    if (!parsedRes.ok) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, parsedRes.error));
-      return;
-    }
-    const schemaSet = loadSchemaWithPlugins();
-    const restored = restoreRedactedValues(parsedRes.parsed, snapshot.config, schemaSet.uiHints);
-    if (!restored.ok) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, restored.humanReadableMessage ?? "invalid config"),
-      );
-      return;
-    }
-    const validated = validateConfigObjectWithPlugins(restored.result);
-    if (!validated.ok) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "invalid config", {
-          details: { issues: validated.issues },
-        }),
-      );
-      return;
-    }
-    await writeConfigFile(validated.config, writeOptions);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     respond(
       true,
       {
         ok: true,
         path: CONFIG_PATH,
-<<<<<<< HEAD
         config: redactConfigObject(parsed.config, parsed.schema.uiHints),
-=======
-        config: redactConfigObject(validated.config, schemaSet.uiHints),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       },
       undefined,
     );
@@ -366,13 +326,9 @@ export const configHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-<<<<<<< HEAD
     const merged = applyMergePatch(snapshot.config, parsedRes.parsed, {
       mergeObjectArraysById: true,
     });
-=======
-    const merged = applyMergePatch(snapshot.config, parsedRes.parsed);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const schemaPatch = loadSchemaWithPlugins();
     const restoredMerge = restoreRedactedValues(merged, snapshot.config, schemaPatch.uiHints);
     if (!restoredMerge.ok) {
@@ -399,7 +355,6 @@ export const configHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-<<<<<<< HEAD
     const changedPaths = diffConfigPaths(snapshot.config, validated.config);
     const actor = resolveControlPlaneActor(client);
     context?.logGateway?.info(
@@ -418,48 +373,6 @@ export const configHandlers: GatewayRequestHandlers = {
       note,
     });
     const sentinelPath = await tryWriteRestartSentinelPayload(payload);
-=======
-    await writeConfigFile(validated.config, writeOptions);
-
-    const sessionKey =
-      typeof (params as { sessionKey?: unknown }).sessionKey === "string"
-        ? (params as { sessionKey?: string }).sessionKey?.trim() || undefined
-        : undefined;
-    const note =
-      typeof (params as { note?: unknown }).note === "string"
-        ? (params as { note?: string }).note?.trim() || undefined
-        : undefined;
-    const restartDelayMsRaw = (params as { restartDelayMs?: unknown }).restartDelayMs;
-    const restartDelayMs =
-      typeof restartDelayMsRaw === "number" && Number.isFinite(restartDelayMsRaw)
-        ? Math.max(0, Math.floor(restartDelayMsRaw))
-        : undefined;
-
-    // Extract deliveryContext + threadId for routing after restart
-    // Supports both :thread: (most channels) and :topic: (Telegram)
-    const { deliveryContext, threadId } = extractDeliveryInfo(sessionKey);
-
-    const payload: RestartSentinelPayload = {
-      kind: "config-patch",
-      status: "ok",
-      ts: Date.now(),
-      sessionKey,
-      deliveryContext,
-      threadId,
-      message: note ?? null,
-      doctorHint: formatDoctorNonInteractiveHint(),
-      stats: {
-        mode: "config.patch",
-        root: CONFIG_PATH,
-      },
-    };
-    let sentinelPath: string | null = null;
-    try {
-      sentinelPath = await writeRestartSentinel(payload);
-    } catch {
-      sentinelPath = null;
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const restart = scheduleGatewaySigusr1Restart({
       delayMs: restartDelayMs,
       reason: "config.patch",
@@ -502,7 +415,6 @@ export const configHandlers: GatewayRequestHandlers = {
     if (!parsed) {
       return;
     }
-<<<<<<< HEAD
     const changedPaths = diffConfigPaths(snapshot.config, parsed.config);
     const actor = resolveControlPlaneActor(client);
     context?.logGateway?.info(
@@ -513,82 +425,14 @@ export const configHandlers: GatewayRequestHandlers = {
     const { sessionKey, note, restartDelayMs, deliveryContext, threadId } =
       resolveConfigRestartRequest(params);
     const payload = buildConfigRestartSentinelPayload({
-=======
-    const parsedRes = parseConfigJson5(rawValue);
-    if (!parsedRes.ok) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, parsedRes.error));
-      return;
-    }
-    const schemaApply = loadSchemaWithPlugins();
-    const restored = restoreRedactedValues(parsedRes.parsed, snapshot.config, schemaApply.uiHints);
-    if (!restored.ok) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, restored.humanReadableMessage ?? "invalid config"),
-      );
-      return;
-    }
-    const validated = validateConfigObjectWithPlugins(restored.result);
-    if (!validated.ok) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "invalid config", {
-          details: { issues: validated.issues },
-        }),
-      );
-      return;
-    }
-    await writeConfigFile(validated.config, writeOptions);
-
-    const sessionKey =
-      typeof (params as { sessionKey?: unknown }).sessionKey === "string"
-        ? (params as { sessionKey?: string }).sessionKey?.trim() || undefined
-        : undefined;
-    const note =
-      typeof (params as { note?: unknown }).note === "string"
-        ? (params as { note?: string }).note?.trim() || undefined
-        : undefined;
-    const restartDelayMsRaw = (params as { restartDelayMs?: unknown }).restartDelayMs;
-    const restartDelayMs =
-      typeof restartDelayMsRaw === "number" && Number.isFinite(restartDelayMsRaw)
-        ? Math.max(0, Math.floor(restartDelayMsRaw))
-        : undefined;
-
-    // Extract deliveryContext + threadId for routing after restart
-    // Supports both :thread: (most channels) and :topic: (Telegram)
-    const { deliveryContext: deliveryContextApply, threadId: threadIdApply } =
-      extractDeliveryInfo(sessionKey);
-
-    const payload: RestartSentinelPayload = {
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       kind: "config-apply",
       mode: "config.apply",
       sessionKey,
-<<<<<<< HEAD
       deliveryContext,
       threadId,
       note,
     });
     const sentinelPath = await tryWriteRestartSentinelPayload(payload);
-=======
-      deliveryContext: deliveryContextApply,
-      threadId: threadIdApply,
-      message: note ?? null,
-      doctorHint: formatDoctorNonInteractiveHint(),
-      stats: {
-        mode: "config.apply",
-        root: CONFIG_PATH,
-      },
-    };
-    let sentinelPath: string | null = null;
-    try {
-      sentinelPath = await writeRestartSentinel(payload);
-    } catch {
-      sentinelPath = null;
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     const restart = scheduleGatewaySigusr1Restart({
       delayMs: restartDelayMs,
       reason: "config.apply",
@@ -609,11 +453,7 @@ export const configHandlers: GatewayRequestHandlers = {
       {
         ok: true,
         path: CONFIG_PATH,
-<<<<<<< HEAD
         config: redactConfigObject(parsed.config, parsed.schema.uiHints),
-=======
-        config: redactConfigObject(validated.config, schemaApply.uiHints),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         restart,
         sentinel: {
           path: sentinelPath,

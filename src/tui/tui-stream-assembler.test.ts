@@ -109,41 +109,13 @@ describe("TuiStreamAssembler", () => {
 
   it("keeps richer streamed text when final payload drops earlier blocks", () => {
     const assembler = new TuiStreamAssembler();
-<<<<<<< HEAD
     assembler.ingestDelta("run-5", STREAM_WITH_TOOL_BLOCKS, false);
 
     const finalText = assembler.finalize("run-5", STREAM_AFTER_TOOL_BLOCKS, false);
-=======
-    assembler.ingestDelta(
-      "run-5",
-      {
-        role: "assistant",
-        content: [
-          { type: "text", text: "Before tool call" },
-          { type: "tool_use", name: "search" },
-          { type: "text", text: "After tool call" },
-        ],
-      },
-      false,
-    );
-
-    const finalText = assembler.finalize(
-      "run-5",
-      {
-        role: "assistant",
-        content: [
-          { type: "tool_use", name: "search" },
-          { type: "text", text: "After tool call" },
-        ],
-      },
-      false,
-    );
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(finalText).toBe("Before tool call\nAfter tool call");
   });
 
-<<<<<<< HEAD
   it("does not regress streamed text when a delta drops boundary blocks after tool calls", () => {
     const assembler = new TuiStreamAssembler();
     const first = assembler.ingestDelta("run-5-stream", STREAM_WITH_TOOL_BLOCKS, false);
@@ -154,8 +126,6 @@ describe("TuiStreamAssembler", () => {
     expect(second).toBeNull();
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("keeps non-empty final text for plain text prefix/suffix updates", () => {
     const assembler = new TuiStreamAssembler();
     assembler.ingestDelta(

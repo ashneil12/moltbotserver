@@ -1,12 +1,6 @@
-<<<<<<< HEAD
 import { readConfigFileSnapshot } from "../../config/config.js";
 import { redactConfigObject } from "../../config/redact-snapshot.js";
 import { buildTalkConfigResponse } from "../../config/talk.js";
-=======
-import type { GatewayRequestHandlers } from "./types.js";
-import { readConfigFileSnapshot } from "../../config/config.js";
-import { redactConfigObject } from "../../config/redact-snapshot.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import {
   ErrorCodes,
   errorShape,
@@ -102,11 +96,7 @@ export const talkHandlers: GatewayRequestHandlers = {
     const talkSource = includeSecrets
       ? snapshot.config.talk
       : redactConfigObject(snapshot.config.talk);
-<<<<<<< HEAD
     const talk = buildTalkConfigResponse(talkSource);
-=======
-    const talk = normalizeTalkConfigSection(talkSource);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     if (talk) {
       configPayload.talk = talk;
     }

@@ -26,6 +26,7 @@ import { DEFAULT_UPLOAD_DIR, resolveExistingPathsWithinRoot } from "../../browse
 import { applyBrowserProxyPaths, persistBrowserProxyFiles } from "../../browser/proxy-files.js";
 import { loadConfig } from "../../config/config.js";
 import { wrapExternalContent } from "../../security/external-content.js";
+import { scanAndLog } from "../../security/scan-and-log.js";
 import { BrowserToolSchema } from "./browser-tool.schema.js";
 import { type AnyAgentTool, imageResultFromFile, jsonResult, readStringParam } from "./common.js";
 import { callGatewayTool } from "./gateway.js";
@@ -37,6 +38,13 @@ function wrapBrowserExternalJson(params: {
   includeWarning?: boolean;
 }): { wrappedText: string; safeDetails: Record<string, unknown> } {
   const extractedText = JSON.stringify(params.payload, null, 2);
+
+  // Security: scan browser content before wrapping
+  scanAndLog(extractedText, {
+    source: "browser",
+    extraData: { kind: params.kind },
+  });
+
   const wrappedText = wrapExternalContent(extractedText, {
     source: "browser",
     includeWarning: params.includeWarning ?? true,
@@ -536,6 +544,13 @@ export function createBrowserTool(opts?: {
               });
           if (snapshot.format === "ai") {
             const extractedText = snapshot.snapshot ?? "";
+
+            // Security: scan AI snapshot content before wrapping
+            scanAndLog(extractedText, {
+              source: "browser",
+              extraData: { kind: "snapshot", format: "ai" },
+            });
+
             const wrappedSnapshot = wrapExternalContent(extractedText, {
               source: "browser",
               includeWarning: true,

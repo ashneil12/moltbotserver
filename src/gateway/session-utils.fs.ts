@@ -162,7 +162,6 @@ export function resolveSessionTranscriptCandidates(
   return Array.from(new Set(candidates));
 }
 
-<<<<<<< HEAD
 export type ArchiveFileReason = SessionArchiveReason;
 
 function canonicalizePathForComparison(filePath: string): string {
@@ -176,12 +175,6 @@ function canonicalizePathForComparison(filePath: string): string {
 
 export function archiveFileOnDisk(filePath: string, reason: ArchiveFileReason): string {
   const ts = formatSessionArchiveTimestamp();
-=======
-export type ArchiveFileReason = "bak" | "reset" | "deleted";
-
-export function archiveFileOnDisk(filePath: string, reason: ArchiveFileReason): string {
-  const ts = new Date().toISOString().replaceAll(":", "-");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const archived = `${filePath}.${reason}.${ts}`;
   fs.renameSync(filePath, archived);
   return archived;
@@ -197,7 +190,6 @@ export function archiveSessionTranscripts(opts: {
   sessionFile?: string;
   agentId?: string;
   reason: "reset" | "deleted";
-<<<<<<< HEAD
   /**
    * When true, only archive files resolved under the session store directory.
    * This prevents maintenance operations from mutating paths outside the agent sessions dir.
@@ -209,17 +201,12 @@ export function archiveSessionTranscripts(opts: {
     opts.restrictToStoreDir && opts.storePath
       ? canonicalizePathForComparison(path.dirname(opts.storePath))
       : null;
-=======
-}): string[] {
-  const archived: string[] = [];
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   for (const candidate of resolveSessionTranscriptCandidates(
     opts.sessionId,
     opts.storePath,
     opts.sessionFile,
     opts.agentId,
   )) {
-<<<<<<< HEAD
     const candidatePath = canonicalizePathForComparison(candidate);
     if (storeDir) {
       const relative = path.relative(storeDir, candidatePath);
@@ -232,13 +219,6 @@ export function archiveSessionTranscripts(opts: {
     }
     try {
       archived.push(archiveFileOnDisk(candidatePath, opts.reason));
-=======
-    if (!fs.existsSync(candidate)) {
-      continue;
-    }
-    try {
-      archived.push(archiveFileOnDisk(candidate, opts.reason));
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     } catch {
       // Best-effort.
     }
@@ -246,7 +226,6 @@ export function archiveSessionTranscripts(opts: {
   return archived;
 }
 
-<<<<<<< HEAD
 export async function cleanupArchivedSessionTranscripts(opts: {
   directories: string[];
   olderThanMs: number;
@@ -286,8 +265,6 @@ export async function cleanupArchivedSessionTranscripts(opts: {
   return { removed, scanned };
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 function jsonUtf8Bytes(value: unknown): number {
   try {
     return Buffer.byteLength(JSON.stringify(value), "utf8");

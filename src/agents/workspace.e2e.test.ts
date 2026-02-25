@@ -5,7 +5,6 @@ import { makeTempWorkspace, writeWorkspaceFile } from "../test-helpers/workspace
 import {
   DEFAULT_AGENTS_FILENAME,
   DEFAULT_BOOTSTRAP_FILENAME,
-<<<<<<< HEAD:src/agents/workspace.test.ts
   DEFAULT_IDENTITY_FILENAME,
   DEFAULT_MEMORY_ALT_FILENAME,
   DEFAULT_MEMORY_FILENAME,
@@ -13,12 +12,6 @@ import {
   DEFAULT_USER_FILENAME,
   ensureAgentWorkspace,
   filterBootstrapFilesForSession,
-=======
-  DEFAULT_HEARTBEAT_FILENAME,
-  DEFAULT_MEMORY_ALT_FILENAME,
-  DEFAULT_MEMORY_FILENAME,
-  ensureAgentWorkspace,
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/workspace.e2e.test.ts
   loadWorkspaceBootstrapFiles,
   resolveDefaultAgentWorkspaceDir,
   type WorkspaceBootstrapFile,
@@ -35,7 +28,6 @@ describe("resolveDefaultAgentWorkspaceDir", () => {
   });
 });
 
-<<<<<<< HEAD:src/agents/workspace.test.ts
 const WORKSPACE_STATE_PATH_SEGMENTS = [".openclaw", "workspace-state.json"] as const;
 
 async function readOnboardingState(dir: string): Promise<{
@@ -109,20 +101,6 @@ describe("ensureAgentWorkspace", () => {
     const state = await readOnboardingState(tempDir);
     expect(state.bootstrapSeededAt).toBeUndefined();
     expect(state.onboardingCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
-=======
-describe("ensureAgentWorkspace", () => {
-  it("does not create HEARTBEAT.md during bootstrap file initialization", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-init-");
-
-    const result = await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
-
-    await expect(fs.access(path.join(tempDir, DEFAULT_AGENTS_FILENAME))).resolves.toBeUndefined();
-    await expect(
-      fs.access(path.join(tempDir, DEFAULT_BOOTSTRAP_FILENAME)),
-    ).resolves.toBeUndefined();
-    await expect(fs.access(path.join(tempDir, DEFAULT_HEARTBEAT_FILENAME))).rejects.toThrow();
-    expect("heartbeatPath" in result).toBe(false);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/workspace.e2e.test.ts
   });
 });
 

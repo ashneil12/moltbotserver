@@ -65,13 +65,9 @@ describe("exec approvals", () => {
 
     vi.mocked(callGatewayTool).mockImplementation(async (method, _opts, params) => {
       if (method === "exec.approval.request") {
-<<<<<<< HEAD:src/agents/bash-tools.exec.approval-id.test.ts
         return { status: "accepted", id: (params as { id?: string })?.id };
       }
       if (method === "exec.approval.waitDecision") {
-=======
-        // Approval request now carries the decision directly.
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build):src/agents/bash-tools.exec.approval-id.e2e.test.ts
         return { decision: "allow-once" };
       }
       if (method === "node.invoke") {

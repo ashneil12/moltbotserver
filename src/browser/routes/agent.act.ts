@@ -12,7 +12,6 @@ import {
   withPlaywrightRouteContext,
   SELECTOR_UNSUPPORTED_MESSAGE,
 } from "./agent.shared.js";
-<<<<<<< HEAD
 import {
   DEFAULT_DOWNLOAD_DIR,
   DEFAULT_UPLOAD_DIR,
@@ -20,9 +19,6 @@ import {
   resolveExistingPathsWithinRoot,
 } from "./path-output.js";
 import type { BrowserResponse, BrowserRouteRegistrar } from "./types.js";
-=======
-import { DEFAULT_DOWNLOAD_DIR, resolvePathWithinRoot } from "./path-output.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { jsonError, toBoolean, toNumber, toStringArray, toStringOrEmpty } from "./utils.js";
 
 function resolveDownloadPathOrRespond(res: BrowserResponse, requestedPath: string): string | null {
@@ -459,7 +455,6 @@ export function registerBrowserAgentActRoutes(
 
   app.post("/wait/download", async (req, res) => {
     const body = readBody(req);
-<<<<<<< HEAD
     const targetId = resolveTargetIdFromBody(body);
     const out = toStringOrEmpty(body.path) || "";
     const timeoutMs = toNumber(body.timeoutMs);
@@ -487,40 +482,6 @@ export function registerBrowserAgentActRoutes(
         respondWithDownloadResult(res, tab.targetId, result);
       },
     });
-=======
-    const targetId = toStringOrEmpty(body.targetId) || undefined;
-    const out = toStringOrEmpty(body.path) || "";
-    const timeoutMs = toNumber(body.timeoutMs);
-    try {
-      const tab = await profileCtx.ensureTabAvailable(targetId);
-      const pw = await requirePwAi(res, "wait for download");
-      if (!pw) {
-        return;
-      }
-      let downloadPath: string | undefined;
-      if (out.trim()) {
-        const downloadPathResult = resolvePathWithinRoot({
-          rootDir: DEFAULT_DOWNLOAD_DIR,
-          requestedPath: out,
-          scopeLabel: "downloads directory",
-        });
-        if (!downloadPathResult.ok) {
-          res.status(400).json({ error: downloadPathResult.error });
-          return;
-        }
-        downloadPath = downloadPathResult.path;
-      }
-      const result = await pw.waitForDownloadViaPlaywright({
-        cdpUrl: profileCtx.profile.cdpUrl,
-        targetId: tab.targetId,
-        path: downloadPath,
-        timeoutMs: timeoutMs ?? undefined,
-      });
-      res.json({ ok: true, targetId: tab.targetId, download: result });
-    } catch (err) {
-      handleRouteError(ctx, res, err);
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   app.post("/download", async (req, res) => {
@@ -535,7 +496,6 @@ export function registerBrowserAgentActRoutes(
     if (!out) {
       return jsonError(res, 400, "path is required");
     }
-<<<<<<< HEAD
 
     await withPlaywrightRouteContext({
       req,
@@ -557,34 +517,6 @@ export function registerBrowserAgentActRoutes(
         respondWithDownloadResult(res, tab.targetId, result);
       },
     });
-=======
-    try {
-      const downloadPathResult = resolvePathWithinRoot({
-        rootDir: DEFAULT_DOWNLOAD_DIR,
-        requestedPath: out,
-        scopeLabel: "downloads directory",
-      });
-      if (!downloadPathResult.ok) {
-        res.status(400).json({ error: downloadPathResult.error });
-        return;
-      }
-      const tab = await profileCtx.ensureTabAvailable(targetId);
-      const pw = await requirePwAi(res, "download");
-      if (!pw) {
-        return;
-      }
-      const result = await pw.downloadViaPlaywright({
-        cdpUrl: profileCtx.profile.cdpUrl,
-        targetId: tab.targetId,
-        ref,
-        path: downloadPathResult.path,
-        timeoutMs: timeoutMs ?? undefined,
-      });
-      res.json({ ok: true, targetId: tab.targetId, download: result });
-    } catch (err) {
-      handleRouteError(ctx, res, err);
-    }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   app.post("/response/body", async (req, res) => {

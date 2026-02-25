@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ImageContent } from "@mariozechner/pi-ai";
@@ -8,14 +7,6 @@ import type { ImageSanitizationLimits } from "../../image-sanitization.js";
 import { resolveSandboxedBridgeMediaPath } from "../../sandbox-media-paths.js";
 import { assertSandboxPath } from "../../sandbox-paths.js";
 import type { SandboxFsBridge } from "../../sandbox/fs-bridge.js";
-=======
-import type { ImageContent } from "@mariozechner/pi-ai";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import type { SandboxFsBridge } from "../../sandbox/fs-bridge.js";
-import { resolveUserPath } from "../../../utils.js";
-import { loadWebMedia } from "../../../web/media.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { sanitizeImageBlocks } from "../../tool-images.js";
 import { log } from "../logger.js";
 
@@ -192,10 +183,7 @@ export async function loadImageFromRef(
   workspaceDir: string,
   options?: {
     maxBytes?: number;
-<<<<<<< HEAD
     workspaceOnly?: boolean;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     sandbox?: { root: string; bridge: SandboxFsBridge };
   },
 ): Promise<ImageContent | null> {
@@ -212,7 +200,6 @@ export async function loadImageFromRef(
     if (ref.type === "path") {
       if (options?.sandbox) {
         try {
-<<<<<<< HEAD
           const resolved = await resolveSandboxedBridgeMediaPath({
             sandbox: {
               root: options.sandbox.root,
@@ -222,13 +209,6 @@ export async function loadImageFromRef(
             mediaPath: targetPath,
           });
           targetPath = resolved.resolved;
-=======
-          const resolved = options.sandbox.bridge.resolvePath({
-            filePath: targetPath,
-            cwd: options.sandbox.root,
-          });
-          targetPath = resolved.hostPath;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
         } catch (err) {
           log.debug(
             `Native image: sandbox validation failed for ${ref.resolved}: ${err instanceof Error ? err.message : String(err)}`,
@@ -237,7 +217,6 @@ export async function loadImageFromRef(
         }
       } else if (!path.isAbsolute(targetPath)) {
         targetPath = path.resolve(workspaceDir, targetPath);
-<<<<<<< HEAD
       }
       if (options?.workspaceOnly && !options?.sandbox) {
         const root = options?.sandbox?.root ?? workspaceDir;
@@ -246,8 +225,6 @@ export async function loadImageFromRef(
           cwd: root,
           root,
         });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       }
     }
 
@@ -255,10 +232,7 @@ export async function loadImageFromRef(
     const media = options?.sandbox
       ? await loadWebMedia(targetPath, {
           maxBytes: options.maxBytes,
-<<<<<<< HEAD
           sandboxValidated: true,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
           readFile: (filePath) =>
             options.sandbox!.bridge.readFile({ filePath, cwd: options.sandbox!.root }),
         })
@@ -401,11 +375,8 @@ export async function detectAndLoadPromptImages(params: {
   existingImages?: ImageContent[];
   historyMessages?: unknown[];
   maxBytes?: number;
-<<<<<<< HEAD
   maxDimensionPx?: number;
   workspaceOnly?: boolean;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   sandbox?: { root: string; bridge: SandboxFsBridge };
 }): Promise<{
   /** Images for the current prompt (existingImages + detected in current prompt) */
@@ -467,10 +438,7 @@ export async function detectAndLoadPromptImages(params: {
   for (const ref of allRefs) {
     const image = await loadImageFromRef(ref, params.workspaceDir, {
       maxBytes: params.maxBytes,
-<<<<<<< HEAD
       workspaceOnly: params.workspaceOnly,
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       sandbox: params.sandbox,
     });
     if (image) {

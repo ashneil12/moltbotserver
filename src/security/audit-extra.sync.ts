@@ -21,16 +21,12 @@ import {
 } from "../config/model-input.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
-<<<<<<< HEAD
 import {
   DEFAULT_DANGEROUS_NODE_COMMANDS,
   resolveNodeCommandAllowlist,
 } from "../gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
 import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
-=======
-import { resolveNodeCommandAllowlist } from "../gateway/node-command-policy.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 export type SecurityAuditFinding = {
   checkId: string;
@@ -187,90 +183,6 @@ function isClaude45OrHigher(id: string): boolean {
 function extractAgentIdFromSource(source: string): string | null {
   const match = source.match(/^agents\.list\.([^.]*)\./);
   return match?.[1] ?? null;
-}
-
-<<<<<<< HEAD
-function hasConfiguredDockerConfig(
-  docker: Record<string, unknown> | undefined | null,
-): docker is Record<string, unknown> {
-  if (!docker || typeof docker !== "object") {
-    return false;
-  }
-  return Object.values(docker).some((value) => value !== undefined);
-}
-
-function normalizeNodeCommand(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function listKnownNodeCommands(cfg: OpenClawConfig): Set<string> {
-  const baseCfg: OpenClawConfig = {
-    ...cfg,
-    gateway: {
-      ...cfg.gateway,
-      nodes: {
-        ...cfg.gateway?.nodes,
-        denyCommands: [],
-      },
-    },
-  };
-  const out = new Set<string>();
-  for (const platform of ["ios", "android", "macos", "linux", "windows", "unknown"]) {
-    const allow = resolveNodeCommandAllowlist(baseCfg, { platform });
-    for (const cmd of allow) {
-      const normalized = normalizeNodeCommand(cmd);
-      if (normalized) {
-        out.add(normalized);
-      }
-    }
-=======
-function unionAllow(base?: string[], extra?: string[]): string[] | undefined {
-  if (!Array.isArray(extra) || extra.length === 0) {
-    return base;
-  }
-  if (!Array.isArray(base) || base.length === 0) {
-    return Array.from(new Set(["*", ...extra]));
-  }
-  return Array.from(new Set([...base, ...extra]));
-}
-
-function pickToolPolicy(config?: {
-  allow?: string[];
-  alsoAllow?: string[];
-  deny?: string[];
-}): SandboxToolPolicy | null {
-  if (!config) {
-    return null;
-  }
-  const allow = Array.isArray(config.allow)
-    ? unionAllow(config.allow, config.alsoAllow)
-    : Array.isArray(config.alsoAllow) && config.alsoAllow.length > 0
-      ? unionAllow(undefined, config.alsoAllow)
-      : undefined;
-  const deny = Array.isArray(config.deny) ? config.deny : undefined;
-  if (!allow && !deny) {
-    return null;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
-  }
-  return out;
-}
-
-function looksLikeNodeCommandPattern(value: string): boolean {
-  if (!value) {
-    return false;
-  }
-  if (/[?*[\]{}(),|]/.test(value)) {
-    return true;
-  }
-  if (
-    value.startsWith("/") ||
-    value.endsWith("/") ||
-    value.startsWith("^") ||
-    value.endsWith("$")
-  ) {
-    return true;
-  }
-  return /\s/.test(value) || value.includes("group:");
 }
 
 function hasConfiguredDockerConfig(
@@ -745,7 +657,6 @@ export function collectHooksHardeningFindings(
   return findings;
 }
 
-<<<<<<< HEAD
 export function collectGatewayHttpSessionKeyOverrideFindings(
   cfg: OpenClawConfig,
 ): SecurityAuditFinding[] {
@@ -807,8 +718,6 @@ export function collectGatewayHttpNoAuthFindings(
   return findings;
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function collectSandboxDockerNoopFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const configuredPaths: string[] = [];
@@ -859,7 +768,6 @@ export function collectSandboxDockerNoopFindings(cfg: OpenClawConfig): SecurityA
   return findings;
 }
 
-<<<<<<< HEAD
 export function collectSandboxDangerousConfigFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
@@ -1008,8 +916,6 @@ export function collectSandboxDangerousConfigFindings(cfg: OpenClawConfig): Secu
   return findings;
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function collectNodeDenyCommandPatternFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const denyListRaw = cfg.gateway?.nodes?.denyCommands;
@@ -1059,7 +965,6 @@ export function collectNodeDenyCommandPatternFindings(cfg: OpenClawConfig): Secu
   return findings;
 }
 
-<<<<<<< HEAD
 export function collectNodeDangerousAllowCommandFindings(
   cfg: OpenClawConfig,
 ): SecurityAuditFinding[] {
@@ -1097,8 +1002,6 @@ export function collectNodeDangerousAllowCommandFindings(
   return findings;
 }
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 export function collectMinimalProfileOverrideFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   if (cfg.tools?.profile !== "minimal") {

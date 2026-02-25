@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-=======
-import type { ReplyPayload } from "../auto-reply/types.js";
-import type { OpenClawConfig } from "../config/config.js";
-import type { SignalReactionNotificationMode } from "../config/types.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { chunkTextWithMode, resolveChunkMode, resolveTextChunkLimit } from "../auto-reply/chunk.js";
 import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../auto-reply/reply/history.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
@@ -19,10 +13,7 @@ import type { BackoffPolicy } from "../infra/backoff.js";
 import { waitForTransportReady } from "../infra/transport-ready.js";
 import { saveMediaBuffer } from "../media/store.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../runtime.js";
-<<<<<<< HEAD
 import { normalizeStringEntries } from "../shared/string-normalization.js";
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { normalizeE164 } from "../utils.js";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalCheck, signalRpcRequest } from "./client.js";
@@ -61,7 +52,6 @@ export type MonitorSignalOpts = {
 
 function resolveRuntime(opts: MonitorSignalOpts): RuntimeEnv {
   return opts.runtime ?? createNonExitingRuntime();
-<<<<<<< HEAD
 }
 
 function mergeAbortSignals(
@@ -134,8 +124,6 @@ function createSignalDaemonLifecycle(params: { abortSignal?: AbortSignal }) {
     abortSignal: mergedAbort.signal,
     dispose: mergedAbort.dispose,
   };
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 function normalizeAllowList(raw?: Array<string | number>): string[] {

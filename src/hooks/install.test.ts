@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-<<<<<<< HEAD
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { expectSingleNpmPackIgnoreScriptsCall } from "../test-utils/exec-assertions.js";
 import {
@@ -24,35 +23,21 @@ const tarTraversalBuffer = fs.readFileSync(path.join(fixturesDir, "tar-traversal
 const tarEvilIdBuffer = fs.readFileSync(path.join(fixturesDir, "tar-evil-id.tar"));
 const tarReservedIdBuffer = fs.readFileSync(path.join(fixturesDir, "tar-reserved-id.tar"));
 const npmPackHooksBuffer = fs.readFileSync(path.join(fixturesDir, "npm-pack-hooks.tgz"));
-=======
-import * as tar from "tar";
-import { afterAll, describe, expect, it, vi } from "vitest";
-
-const fixtureRoot = path.join(os.tmpdir(), `openclaw-hook-install-${randomUUID()}`);
-let tempDirIndex = 0;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout: vi.fn(),
 }));
 
 function makeTempDir() {
-<<<<<<< HEAD
   fs.mkdirSync(fixtureRoot, { recursive: true });
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const dir = path.join(fixtureRoot, `case-${tempDirIndex++}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
 const { runCommandWithTimeout } = await import("../process/exec.js");
-<<<<<<< HEAD
 const { installHooksFromArchive, installHooksFromNpmSpec, installHooksFromPath } =
   await import("./install.js");
-=======
-const { installHooksFromArchive, installHooksFromPath } = await import("./install.js");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
 afterAll(() => {
   try {
@@ -92,7 +77,6 @@ function expectInstallFailureContains(
 }
 
 describe("installHooksFromArchive", () => {
-<<<<<<< HEAD
   it.each([
     {
       name: "zip",
@@ -114,40 +98,6 @@ describe("installHooksFromArchive", () => {
       archivePath: fixture.archivePath,
       hooksDir: fixture.hooksDir,
     });
-=======
-  it("installs hook packs from zip archives", async () => {
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const archivePath = path.join(workDir, "hooks.zip");
-
-    const zip = new JSZip();
-    zip.file(
-      "package/package.json",
-      JSON.stringify({
-        name: "@openclaw/zip-hooks",
-        version: "0.0.1",
-        openclaw: { hooks: ["./hooks/zip-hook"] },
-      }),
-    );
-    zip.file(
-      "package/hooks/zip-hook/HOOK.md",
-      [
-        "---",
-        "name: zip-hook",
-        "description: Zip hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
-        "---",
-        "",
-        "# Zip Hook",
-      ].join("\n"),
-    );
-    zip.file("package/hooks/zip-hook/handler.ts", "export default async () => {};\n");
-    const buffer = await zip.generateAsync({ type: "nodebuffer" });
-    fs.writeFileSync(archivePath, buffer);
-
-    const hooksDir = path.join(stateDir, "hooks");
-    const result = await installHooksFromArchive({ archivePath, hooksDir });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
     expect(result.ok).toBe(true);
     if (!result.ok) {
@@ -161,7 +111,6 @@ describe("installHooksFromArchive", () => {
     );
   });
 
-<<<<<<< HEAD
   it.each([
     {
       name: "zip",
@@ -200,146 +149,6 @@ describe("installHooksFromArchive", () => {
       hooksDir: fixture.hooksDir,
     });
     expectInstallFailureContains(result, ["reserved path segment"]);
-=======
-  it("installs hook packs from tar archives", async () => {
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const archivePath = path.join(workDir, "hooks.tar");
-    const pkgDir = path.join(workDir, "package");
-
-    fs.mkdirSync(path.join(pkgDir, "hooks", "tar-hook"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@openclaw/tar-hooks",
-        version: "0.0.1",
-        openclaw: { hooks: ["./hooks/tar-hook"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(pkgDir, "hooks", "tar-hook", "HOOK.md"),
-      [
-        "---",
-        "name: tar-hook",
-        "description: Tar hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
-        "---",
-        "",
-        "# Tar Hook",
-      ].join("\n"),
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(pkgDir, "hooks", "tar-hook", "handler.ts"),
-      "export default async () => {};\n",
-      "utf-8",
-    );
-    await tar.c({ cwd: workDir, file: archivePath }, ["package"]);
-
-    const hooksDir = path.join(stateDir, "hooks");
-    const result = await installHooksFromArchive({ archivePath, hooksDir });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      return;
-    }
-    expect(result.hookPackId).toBe("tar-hooks");
-    expect(result.hooks).toContain("tar-hook");
-    expect(result.targetDir).toBe(path.join(stateDir, "hooks", "tar-hooks"));
-  });
-
-  it("rejects hook packs with traversal-like ids", async () => {
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const archivePath = path.join(workDir, "hooks.tar");
-    const pkgDir = path.join(workDir, "package");
-
-    fs.mkdirSync(path.join(pkgDir, "hooks", "evil-hook"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@evil/..",
-        version: "0.0.1",
-        openclaw: { hooks: ["./hooks/evil-hook"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(pkgDir, "hooks", "evil-hook", "HOOK.md"),
-      [
-        "---",
-        "name: evil-hook",
-        "description: Evil hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
-        "---",
-        "",
-        "# Evil Hook",
-      ].join("\n"),
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(pkgDir, "hooks", "evil-hook", "handler.ts"),
-      "export default async () => {};\n",
-      "utf-8",
-    );
-    await tar.c({ cwd: workDir, file: archivePath }, ["package"]);
-
-    const hooksDir = path.join(stateDir, "hooks");
-    const result = await installHooksFromArchive({ archivePath, hooksDir });
-
-    expect(result.ok).toBe(false);
-    if (result.ok) {
-      return;
-    }
-    expect(result.error).toContain("reserved path segment");
-  });
-
-  it("rejects hook packs with reserved ids", async () => {
-    const stateDir = makeTempDir();
-    const workDir = makeTempDir();
-    const archivePath = path.join(workDir, "hooks.tar");
-    const pkgDir = path.join(workDir, "package");
-
-    fs.mkdirSync(path.join(pkgDir, "hooks", "reserved-hook"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify({
-        name: "@evil/.",
-        version: "0.0.1",
-        openclaw: { hooks: ["./hooks/reserved-hook"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(pkgDir, "hooks", "reserved-hook", "HOOK.md"),
-      [
-        "---",
-        "name: reserved-hook",
-        "description: Reserved hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
-        "---",
-        "",
-        "# Reserved Hook",
-      ].join("\n"),
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(pkgDir, "hooks", "reserved-hook", "handler.ts"),
-      "export default async () => {};\n",
-      "utf-8",
-    );
-    await tar.c({ cwd: workDir, file: archivePath }, ["package"]);
-
-    const hooksDir = path.join(stateDir, "hooks");
-    const result = await installHooksFromArchive({ archivePath, hooksDir });
-
-    expect(result.ok).toBe(false);
-    if (result.ok) {
-      return;
-    }
-    expect(result.error).toContain("reserved path segment");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 });
 
@@ -379,7 +188,6 @@ describe("installHooksFromPath", () => {
     );
 
     const run = vi.mocked(runCommandWithTimeout);
-<<<<<<< HEAD
     await expectInstallUsesIgnoreScripts({
       run,
       install: async () =>
@@ -387,13 +195,6 @@ describe("installHooksFromPath", () => {
           path: pkgDir,
           hooksDir: path.join(stateDir, "hooks"),
         }),
-=======
-    run.mockResolvedValue({ code: 0, stdout: "", stderr: "" });
-
-    const res = await installHooksFromPath({
-      path: pkgDir,
-      hooksDir: path.join(stateDir, "hooks"),
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     });
   });
 

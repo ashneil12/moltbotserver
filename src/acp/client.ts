@@ -612,11 +612,7 @@ export async function createAcpClient(opts: AcpClientOptions = {}): Promise<AcpC
         printSessionUpdate(params);
       },
       requestPermission: async (params: RequestPermissionRequest) => {
-<<<<<<< HEAD
         return resolvePermissionRequest(params, { cwd });
-=======
-        return resolvePermissionRequest(params);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       },
     }),
     stream,

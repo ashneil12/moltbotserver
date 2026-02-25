@@ -25,10 +25,7 @@ export type CallManagerRuntimeDeps = {
 };
 
 export type CallManagerTransientState = {
-<<<<<<< HEAD
   activeTurnCalls: Set<CallId>;
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   transcriptWaiters: Map<CallId, TranscriptWaiter>;
   maxDurationTimers: Map<CallId, NodeJS.Timeout>;
 };

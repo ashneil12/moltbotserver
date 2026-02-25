@@ -27,15 +27,10 @@ type WebMediaOptions = {
   maxBytes?: number;
   optimizeImages?: boolean;
   ssrfPolicy?: SsrFPolicy;
-<<<<<<< HEAD
   /** Allowed root directories for local path reads. "any" is deprecated; prefer sandboxValidated + readFile. */
   localRoots?: readonly string[] | "any";
   /** Caller already validated the local path (sandbox/other guards); requires readFile override. */
   sandboxValidated?: boolean;
-=======
-  /** Allowed root directories for local path reads. "any" skips the check (caller already validated). */
-  localRoots?: string[] | "any";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   readFile?: (filePath: string) => Promise<Buffer>;
 };
 
@@ -244,17 +239,12 @@ async function loadWebMediaInternal(
     optimizeImages = true,
     ssrfPolicy,
     localRoots,
-<<<<<<< HEAD
     sandboxValidated = false,
     readFile: readFileOverride,
   } = options;
   // Strip MEDIA: prefix used by agent tools (e.g. TTS) to tag media paths.
   // Be lenient: LLM output may add extra whitespace (e.g. "  MEDIA :  /tmp/x.png").
   mediaUrl = mediaUrl.replace(/^\s*MEDIA\s*:\s*/i, "");
-=======
-    readFile: readFileOverride,
-  } = options;
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   // Use fileURLToPath for proper handling of file:// URLs (handles file://localhost/path, etc.)
   if (mediaUrl.startsWith("file://")) {
     try {
@@ -365,7 +355,6 @@ async function loadWebMediaInternal(
   }
 
   // Local path
-<<<<<<< HEAD
   let data: Buffer;
   if (readFileOverride) {
     data = await readFileOverride(mediaUrl);
@@ -395,9 +384,6 @@ async function loadWebMediaInternal(
       throw err;
     }
   }
-=======
-  const data = readFileOverride ? await readFileOverride(mediaUrl) : await fs.readFile(mediaUrl);
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   const mime = await detectMime({ buffer: data, filePath: mediaUrl });
   const kind = mediaKindFromMime(mime);
   let fileName = path.basename(mediaUrl) || undefined;
@@ -418,57 +404,23 @@ async function loadWebMediaInternal(
 export async function loadWebMedia(
   mediaUrl: string,
   maxBytesOrOptions?: number | WebMediaOptions,
-<<<<<<< HEAD
   options?: { ssrfPolicy?: SsrFPolicy; localRoots?: readonly string[] | "any" },
 ): Promise<WebMediaResult> {
   return await loadWebMediaInternal(
     mediaUrl,
     resolveWebMediaOptions({ maxBytesOrOptions, options, optimizeImages: true }),
   );
-=======
-  options?: { ssrfPolicy?: SsrFPolicy; localRoots?: string[] | "any" },
-): Promise<WebMediaResult> {
-  if (typeof maxBytesOrOptions === "number" || maxBytesOrOptions === undefined) {
-    return await loadWebMediaInternal(mediaUrl, {
-      maxBytes: maxBytesOrOptions,
-      optimizeImages: true,
-      ssrfPolicy: options?.ssrfPolicy,
-      localRoots: options?.localRoots,
-    });
-  }
-  return await loadWebMediaInternal(mediaUrl, {
-    ...maxBytesOrOptions,
-    optimizeImages: maxBytesOrOptions.optimizeImages ?? true,
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function loadWebMediaRaw(
   mediaUrl: string,
   maxBytesOrOptions?: number | WebMediaOptions,
-<<<<<<< HEAD
   options?: { ssrfPolicy?: SsrFPolicy; localRoots?: readonly string[] | "any" },
 ): Promise<WebMediaResult> {
   return await loadWebMediaInternal(
     mediaUrl,
     resolveWebMediaOptions({ maxBytesOrOptions, options, optimizeImages: false }),
   );
-=======
-  options?: { ssrfPolicy?: SsrFPolicy; localRoots?: string[] | "any" },
-): Promise<WebMediaResult> {
-  if (typeof maxBytesOrOptions === "number" || maxBytesOrOptions === undefined) {
-    return await loadWebMediaInternal(mediaUrl, {
-      maxBytes: maxBytesOrOptions,
-      optimizeImages: false,
-      ssrfPolicy: options?.ssrfPolicy,
-      localRoots: options?.localRoots,
-    });
-  }
-  return await loadWebMediaInternal(mediaUrl, {
-    ...maxBytesOrOptions,
-    optimizeImages: false,
-  });
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 }
 
 export async function optimizeImageToJpeg(

@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-<<<<<<< HEAD
 import { __test__, isSensitiveConfigPath } from "./schema.hints.js";
-=======
-import { __test__ } from "./schema.hints.js";
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import { OpenClawSchema } from "./zod-schema.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 
 const { mapSensitivePaths } = __test__;
 
-<<<<<<< HEAD
 describe("isSensitiveConfigPath", () => {
   it("matches whitelist suffixes case-insensitively", () => {
     const whitelistedPaths = [
@@ -38,8 +33,6 @@ describe("isSensitiveConfigPath", () => {
   });
 });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 describe("mapSensitivePaths", () => {
   it("should detect sensitive fields nested inside all structural Zod types", () => {
     const GrandSchema = z.object({
@@ -105,7 +98,6 @@ describe("mapSensitivePaths", () => {
     expect(result["merged.nested"]?.sensitive).toBe(undefined);
   });
 
-<<<<<<< HEAD
   it("maps sensitive fields nested under object catchall schemas", () => {
     const schema = z.object({
       custom: z.object({}).catchall(
@@ -130,8 +122,6 @@ describe("mapSensitivePaths", () => {
     expect(result["env.*"]?.sensitive).toBe(undefined);
   });
 
-=======
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   it("main schema yields correct hints (samples)", () => {
     const schema = OpenClawSchema.toJSONSchema({
       target: "draft-07",

@@ -115,7 +115,6 @@ function resolveBashForCompatCheck(): string | null {
 }
 
 describe("docker-setup.sh", () => {
-<<<<<<< HEAD
   let sandbox: DockerSetupSandbox | null = null;
 
   beforeAll(async () => {
@@ -200,45 +199,6 @@ describe("docker-setup.sh", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("OPENCLAW_HOME_VOLUME must match");
-=======
-  it("handles env defaults, home-volume mounts, and apt build args", async () => {
-    const sandbox = await createDockerSetupSandbox();
-
-    const defaultsResult = spawnSync("bash", [sandbox.scriptPath], {
-      cwd: sandbox.rootDir,
-      env: createEnv(sandbox, {
-        OPENCLAW_DOCKER_APT_PACKAGES: undefined,
-        OPENCLAW_EXTRA_MOUNTS: undefined,
-        OPENCLAW_HOME_VOLUME: undefined,
-      }),
-      encoding: "utf8",
-    });
-    expect(defaultsResult.status).toBe(0);
-    const defaultsEnvFile = await readFile(join(sandbox.rootDir, ".env"), "utf8");
-    expect(defaultsEnvFile).toContain("OPENCLAW_DOCKER_APT_PACKAGES=");
-    expect(defaultsEnvFile).toContain("OPENCLAW_EXTRA_MOUNTS=");
-    expect(defaultsEnvFile).toContain("OPENCLAW_HOME_VOLUME=");
-
-    await writeFile(sandbox.logPath, "");
-    const aptAndHomeVolumeResult = spawnSync("bash", [sandbox.scriptPath], {
-      cwd: sandbox.rootDir,
-      env: createEnv(sandbox, {
-        OPENCLAW_DOCKER_APT_PACKAGES: "ffmpeg build-essential",
-        OPENCLAW_EXTRA_MOUNTS: "",
-        OPENCLAW_HOME_VOLUME: "openclaw-home",
-      }),
-      encoding: "utf8",
-    });
-    expect(aptAndHomeVolumeResult.status).toBe(0);
-    const aptEnvFile = await readFile(join(sandbox.rootDir, ".env"), "utf8");
-    expect(aptEnvFile).toContain("OPENCLAW_DOCKER_APT_PACKAGES=ffmpeg build-essential");
-    const extraCompose = await readFile(join(sandbox.rootDir, "docker-compose.extra.yml"), "utf8");
-    expect(extraCompose).toContain("openclaw-home:/home/node");
-    expect(extraCompose).toContain("volumes:");
-    expect(extraCompose).toContain("openclaw-home:");
-    const log = await readFile(sandbox.logPath, "utf8");
-    expect(log).toContain("--build-arg OPENCLAW_DOCKER_APT_PACKAGES=ffmpeg build-essential");
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   });
 
   it("avoids associative arrays so the script remains Bash 3.2-compatible", async () => {
