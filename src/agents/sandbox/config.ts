@@ -187,7 +187,7 @@ export function resolveSandboxConfigForAgent(
 
   const toolPolicy = resolveSandboxToolPolicyForAgent(cfg, agentId);
 
-  const mode = agentSandbox?.mode ?? agent?.mode ?? "off";
+  const mode = (agentSandbox?.mode ?? agent?.mode ?? "off") as SandboxConfig["mode"];
 
   const browser = resolveSandboxBrowserConfig({
     scope,

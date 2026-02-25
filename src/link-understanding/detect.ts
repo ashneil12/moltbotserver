@@ -31,16 +31,6 @@ function isAllowedUrl(raw: string): boolean {
   }
 }
 
-/** Block loopback, private, link-local, and metadata addresses. */
-function isBlockedHost(hostname: string): boolean {
-  const normalized = hostname.trim().toLowerCase();
-  return (
-    normalized === "localhost.localdomain" ||
-    isBlockedHostname(normalized) ||
-    isPrivateIpAddress(normalized)
-  );
-}
-
 export function extractLinksFromMessage(message: string, opts?: { maxLinks?: number }): string[] {
   const source = message?.trim();
   if (!source) {

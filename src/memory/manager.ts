@@ -270,7 +270,7 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       ? await this.searchKeyword(cleaned, candidates).catch(() => [])
       : [];
 
-    const queryVec = (await this.embedQueryWithTimeout(cleaned));
+    const queryVec = await this.embedQueryWithTimeout(cleaned);
     const hasVector = queryVec.some((v) => v !== 0);
     const vectorResults = hasVector
       ? await this.searchVector(queryVec, candidates).catch(() => [])
@@ -638,5 +638,3 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     INDEX_CACHE.delete(this.cacheKey);
   }
 }
-
-applyPrototypeMixins(MemoryIndexManager.prototype, memoryManagerSyncOps, memoryManagerEmbeddingOps);

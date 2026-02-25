@@ -29,7 +29,6 @@ import { FailoverError, resolveFailoverStatus } from "./failover-error.js";
 import { classifyFailoverReason, isFailoverErrorMessage } from "./pi-embedded-helpers.js";
 import type { EmbeddedPiRunResult } from "./pi-embedded-runner.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "./workspace-run.js";
-import { resolveHumanModeEnabled } from "./workspace.js";
 
 const log = createSubsystemLogger("agent/claude-cli");
 
@@ -92,7 +91,6 @@ export async function runCliAgent(params: {
     config: params.config,
     sessionKey: params.sessionKey,
     sessionId: params.sessionId,
-    humanModeEnabled: resolveHumanModeEnabled(),
     warn: makeBootstrapWarn({ sessionLabel, warn: (message) => log.warn(message) }),
   });
   const { defaultAgentId, sessionAgentId } = resolveSessionAgentIds({
