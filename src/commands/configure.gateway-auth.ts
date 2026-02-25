@@ -28,18 +28,6 @@ function sanitizeTokenValue(value: string | undefined): string | undefined {
   return trimmed;
 }
 
-/** Reject undefined, empty, and common JS string-coercion artifacts for token auth. */
-function sanitizeTokenValue(value: string | undefined): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "undefined" || trimmed === "null") {
-    return undefined;
-  }
-  return trimmed;
-}
-
 const ANTHROPIC_OAUTH_MODEL_KEYS = [
   "anthropic/claude-sonnet-4-6",
   "anthropic/claude-opus-4-6",

@@ -11,8 +11,6 @@ import {
 
 const MAX_CAMERA_URL_DOWNLOAD_BYTES = 250 * 1024 * 1024;
 
-const MAX_CAMERA_URL_DOWNLOAD_BYTES = 250 * 1024 * 1024;
-
 export type CameraFacing = "front" | "back";
 
 export type CameraSnapPayload = {
