@@ -237,10 +237,13 @@ EOF
   echo "[entrypoint] Configuration generated at $CONFIG_FILE"
   echo "[entrypoint] dangerouslyDisableDeviceAuth: true (SaaS mode)"
   
-  # Security: Enforce strict permissions on the config directory and file
+  # Security: Enforce strict permissions on the config directory and file.
+  # CRITICAL: chown to node AFTER chmod — the entrypoint runs as root but
+  # the gateway runs as node (via gosu).  Without chown, node gets EACCES.
   echo "[entrypoint] Enforcing security permissions..."
   chmod 700 "$CONFIG_DIR"
   chmod 600 "$CONFIG_FILE"
+  chown -R node:node "$CONFIG_DIR"
 
 else
   echo "[entrypoint] Using existing configuration at $CONFIG_FILE"
