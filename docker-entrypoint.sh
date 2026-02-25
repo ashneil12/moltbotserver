@@ -238,12 +238,9 @@ EOF
   echo "[entrypoint] dangerouslyDisableDeviceAuth: true (SaaS mode)"
   
   # Security: Enforce strict permissions on the config directory and file.
-  # CRITICAL: chown to node AFTER chmod — the entrypoint runs as root but
-  # the gateway runs as node (via gosu).  Without chown, node gets EACCES.
   echo "[entrypoint] Enforcing security permissions..."
   chmod 700 "$CONFIG_DIR"
   chmod 600 "$CONFIG_FILE"
-  chown -R node:node "$CONFIG_DIR"
 
 else
   echo "[entrypoint] Using existing configuration at $CONFIG_FILE"
@@ -571,6 +568,13 @@ if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
     echo "[entrypoint] WARNING: openclaw doctor returned errors (non-fatal, continuing)"
   fi
 fi
+
+# =============================================================================
+# FIX OWNERSHIP: All files must be owned by node before we drop privileges.
+# The entrypoint runs as root and writes/patches config files throughout.
+# Without this final chown, gosu node → EACCES on the config file.
+# =============================================================================
+chown -R node:node "$CONFIG_DIR" "$WORKSPACE_DIR" 2>/dev/null || true
 
 # Execute the main command as node user (drop privileges from root)
 exec gosu node "$@" 2>/dev/null || exec su -s /bin/sh node -c "exec $*" 2>/dev/null || exec "$@"
