@@ -141,7 +141,13 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"],
     "controlUi": {
       "enabled": true,
-      "dangerouslyDisableDeviceAuth": true
+      "dangerouslyDisableDeviceAuth": true,
+      "allowedOrigins": $(node -e "
+        const origins = new Set(['http://localhost:3000']);
+        const env = process.env.OPENCLAW_ALLOW_IFRAME_ORIGINS || '';
+        for (const o of env.split(',').map(s => s.trim()).filter(Boolean)) origins.add(o);
+        console.log(JSON.stringify([...origins]));
+      " 2>/dev/null || echo '["http://localhost:3000"]')
     },
     "auth": {
       "mode": "token",
@@ -391,6 +397,30 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
       "
     fi
     echo "[entrypoint] trustedProxies enforced"
+  fi
+
+  # CRITICAL: Enforce controlUi.allowedOrigins for non-loopback binds.
+  # Without this, the gateway crashes with:
+  #   'non-loopback Control UI requires gateway.controlUi.allowedOrigins'
+  if [ -s "$CONFIG_FILE" ]; then
+    echo "[entrypoint] Enforcing controlUi.allowedOrigins..."
+    node -e "
+      const fs = require('fs');
+      const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+      const gw = config.gateway = config.gateway || {};
+      const cui = gw.controlUi = gw.controlUi || {};
+      const origins = new Set(['http://localhost:3000']);
+      const envOrigins = process.env.OPENCLAW_ALLOW_IFRAME_ORIGINS || '';
+      for (const o of envOrigins.split(',').map(s => s.trim()).filter(Boolean)) {
+        origins.add(o);
+      }
+      for (const o of (cui.allowedOrigins || [])) {
+        origins.add(o);
+      }
+      cui.allowedOrigins = [...origins];
+      fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+      console.log('[entrypoint] controlUi.allowedOrigins enforced: ' + JSON.stringify(cui.allowedOrigins));
+    " 2>&1 || echo '[entrypoint] WARNING: controlUi enforcement failed (non-fatal)'
   fi
 fi
 
