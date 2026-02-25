@@ -13,11 +13,6 @@ vi.mock("./node-llama.js", () => ({
   importNodeLlamaCpp: (...args: unknown[]) => importNodeLlamaCppMock(...args),
 }));
 
-const importNodeLlamaCppMock = vi.fn();
-vi.mock("./node-llama.js", () => ({
-  importNodeLlamaCpp: (...args: unknown[]) => importNodeLlamaCppMock(...args),
-}));
-
 const createFetchMock = () =>
   vi.fn(async (_input?: unknown, _init?: unknown) => ({
     ok: true,
@@ -363,23 +358,6 @@ describe("embedding provider local fallback", () => {
     mockMissingLocalEmbeddingDependency();
     await expect(createLocalProvider()).rejects.toThrow(/provider = "gemini"/i);
     await expect(createLocalProvider()).rejects.toThrow(/provider = "mistral"/i);
-  });
-
-  it("mentions every remote provider in local setup guidance", async () => {
-    importNodeLlamaCppMock.mockRejectedValue(
-      Object.assign(new Error("Cannot find package 'node-llama-cpp'"), {
-        code: "ERR_MODULE_NOT_FOUND",
-      }),
-    );
-
-    await expect(
-      createEmbeddingProvider({
-        config: {} as never,
-        provider: "local",
-        model: "text-embedding-3-small",
-        fallback: "none",
-      }),
-    ).rejects.toThrow(/provider = "gemini"/i);
   });
 });
 

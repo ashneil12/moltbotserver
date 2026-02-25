@@ -86,16 +86,6 @@ describe("resolvePluginTools optional tools", () => {
       },
     ]);
 
-afterAll(() => {
-  try {
-    fs.rmSync(fixtureRoot, { recursive: true, force: true });
-  } catch {
-    // ignore cleanup failures
-  }
-});
-
-describe("resolvePluginTools optional tools", () => {
-  it("skips optional tools without explicit allowlist", () => {
     const tools = resolvePluginTools({
       context: createContext() as never,
     });
