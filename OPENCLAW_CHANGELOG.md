@@ -5,6 +5,23 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Chromium Infobar Suppression (2026-02-25)
+
+**Purpose:** Suppress the yellow "You are using an unsupported command-line flag: --disable-setuid-sandbox" Chromium infobar that appears in the noVNC browser when `--no-sandbox` is enabled. This is expected in Docker containers but visually distracting and irrelevant.
+
+### Files Modified
+
+| File                                    | Change                                                                      | Why                                                           |
+| --------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `scripts/sandbox-browser-entrypoint.sh` | Added `--disable-infobars` to `CHROME_ARGS` in the `ALLOW_NO_SANDBOX` block | Suppresses all Chromium infobars in the container environment |
+| `src/browser/chrome.ts`                 | Added `--disable-infobars` to args in the `noSandbox` block                 | Same treatment for local/host Chrome launches                 |
+
+### Upstream Sync Risk
+
+**None.** `sandbox-browser-entrypoint.sh` is fully custom. The `chrome.ts` change is a single `args.push()` line inside an existing MoltBot-only `noSandbox` block.
+
+---
+
 ## noVNC No-Auth Mode (2026-02-25)
 
 **Purpose:** Prevent the noVNC password dialog when accessing browser views from the dashboard. The host browser container generated a random VNC password on every startup that was never passed to the dashboard URL, causing a password prompt on every connection.

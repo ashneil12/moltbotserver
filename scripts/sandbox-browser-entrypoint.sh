@@ -62,6 +62,7 @@ if [[ "${ALLOW_NO_SANDBOX}" == "1" ]]; then
   CHROME_ARGS+=(
     "--no-sandbox"
     "--disable-setuid-sandbox"
+    "--disable-infobars"
   )
 fi
 

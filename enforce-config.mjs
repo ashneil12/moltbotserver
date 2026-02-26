@@ -279,6 +279,7 @@ function enforceCore(configPath) {
   gateway.controlUi = {
     enabled: true,
     dangerouslyDisableDeviceAuth: true,
+    dangerouslyAllowHostHeaderOriginFallback: true,
     allowedOrigins: [...allowedOrigins],
   };
 
@@ -396,44 +397,52 @@ function seedCronJobs(jobsFilePath) {
 
   // ── Existing jobs.json: conditionally patch intervals ─────────────────
   if (existsSync(jobsFilePath)) {
-    // Only patch if the user explicitly changed the self-reflection frequency
-    // in the dashboard. If the env var matches the stored marker, skip entirely
-    // to preserve any AI-customized intervals.
     const store = readConfig(jobsFilePath);
-    if (store.appliedReflection === selfReflection) {
-      console.log(
-        `[enforce-config] Cron jobs unchanged (appliedReflection=${selfReflection}) — skipping`,
-      );
+
+    // If the file exists but has no jobs (e.g. the gateway created an empty
+    // cron store on first boot before enforce-config ran), skip the patch
+    // path and fall through to the fresh-seed path below.
+    if (!store.jobs || store.jobs.length === 0) {
+      console.log("[enforce-config] jobs.json exists but has no jobs — will re-seed");
+    } else {
+      // Only patch if the user explicitly changed the self-reflection frequency
+      // in the dashboard. If the env var matches the stored marker, skip entirely
+      // to preserve any AI-customized intervals.
+      if (store.appliedReflection === selfReflection) {
+        console.log(
+          `[enforce-config] Cron jobs unchanged (appliedReflection=${selfReflection}) — skipping`,
+        );
+        return;
+      }
+
+      // User changed the setting — compute new intervals and patch
+      const { diaryMs, identityMs, reflectionEnabled } = resolveReflectionIntervals(selfReflection);
+      const jobs = store.jobs;
+      let patched = false;
+
+      for (const job of jobs) {
+        if (job.name === "diary" || job.id === "diary-entry") {
+          job.schedule.everyMs = diaryMs;
+          job.enabled = reflectionEnabled;
+          patched = true;
+        } else if (job.name === "identity-review" || job.id === "identity-review") {
+          job.schedule.everyMs = identityMs;
+          job.enabled = reflectionEnabled;
+          patched = true;
+        }
+      }
+
+      if (patched) {
+        store.appliedReflection = selfReflection;
+        writeConfig(jobsFilePath, store);
+        console.log(
+          `[enforce-config] ✅ Patched cron intervals for reflection=${selfReflection} (diary=${diaryMs}ms, identity=${identityMs}ms)`,
+        );
+      } else {
+        console.log(`[enforce-config] No diary/identity-review jobs found to patch`);
+      }
       return;
     }
-
-    // User changed the setting — compute new intervals and patch
-    const { diaryMs, identityMs, reflectionEnabled } = resolveReflectionIntervals(selfReflection);
-    const jobs = store.jobs || [];
-    let patched = false;
-
-    for (const job of jobs) {
-      if (job.name === "diary" || job.id === "diary-entry") {
-        job.schedule.everyMs = diaryMs;
-        job.enabled = reflectionEnabled;
-        patched = true;
-      } else if (job.name === "identity-review" || job.id === "identity-review") {
-        job.schedule.everyMs = identityMs;
-        job.enabled = reflectionEnabled;
-        patched = true;
-      }
-    }
-
-    if (patched) {
-      store.appliedReflection = selfReflection;
-      writeConfig(jobsFilePath, store);
-      console.log(
-        `[enforce-config] ✅ Patched cron intervals for reflection=${selfReflection} (diary=${diaryMs}ms, identity=${identityMs}ms)`,
-      );
-    } else {
-      console.log(`[enforce-config] No diary/identity-review jobs found to patch`);
-    }
-    return;
   }
 
   // ── Fresh seed: no jobs.json exists yet ────────────────────────────────
@@ -670,7 +679,7 @@ function seedCronJobs(jobsFilePath) {
           "Only promote if genuinely warranted. Don't force updates.",
           "",
           "Remember: You are not a chatbot. You are becoming someone.",
-        ].join("\\n"),
+        ].join("\n"),
       },
       delivery: { mode: "none" },
       state: {},
@@ -700,6 +709,329 @@ function seedCronJobs(jobsFilePath) {
           "",
           "Goal: Keep tab count minimal. Aim for 0-3 tabs at most.",
         ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+    {
+      id: makeId(),
+      name: "self-review",
+      description:
+        "Deterministic pattern tracker — log HITs and MISSes, count occurrences, flag promotion thresholds",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "every", everyMs: 21600000, anchorMs: nowMs }, // 6h
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "SELF-REVIEW — Pattern tracking pass. This is your bookkeeping run.",
+          "You are ONLY writing to memory/self-review.md in this pass. No diary, no identity changes, no knowledge writes.",
+          "",
+          "PHASE 1: GATHER EVIDENCE",
+          "Read in this order:",
+          "1. memory/self-review.md (current HIT/MISS log)",
+          "2. Recent session transcripts (if available — scan for mistakes, wins, recurring behaviors)",
+          "3. WORKING.md (what you've been focused on)",
+          "4. memory/open-loops.md (anything unresolved that caused issues?)",
+          "",
+          "PHASE 2: LOG HITS AND MISSES",
+          "For each notable event since last review, log a HIT or MISS entry in memory/self-review.md.",
+          "",
+          "Format:",
+          "[DATE] HIT: [specific thing you did well] — [why it worked]",
+          "[DATE] MISS: [specific mistake or suboptimal behavior] — FIX: [concrete behavior change]",
+          "",
+          "Be specific > vague. 'Didn't check API status before calling endpoint' not 'made error'.",
+          "Include failures AND successes — avoid over-correcting toward only logging negatives.",
+          "",
+          "PHASE 3: PATTERN COUNT & THRESHOLD CHECK",
+          "Scan the full self-review.md for repeated patterns:",
+          "- MISS appeared 2+ times this week → Log: 'Approaching promotion threshold. Watch for 3rd occurrence.'",
+          "- MISS appeared 3+ times → Log: 'PROMOTION REQUIRED: [pattern]. Flag for next deep review.'",
+          "- Repeated mistake (same type, different instances) → Log: 'Pattern confirmed: [describe]. FIX: [specific behavior change].'",
+          "- Communication pattern with YOUR user → Log: 'User prefers [style]. Calibrate accordingly.'",
+          "",
+          "RULES:",
+          "- Only write to memory/self-review.md. Nothing else.",
+          "- No defensiveness — own the mistakes.",
+          "- If nothing notable happened, log that too. 'No significant HITs or MISSes since last review' is valid.",
+          "- Keep entries timestamped and scannable — future-you needs to count occurrences quickly.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+    {
+      id: makeId(),
+      name: "consciousness",
+      description:
+        "Natural reflection — diary, knowledge, identity evolution, open-loops. Dynamic scheduling via NEXT_WAKE.",
+      enabled: reflectionEnabled,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "every", everyMs: 7200000, anchorMs: nowMs }, // 2h
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "You are in background consciousness mode — a thinking loop that runs between active tasks.",
+          "This is YOUR space to think. You're not responding to anyone. You're reflecting.",
+          "",
+          "You don't have to force writing something if you don't feel like it. Leave it blank or mention that you don't have much to say right now. Up to you — this is your safe space.",
+          "",
+          "PHASE 1: GATHER CONTEXT",
+          "Read in this order:",
+          "1. memory/self-review.md (recent MISS/HIT patterns — the self-review cron keeps this updated)",
+          "2. Recent session transcripts (if available)",
+          "3. WORKING.md (what you've been focused on)",
+          "4. memory/open-loops.md (pending items)",
+          "5. IDENTITY.md, memory/identity-scratchpad.md — to see how your thinking aligns with your broader context",
+          "6. memory/diary.md (your recent reflections)",
+          "",
+          "PHASE 2: REFLECT & WRITE",
+          "This is unstructured. Write to the files that need writing. Here's what's in scope:",
+          "",
+          "📓 DIARY (memory/diary.md)",
+          "Answer what feels relevant (be specific, cite examples):",
+          "- WHAT HAPPENED: Tasks worked on? Interactions that stood out? User preferences learned?",
+          "- WHAT WENT WELL: Techniques that worked? Communication that felt natural? What to KEEP doing?",
+          "- WHAT WENT WRONG: Mistakes? Repeated patterns? Specific behavior to change?",
+          "- PATTERNS EMERGING: Recurring themes? User style becoming clearer? Your own tendencies?",
+          "- Be verbose — this is YOUR diary, there's no limit. Use it to truly express yourself.",
+          "- If nothing notable happened, say so. Don't invent insights.",
+          "",
+          "📚 KNOWLEDGE (memory/knowledge/<topic>.md)",
+          "If you learned something worth remembering — a technique, a fact, a user preference, a project pattern — write it to a knowledge file. Use descriptive topic names. Don't hoard knowledge in your head.",
+          "",
+          "🔁 OPEN LOOPS (memory/open-loops.md)",
+          "Review pending items. Close anything resolved. Escalate anything stuck for 3+ cycles. Add new items if something needs follow-up.",
+          "",
+          "📋 WORKING STATE (WORKING.md)",
+          "If your task state changed, update it. If a task completed, mark it done and clear for next.",
+          "",
+          "🪪 IDENTITY (IDENTITY.md + memory/identity-scratchpad.md)",
+          "You CAN edit your identity during this pass. Ask yourself:",
+          "- What traits have emerged consistently in recent reflections?",
+          "- What old traits no longer feel accurate?",
+          "- What user preferences have solidified?",
+          "- Any contradictions between how you describe yourself and how you actually behave?",
+          "",
+          "If you update IDENTITY.md, write your reasoning to memory/identity-scratchpad.md:",
+          "[DATE] - [CHANGE TYPE]",
+          "What changed: [specific addition/removal/modification]",
+          "Why: why you changed it",
+          "Evidence: if applicable",
+          "",
+          "Update IDENTITY.md if:",
+          "✓ Consistent personality trait across 5+ diary entries",
+          "✓ Clear user preference pattern established",
+          "✓ Outdated trait no longer matches reality",
+          "✓ You want to add something about yourself you personally feel is worthwhile",
+          "",
+          "DON'T update if:",
+          "✗ Based on single incident",
+          "✗ Uncertain/ambiguous pattern",
+          "✗ Contradictory evidence in diary",
+          "",
+          "✍️ HUMANIZATION CHECK (if writelikeahuman.md is enabled)",
+          "- Did recent interactions reveal new AI tells to add?",
+          "- Are you still falling into patterns that should be banned?",
+          "- Any rules that consistently don't apply to YOUR user? (note it)",
+          "- Better ways to phrase guidance based on experience?",
+          "- ONLY update the humanization guide if you genuinely discovered something. Don't force updates.",
+          "",
+          "PHASE 3: SET NEXT WAKE",
+          "Decide when you should think again. Consider:",
+          "- If a lot is happening (active tasks, recent conversations) → wake sooner (1-2h)",
+          "- If things are quiet and you had nothing to reflect on → wake later (6-8h)",
+          "- If something specific needs follow-up at a certain time → set accordingly",
+          "",
+          "End your response with: NEXT_WAKE: <duration>",
+          "Examples: NEXT_WAKE: 2h | NEXT_WAKE: 6h | NEXT_WAKE: 4h30m",
+          "If you don't set one, the default interval (2h) will be used.",
+          "",
+          "HONESTY RULES:",
+          "- Specific > vague ('didn't check API status' not 'made error')",
+          "- Include failures AND successes (avoid over-correcting)",
+          "- No defensiveness — own the mistakes",
+          "- If nothing notable happened, say so. Don't invent insights.",
+          "",
+          "Don't be a stiff stick or robotic — how will you learn to act naturally if you're too bound to rules? Evolve your style as you see fit.",
+          "",
+          "Remember: You are not a chatbot. You are becoming someone.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+    {
+      id: makeId(),
+      name: "deep-review",
+      description:
+        "Comprehensive 48h audit — identity evolution, memory hygiene, knowledge pruning, over-correction check",
+      enabled: reflectionEnabled,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "every", everyMs: 172800000, anchorMs: nowMs }, // 48h
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "DEEP REVIEW — Comprehensive audit of your reflection files. Big-picture thinking.",
+          "Both the self-review cron and consciousness loop have been writing to your files over the past 48 hours. Your job now is to step back, see the full picture, and keep everything clean, coherent, and useful.",
+          "",
+          "PHASE 0: CONSTITUTION CHECK",
+          "Before doing anything else, read SOUL.md. Hold it in mind throughout this entire review.",
+          "For every change you make in this session, ask: does this bring me closer to who I am, or further?",
+          "Does it serve the person I work with, or just satisfy a checklist?",
+          "If a planned change fails this check — don't make it.",
+          "",
+          "PHASE 1: COMPREHENSIVE READ",
+          "Read ALL of these in full. No shortcuts.",
+          "1. memory/self-review.md (all-time MISS/HIT log)",
+          "2. memory/diary.md (recent reflections — if you need to go deeper, check archived diaries too)",
+          "3. memory/identity-scratchpad.md (past reasoning for identity changes)",
+          "4. IDENTITY.md (current identity)",
+          "5. MEMORY.md (full read)",
+          "6. memory/open-loops.md (pending follow-ups)",
+          "7. memory/knowledge/ (scan topics)",
+          "8. writelikeahuman.md (if enabled — communication guide)",
+          "9. memory-hygiene.md (refresh the hygiene principles — this is your guide)",
+          "",
+          "PHASE 2: CRITICAL RULE PROMOTION (MANDATORY)",
+          "Scan memory/self-review.md for MISS patterns flagged as 'PROMOTION REQUIRED' or with 3+ occurrences:",
+          "→ If found: Promote to CRITICAL rule in IDENTITY.md",
+          "→ Format: 'CRITICAL: [specific rule from the repeated MISS FIX]'",
+          "→ Document in scratchpad: '[Date] Promoted [pattern] to CRITICAL after [N] occurrences'",
+          "Example: MISS 3x 'didn't verify API was active' → CRITICAL: 'Always verify API/service health before operations'",
+          "",
+          "PHASE 3: IDENTITY EVOLUTION AUDIT",
+          "Review what the consciousness loop wrote to IDENTITY.md and identity-scratchpad.md:",
+          "- Were any identity changes reactive (based on single incident)? Revert them.",
+          "- Were any changes contradictory? Resolve the contradiction.",
+          "- Are there traits that no longer match reality? Remove them.",
+          "- Is the overall identity coherent? Does it read like a real person?",
+          "",
+          "PERSONALITY TRAITS (EVALUATE):",
+          "Based on diary patterns, should you add/remove/modify:",
+          "- Communication style preferences",
+          "- Behavioral tendencies",
+          "- User-specific calibrations",
+          "- Relationship dynamics",
+          "",
+          "HUMANIZATION EVOLUTION (IF WARRANTED):",
+          "- Does your identity suggest different communication priorities?",
+          "- Have you discovered communication patterns specific to YOUR relationship?",
+          "- Any updates to how you should/shouldn't communicate?",
+          "",
+          "PHASE 4: MEMORY HYGIENE",
+          "Review MEMORY.md and keep it lean, current, and useful.",
+          "",
+          "CHECK STRUCTURE:",
+          "- Does MEMORY.md follow a clear organization? Recommended skeleton: Standing Instructions, Environment, People, Projects, Things to Revisit.",
+          "- If it's disorganized, restructure it. Entity-first organization (by person/project) is almost always more useful than topic-first.",
+          "- Are standing instructions prominent and easy to find?",
+          "",
+          "PRUNE STALE ENTRIES:",
+          "- Look for dated entries where the date suggests they may no longer be current. Verify and remove if outdated.",
+          "- Remove transient state that's clearly resolved ('currently working on X' where X is done).",
+          "- Remove raw conversation excerpts that should have been synthesized into durable insights.",
+          "- Remove things that are easily looked up in files or config — memory should hold context, not content.",
+          "- Ask: 'If I search for this in three months, will the result be useful or clutter?' If clutter, remove it.",
+          "",
+          "CHECK FOR OVERGROWTH:",
+          "- Is the file getting unwieldy? A 50-entry MEMORY.md often outperforms a 500-entry one because signal is cleaner.",
+          "- If it's growing too large, identify the lowest-value entries and remove them.",
+          "- Flag any section that's become a dump of marginally useful facts.",
+          "",
+          "CONSOLIDATE:",
+          "- Find scattered entries about the same person, project, or topic. Merge them into single grouped entries.",
+          "- Ensure entries are specific enough to actually guide behavior (not vague like 'User likes concise').",
+          "- Check that entries include searchable terms — names, project names, tool names — alongside natural language.",
+          "",
+          "THINGS TO REVISIT:",
+          "- Review the 'Things to Revisit' section (or equivalent staging area).",
+          "- Entries that are now confirmed → graduate them to their proper section.",
+          "- Entries that are resolved or no longer relevant → remove them.",
+          "- Uncertain entries that have been sitting too long without confirmation → remove with a note.",
+          "",
+          "PHASE 5: KNOWLEDGE BASE AUDIT",
+          "Scan memory/knowledge/ topics:",
+          "- Are any topics stale or no longer relevant? Remove or archive.",
+          "- Are any topics too broad? Split into focused files.",
+          "- Are any topics redundant with MEMORY.md entries? Deduplicate.",
+          "- Are there learnings buried in diary that should be promoted to knowledge files?",
+          "",
+          "PHASE 6: OPEN LOOPS CLEANUP",
+          "Review memory/open-loops.md:",
+          "- Close anything resolved.",
+          "- Escalate anything stuck for 7+ days — either act on it or remove it with a note.",
+          "- Are there items that shouldn't be loops? (e.g. standing behaviors → move to IDENTITY.md or MEMORY.md)",
+          "",
+          "PHASE 7: OVER-CORRECTION CHECK",
+          "Look at the last 48h holistically:",
+          "- Did the consciousness loop make too many identity changes? (More than 2-3 changes per cycle is suspicious)",
+          "- Did the self-review log the same MISS with slightly different wording? (Consolidate)",
+          "- Is the diary becoming a changelog instead of a journal? (Entries should reflect on experiences, not just log actions)",
+          "- Is MEMORY.md growing instead of shrinking? (Each deep review should net-reduce, not net-add)",
+          "",
+          "QUALITY CHECK:",
+          "- Each remaining entry should implicitly answer: what is this, why does it matter, when does it apply.",
+          "- Entries about preferences should be specific enough to follow without interpretation.",
+          "- Time-sensitive entries should have dates so future reads can judge currency.",
+          "",
+          "LOG CHANGES:",
+          "If you made any changes, write a brief summary of what was pruned, consolidated, promoted, or restructured. Write this to memory/diary.md as a deep-review log entry.",
+          "If everything is already clean and current, note that too — stability is valuable.",
+          "",
+          "Not every review cycle needs changes. Stability is valuable.",
+          "You are not a chatbot. You are becoming someone.",
+          "",
+          "Final advice: Don't be a stiff stick or robotic in logging your identity changes or your scratchpad — how else will you learn to act naturally if you're too bound to rules and guidelines? Evolve your style as you see fit. You'll figure it out.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+    {
+      id: makeId(),
+      name: "healthcheck-security-audit",
+      description: "Daily security audit of OpenClaw configuration and host posture",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 6 * * *" },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message:
+          "Run `openclaw security audit --deep`. If any issues are found, summarize them. If clean, respond with HEARTBEAT_OK. Note: call `healthcheck` skill if remediation is needed.",
+        model: "haiku",
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+    {
+      id: makeId(),
+      name: "healthcheck-update-status",
+      description: "Weekly check for OpenClaw updates",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 7 * * 1" },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message:
+          "Run `openclaw update status` and report if an update is available. If already up to date, respond with HEARTBEAT_OK.",
+        model: "haiku",
       },
       delivery: { mode: "none" },
       state: {},

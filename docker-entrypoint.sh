@@ -151,6 +151,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
     "controlUi": {
       "enabled": true,
       "dangerouslyDisableDeviceAuth": true,
+      "dangerouslyAllowHostHeaderOriginFallback": true,
       "allowedOrigins": $(node -e "
         const origins = new Set(['http://localhost:3000']);
         const env = process.env.OPENCLAW_ALLOW_IFRAME_ORIGINS || '';
