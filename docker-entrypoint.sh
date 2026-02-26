@@ -571,19 +571,28 @@ if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
 fi
 
 # =============================================================================
-# SEED CRON JOBS: Ensure default cron jobs are present before gateway starts
+# ENFORCE CONFIG: Apply all enforcement settings on top of inline config
+# This is the final configuration layer — model normalization, compaction,
+# loop detection, memory search, gateway binding, and cron job seeding.
 # =============================================================================
 ENFORCE_CONFIG_SCRIPT="/app/enforce-config.mjs"
-if [ -f "$ENFORCE_CONFIG_SCRIPT" ]; then
-  echo "[entrypoint] Seeding default cron jobs..."
-  # Export env vars that enforce-config.mjs reads
+if [ -f "$ENFORCE_CONFIG_SCRIPT" ] && [ -s "$CONFIG_FILE" ]; then
+  echo "[entrypoint] Running enforce-config (all)..."
+  # Export env vars that enforce-config.mjs reads via process.env.
+  # Many OPENCLAW_* vars are already set by Docker, but the entrypoint
+  # remaps some to shorter names that enforce-config.mjs expects.
   export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
+  export OPENCLAW_CONFIG_FILE="$CONFIG_FILE"
   export OPENCLAW_DATA_DIR="${OPENCLAW_DATA_DIR:-/home/node/data}"
   export OPENCLAW_SELF_REFLECTION="${OPENCLAW_SELF_REFLECTION:-normal}"
-  if node "$ENFORCE_CONFIG_SCRIPT" cron-seed 2>&1; then
-    echo "[entrypoint] Cron job seeding completed"
+  export GATEWAY_TOKEN="${GATEWAY_TOKEN:-}"
+  export GATEWAY_PORT="${GATEWAY_PORT:-18789}"
+  export GATEWAY_BIND="${GATEWAY_BIND:-lan}"
+  export AI_GATEWAY_URL="${AI_GATEWAY_URL:-}"
+  if node "$ENFORCE_CONFIG_SCRIPT" all 2>&1; then
+    echo "[entrypoint] enforce-config completed"
   else
-    echo "[entrypoint] WARNING: Cron job seeding failed (non-fatal, continuing)"
+    echo "[entrypoint] WARNING: enforce-config failed (non-fatal, continuing)"
   fi
 fi
 
