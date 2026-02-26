@@ -391,13 +391,6 @@ function enforceCore(configPath) {
   const messages = ensure(config, "messages");
   messages.queue = { mode: "collect" };
 
-  // Human delay (conditional)
-  if (isTruthy(env("OPENCLAW_HUMAN_MODE_ENABLED"))) {
-    const min = Number(env("OPENCLAW_HUMAN_DELAY_MIN", "800"));
-    const max = Number(env("OPENCLAW_HUMAN_DELAY_MAX", "2500"));
-    messages.humanDelay = { min, max };
-  }
-
   // Browser (conditional)
   if (isTruthy(env("OPENCLAW_BROWSER_ENABLED"))) {
     const cdpHost = env("OPENCLAW_BROWSER_CDP_HOST", "browser");
