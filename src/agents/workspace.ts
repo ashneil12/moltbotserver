@@ -50,12 +50,19 @@ function resolveHonchoEnabled(): boolean {
 }
 
 /**
- * Check if human voice mode is enabled (OPENCLAW_HUMAN_MODE=1).
+ * Check if human voice mode is enabled.
+ * Accepts both OPENCLAW_HUMAN_MODE=1 (canonical) and
+ * OPENCLAW_HUMAN_MODE_ENABLED=true/1 (dashboard convention).
  * When enabled, howtobehuman.md and writelikeahuman.md are seeded into the workspace.
  * When disabled, references to these files are removed from SOUL.md.
  */
 export function resolveHumanModeEnabled(): boolean {
-  return process.env.OPENCLAW_HUMAN_MODE?.trim() === "1";
+  const short = process.env.OPENCLAW_HUMAN_MODE?.trim();
+  if (short === "1") {
+    return true;
+  }
+  const long = process.env.OPENCLAW_HUMAN_MODE_ENABLED?.trim();
+  return long === "true" || long === "1";
 }
 
 /**
