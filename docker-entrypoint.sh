@@ -571,6 +571,23 @@ if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
 fi
 
 # =============================================================================
+# SEED CRON JOBS: Ensure default cron jobs are present before gateway starts
+# =============================================================================
+ENFORCE_CONFIG_SCRIPT="/app/enforce-config.mjs"
+if [ -f "$ENFORCE_CONFIG_SCRIPT" ]; then
+  echo "[entrypoint] Seeding default cron jobs..."
+  # Export env vars that enforce-config.mjs reads
+  export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
+  export OPENCLAW_DATA_DIR="${OPENCLAW_DATA_DIR:-/home/node/data}"
+  export OPENCLAW_SELF_REFLECTION="${OPENCLAW_SELF_REFLECTION:-normal}"
+  if node "$ENFORCE_CONFIG_SCRIPT" cron-seed 2>&1; then
+    echo "[entrypoint] Cron job seeding completed"
+  else
+    echo "[entrypoint] WARNING: Cron job seeding failed (non-fatal, continuing)"
+  fi
+fi
+
+# =============================================================================
 # FIX OWNERSHIP: All files must be owned by node before we drop privileges.
 # The entrypoint runs as root and writes/patches config files throughout.
 # Without this final chown, gosu node → EACCES on the config file.
