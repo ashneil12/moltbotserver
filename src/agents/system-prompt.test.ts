@@ -324,6 +324,35 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).not.toContain("PRACTICAL.md is your operational philosophy");
   });
 
+  it("injects human voice protocol when howtobehuman.md is present", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [{ path: "./howtobehuman.md", content: "Voice guide" }],
+    });
+
+    expect(prompt).toContain("## Natural Voice (Active)");
+    expect(prompt).toContain("howtobehuman.md");
+  });
+
+  it("injects human voice protocol when writelikeahuman.md is present", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [{ path: "./writelikeahuman.md", content: "Writing patterns" }],
+    });
+
+    expect(prompt).toContain("## Natural Voice (Active)");
+    expect(prompt).toContain("writelikeahuman.md");
+  });
+
+  it("does NOT inject human voice when only naturalvoice.md is present (old filename)", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [{ path: "./naturalvoice.md", content: "Old consolidated voice guide" }],
+    });
+
+    expect(prompt).not.toContain("## Natural Voice (Active)");
+  });
+
   it("adds memory-hygiene guidance when memory-hygiene file is present", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",

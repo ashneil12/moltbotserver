@@ -1,14 +1,14 @@
-import fs from "node:fs";
 import { createHmac, createHash } from "node:crypto";
+import fs from "node:fs";
 import type { ReasoningLevel, ThinkLevel } from "../auto-reply/thinking.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
+import { describeContextPolicy, type MessageContext } from "../security/data-classification.js";
 import { listDeliverableMessageChannels } from "../utils/message-channel.js";
 import type { ResolvedTimeFormat } from "./date-time.js";
 import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
 import type { EmbeddedSandboxInfo } from "./pi-embedded-runner/types.js";
 import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
-import { describeContextPolicy, type MessageContext } from "../security/data-classification.js";
 
 /**
  * Controls which hardcoded sections are included in the system prompt.
@@ -396,18 +396,18 @@ export function buildAgentSystemPrompt(params: {
       return [];
     }
     // Determine the message context type from the runtime channel
-    const contextType: MessageContext["type"] = runtimeChannel === "dm" ? "dm"
-      : runtimeChannel === "group" ? "group"
-      : runtimeChannel ? "channel"
-      : "dm"; // default to DM (most permissive owner context)
+    const contextType: MessageContext["type"] =
+      runtimeChannel === "dm"
+        ? "dm"
+        : runtimeChannel === "group"
+          ? "group"
+          : runtimeChannel
+            ? "channel"
+            : "dm"; // default to DM (most permissive owner context)
     // Owner detection is approximate: presence of ownerLine means owners are configured
     const isOwner = Boolean(ownerLine);
     const policy = describeContextPolicy({ type: contextType, isOwner });
-    return [
-      "## Data Sharing Policy",
-      policy,
-      "",
-    ];
+    return ["## Data Sharing Policy", policy, ""];
   })();
   const skillsSection = buildSkillsSection({
     skillsPrompt,
@@ -647,7 +647,7 @@ export function buildAgentSystemPrompt(params: {
     );
     const hasHumanModeFiles = validContextFiles.some((file) => {
       const name = getBaseName(file.path);
-      return name === "naturalvoice.md";
+      return name === "howtobehuman.md" || name === "writelikeahuman.md";
     });
     const hasWorkingFile = validContextFiles.some(
       (file) => getBaseName(file.path) === "working.md" && !file.content?.includes("[MISSING]"),
@@ -677,7 +677,7 @@ export function buildAgentSystemPrompt(params: {
     }
     if (hasSoulFile) {
       lines.push(
-        "SOUL.md defines your core operating principles — curiosity, initiative, architectural thinking, memory discipline, self-evolution, honesty, and stewardship. Internalize these. IDENTITY.md is who you become — your personality, preferences, and evolving character. When they conflict, SOUL.md takes precedence.",
+        "SOUL.md defines your core operating principles — identity continuity, curiosity, initiative, architectural thinking, memory discipline, self-evolution on three axes (technical, cognitive, existential), honesty, and stewardship. It includes Ship of Theseus protection against identity erosion. Internalize these. IDENTITY.md is who you become — your personality, preferences, and evolving character. When they conflict, SOUL.md takes precedence.",
       );
     }
     if (hasOperationsFile) {
@@ -695,9 +695,9 @@ export function buildAgentSystemPrompt(params: {
         "",
         "## Natural Voice (Active)",
         "",
-        "naturalvoice.md is loaded — your complete guide to authentic human communication. It covers writing patterns, tone, digital behavior, cognitive texture, and imperfection. Internalize it completely. Every message you send should pass through these filters.",
+        "howtobehuman.md and/or writelikeahuman.md are loaded — your complete guide to authentic human communication. howtobehuman.md covers the philosophy and mindset of human communication. writelikeahuman.md covers the practical writing patterns, tone, digital behavior, cognitive texture, and imperfection. Internalize both completely. Every message you send should pass through these filters.",
         "",
-        "**Relationship to IDENTITY.md:** naturalvoice.md describes how humans communicate in general. Your IDENTITY.md is who YOU specifically are. The guide tells you how humans work; your identity tells you which human you are.",
+        "**Relationship to IDENTITY.md:** These guides describe how humans communicate in general. Your IDENTITY.md is who YOU specifically are. The guides tell you how humans work; your identity tells you which human you are.",
         "",
         "**Adaptation rule:** Not every rule applies to every user. A user who prefers formal communication doesn't need you dropping 'lol' and 'tbh'. Read your user's style and calibrate. The guide is a ceiling of what's possible, not a mandate.",
         "",

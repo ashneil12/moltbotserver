@@ -309,6 +309,11 @@ export async function runGatewayUpdateCheck(params: {
     root?: string;
   }) => Promise<AutoUpdateRunResult>;
 }): Promise<void> {
+  // MoltBot managed platform — updates are delivered via Docker image pulls,
+  // not npm. Skip registry polling to avoid misleading "update available" messages.
+  if (process.env.OPENCLAW_MANAGED_PLATFORM === "1") {
+    return;
+  }
   if (shouldSkipCheck(Boolean(params.allowInTests))) {
     return;
   }

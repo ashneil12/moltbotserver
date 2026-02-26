@@ -1,14 +1,14 @@
-var __defProp$2 = Object.defineProperty;
+var __defProp$1 = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {
   let target = {};
   for (var name in all) {
-    __defProp$2(target, name, {
+    __defProp$1(target, name, {
       get: all[name],
       enumerable: true,
     });
   }
   if (!no_symbols) {
-    __defProp$2(target, Symbol.toStringTag, { value: "Module" });
+    __defProp$1(target, Symbol.toStringTag, { value: "Module" });
   }
   return target;
 };
@@ -2725,33 +2725,33 @@ var A2uiMessageProcessor = class A2uiMessageProcessor {
   }
 };
 
-var __defProp$1 = Object.defineProperty;
-var __defNormalProp$1 = (obj, key, value) =>
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) =>
   key in obj
-    ? __defProp$1(obj, key, {
+    ? __defProp(obj, key, {
         enumerable: true,
         configurable: true,
         writable: true,
         value,
       })
     : (obj[key] = value);
-var __publicField$1 = (obj, key, value) => {
-  __defNormalProp$1(obj, typeof key !== "symbol" ? key + "" : key, value);
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
 };
-var __accessCheck$1 = (obj, member, msg) => {
+var __accessCheck = (obj, member, msg) => {
   if (!member.has(obj)) throw TypeError("Cannot " + msg);
 };
-var __privateIn$1 = (member, obj) => {
+var __privateIn = (member, obj) => {
   if (Object(obj) !== obj) throw TypeError('Cannot use the "in" operator on this value');
   return member.has(obj);
 };
-var __privateAdd$1 = (obj, member, value) => {
+var __privateAdd = (obj, member, value) => {
   if (member.has(obj)) throw TypeError("Cannot add the same private member more than once");
   member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
 };
-var __privateMethod$1 = (obj, member, method) => {
-  __accessCheck$1(obj, member, "access private method");
+var __privateMethod = (obj, member, method) => {
+  __accessCheck(obj, member, "access private method");
   return method;
 };
 /**
@@ -2761,7 +2761,7 @@ var __privateMethod$1 = (obj, member, method) => {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-function defaultEquals$1(a, b) {
+function defaultEquals(a, b) {
   return Object.is(a, b);
 }
 /**
@@ -2771,22 +2771,22 @@ function defaultEquals$1(a, b) {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-let activeConsumer$1 = null;
-let inNotificationPhase$1 = false;
-let epoch$1 = 1;
-const SIGNAL$1 = /* @__PURE__ */ Symbol("SIGNAL");
-function setActiveConsumer$1(consumer) {
-  const prev = activeConsumer$1;
-  activeConsumer$1 = consumer;
+let activeConsumer = null;
+let inNotificationPhase = false;
+let epoch = 1;
+const SIGNAL = /* @__PURE__ */ Symbol("SIGNAL");
+function setActiveConsumer(consumer) {
+  const prev = activeConsumer;
+  activeConsumer = consumer;
   return prev;
 }
-function getActiveConsumer$1() {
-  return activeConsumer$1;
+function getActiveConsumer() {
+  return activeConsumer;
 }
-function isInNotificationPhase$1() {
-  return inNotificationPhase$1;
+function isInNotificationPhase() {
+  return inNotificationPhase;
 }
-const REACTIVE_NODE$1 = {
+const REACTIVE_NODE = {
   version: 0,
   lastCleanEpoch: 0,
   dirty: false,
@@ -2803,81 +2803,81 @@ const REACTIVE_NODE$1 = {
   consumerMarkedDirty: () => {},
   consumerOnSignalRead: () => {},
 };
-function producerAccessed$1(node) {
-  if (inNotificationPhase$1) {
+function producerAccessed(node) {
+  if (inNotificationPhase) {
     throw new Error(
       typeof ngDevMode !== "undefined" && ngDevMode
         ? `Assertion error: signal read during notification phase`
         : "",
     );
   }
-  if (activeConsumer$1 === null) {
+  if (activeConsumer === null) {
     return;
   }
-  activeConsumer$1.consumerOnSignalRead(node);
-  const idx = activeConsumer$1.nextProducerIndex++;
-  assertConsumerNode$1(activeConsumer$1);
-  if (idx < activeConsumer$1.producerNode.length && activeConsumer$1.producerNode[idx] !== node) {
-    if (consumerIsLive$1(activeConsumer$1)) {
-      const staleProducer = activeConsumer$1.producerNode[idx];
-      producerRemoveLiveConsumerAtIndex$1(staleProducer, activeConsumer$1.producerIndexOfThis[idx]);
+  activeConsumer.consumerOnSignalRead(node);
+  const idx = activeConsumer.nextProducerIndex++;
+  assertConsumerNode(activeConsumer);
+  if (idx < activeConsumer.producerNode.length && activeConsumer.producerNode[idx] !== node) {
+    if (consumerIsLive(activeConsumer)) {
+      const staleProducer = activeConsumer.producerNode[idx];
+      producerRemoveLiveConsumerAtIndex(staleProducer, activeConsumer.producerIndexOfThis[idx]);
     }
   }
-  if (activeConsumer$1.producerNode[idx] !== node) {
-    activeConsumer$1.producerNode[idx] = node;
-    activeConsumer$1.producerIndexOfThis[idx] = consumerIsLive$1(activeConsumer$1)
-      ? producerAddLiveConsumer$1(node, activeConsumer$1, idx)
+  if (activeConsumer.producerNode[idx] !== node) {
+    activeConsumer.producerNode[idx] = node;
+    activeConsumer.producerIndexOfThis[idx] = consumerIsLive(activeConsumer)
+      ? producerAddLiveConsumer(node, activeConsumer, idx)
       : 0;
   }
-  activeConsumer$1.producerLastReadVersion[idx] = node.version;
+  activeConsumer.producerLastReadVersion[idx] = node.version;
 }
-function producerIncrementEpoch$1() {
-  epoch$1++;
+function producerIncrementEpoch() {
+  epoch++;
 }
-function producerUpdateValueVersion$1(node) {
-  if (!node.dirty && node.lastCleanEpoch === epoch$1) {
+function producerUpdateValueVersion(node) {
+  if (!node.dirty && node.lastCleanEpoch === epoch) {
     return;
   }
-  if (!node.producerMustRecompute(node) && !consumerPollProducersForChange$1(node)) {
+  if (!node.producerMustRecompute(node) && !consumerPollProducersForChange(node)) {
     node.dirty = false;
-    node.lastCleanEpoch = epoch$1;
+    node.lastCleanEpoch = epoch;
     return;
   }
   node.producerRecomputeValue(node);
   node.dirty = false;
-  node.lastCleanEpoch = epoch$1;
+  node.lastCleanEpoch = epoch;
 }
-function producerNotifyConsumers$1(node) {
+function producerNotifyConsumers(node) {
   if (node.liveConsumerNode === void 0) {
     return;
   }
-  const prev = inNotificationPhase$1;
-  inNotificationPhase$1 = true;
+  const prev = inNotificationPhase;
+  inNotificationPhase = true;
   try {
     for (const consumer of node.liveConsumerNode) {
       if (!consumer.dirty) {
-        consumerMarkDirty$1(consumer);
+        consumerMarkDirty(consumer);
       }
     }
   } finally {
-    inNotificationPhase$1 = prev;
+    inNotificationPhase = prev;
   }
 }
-function producerUpdatesAllowed$1() {
-  return (activeConsumer$1 == null ? void 0 : activeConsumer$1.consumerAllowSignalWrites) !== false;
+function producerUpdatesAllowed() {
+  return (activeConsumer == null ? void 0 : activeConsumer.consumerAllowSignalWrites) !== false;
 }
-function consumerMarkDirty$1(node) {
+function consumerMarkDirty(node) {
   var _a;
   node.dirty = true;
-  producerNotifyConsumers$1(node);
+  producerNotifyConsumers(node);
   (_a = node.consumerMarkedDirty) == null ? void 0 : _a.call(node.wrapper ?? node);
 }
-function consumerBeforeComputation$1(node) {
+function consumerBeforeComputation(node) {
   node && (node.nextProducerIndex = 0);
-  return setActiveConsumer$1(node);
+  return setActiveConsumer(node);
 }
-function consumerAfterComputation$1(node, prevConsumer) {
-  setActiveConsumer$1(prevConsumer);
+function consumerAfterComputation(node, prevConsumer) {
+  setActiveConsumer(prevConsumer);
   if (
     !node ||
     node.producerNode === void 0 ||
@@ -2886,9 +2886,9 @@ function consumerAfterComputation$1(node, prevConsumer) {
   ) {
     return;
   }
-  if (consumerIsLive$1(node)) {
+  if (consumerIsLive(node)) {
     for (let i = node.nextProducerIndex; i < node.producerNode.length; i++) {
-      producerRemoveLiveConsumerAtIndex$1(node.producerNode[i], node.producerIndexOfThis[i]);
+      producerRemoveLiveConsumerAtIndex(node.producerNode[i], node.producerIndexOfThis[i]);
     }
   }
   while (node.producerNode.length > node.nextProducerIndex) {
@@ -2897,38 +2897,38 @@ function consumerAfterComputation$1(node, prevConsumer) {
     node.producerIndexOfThis.pop();
   }
 }
-function consumerPollProducersForChange$1(node) {
-  assertConsumerNode$1(node);
+function consumerPollProducersForChange(node) {
+  assertConsumerNode(node);
   for (let i = 0; i < node.producerNode.length; i++) {
     const producer = node.producerNode[i];
     const seenVersion = node.producerLastReadVersion[i];
     if (seenVersion !== producer.version) {
       return true;
     }
-    producerUpdateValueVersion$1(producer);
+    producerUpdateValueVersion(producer);
     if (seenVersion !== producer.version) {
       return true;
     }
   }
   return false;
 }
-function producerAddLiveConsumer$1(node, consumer, indexOfThis) {
+function producerAddLiveConsumer(node, consumer, indexOfThis) {
   var _a;
-  assertProducerNode$1(node);
-  assertConsumerNode$1(node);
+  assertProducerNode(node);
+  assertConsumerNode(node);
   if (node.liveConsumerNode.length === 0) {
     (_a = node.watched) == null ? void 0 : _a.call(node.wrapper);
     for (let i = 0; i < node.producerNode.length; i++) {
-      node.producerIndexOfThis[i] = producerAddLiveConsumer$1(node.producerNode[i], node, i);
+      node.producerIndexOfThis[i] = producerAddLiveConsumer(node.producerNode[i], node, i);
     }
   }
   node.liveConsumerIndexOfThis.push(indexOfThis);
   return node.liveConsumerNode.push(consumer) - 1;
 }
-function producerRemoveLiveConsumerAtIndex$1(node, idx) {
+function producerRemoveLiveConsumerAtIndex(node, idx) {
   var _a;
-  assertProducerNode$1(node);
-  assertConsumerNode$1(node);
+  assertProducerNode(node);
+  assertConsumerNode(node);
   if (typeof ngDevMode !== "undefined" && ngDevMode && idx >= node.liveConsumerNode.length) {
     throw new Error(
       `Assertion error: active consumer index ${idx} is out of bounds of ${node.liveConsumerNode.length} consumers)`,
@@ -2937,7 +2937,7 @@ function producerRemoveLiveConsumerAtIndex$1(node, idx) {
   if (node.liveConsumerNode.length === 1) {
     (_a = node.unwatched) == null ? void 0 : _a.call(node.wrapper);
     for (let i = 0; i < node.producerNode.length; i++) {
-      producerRemoveLiveConsumerAtIndex$1(node.producerNode[i], node.producerIndexOfThis[i]);
+      producerRemoveLiveConsumerAtIndex(node.producerNode[i], node.producerIndexOfThis[i]);
     }
   }
   const lastIdx = node.liveConsumerNode.length - 1;
@@ -2948,23 +2948,23 @@ function producerRemoveLiveConsumerAtIndex$1(node, idx) {
   if (idx < node.liveConsumerNode.length) {
     const idxProducer = node.liveConsumerIndexOfThis[idx];
     const consumer = node.liveConsumerNode[idx];
-    assertConsumerNode$1(consumer);
+    assertConsumerNode(consumer);
     consumer.producerIndexOfThis[idxProducer] = idx;
   }
 }
-function consumerIsLive$1(node) {
+function consumerIsLive(node) {
   var _a;
   return (
     node.consumerIsAlwaysLive ||
     (((_a = node == null ? void 0 : node.liveConsumerNode) == null ? void 0 : _a.length) ?? 0) > 0
   );
 }
-function assertConsumerNode$1(node) {
+function assertConsumerNode(node) {
   node.producerNode ?? (node.producerNode = []);
   node.producerIndexOfThis ?? (node.producerIndexOfThis = []);
   node.producerLastReadVersion ?? (node.producerLastReadVersion = []);
 }
-function assertProducerNode$1(node) {
+function assertProducerNode(node) {
   node.liveConsumerNode ?? (node.liveConsumerNode = []);
   node.liveConsumerIndexOfThis ?? (node.liveConsumerIndexOfThis = []);
 }
@@ -2975,52 +2975,52 @@ function assertProducerNode$1(node) {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-function computedGet$1(node) {
-  producerUpdateValueVersion$1(node);
-  producerAccessed$1(node);
-  if (node.value === ERRORED$1) {
+function computedGet(node) {
+  producerUpdateValueVersion(node);
+  producerAccessed(node);
+  if (node.value === ERRORED) {
     throw node.error;
   }
   return node.value;
 }
-function createComputed$1(computation) {
-  const node = Object.create(COMPUTED_NODE$1);
+function createComputed(computation) {
+  const node = Object.create(COMPUTED_NODE);
   node.computation = computation;
-  const computed = () => computedGet$1(node);
-  computed[SIGNAL$1] = node;
+  const computed = () => computedGet(node);
+  computed[SIGNAL] = node;
   return computed;
 }
-const UNSET$1 = /* @__PURE__ */ Symbol("UNSET");
-const COMPUTING$1 = /* @__PURE__ */ Symbol("COMPUTING");
-const ERRORED$1 = /* @__PURE__ */ Symbol("ERRORED");
-const COMPUTED_NODE$1 = /* @__PURE__ */ (() => {
+const UNSET = /* @__PURE__ */ Symbol("UNSET");
+const COMPUTING = /* @__PURE__ */ Symbol("COMPUTING");
+const ERRORED = /* @__PURE__ */ Symbol("ERRORED");
+const COMPUTED_NODE = /* @__PURE__ */ (() => {
   return {
-    ...REACTIVE_NODE$1,
-    value: UNSET$1,
+    ...REACTIVE_NODE,
+    value: UNSET,
     dirty: true,
     error: null,
-    equal: defaultEquals$1,
+    equal: defaultEquals,
     producerMustRecompute(node) {
-      return node.value === UNSET$1 || node.value === COMPUTING$1;
+      return node.value === UNSET || node.value === COMPUTING;
     },
     producerRecomputeValue(node) {
-      if (node.value === COMPUTING$1) {
+      if (node.value === COMPUTING) {
         throw new Error("Detected cycle in computations.");
       }
       const oldValue = node.value;
-      node.value = COMPUTING$1;
-      const prevConsumer = consumerBeforeComputation$1(node);
+      node.value = COMPUTING;
+      const prevConsumer = consumerBeforeComputation(node);
       let newValue;
       let wasEqual = false;
       try {
         newValue = node.computation.call(node.wrapper);
-        const oldOk = oldValue !== UNSET$1 && oldValue !== ERRORED$1;
+        const oldOk = oldValue !== UNSET && oldValue !== ERRORED;
         wasEqual = oldOk && node.equal.call(node.wrapper, oldValue, newValue);
       } catch (err) {
-        newValue = ERRORED$1;
+        newValue = ERRORED;
         node.error = err;
       } finally {
-        consumerAfterComputation$1(node, prevConsumer);
+        consumerAfterComputation(node, prevConsumer);
       }
       if (wasEqual) {
         node.value = oldValue;
@@ -3038,12 +3038,12 @@ const COMPUTED_NODE$1 = /* @__PURE__ */ (() => {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-function defaultThrowError$1() {
+function defaultThrowError() {
   throw new Error();
 }
-let throwInvalidWriteToSignalErrorFn$1 = defaultThrowError$1;
-function throwInvalidWriteToSignalError$1() {
-  throwInvalidWriteToSignalErrorFn$1();
+let throwInvalidWriteToSignalErrorFn = defaultThrowError;
+function throwInvalidWriteToSignalError() {
+  throwInvalidWriteToSignalErrorFn();
 }
 /**
  * @license
@@ -3052,40 +3052,40 @@ function throwInvalidWriteToSignalError$1() {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-function createSignal$1(initialValue) {
-  const node = Object.create(SIGNAL_NODE$1);
+function createSignal(initialValue) {
+  const node = Object.create(SIGNAL_NODE);
   node.value = initialValue;
   const getter = () => {
-    producerAccessed$1(node);
+    producerAccessed(node);
     return node.value;
   };
-  getter[SIGNAL$1] = node;
+  getter[SIGNAL] = node;
   return getter;
 }
-function signalGetFn$1() {
-  producerAccessed$1(this);
+function signalGetFn() {
+  producerAccessed(this);
   return this.value;
 }
-function signalSetFn$1(node, newValue) {
-  if (!producerUpdatesAllowed$1()) {
-    throwInvalidWriteToSignalError$1();
+function signalSetFn(node, newValue) {
+  if (!producerUpdatesAllowed()) {
+    throwInvalidWriteToSignalError();
   }
   if (!node.equal.call(node.wrapper, node.value, newValue)) {
     node.value = newValue;
-    signalValueChanged$1(node);
+    signalValueChanged(node);
   }
 }
-const SIGNAL_NODE$1 = /* @__PURE__ */ (() => {
+const SIGNAL_NODE = /* @__PURE__ */ (() => {
   return {
-    ...REACTIVE_NODE$1,
-    equal: defaultEquals$1,
+    ...REACTIVE_NODE,
+    equal: defaultEquals,
     value: void 0,
   };
 })();
-function signalValueChanged$1(node) {
+function signalValueChanged(node) {
   node.version++;
-  producerIncrementEpoch$1();
-  producerNotifyConsumers$1(node);
+  producerIncrementEpoch();
+  producerNotifyConsumers(node);
 }
 /**
  * @license
@@ -3103,17 +3103,17 @@ function signalValueChanged$1(node) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const NODE$1 = Symbol("node");
-var Signal$1;
+const NODE = Symbol("node");
+var Signal;
 ((Signal2) => {
   var _a, _brand, brand_fn, _b, _brand2, brand_fn2;
   class State {
     constructor(initialValue, options = {}) {
-      __privateAdd$1(this, _brand);
-      __publicField$1(this, _a);
-      const ref = createSignal$1(initialValue);
-      const node = ref[SIGNAL$1];
-      this[NODE$1] = node;
+      __privateAdd(this, _brand);
+      __publicField(this, _a);
+      const ref = createSignal(initialValue);
+      const node = ref[SIGNAL];
+      this[NODE] = node;
       node.wrapper = this;
       if (options) {
         const equals = options.equals;
@@ -3127,31 +3127,31 @@ var Signal$1;
     get() {
       if (!(0, Signal2.isState)(this))
         throw new TypeError("Wrong receiver type for Signal.State.prototype.get");
-      return signalGetFn$1.call(this[NODE$1]);
+      return signalGetFn.call(this[NODE]);
     }
     set(newValue) {
       if (!(0, Signal2.isState)(this))
         throw new TypeError("Wrong receiver type for Signal.State.prototype.set");
-      if (isInNotificationPhase$1()) {
+      if (isInNotificationPhase()) {
         throw new Error("Writes to signals not permitted during Watcher callback");
       }
-      const ref = this[NODE$1];
-      signalSetFn$1(ref, newValue);
+      const ref = this[NODE];
+      signalSetFn(ref, newValue);
     }
   }
-  _a = NODE$1;
+  _a = NODE;
   _brand = new WeakSet();
   brand_fn = function () {};
-  Signal2.isState = (s) => typeof s === "object" && __privateIn$1(_brand, s);
+  Signal2.isState = (s) => typeof s === "object" && __privateIn(_brand, s);
   Signal2.State = State;
   class Computed {
     constructor(computation, options) {
-      __privateAdd$1(this, _brand2);
-      __publicField$1(this, _b);
-      const ref = createComputed$1(computation);
-      const node = ref[SIGNAL$1];
+      __privateAdd(this, _brand2);
+      __publicField(this, _b);
+      const ref = createComputed(computation);
+      const node = ref[SIGNAL];
       node.consumerAllowSignalWrites = true;
-      this[NODE$1] = node;
+      this[NODE] = node;
       node.wrapper = this;
       if (options) {
         const equals = options.equals;
@@ -3165,13 +3165,13 @@ var Signal$1;
     get() {
       if (!(0, Signal2.isComputed)(this))
         throw new TypeError("Wrong receiver type for Signal.Computed.prototype.get");
-      return computedGet$1(this[NODE$1]);
+      return computedGet(this[NODE]);
     }
   }
-  _b = NODE$1;
+  _b = NODE;
   _brand2 = new WeakSet();
   brand_fn2 = function () {};
-  Signal2.isComputed = (c) => typeof c === "object" && __privateIn$1(_brand2, c);
+  Signal2.isComputed = (c) => typeof c === "object" && __privateIn(_brand2, c);
   Signal2.Computed = Computed;
   ((subtle2) => {
     var _a2, _brand3, brand_fn3, _assertSignals, assertSignals_fn;
@@ -3179,10 +3179,10 @@ var Signal$1;
       let output;
       let prevActiveConsumer = null;
       try {
-        prevActiveConsumer = setActiveConsumer$1(null);
+        prevActiveConsumer = setActiveConsumer(null);
         output = cb();
       } finally {
-        setActiveConsumer$1(prevActiveConsumer);
+        setActiveConsumer(prevActiveConsumer);
       }
       return output;
     }
@@ -3192,7 +3192,7 @@ var Signal$1;
       if (!(0, Signal2.isComputed)(sink) && !(0, Signal2.isWatcher)(sink)) {
         throw new TypeError("Called introspectSources without a Computed or Watcher argument");
       }
-      return ((_a3 = sink[NODE$1].producerNode) == null ? void 0 : _a3.map((n) => n.wrapper)) ?? [];
+      return ((_a3 = sink[NODE].producerNode) == null ? void 0 : _a3.map((n) => n.wrapper)) ?? [];
     }
     subtle2.introspectSources = introspectSources;
     function introspectSinks(signal) {
@@ -3201,7 +3201,7 @@ var Signal$1;
         throw new TypeError("Called introspectSinks without a Signal argument");
       }
       return (
-        ((_a3 = signal[NODE$1].liveConsumerNode) == null ? void 0 : _a3.map((n) => n.wrapper)) ?? []
+        ((_a3 = signal[NODE].liveConsumerNode) == null ? void 0 : _a3.map((n) => n.wrapper)) ?? []
       );
     }
     subtle2.introspectSinks = introspectSinks;
@@ -3209,7 +3209,7 @@ var Signal$1;
       if (!(0, Signal2.isComputed)(signal) && !(0, Signal2.isState)(signal)) {
         throw new TypeError("Called hasSinks without a Signal argument");
       }
-      const liveConsumerNode = signal[NODE$1].liveConsumerNode;
+      const liveConsumerNode = signal[NODE].liveConsumerNode;
       if (!liveConsumerNode) return false;
       return liveConsumerNode.length > 0;
     }
@@ -3218,47 +3218,47 @@ var Signal$1;
       if (!(0, Signal2.isComputed)(signal) && !(0, Signal2.isWatcher)(signal)) {
         throw new TypeError("Called hasSources without a Computed or Watcher argument");
       }
-      const producerNode = signal[NODE$1].producerNode;
+      const producerNode = signal[NODE].producerNode;
       if (!producerNode) return false;
       return producerNode.length > 0;
     }
     subtle2.hasSources = hasSources;
     class Watcher {
       constructor(notify) {
-        __privateAdd$1(this, _brand3);
-        __privateAdd$1(this, _assertSignals);
-        __publicField$1(this, _a2);
-        let node = Object.create(REACTIVE_NODE$1);
+        __privateAdd(this, _brand3);
+        __privateAdd(this, _assertSignals);
+        __publicField(this, _a2);
+        let node = Object.create(REACTIVE_NODE);
         node.wrapper = this;
         node.consumerMarkedDirty = notify;
         node.consumerIsAlwaysLive = true;
         node.consumerAllowSignalWrites = false;
         node.producerNode = [];
-        this[NODE$1] = node;
+        this[NODE] = node;
       }
       watch(...signals) {
         if (!(0, Signal2.isWatcher)(this)) {
           throw new TypeError("Called unwatch without Watcher receiver");
         }
-        __privateMethod$1(this, _assertSignals, assertSignals_fn).call(this, signals);
-        const node = this[NODE$1];
+        __privateMethod(this, _assertSignals, assertSignals_fn).call(this, signals);
+        const node = this[NODE];
         node.dirty = false;
-        const prev = setActiveConsumer$1(node);
+        const prev = setActiveConsumer(node);
         for (const signal of signals) {
-          producerAccessed$1(signal[NODE$1]);
+          producerAccessed(signal[NODE]);
         }
-        setActiveConsumer$1(prev);
+        setActiveConsumer(prev);
       }
       unwatch(...signals) {
         if (!(0, Signal2.isWatcher)(this)) {
           throw new TypeError("Called unwatch without Watcher receiver");
         }
-        __privateMethod$1(this, _assertSignals, assertSignals_fn).call(this, signals);
-        const node = this[NODE$1];
-        assertConsumerNode$1(node);
+        __privateMethod(this, _assertSignals, assertSignals_fn).call(this, signals);
+        const node = this[NODE];
+        assertConsumerNode(node);
         for (let i = node.producerNode.length - 1; i >= 0; i--) {
           if (signals.includes(node.producerNode[i].wrapper)) {
-            producerRemoveLiveConsumerAtIndex$1(node.producerNode[i], node.producerIndexOfThis[i]);
+            producerRemoveLiveConsumerAtIndex(node.producerNode[i], node.producerIndexOfThis[i]);
             const lastIdx = node.producerNode.length - 1;
             node.producerNode[i] = node.producerNode[lastIdx];
             node.producerIndexOfThis[i] = node.producerIndexOfThis[lastIdx];
@@ -3268,7 +3268,7 @@ var Signal$1;
             if (i < node.producerNode.length) {
               const idxConsumer = node.producerIndexOfThis[i];
               const producer = node.producerNode[i];
-              assertProducerNode$1(producer);
+              assertProducerNode(producer);
               producer.liveConsumerIndexOfThis[idxConsumer] = i;
             }
           }
@@ -3278,11 +3278,11 @@ var Signal$1;
         if (!(0, Signal2.isWatcher)(this)) {
           throw new TypeError("Called getPending without Watcher receiver");
         }
-        const node = this[NODE$1];
+        const node = this[NODE];
         return node.producerNode.filter((n) => n.dirty).map((n) => n.wrapper);
       }
     }
-    _a2 = NODE$1;
+    _a2 = NODE;
     _brand3 = new WeakSet();
     brand_fn3 = function () {};
     _assertSignals = new WeakSet();
@@ -3293,17 +3293,17 @@ var Signal$1;
         }
       }
     };
-    Signal2.isWatcher = (w) => __privateIn$1(_brand3, w);
+    Signal2.isWatcher = (w) => __privateIn(_brand3, w);
     subtle2.Watcher = Watcher;
     function currentComputed() {
       var _a3;
-      return (_a3 = getActiveConsumer$1()) == null ? void 0 : _a3.wrapper;
+      return (_a3 = getActiveConsumer()) == null ? void 0 : _a3.wrapper;
     }
     subtle2.currentComputed = currentComputed;
     subtle2.watched = Symbol("watched");
     subtle2.unwatched = Symbol("unwatched");
   })(Signal2.subtle || (Signal2.subtle = {}));
-})(Signal$1 || (Signal$1 = {}));
+})(Signal || (Signal = {}));
 
 /**
  * equality check here is always false so that we can dirty the storage
@@ -3316,7 +3316,7 @@ var Signal$1;
  *
  * (though, see deep.ts for nested / deep behavior)
  */
-const createStorage = (initial = null) => new Signal$1.State(initial, { equals: () => false });
+const createStorage = (initial = null) => new Signal.State(initial, { equals: () => false });
 /**
  * Just an alias for brevity
  */
@@ -4668,586 +4668,6 @@ function r$4(r) {
   };
 }
 
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) =>
-  key in obj
-    ? __defProp(obj, key, {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value,
-      })
-    : (obj[key] = value);
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-  return value;
-};
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj)) throw TypeError("Cannot " + msg);
-};
-var __privateIn = (member, obj) => {
-  if (Object(obj) !== obj) throw TypeError('Cannot use the "in" operator on this value');
-  return member.has(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj)) throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateMethod = (obj, member, method) => {
-  __accessCheck(obj, member, "access private method");
-  return method;
-};
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-function defaultEquals(a, b) {
-  return Object.is(a, b);
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-let activeConsumer = null;
-let inNotificationPhase = false;
-let epoch = 1;
-const SIGNAL = /* @__PURE__ */ Symbol("SIGNAL");
-function setActiveConsumer(consumer) {
-  const prev = activeConsumer;
-  activeConsumer = consumer;
-  return prev;
-}
-function getActiveConsumer() {
-  return activeConsumer;
-}
-function isInNotificationPhase() {
-  return inNotificationPhase;
-}
-const REACTIVE_NODE = {
-  version: 0,
-  lastCleanEpoch: 0,
-  dirty: false,
-  producerNode: void 0,
-  producerLastReadVersion: void 0,
-  producerIndexOfThis: void 0,
-  nextProducerIndex: 0,
-  liveConsumerNode: void 0,
-  liveConsumerIndexOfThis: void 0,
-  consumerAllowSignalWrites: false,
-  consumerIsAlwaysLive: false,
-  producerMustRecompute: () => false,
-  producerRecomputeValue: () => {},
-  consumerMarkedDirty: () => {},
-  consumerOnSignalRead: () => {},
-};
-function producerAccessed(node) {
-  if (inNotificationPhase) {
-    throw new Error(
-      typeof ngDevMode !== "undefined" && ngDevMode
-        ? `Assertion error: signal read during notification phase`
-        : "",
-    );
-  }
-  if (activeConsumer === null) {
-    return;
-  }
-  activeConsumer.consumerOnSignalRead(node);
-  const idx = activeConsumer.nextProducerIndex++;
-  assertConsumerNode(activeConsumer);
-  if (idx < activeConsumer.producerNode.length && activeConsumer.producerNode[idx] !== node) {
-    if (consumerIsLive(activeConsumer)) {
-      const staleProducer = activeConsumer.producerNode[idx];
-      producerRemoveLiveConsumerAtIndex(staleProducer, activeConsumer.producerIndexOfThis[idx]);
-    }
-  }
-  if (activeConsumer.producerNode[idx] !== node) {
-    activeConsumer.producerNode[idx] = node;
-    activeConsumer.producerIndexOfThis[idx] = consumerIsLive(activeConsumer)
-      ? producerAddLiveConsumer(node, activeConsumer, idx)
-      : 0;
-  }
-  activeConsumer.producerLastReadVersion[idx] = node.version;
-}
-function producerIncrementEpoch() {
-  epoch++;
-}
-function producerUpdateValueVersion(node) {
-  if (!node.dirty && node.lastCleanEpoch === epoch) {
-    return;
-  }
-  if (!node.producerMustRecompute(node) && !consumerPollProducersForChange(node)) {
-    node.dirty = false;
-    node.lastCleanEpoch = epoch;
-    return;
-  }
-  node.producerRecomputeValue(node);
-  node.dirty = false;
-  node.lastCleanEpoch = epoch;
-}
-function producerNotifyConsumers(node) {
-  if (node.liveConsumerNode === void 0) {
-    return;
-  }
-  const prev = inNotificationPhase;
-  inNotificationPhase = true;
-  try {
-    for (const consumer of node.liveConsumerNode) {
-      if (!consumer.dirty) {
-        consumerMarkDirty(consumer);
-      }
-    }
-  } finally {
-    inNotificationPhase = prev;
-  }
-}
-function producerUpdatesAllowed() {
-  return (activeConsumer == null ? void 0 : activeConsumer.consumerAllowSignalWrites) !== false;
-}
-function consumerMarkDirty(node) {
-  var _a;
-  node.dirty = true;
-  producerNotifyConsumers(node);
-  (_a = node.consumerMarkedDirty) == null ? void 0 : _a.call(node.wrapper ?? node);
-}
-function consumerBeforeComputation(node) {
-  node && (node.nextProducerIndex = 0);
-  return setActiveConsumer(node);
-}
-function consumerAfterComputation(node, prevConsumer) {
-  setActiveConsumer(prevConsumer);
-  if (
-    !node ||
-    node.producerNode === void 0 ||
-    node.producerIndexOfThis === void 0 ||
-    node.producerLastReadVersion === void 0
-  ) {
-    return;
-  }
-  if (consumerIsLive(node)) {
-    for (let i = node.nextProducerIndex; i < node.producerNode.length; i++) {
-      producerRemoveLiveConsumerAtIndex(node.producerNode[i], node.producerIndexOfThis[i]);
-    }
-  }
-  while (node.producerNode.length > node.nextProducerIndex) {
-    node.producerNode.pop();
-    node.producerLastReadVersion.pop();
-    node.producerIndexOfThis.pop();
-  }
-}
-function consumerPollProducersForChange(node) {
-  assertConsumerNode(node);
-  for (let i = 0; i < node.producerNode.length; i++) {
-    const producer = node.producerNode[i];
-    const seenVersion = node.producerLastReadVersion[i];
-    if (seenVersion !== producer.version) {
-      return true;
-    }
-    producerUpdateValueVersion(producer);
-    if (seenVersion !== producer.version) {
-      return true;
-    }
-  }
-  return false;
-}
-function producerAddLiveConsumer(node, consumer, indexOfThis) {
-  var _a;
-  assertProducerNode(node);
-  assertConsumerNode(node);
-  if (node.liveConsumerNode.length === 0) {
-    (_a = node.watched) == null ? void 0 : _a.call(node.wrapper);
-    for (let i = 0; i < node.producerNode.length; i++) {
-      node.producerIndexOfThis[i] = producerAddLiveConsumer(node.producerNode[i], node, i);
-    }
-  }
-  node.liveConsumerIndexOfThis.push(indexOfThis);
-  return node.liveConsumerNode.push(consumer) - 1;
-}
-function producerRemoveLiveConsumerAtIndex(node, idx) {
-  var _a;
-  assertProducerNode(node);
-  assertConsumerNode(node);
-  if (typeof ngDevMode !== "undefined" && ngDevMode && idx >= node.liveConsumerNode.length) {
-    throw new Error(
-      `Assertion error: active consumer index ${idx} is out of bounds of ${node.liveConsumerNode.length} consumers)`,
-    );
-  }
-  if (node.liveConsumerNode.length === 1) {
-    (_a = node.unwatched) == null ? void 0 : _a.call(node.wrapper);
-    for (let i = 0; i < node.producerNode.length; i++) {
-      producerRemoveLiveConsumerAtIndex(node.producerNode[i], node.producerIndexOfThis[i]);
-    }
-  }
-  const lastIdx = node.liveConsumerNode.length - 1;
-  node.liveConsumerNode[idx] = node.liveConsumerNode[lastIdx];
-  node.liveConsumerIndexOfThis[idx] = node.liveConsumerIndexOfThis[lastIdx];
-  node.liveConsumerNode.length--;
-  node.liveConsumerIndexOfThis.length--;
-  if (idx < node.liveConsumerNode.length) {
-    const idxProducer = node.liveConsumerIndexOfThis[idx];
-    const consumer = node.liveConsumerNode[idx];
-    assertConsumerNode(consumer);
-    consumer.producerIndexOfThis[idxProducer] = idx;
-  }
-}
-function consumerIsLive(node) {
-  var _a;
-  return (
-    node.consumerIsAlwaysLive ||
-    (((_a = node == null ? void 0 : node.liveConsumerNode) == null ? void 0 : _a.length) ?? 0) > 0
-  );
-}
-function assertConsumerNode(node) {
-  node.producerNode ?? (node.producerNode = []);
-  node.producerIndexOfThis ?? (node.producerIndexOfThis = []);
-  node.producerLastReadVersion ?? (node.producerLastReadVersion = []);
-}
-function assertProducerNode(node) {
-  node.liveConsumerNode ?? (node.liveConsumerNode = []);
-  node.liveConsumerIndexOfThis ?? (node.liveConsumerIndexOfThis = []);
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-function computedGet(node) {
-  producerUpdateValueVersion(node);
-  producerAccessed(node);
-  if (node.value === ERRORED) {
-    throw node.error;
-  }
-  return node.value;
-}
-function createComputed(computation) {
-  const node = Object.create(COMPUTED_NODE);
-  node.computation = computation;
-  const computed = () => computedGet(node);
-  computed[SIGNAL] = node;
-  return computed;
-}
-const UNSET = /* @__PURE__ */ Symbol("UNSET");
-const COMPUTING = /* @__PURE__ */ Symbol("COMPUTING");
-const ERRORED = /* @__PURE__ */ Symbol("ERRORED");
-const COMPUTED_NODE = /* @__PURE__ */ (() => {
-  return {
-    ...REACTIVE_NODE,
-    value: UNSET,
-    dirty: true,
-    error: null,
-    equal: defaultEquals,
-    producerMustRecompute(node) {
-      return node.value === UNSET || node.value === COMPUTING;
-    },
-    producerRecomputeValue(node) {
-      if (node.value === COMPUTING) {
-        throw new Error("Detected cycle in computations.");
-      }
-      const oldValue = node.value;
-      node.value = COMPUTING;
-      const prevConsumer = consumerBeforeComputation(node);
-      let newValue;
-      let wasEqual = false;
-      try {
-        newValue = node.computation.call(node.wrapper);
-        const oldOk = oldValue !== UNSET && oldValue !== ERRORED;
-        wasEqual = oldOk && node.equal.call(node.wrapper, oldValue, newValue);
-      } catch (err) {
-        newValue = ERRORED;
-        node.error = err;
-      } finally {
-        consumerAfterComputation(node, prevConsumer);
-      }
-      if (wasEqual) {
-        node.value = oldValue;
-        return;
-      }
-      node.value = newValue;
-      node.version++;
-    },
-  };
-})();
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-function defaultThrowError() {
-  throw new Error();
-}
-let throwInvalidWriteToSignalErrorFn = defaultThrowError;
-function throwInvalidWriteToSignalError() {
-  throwInvalidWriteToSignalErrorFn();
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-function createSignal(initialValue) {
-  const node = Object.create(SIGNAL_NODE);
-  node.value = initialValue;
-  const getter = () => {
-    producerAccessed(node);
-    return node.value;
-  };
-  getter[SIGNAL] = node;
-  return getter;
-}
-function signalGetFn() {
-  producerAccessed(this);
-  return this.value;
-}
-function signalSetFn(node, newValue) {
-  if (!producerUpdatesAllowed()) {
-    throwInvalidWriteToSignalError();
-  }
-  if (!node.equal.call(node.wrapper, node.value, newValue)) {
-    node.value = newValue;
-    signalValueChanged(node);
-  }
-}
-const SIGNAL_NODE = /* @__PURE__ */ (() => {
-  return {
-    ...REACTIVE_NODE,
-    equal: defaultEquals,
-    value: void 0,
-  };
-})();
-function signalValueChanged(node) {
-  node.version++;
-  producerIncrementEpoch();
-  producerNotifyConsumers(node);
-}
-/**
- * @license
- * Copyright 2024 Bloomberg Finance L.P.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-const NODE = Symbol("node");
-var Signal;
-((Signal2) => {
-  var _a, _brand, brand_fn, _b, _brand2, brand_fn2;
-  class State {
-    constructor(initialValue, options = {}) {
-      __privateAdd(this, _brand);
-      __publicField(this, _a);
-      const ref = createSignal(initialValue);
-      const node = ref[SIGNAL];
-      this[NODE] = node;
-      node.wrapper = this;
-      if (options) {
-        const equals = options.equals;
-        if (equals) {
-          node.equal = equals;
-        }
-        node.watched = options[Signal2.subtle.watched];
-        node.unwatched = options[Signal2.subtle.unwatched];
-      }
-    }
-    get() {
-      if (!(0, Signal2.isState)(this))
-        throw new TypeError("Wrong receiver type for Signal.State.prototype.get");
-      return signalGetFn.call(this[NODE]);
-    }
-    set(newValue) {
-      if (!(0, Signal2.isState)(this))
-        throw new TypeError("Wrong receiver type for Signal.State.prototype.set");
-      if (isInNotificationPhase()) {
-        throw new Error("Writes to signals not permitted during Watcher callback");
-      }
-      const ref = this[NODE];
-      signalSetFn(ref, newValue);
-    }
-  }
-  _a = NODE;
-  _brand = new WeakSet();
-  brand_fn = function () {};
-  Signal2.isState = (s) => typeof s === "object" && __privateIn(_brand, s);
-  Signal2.State = State;
-  class Computed {
-    constructor(computation, options) {
-      __privateAdd(this, _brand2);
-      __publicField(this, _b);
-      const ref = createComputed(computation);
-      const node = ref[SIGNAL];
-      node.consumerAllowSignalWrites = true;
-      this[NODE] = node;
-      node.wrapper = this;
-      if (options) {
-        const equals = options.equals;
-        if (equals) {
-          node.equal = equals;
-        }
-        node.watched = options[Signal2.subtle.watched];
-        node.unwatched = options[Signal2.subtle.unwatched];
-      }
-    }
-    get() {
-      if (!(0, Signal2.isComputed)(this))
-        throw new TypeError("Wrong receiver type for Signal.Computed.prototype.get");
-      return computedGet(this[NODE]);
-    }
-  }
-  _b = NODE;
-  _brand2 = new WeakSet();
-  brand_fn2 = function () {};
-  Signal2.isComputed = (c) => typeof c === "object" && __privateIn(_brand2, c);
-  Signal2.Computed = Computed;
-  ((subtle2) => {
-    var _a2, _brand3, brand_fn3, _assertSignals, assertSignals_fn;
-    function untrack(cb) {
-      let output;
-      let prevActiveConsumer = null;
-      try {
-        prevActiveConsumer = setActiveConsumer(null);
-        output = cb();
-      } finally {
-        setActiveConsumer(prevActiveConsumer);
-      }
-      return output;
-    }
-    subtle2.untrack = untrack;
-    function introspectSources(sink) {
-      var _a3;
-      if (!(0, Signal2.isComputed)(sink) && !(0, Signal2.isWatcher)(sink)) {
-        throw new TypeError("Called introspectSources without a Computed or Watcher argument");
-      }
-      return ((_a3 = sink[NODE].producerNode) == null ? void 0 : _a3.map((n) => n.wrapper)) ?? [];
-    }
-    subtle2.introspectSources = introspectSources;
-    function introspectSinks(signal) {
-      var _a3;
-      if (!(0, Signal2.isComputed)(signal) && !(0, Signal2.isState)(signal)) {
-        throw new TypeError("Called introspectSinks without a Signal argument");
-      }
-      return (
-        ((_a3 = signal[NODE].liveConsumerNode) == null ? void 0 : _a3.map((n) => n.wrapper)) ?? []
-      );
-    }
-    subtle2.introspectSinks = introspectSinks;
-    function hasSinks(signal) {
-      if (!(0, Signal2.isComputed)(signal) && !(0, Signal2.isState)(signal)) {
-        throw new TypeError("Called hasSinks without a Signal argument");
-      }
-      const liveConsumerNode = signal[NODE].liveConsumerNode;
-      if (!liveConsumerNode) return false;
-      return liveConsumerNode.length > 0;
-    }
-    subtle2.hasSinks = hasSinks;
-    function hasSources(signal) {
-      if (!(0, Signal2.isComputed)(signal) && !(0, Signal2.isWatcher)(signal)) {
-        throw new TypeError("Called hasSources without a Computed or Watcher argument");
-      }
-      const producerNode = signal[NODE].producerNode;
-      if (!producerNode) return false;
-      return producerNode.length > 0;
-    }
-    subtle2.hasSources = hasSources;
-    class Watcher {
-      constructor(notify) {
-        __privateAdd(this, _brand3);
-        __privateAdd(this, _assertSignals);
-        __publicField(this, _a2);
-        let node = Object.create(REACTIVE_NODE);
-        node.wrapper = this;
-        node.consumerMarkedDirty = notify;
-        node.consumerIsAlwaysLive = true;
-        node.consumerAllowSignalWrites = false;
-        node.producerNode = [];
-        this[NODE] = node;
-      }
-      watch(...signals) {
-        if (!(0, Signal2.isWatcher)(this)) {
-          throw new TypeError("Called unwatch without Watcher receiver");
-        }
-        __privateMethod(this, _assertSignals, assertSignals_fn).call(this, signals);
-        const node = this[NODE];
-        node.dirty = false;
-        const prev = setActiveConsumer(node);
-        for (const signal of signals) {
-          producerAccessed(signal[NODE]);
-        }
-        setActiveConsumer(prev);
-      }
-      unwatch(...signals) {
-        if (!(0, Signal2.isWatcher)(this)) {
-          throw new TypeError("Called unwatch without Watcher receiver");
-        }
-        __privateMethod(this, _assertSignals, assertSignals_fn).call(this, signals);
-        const node = this[NODE];
-        assertConsumerNode(node);
-        for (let i = node.producerNode.length - 1; i >= 0; i--) {
-          if (signals.includes(node.producerNode[i].wrapper)) {
-            producerRemoveLiveConsumerAtIndex(node.producerNode[i], node.producerIndexOfThis[i]);
-            const lastIdx = node.producerNode.length - 1;
-            node.producerNode[i] = node.producerNode[lastIdx];
-            node.producerIndexOfThis[i] = node.producerIndexOfThis[lastIdx];
-            node.producerNode.length--;
-            node.producerIndexOfThis.length--;
-            node.nextProducerIndex--;
-            if (i < node.producerNode.length) {
-              const idxConsumer = node.producerIndexOfThis[i];
-              const producer = node.producerNode[i];
-              assertProducerNode(producer);
-              producer.liveConsumerIndexOfThis[idxConsumer] = i;
-            }
-          }
-        }
-      }
-      getPending() {
-        if (!(0, Signal2.isWatcher)(this)) {
-          throw new TypeError("Called getPending without Watcher receiver");
-        }
-        const node = this[NODE];
-        return node.producerNode.filter((n) => n.dirty).map((n) => n.wrapper);
-      }
-    }
-    _a2 = NODE;
-    _brand3 = new WeakSet();
-    brand_fn3 = function () {};
-    _assertSignals = new WeakSet();
-    assertSignals_fn = function (signals) {
-      for (const signal of signals) {
-        if (!(0, Signal2.isComputed)(signal) && !(0, Signal2.isState)(signal)) {
-          throw new TypeError("Called watch/unwatch without a Computed or State argument");
-        }
-      }
-    };
-    Signal2.isWatcher = (w) => __privateIn(_brand3, w);
-    subtle2.Watcher = Watcher;
-    function currentComputed() {
-      var _a3;
-      return (_a3 = getActiveConsumer()) == null ? void 0 : _a3.wrapper;
-    }
-    subtle2.currentComputed = currentComputed;
-    subtle2.watched = Symbol("watched");
-    subtle2.unwatched = Symbol("unwatched");
-  })(Signal2.subtle || (Signal2.subtle = {}));
-})(Signal || (Signal = {}));
-
 /**
  * @license
  * Copyright 2023 Google LLC
@@ -5525,7 +4945,7 @@ function* o$3(o, f) {
 }
 
 let pending = false;
-let watcher = new Signal$1.subtle.Watcher(() => {
+let watcher = new Signal.subtle.Watcher(() => {
   if (!pending) {
     pending = true;
     queueMicrotask(() => {
@@ -5545,7 +4965,7 @@ function flushPending() {
  * This will produce a memory leak.
  */
 function effect(cb) {
-  let c = new Signal$1.Computed(() => cb());
+  let c = new Signal.Computed(() => cb());
   watcher.watch(c);
   c.get();
   return () => {
@@ -19952,6 +19372,60 @@ const modalElement = customElements.get("a2ui-modal");
 if (modalElement && Array.isArray(modalElement.styles)) {
   modalElement.styles = [...modalElement.styles, modalStyles];
 }
+const appendComponentStyles = (tagName, extraStyles) => {
+  const component = customElements.get(tagName);
+  if (!component) {
+    return;
+  }
+  const current = component.styles;
+  if (!current) {
+    component.styles = [extraStyles];
+    return;
+  }
+  component.styles = Array.isArray(current) ? [...current, extraStyles] : [current, extraStyles];
+};
+appendComponentStyles(
+  "a2ui-row",
+  i$9`
+    @media (max-width: 860px) {
+      section {
+        flex-wrap: wrap;
+        align-content: flex-start;
+      }
+
+      ::slotted(*) {
+        flex: 1 1 100%;
+        min-width: 100%;
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  `,
+);
+appendComponentStyles(
+  "a2ui-column",
+  i$9`
+    :host {
+      min-width: 0;
+    }
+
+    section {
+      min-width: 0;
+    }
+  `,
+);
+appendComponentStyles(
+  "a2ui-card",
+  i$9`
+    :host {
+      min-width: 0;
+    }
+
+    section {
+      min-width: 0;
+    }
+  `,
+);
 const emptyClasses = () => ({});
 const textHintStyles = () => ({
   h1: {},

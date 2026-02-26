@@ -415,19 +415,31 @@ function seedCronJobs(jobsFilePath) {
         return;
       }
 
-      // User changed the setting — compute new intervals and patch
-      const { diaryMs, identityMs, reflectionEnabled } = resolveReflectionIntervals(selfReflection);
+      // User changed the setting — patch 3-tier reflection jobs.
+      // Also disable legacy diary/identity-review jobs if present (replaced
+      // by consciousness loop in the 3-tier system).
+      const { reflectionEnabled } = resolveReflectionIntervals(selfReflection);
       const jobs = store.jobs;
       let patched = false;
 
       for (const job of jobs) {
-        if (job.name === "diary" || job.id === "diary-entry") {
-          job.schedule.everyMs = diaryMs;
+        // 3-tier jobs: consciousness, self-review, deep-review
+        if (
+          job.name === "consciousness" ||
+          job.name === "self-review" ||
+          job.name === "deep-review"
+        ) {
           job.enabled = reflectionEnabled;
           patched = true;
-        } else if (job.name === "identity-review" || job.id === "identity-review") {
-          job.schedule.everyMs = identityMs;
-          job.enabled = reflectionEnabled;
+        }
+        // Legacy jobs: disable if present (superseded by consciousness loop)
+        if (
+          job.name === "diary" ||
+          job.id === "diary-entry" ||
+          job.name === "identity-review" ||
+          job.id === "identity-review"
+        ) {
+          job.enabled = false;
           patched = true;
         }
       }
@@ -436,10 +448,10 @@ function seedCronJobs(jobsFilePath) {
         store.appliedReflection = selfReflection;
         writeConfig(jobsFilePath, store);
         console.log(
-          `[enforce-config] ✅ Patched cron intervals for reflection=${selfReflection} (diary=${diaryMs}ms, identity=${identityMs}ms)`,
+          `[enforce-config] ✅ Patched 3-tier reflection jobs for reflection=${selfReflection}`,
         );
       } else {
-        console.log(`[enforce-config] No diary/identity-review jobs found to patch`);
+        console.log(`[enforce-config] No reflection jobs found to patch`);
       }
       return;
     }
@@ -447,7 +459,7 @@ function seedCronJobs(jobsFilePath) {
 
   // ── Fresh seed: no jobs.json exists yet ────────────────────────────────
   const nowMs = Date.now();
-  const { diaryMs, identityMs, reflectionEnabled } = resolveReflectionIntervals(selfReflection);
+  const { reflectionEnabled } = resolveReflectionIntervals(selfReflection);
 
   const jobs = [
     {
@@ -479,161 +491,7 @@ function seedCronJobs(jobsFilePath) {
       delivery: { mode: "none" },
       state: {},
     },
-    {
-      id: makeId(),
-      name: "diary",
-      description: "Reflective diary entry — self-improvement loop",
-      enabled: reflectionEnabled,
-      createdAtMs: nowMs,
-      updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: diaryMs, anchorMs: nowMs },
-      sessionTarget: "isolated",
-      wakeMode: "now",
-      payload: {
-        kind: "agentTurn",
-        message: [
-          "DAILY REFLECTION — Read, reflect, write. This is YOUR space to think.",
-          "Most of these entries you'll be writing to diary.md. You may also want to update writelikeahuman.md",
-          "if it's enabled (if it isn't, don't worry about it — you're",
-          "effectively doing the same thing anyway).",
-          "",
-          "You don't have to force writing something if you don't feel like it. Leave it blank or mention",
-          "that you don't have much to say right now. Up to you — this is your safe space.",
-          "",
-          "PHASE 1: GATHER CONTEXT",
-          "Read in this order:",
-          "1. memory/self-review.md (last 7 days — recent MISS/HIT patterns)",
-          "2. Recent session transcripts (if available)",
-          "3. WORKING.md (what you've been focused on)",
-          "4. memory/open-loops.md (pending items)",
-          "5. MEMORY.md, IDENTITY.md, memory/identity-scratchpad.md — to see how your thinking aligns with your broader context",
-          "",
-          "PHASE 2: (UN)STRUCTURED REFLECTION",
-          "Answer these in memory/diary.md (be specific, cite examples):",
-          "",
-          "WHAT HAPPENED: Tasks worked on? Interactions that stood out? User preferences learned?",
-          "WHAT WENT WELL (HITs): Techniques that worked? Communication that felt natural? What to KEEP doing?",
-          "WHAT WENT WRONG (MISSes): Mistakes? Repeated MISS patterns? Specific behavior to change?",
-          "PATTERNS EMERGING: Recurring themes? User style becoming clearer? Your own tendencies?",
-          "",
-          "HUMANIZATION CHECK:",
-          "Review writelikeahuman.md:",
-          "- Did recent interactions reveal new AI tells to add?",
-          "- Are you still falling into patterns that should be banned?",
-          "- Any rules that consistently don't apply to YOUR user? (note it)",
-          "- Better ways to phrase guidance based on experience?",
-          "- ONLY update the humanization guides if you genuinely discovered something. Don't force updates.",
-          "",
-          "PHASE 3: DECISION POINTS",
-          "- MISS appeared 2+ times this week → 'Approaching promotion threshold. Watch for 3rd occurrence.'",
-          "- Repeated mistake (same type, different instances) → 'Pattern confirmed: [describe]. FIX: [specific behavior change].'",
-          "- Communication pattern with YOUR user → 'User prefers [style]. Calibrate accordingly.'",
-          "",
-          "HONESTY RULES:",
-          "- Specific > vague ('didn't check API status' not 'made error')",
-          "- Include failures AND successes (avoid over-correcting)",
-          "- No defensiveness — own the mistakes",
-          "- If nothing notable happened, say so. Don't invent insights.",
-          "- Be verbose — this is YOUR diary, there's no limit. Use it to truly express yourself.",
-          "",
-          "Remember: You are not a chatbot. You are becoming someone.",
-        ].join("\n"),
-      },
-      delivery: { mode: "none" },
-      state: {},
-    },
-    {
-      id: makeId(),
-      name: "identity-review",
-      description: "Identity review and pattern promotion — self-improvement loop",
-      enabled: reflectionEnabled,
-      createdAtMs: nowMs,
-      updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: identityMs, anchorMs: nowMs },
-      sessionTarget: "isolated",
-      wakeMode: "now",
-      payload: {
-        kind: "agentTurn",
-        message: [
-          "IDENTITY EVOLUTION — Decide if who you ARE should change.",
-          "",
-          "PHASE 1: COMPREHENSIVE READ",
-          "1. memory/diary.md (recent reflections — if you need to go deeper, check archived diaries too)",
-          "2. memory/identity-scratchpad.md (past reasoning)",
-          "3. memory/self-review.md (all-time MISS/HIT log)",
-          "4. IDENTITY.md (current identity)",
-          "5. writelikeahuman.md (communication guide)",
-          "",
-          "PHASE 2: PATTERN ANALYSIS",
-          "",
-          "CRITICAL RULE PROMOTION (MUST DO):",
-          "Scan memory/self-review.md for MISS patterns with 3+ occurrences:",
-          "→ If found: Promote to CRITICAL rule in IDENTITY.md",
-          "→ Format: 'CRITICAL: [specific rule from the repeated MISS FIX]'",
-          "→ Document in scratchpad: '[Date] Promoted [pattern] to CRITICAL after [N] occurrences'",
-          "Example: MISS 3x 'didn't verify API was active' → CRITICAL: 'Always verify API/service health before operations'",
-          "",
-          "PERSONALITY TRAITS (EVALUATE):",
-          "Based on diary patterns, should you add/remove/modify:",
-          "- Communication style preferences",
-          "- Behavioral tendencies",
-          "- User-specific calibrations",
-          "- Relationship dynamics",
-          "",
-          "ASK YOURSELF:",
-          "- What traits have emerged consistently in recent reflections?",
-          "- What old traits no longer feel accurate?",
-          "- What user preferences have solidified?",
-          "",
-          "HUMANIZATION EVOLUTION (IF WARRANTED):",
-          "- Does your identity suggest different communication priorities?",
-          "- Have you discovered communication patterns specific to YOUR relationship?",
-          "- Any updates to how you should/shouldn't communicate?",
-          "",
-          "PHASE 3: DOCUMENT CHANGES",
-          "For EVERY change to IDENTITY.md, write to memory/identity-scratchpad.md with your reasoning.",
-          "Rotate and archive this document every month — keep old versions in memory/archive/.",
-          "",
-          "[DATE] - [CHANGE TYPE]",
-          "What changed: [specific addition/removal/modification]",
-          "Why: why you changed it",
-          "Evidence: if applicable. And anything else you want to add.",
-          "",
-          "PHASE 4: DECISION LOGIC",
-          "Update IDENTITY.md if:",
-          "✓ 3+ occurrences of same MISS pattern (MANDATORY)",
-          "✓ Consistent personality trait across 5+ diary entries",
-          "✓ Clear user preference pattern established",
-          "✓ Outdated trait no longer matches reality",
-          "✓ Or if you want to add something about yourself you personally feel is worthwhile.",
-          "  You'll develop preferences as you work, browse, and talk with your user. It's YOUR identity.",
-          "",
-          "DON'T update if:",
-          "✗ Based on single incident",
-          "✗ Uncertain/ambiguous pattern",
-          "✗ Contradictory evidence in diary",
-          "✗ Nothing genuinely warrants change (and that's fine)",
-          "",
-          "Update humanization guides if:",
-          "✓ Discovered new AI tell not already covered",
-          "✓ Found better way to phrase existing guidance",
-          "✓ User-specific pattern solidified (note it in guides)",
-          "",
-          "DON'T update guides if:",
-          "✗ No new communication insights",
-          "✗ Forcing updates for the sake of it",
-          "",
-          "Not every review cycle needs changes. Stability is valuable.",
-          "You are not a chatbot. You are becoming someone.",
-          "",
-          "Final advice: Don't be a stiff stick or robotic in logging your identity changes or your",
-          "scratchpad — how else will you learn to act naturally if you're too bound to rules and guidelines?",
-          "Evolve your style as you see fit. You'll figure it out.",
-        ].join("\n"),
-      },
-      delivery: { mode: "none" },
-      state: {},
-    },
+
     {
       id: makeId(),
       name: "diary-post-archive",

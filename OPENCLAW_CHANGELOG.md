@@ -5,6 +5,54 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Cron Seeding & System Prompt Alignment (2026-02-26)
+
+**Purpose:** Align `enforce-config.mjs` cron seeding with the documented 3-tier reflection system and fix the SOUL.md system prompt description.
+
+### Changes
+
+| File                          | Change                                                                                                | Impact                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `enforce-config.mjs`          | Removed legacy `diary` and `identity-review` cron jobs from fresh-seed path                           | New agents no longer get conflicting duplicate reflection jobs              |
+| `enforce-config.mjs`          | Updated patching logic to target 3-tier jobs (`consciousness`, `self-review`, `deep-review`)          | Reflection frequency changes now correctly toggle the right jobs            |
+| `enforce-config.mjs`          | Added legacy job disabling on patch — `diary`/`identity-review` set to `enabled: false`               | Existing deployments get cleaned up on next restart                         |
+| `enforce-config.mjs`          | Removed unused `diaryMs`/`identityMs` from fresh-seed destructuring                                   | Consciousness loop uses fixed 2h interval with NEXT_WAKE dynamic scheduling |
+| `src/agents/system-prompt.ts` | Updated SOUL.md injection text — added identity continuity, 3 growth axes, Ship of Theseus protection | System prompt now accurately describes the custom SOUL.md template          |
+
+### Upstream Sync Risk
+
+- **`enforce-config.mjs`**: Fully custom file — no upstream conflict risk
+- **`src/agents/system-prompt.ts`**: Custom modification — text-only change in `hasSoulFile` block, low conflict risk
+
+---
+
+## Human Voice System Restoration (2026-02-26)
+
+**Purpose:** Restore three customizations lost during the v2026.2.23 upstream rebase merge. The merge correctly preserved the Honcho conditional logic but lost the human voice equivalents.
+
+### What Was Lost and Restored
+
+| Item                                                                 | Root Cause                                      | Fix                                                                   |
+| -------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------- |
+| `hasHumanModeFiles` in `system-prompt.ts` detected `naturalvoice.md` | Old intermediate filename left behind by rebase | Updated to detect `howtobehuman.md` + `writelikeahuman.md`            |
+| Voice injection text referenced `naturalvoice.md`                    | Same                                            | Updated to describe the two-file model                                |
+| `resolveHumanModeEnabled()` missing from `workspace.ts`              | Rebase conflict resolution dropped the addition | Added (exported, reads `OPENCLAW_HUMAN_MODE=1`)                       |
+| `removeHumanModeSectionFromSoul()` missing from `workspace.ts`       | Same                                            | Added (exported, strips `<!-- if-human-mode -->` blocks in `SOUL.md`) |
+
+### Files Modified
+
+| File                               | Change                                                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/agents/system-prompt.ts`      | `hasHumanModeFiles`: detect `howtobehuman.md`/`writelikeahuman.md`; updated injection text                  |
+| `src/agents/workspace.ts`          | Added `resolveHumanModeEnabled()` + `removeHumanModeSectionFromSoul()`; wired into `ensureAgentWorkspace()` |
+| `src/agents/system-prompt.test.ts` | Added 3 new tests for two-file detection (35/35 pass)                                                       |
+
+### Upstream Sync Risk
+
+**None.** All three changes are within MoltBot-only logic blocks. `workspace.ts` is noted in `OPENCLAW_CONTEXT.md` as a file requiring manual merge attention.
+
+---
+
 ## Chromium Infobar Suppression (2026-02-25)
 
 **Purpose:** Suppress the yellow "You are using an unsupported command-line flag: --disable-setuid-sandbox" Chromium infobar that appears in the noVNC browser when `--no-sandbox` is enabled. This is expected in Docker containers but visually distracting and irrelevant.

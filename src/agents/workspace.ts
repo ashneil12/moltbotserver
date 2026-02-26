@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { rebuildKnowledgeIndex } from "../memory/knowledge-index.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
@@ -29,6 +30,8 @@ export const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
+export const DEFAULT_DIARY_FILENAME = "diary.md";
+export const DEFAULT_KNOWLEDGE_INDEX_FILENAME = "_index.md";
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;
@@ -39,6 +42,54 @@ const WORKSPACE_STATE_VERSION = 1;
  */
 function resolveHonchoEnabled(): boolean {
   return Boolean(process.env.HONCHO_API_KEY?.trim());
+}
+
+/**
+ * Check if human voice mode is enabled (OPENCLAW_HUMAN_MODE=1).
+ * When enabled, howtobehuman.md and writelikeahuman.md are seeded into the workspace.
+ * When disabled, references to these files are removed from SOUL.md.
+ */
+export function resolveHumanModeEnabled(): boolean {
+  return process.env.OPENCLAW_HUMAN_MODE?.trim() === "1";
+}
+
+/**
+ * Strip `<!-- if-human-mode -->` / `<!-- end-human-mode -->` conditional blocks
+ * from a workspace file based on whether human voice mode is enabled.
+ *
+ * If human mode is enabled, the markers are removed and content is preserved.
+ * If human mode is disabled, the entire block (markers + content) is removed.
+ */
+export async function removeHumanModeSectionFromSoul(
+  filePath: string,
+  humanModeEnabled: boolean,
+): Promise<void> {
+  const IF_MARKER = "<!-- if-human-mode -->";
+  const END_MARKER = "<!-- end-human-mode -->";
+
+  try {
+    const content = await fs.readFile(filePath, "utf-8");
+    if (!content.includes(IF_MARKER)) {
+      return; // No conditional markers — nothing to do
+    }
+
+    let result = content;
+    if (humanModeEnabled) {
+      // Keep the content, just remove the markers themselves
+      result = result.replace(new RegExp(`\\s*${IF_MARKER}\\s*\\n?`, "g"), "\n");
+      result = result.replace(new RegExp(`\\s*${END_MARKER}\\s*\\n?`, "g"), "\n");
+    } else {
+      // Remove entire blocks between markers (including markers)
+      const regex = new RegExp(`\\s*${IF_MARKER}[\\s\\S]*?${END_MARKER}\\s*\\n?`, "g");
+      result = result.replace(regex, "\n");
+    }
+
+    if (result !== content) {
+      await fs.writeFile(filePath, result, "utf-8");
+    }
+  } catch {
+    // Silently skip — workspace file may not exist or be readable
+  }
 }
 
 /**
@@ -65,10 +116,7 @@ async function stripHonchoConditionals(filePath: string, honchoEnabled: boolean)
       result = result.replace(new RegExp(`\\s*${END_MARKER}\\s*\\n?`, "g"), "\n");
     } else {
       // Remove entire blocks between markers (including markers)
-      const regex = new RegExp(
-        `\\s*${IF_MARKER}[\\s\\S]*?${END_MARKER}\\s*\\n?`,
-        "g",
-      );
+      const regex = new RegExp(`\\s*${IF_MARKER}[\\s\\S]*?${END_MARKER}\\s*\\n?`, "g");
       result = result.replace(regex, "\n");
     }
 
@@ -111,7 +159,6 @@ async function readFileWithCache(filePath: string): Promise<string> {
     throw error;
   }
 }
-
 
 function stripFrontMatter(content: string): string {
   if (!content.startsWith("---")) {
@@ -164,7 +211,9 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_HEARTBEAT_FILENAME
   | typeof DEFAULT_BOOTSTRAP_FILENAME
   | typeof DEFAULT_MEMORY_FILENAME
-  | typeof DEFAULT_MEMORY_ALT_FILENAME;
+  | typeof DEFAULT_MEMORY_ALT_FILENAME
+  | typeof DEFAULT_DIARY_FILENAME
+  | typeof DEFAULT_KNOWLEDGE_INDEX_FILENAME;
 
 export type WorkspaceBootstrapFile = {
   name: WorkspaceBootstrapFileName;
@@ -190,6 +239,8 @@ const VALID_BOOTSTRAP_NAMES: ReadonlySet<string> = new Set([
   DEFAULT_BOOTSTRAP_FILENAME,
   DEFAULT_MEMORY_FILENAME,
   DEFAULT_MEMORY_ALT_FILENAME,
+  DEFAULT_DIARY_FILENAME,
+  DEFAULT_KNOWLEDGE_INDEX_FILENAME,
 ]);
 
 async function writeFileIfMissing(filePath: string, content: string): Promise<boolean> {
@@ -383,7 +434,7 @@ export async function ensureAgentWorkspace(params?: {
   const toolsTemplate = await loadTemplate(DEFAULT_TOOLS_FILENAME);
   const identityTemplate = await loadTemplate(DEFAULT_IDENTITY_FILENAME);
   const userTemplate = await loadTemplate(DEFAULT_USER_FILENAME);
-  const heartbeatTemplate = await loadTemplate(DEFAULT_HEARTBEAT_FILENAME);
+
   await writeFileIfMissing(agentsPath, agentsTemplate);
   await writeFileIfMissing(soulPath, soulTemplate);
   await writeFileIfMissing(toolsPath, toolsTemplate);
@@ -394,6 +445,10 @@ export async function ensureAgentWorkspace(params?: {
   const honchoEnabled = resolveHonchoEnabled();
   await stripHonchoConditionals(soulPath, honchoEnabled);
   await stripHonchoConditionals(agentsPath, honchoEnabled);
+
+  // Human voice mode: strip conditional markers based on OPENCLAW_HUMAN_MODE
+  const humanModeEnabled = resolveHumanModeEnabled();
+  await removeHumanModeSectionFromSoul(soulPath, humanModeEnabled);
 
   let state = await readWorkspaceOnboardingState(statePath);
   let stateDirty = false;
@@ -453,7 +508,7 @@ export async function ensureAgentWorkspace(params?: {
   };
 }
 
-async function resolveMemoryBootstrapEntries(
+async function _resolveMemoryBootstrapEntries(
   resolvedDir: string,
 ): Promise<Array<{ name: WorkspaceBootstrapFileName; filePath: string }>> {
   const candidates: WorkspaceBootstrapFileName[] = [
@@ -530,6 +585,31 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
   // NOTE: MEMORY.md / memory.md are NOT loaded into context.
   // They can grow very large and should be accessed via memory_search (QMD),
   // not injected into the system prompt on every message.
+
+  // Diary: tail-heavy truncation handled by bootstrap.ts (DIARY_MAX_CHARS).
+  const diaryPath = path.join(resolvedDir, "memory", DEFAULT_DIARY_FILENAME);
+  try {
+    await fs.access(diaryPath);
+    entries.push({ name: DEFAULT_DIARY_FILENAME, filePath: diaryPath });
+  } catch {
+    // Optional — diary may not exist yet
+  }
+
+  // Knowledge index: rebuild before loading so the index is fresh.
+  const knowledgeIndexPath = path.join(
+    resolvedDir,
+    "memory",
+    "knowledge",
+    DEFAULT_KNOWLEDGE_INDEX_FILENAME,
+  );
+  try {
+    // preLoad: rebuild the knowledge index from topic files before reading
+    await rebuildKnowledgeIndex(resolvedDir);
+    await fs.access(knowledgeIndexPath);
+    entries.push({ name: DEFAULT_KNOWLEDGE_INDEX_FILENAME, filePath: knowledgeIndexPath });
+  } catch {
+    // Optional — knowledge directory may not exist
+  }
 
   const result: WorkspaceBootstrapFile[] = [];
   for (const entry of entries) {

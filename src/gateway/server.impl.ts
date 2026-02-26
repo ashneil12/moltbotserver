@@ -806,6 +806,9 @@ export async function startGatewayServer(
       authRateLimiter?.dispose();
       browserAuthRateLimiter.dispose();
       channelHealthMonitor?.stop();
+      // Stop auxiliary timers before main cron stop
+      cronState.stopPreResetFlush();
+      cronState.stopDiaryArchive();
       await close(opts);
     },
   };

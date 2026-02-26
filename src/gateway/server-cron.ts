@@ -7,7 +7,9 @@ import {
   resolveAgentMainSessionKey,
 } from "../config/sessions.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
+import { startDiaryArchiveTimer, stopDiaryArchiveTimer } from "../cron/diary-archive.js";
 import { runCronIsolatedAgentTurn } from "../cron/isolated-agent.js";
+import { startPreResetFlushTimer, stopPreResetFlushTimer } from "../cron/pre-reset-flush.js";
 import {
   appendCronRunLog,
   resolveCronRunLogPath,
@@ -30,6 +32,8 @@ export type GatewayCronState = {
   cron: CronService;
   storePath: string;
   cronEnabled: boolean;
+  stopPreResetFlush: () => void;
+  stopDiaryArchive: () => void;
 };
 
 const CRON_WEBHOOK_TIMEOUT_MS = 10_000;
@@ -323,5 +327,35 @@ export function buildGatewayCronService(params: {
     },
   });
 
-  return { cron, storePath, cronEnabled };
+  // Start auxiliary timers alongside the CronService.
+  const resetAtHour = params.cfg.session?.reset?.atHour;
+  startPreResetFlushTimer({
+    cfg: params.cfg,
+    sessionStorePath: sessionStorePath,
+    resetAtHour: typeof resetAtHour === "number" ? resetAtHour : undefined,
+    runIsolatedAgentJob: async ({ job, message }) => {
+      const { agentId, cfg: runtimeConfig } = resolveCronAgent(job.agentId);
+      return await runCronIsolatedAgentTurn({
+        cfg: runtimeConfig,
+        deps: params.deps,
+        job,
+        message,
+        abortSignal: undefined,
+        agentId,
+        sessionKey: `cron:${job.id}`,
+        lane: "cron",
+      });
+    },
+    log: cronLogger,
+  });
+
+  startDiaryArchiveTimer({ cfg: params.cfg });
+
+  return {
+    cron,
+    storePath,
+    cronEnabled,
+    stopPreResetFlush: stopPreResetFlushTimer,
+    stopDiaryArchive: stopDiaryArchiveTimer,
+  };
 }
