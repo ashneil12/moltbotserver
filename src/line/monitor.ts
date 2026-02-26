@@ -4,11 +4,7 @@ import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/pr
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { danger, logVerbose } from "../globals.js";
-import {
-  isRequestBodyLimitError,
-  readRequestBodyWithLimit,
-  requestBodyErrorToText,
-} from "../infra/http-body.js";
+import { waitForAbortSignal } from "../infra/abort-signal.js";
 import { normalizePluginHttpPath } from "../plugins/http-path.js";
 import { registerPluginHttpRoute } from "../plugins/http-registry.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -49,9 +45,6 @@ export interface LineProviderMonitor {
   handleWebhook: (body: WebhookRequestBody) => Promise<void>;
   stop: () => void;
 }
-
-const LINE_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
-const LINE_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
 
 // Track runtime state in memory (simplified version)
 const runtimeState = new Map<
@@ -304,7 +297,12 @@ export async function monitorLineProvider(
   logVerbose(`line: registered webhook handler at ${normalizedPath}`);
 
   // Handle abort signal
+  let stopped = false;
   const stopHandler = () => {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
     logVerbose(`line: stopping provider for account ${resolvedAccountId}`);
     unregisterHttp();
     recordChannelRuntimeState({
@@ -317,7 +315,12 @@ export async function monitorLineProvider(
     });
   };
 
-  abortSignal?.addEventListener("abort", stopHandler);
+  if (abortSignal?.aborted) {
+    stopHandler();
+  } else if (abortSignal) {
+    abortSignal.addEventListener("abort", stopHandler, { once: true });
+    await waitForAbortSignal(abortSignal);
+  }
 
   return {
     account: bot.account,

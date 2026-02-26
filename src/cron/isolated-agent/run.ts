@@ -47,7 +47,6 @@ import {
   getHookType,
   isExternalHookSession,
 } from "../../security/external-content.js";
-import { scanAndLog } from "../../security/scan-and-log.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import type { CronJob, CronRunOutcome, CronRunTelemetry } from "../types.js";
 import {
@@ -78,6 +77,12 @@ export type RunCronAgentTurnResult = {
    * messages.  See: https://github.com/openclaw/openclaw/issues/15692
    */
   delivered?: boolean;
+  /**
+   * `true` when cron attempted announce/direct delivery for this run.
+   * This is tracked separately from `delivered` because some announce paths
+   * cannot guarantee a final delivery ack synchronously.
+   */
+  deliveryAttempted?: boolean;
 } & CronRunOutcome &
   CronRunTelemetry;
 
@@ -199,10 +204,17 @@ export async function runCronIsolatedAgentTurn(params: {
       defaultModel: resolvedDefault.model,
     });
     if ("error" in resolvedOverride) {
-      return { status: "error", error: resolvedOverride.error };
+      if (resolvedOverride.error.startsWith("model not allowed:")) {
+        logWarn(
+          `cron: payload.model '${modelOverride}' not allowed, falling back to agent defaults`,
+        );
+      } else {
+        return { status: "error", error: resolvedOverride.error };
+      }
+    } else {
+      provider = resolvedOverride.ref.provider;
+      model = resolvedOverride.ref.model;
     }
-    provider = resolvedOverride.ref.provider;
-    model = resolvedOverride.ref.model;
   }
   const now = Date.now();
   const cronSession = resolveCronSession({
@@ -308,6 +320,7 @@ export async function runCronIsolatedAgentTurn(params: {
     channel: deliveryPlan.channel ?? "last",
     to: deliveryPlan.to,
     sessionKey: params.job.sessionKey,
+    accountId: deliveryPlan.accountId,
   });
 
   const { formattedTime, timeLine } = resolveCronStyleNow(params.cfg, now);
@@ -323,7 +336,7 @@ export async function runCronIsolatedAgentTurn(params: {
   let commandBody: string;
 
   if (isExternalHook) {
-    // Legacy pattern check — preserved for backward compatibility
+    // Log suspicious patterns for security monitoring
     const suspiciousPatterns = detectSuspiciousPatterns(params.message);
     if (suspiciousPatterns.length > 0) {
       logWarn(
@@ -331,13 +344,6 @@ export async function runCronIsolatedAgentTurn(params: {
           `(session=${baseSessionKey}, patterns=${suspiciousPatterns.length}): ${suspiciousPatterns.slice(0, 3).join(", ")}`,
       );
     }
-    // Full content scanner — adds risk scoring, quarantine, and structured findings
-    scanAndLog(params.message, {
-      source: getHookType(baseSessionKey),
-      sender: baseSessionKey,
-      eventName: "security.content_scan",
-      extraData: { sessionKey: baseSessionKey },
-    });
   }
 
   if (shouldWrapExternal) {
@@ -565,49 +571,18 @@ export async function runCronIsolatedAgentTurn(params: {
   const embeddedRunError = hasErrorPayload
     ? (lastErrorPayloadText ?? "cron isolated run returned an error payload")
     : undefined;
-  const resolveRunOutcome = (outcomeOpts?: { delivered?: boolean }) => {
-    // Log cron run outcome to event logger
-    try {
-      import("../../logging/event-log.js")
-        .then(({ createEventLogger }) => {
-          createEventLogger({}).log({
-            event: hasErrorPayload ? "cron.failed" : "cron.completed",
-            level: hasErrorPayload ? "error" : "info",
-            data: {
-              jobId: params.job.id,
-              jobName: params.job.name,
-              status: hasErrorPayload ? "error" : "ok",
-              error: hasErrorPayload
-                ? (embeddedRunError ?? "cron isolated run returned an error payload")
-                : undefined,
-              durationMs: runEndedAt - runStartedAt,
-              model: telemetry?.model,
-              provider: telemetry?.provider,
-              inputTokens: telemetry?.usage?.input_tokens,
-              outputTokens: telemetry?.usage?.output_tokens,
-              delivered: outcomeOpts?.delivered,
-              agentId,
-            },
-            subsystem: "cron",
-          });
-        })
-        .catch(() => {
-          // Event logging must never block cron execution
-        });
-    } catch {
-      // Event logging must never block cron execution
-    }
-    return withRunSession({
+  const resolveRunOutcome = (params?: { delivered?: boolean; deliveryAttempted?: boolean }) =>
+    withRunSession({
       status: hasErrorPayload ? "error" : "ok",
       ...(hasErrorPayload
         ? { error: embeddedRunError ?? "cron isolated run returned an error payload" }
         : {}),
       summary,
       outputText,
-      delivered: outcomeOpts?.delivered,
+      delivered: params?.delivered,
+      deliveryAttempted: params?.deliveryAttempted,
       ...telemetry,
     });
-  };
 
   // Skip delivery for heartbeat-only responses (HEARTBEAT_OK with no real content).
   const ackMaxChars = resolveHeartbeatAckMaxChars(agentCfg);
@@ -651,14 +626,23 @@ export async function runCronIsolatedAgentTurn(params: {
     withRunSession,
   });
   if (deliveryResult.result) {
+    const resultWithDeliveryMeta: RunCronAgentTurnResult = {
+      ...deliveryResult.result,
+      deliveryAttempted:
+        deliveryResult.result.deliveryAttempted ?? deliveryResult.deliveryAttempted,
+    };
     if (!hasErrorPayload || deliveryResult.result.status !== "ok") {
-      return deliveryResult.result;
+      return resultWithDeliveryMeta;
     }
-    return resolveRunOutcome({ delivered: deliveryResult.result.delivered });
+    return resolveRunOutcome({
+      delivered: deliveryResult.result.delivered,
+      deliveryAttempted: resultWithDeliveryMeta.deliveryAttempted,
+    });
   }
   const delivered = deliveryResult.delivered;
+  const deliveryAttempted = deliveryResult.deliveryAttempted;
   summary = deliveryResult.summary;
   outputText = deliveryResult.outputText;
 
-  return resolveRunOutcome({ delivered });
+  return resolveRunOutcome({ delivered, deliveryAttempted });
 }

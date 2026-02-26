@@ -16,18 +16,11 @@ import ai.openclaw.android.gateway.DeviceIdentityStore
 import ai.openclaw.android.gateway.GatewayDiscovery
 import ai.openclaw.android.gateway.GatewayEndpoint
 import ai.openclaw.android.gateway.GatewaySession
-<<<<<<< HEAD
 import ai.openclaw.android.gateway.probeGatewayTlsFingerprint
 import ai.openclaw.android.node.*
 import ai.openclaw.android.protocol.OpenClawCanvasA2UIAction
 import ai.openclaw.android.voice.MicCaptureManager
 import ai.openclaw.android.voice.VoiceConversationEntry
-=======
-import ai.openclaw.android.node.*
-import ai.openclaw.android.protocol.OpenClawCanvasA2UIAction
-import ai.openclaw.android.voice.TalkModeManager
-import ai.openclaw.android.voice.VoiceWakeManager
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -120,11 +113,7 @@ class NodeRuntime(context: Context) {
     prefs = prefs,
     cameraEnabled = { cameraEnabled.value },
     locationMode = { locationMode.value },
-<<<<<<< HEAD
     voiceWakeMode = { VoiceWakeMode.Off },
-=======
-    voiceWakeMode = { voiceWakeMode.value },
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
     smsAvailable = { sms.canSendSms() },
     hasRecordAudioPermission = { hasRecordAudioPermission() },
     manualTls = { manualTls.value },
@@ -142,7 +131,8 @@ class NodeRuntime(context: Context) {
     isForeground = { _isForeground.value },
     cameraEnabled = { cameraEnabled.value },
     locationEnabled = { locationMode.value != LocationMode.Off },
-<<<<<<< HEAD
+    smsAvailable = { sms.canSendSms() },
+    debugBuild = { BuildConfig.DEBUG },
     onCanvasA2uiPush = {
       _canvasA2uiHydrated.value = true
       _canvasRehydratePending.value = false
@@ -155,11 +145,6 @@ class NodeRuntime(context: Context) {
     val endpoint: GatewayEndpoint,
     val fingerprintSha256: String,
   )
-=======
-  )
-
-  private lateinit var gatewayEventHandler: GatewayEventHandler
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
 
   private val _isConnected = MutableStateFlow(false)
   val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
@@ -226,10 +211,6 @@ class NodeRuntime(context: Context) {
         updateStatus()
         micCapture.onGatewayConnectionChanged(true)
         scope.launch { refreshBrandingFromGateway() }
-<<<<<<< HEAD
-=======
-        scope.launch { gatewayEventHandler.refreshWakeWordsFromGateway() }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
       },
       onDisconnected = { message ->
         operatorConnected = false
@@ -446,14 +427,10 @@ class NodeRuntime(context: Context) {
   val manualPort: StateFlow<Int> = prefs.manualPort
   val manualTls: StateFlow<Boolean> = prefs.manualTls
   val gatewayToken: StateFlow<String> = prefs.gatewayToken
-<<<<<<< HEAD
   val onboardingCompleted: StateFlow<Boolean> = prefs.onboardingCompleted
   fun setGatewayToken(value: String) = prefs.setGatewayToken(value)
   fun setGatewayPassword(value: String) = prefs.setGatewayPassword(value)
   fun setOnboardingCompleted(value: Boolean) = prefs.setOnboardingCompleted(value)
-=======
-  fun setGatewayToken(value: String) = prefs.setGatewayToken(value)
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   val lastDiscoveredStableId: StateFlow<String> = prefs.lastDiscoveredStableId
   val canvasDebugStatusEnabled: StateFlow<Boolean> = prefs.canvasDebugStatusEnabled
 
@@ -471,50 +448,12 @@ class NodeRuntime(context: Context) {
   val pendingRunCount: StateFlow<Int> = chat.pendingRunCount
 
   init {
-<<<<<<< HEAD
     if (prefs.voiceWakeMode.value != VoiceWakeMode.Off) {
       prefs.setVoiceWakeMode(VoiceWakeMode.Off)
-=======
-    gatewayEventHandler = GatewayEventHandler(
-      scope = scope,
-      prefs = prefs,
-      json = json,
-      operatorSession = operatorSession,
-      isConnected = { _isConnected.value },
-    )
+    }
 
     scope.launch {
-      combine(
-        voiceWakeMode,
-        isForeground,
-        externalAudioCaptureActive,
-        wakeWords,
-      ) { mode, foreground, externalAudio, words ->
-        Quad(mode, foreground, externalAudio, words)
-      }.distinctUntilChanged()
-        .collect { (mode, foreground, externalAudio, words) ->
-          voiceWake.setTriggerWords(words)
-
-          val shouldListen =
-            when (mode) {
-              VoiceWakeMode.Off -> false
-              VoiceWakeMode.Foreground -> foreground
-              VoiceWakeMode.Always -> true
-            } && !externalAudio
-
-          if (!shouldListen) {
-            voiceWake.stop(statusText = if (mode == VoiceWakeMode.Off) "Off" else "Paused")
-            return@collect
-          }
-
-          if (!hasRecordAudioPermission()) {
-            voiceWake.stop(statusText = "Microphone permission required")
-            return@collect
-          }
-
-          voiceWake.start()
-        }
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
+      prefs.loadGatewayToken()
     }
 
     scope.launch {
@@ -627,28 +566,10 @@ class NodeRuntime(context: Context) {
     prefs.setCanvasDebugStatusEnabled(value)
   }
 
-<<<<<<< HEAD
   fun setMicEnabled(value: Boolean) {
     prefs.setTalkEnabled(value)
     micCapture.setMicEnabled(value)
     externalAudioCaptureActive.value = value
-=======
-  fun setWakeWords(words: List<String>) {
-    prefs.setWakeWords(words)
-    gatewayEventHandler.scheduleWakeWordsSyncIfNeeded()
-  }
-
-  fun resetWakeWordsDefaults() {
-    setWakeWords(SecurePrefs.defaultWakeWords)
-  }
-
-  fun setVoiceWakeMode(mode: VoiceWakeMode) {
-    prefs.setVoiceWakeMode(mode)
-  }
-
-  fun setTalkEnabled(value: Boolean) {
-    prefs.setTalkEnabled(value)
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   fun refreshGatewayConnection() {
@@ -689,7 +610,6 @@ class NodeRuntime(context: Context) {
     updateStatus()
     val token = prefs.loadGatewayToken()
     val password = prefs.loadGatewayPassword()
-<<<<<<< HEAD
     operatorSession.connect(endpoint, token, password, connectionManager.buildOperatorConnectOptions(), tls)
     nodeSession.connect(endpoint, token, password, connectionManager.buildNodeConnectOptions(), tls)
   }
@@ -704,11 +624,6 @@ class NodeRuntime(context: Context) {
   fun declineGatewayTrustPrompt() {
     _pendingGatewayTrust.value = null
     _statusText.value = "Offline"
-=======
-    val tls = connectionManager.resolveTlsParams(endpoint)
-    operatorSession.connect(endpoint, token, password, connectionManager.buildOperatorConnectOptions(), tls)
-    nodeSession.connect(endpoint, token, password, connectionManager.buildNodeConnectOptions(), tls)
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   }
 
   private fun hasRecordAudioPermission(): Boolean {
@@ -837,7 +752,6 @@ class NodeRuntime(context: Context) {
   }
 
   private fun handleGatewayEvent(event: String, payloadJson: String?) {
-<<<<<<< HEAD
     micCapture.handleGatewayEvent(event, payloadJson)
     chat.handleGatewayEvent(event, payloadJson)
   }
@@ -851,17 +765,6 @@ class NodeRuntime(context: Context) {
     }
   }
 
-=======
-    if (event == "voicewake.changed") {
-      gatewayEventHandler.handleVoiceWakeChangedEvent(payloadJson)
-      return
-    }
-
-    talkMode.handleGatewayEvent(event, payloadJson)
-    chat.handleGatewayEvent(event, payloadJson)
-  }
-
->>>>>>> 292150259 (fix: commit missing refreshConfigFromDisk type for CI build)
   private suspend fun refreshBrandingFromGateway() {
     if (!_isConnected.value) return
     try {
