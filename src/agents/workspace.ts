@@ -32,6 +32,11 @@ export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
 export const DEFAULT_DIARY_FILENAME = "diary.md";
 export const DEFAULT_KNOWLEDGE_INDEX_FILENAME = "_index.md";
+export const DEFAULT_OPERATIONS_FILENAME = "OPERATIONS.md";
+export const DEFAULT_PRACTICAL_FILENAME = "PRACTICAL.md";
+export const DEFAULT_MEMORY_HYGIENE_FILENAME = "memory-hygiene.md";
+export const DEFAULT_WRITELIKEAHUMAN_FILENAME = "writelikeahuman.md";
+export const DEFAULT_HOWTOBEHUMAN_FILENAME = "howtobehuman.md";
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;
@@ -213,7 +218,13 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_MEMORY_FILENAME
   | typeof DEFAULT_MEMORY_ALT_FILENAME
   | typeof DEFAULT_DIARY_FILENAME
-  | typeof DEFAULT_KNOWLEDGE_INDEX_FILENAME;
+  | typeof DEFAULT_KNOWLEDGE_INDEX_FILENAME
+  | typeof DEFAULT_OPERATIONS_FILENAME
+  | typeof DEFAULT_PRACTICAL_FILENAME
+  | typeof DEFAULT_MEMORY_HYGIENE_FILENAME
+  | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME
+  | typeof DEFAULT_HOWTOBEHUMAN_FILENAME
+  | (string & {});
 
 export type WorkspaceBootstrapFile = {
   name: WorkspaceBootstrapFileName;
@@ -227,21 +238,6 @@ type WorkspaceOnboardingState = {
   bootstrapSeededAt?: string;
   onboardingCompletedAt?: string;
 };
-
-/** Set of recognized bootstrap filenames for runtime validation */
-const VALID_BOOTSTRAP_NAMES: ReadonlySet<string> = new Set([
-  DEFAULT_AGENTS_FILENAME,
-  DEFAULT_SOUL_FILENAME,
-  DEFAULT_TOOLS_FILENAME,
-  DEFAULT_IDENTITY_FILENAME,
-  DEFAULT_USER_FILENAME,
-  DEFAULT_HEARTBEAT_FILENAME,
-  DEFAULT_BOOTSTRAP_FILENAME,
-  DEFAULT_MEMORY_FILENAME,
-  DEFAULT_MEMORY_ALT_FILENAME,
-  DEFAULT_DIARY_FILENAME,
-  DEFAULT_KNOWLEDGE_INDEX_FILENAME,
-]);
 
 async function writeFileIfMissing(filePath: string, content: string): Promise<boolean> {
   try {
@@ -450,6 +446,27 @@ export async function ensureAgentWorkspace(params?: {
   const humanModeEnabled = resolveHumanModeEnabled();
   await removeHumanModeSectionFromSoul(soulPath, humanModeEnabled);
 
+  // Seed extra context files from templates
+  const operationsPath = path.join(dir, DEFAULT_OPERATIONS_FILENAME);
+  const practicalPath = path.join(dir, DEFAULT_PRACTICAL_FILENAME);
+  const memoryHygienePath = path.join(dir, DEFAULT_MEMORY_HYGIENE_FILENAME);
+  const operationsTemplate = await loadTemplate(DEFAULT_OPERATIONS_FILENAME);
+  const practicalTemplate = await loadTemplate(DEFAULT_PRACTICAL_FILENAME);
+  const memoryHygieneTemplate = await loadTemplate(DEFAULT_MEMORY_HYGIENE_FILENAME);
+  await writeFileIfMissing(operationsPath, operationsTemplate);
+  await writeFileIfMissing(practicalPath, practicalTemplate);
+  await writeFileIfMissing(memoryHygienePath, memoryHygieneTemplate);
+
+  // Human voice mode: seed writelikeahuman.md and howtobehuman.md when enabled
+  if (humanModeEnabled) {
+    const writelikeahumanPath = path.join(dir, DEFAULT_WRITELIKEAHUMAN_FILENAME);
+    const howtobehumanPath = path.join(dir, DEFAULT_HOWTOBEHUMAN_FILENAME);
+    const writelikeahumanTemplate = await loadTemplate(DEFAULT_WRITELIKEAHUMAN_FILENAME);
+    const howtobehumanTemplate = await loadTemplate(DEFAULT_HOWTOBEHUMAN_FILENAME);
+    await writeFileIfMissing(writelikeahumanPath, writelikeahumanTemplate);
+    await writeFileIfMissing(howtobehumanPath, howtobehumanTemplate);
+  }
+
   let state = await readWorkspaceOnboardingState(statePath);
   let stateDirty = false;
   const markState = (next: Partial<WorkspaceOnboardingState>) => {
@@ -586,6 +603,38 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
   // They can grow very large and should be accessed via memory_search (QMD),
   // not injected into the system prompt on every message.
 
+  // Extra context files: OPERATIONS, PRACTICAL, memory-hygiene (always optional).
+  const extraContextFiles: Array<{ name: WorkspaceBootstrapFileName; filePath: string }> = [
+    {
+      name: DEFAULT_OPERATIONS_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_OPERATIONS_FILENAME),
+    },
+    {
+      name: DEFAULT_PRACTICAL_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_PRACTICAL_FILENAME),
+    },
+    {
+      name: DEFAULT_MEMORY_HYGIENE_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_MEMORY_HYGIENE_FILENAME),
+    },
+    {
+      name: DEFAULT_WRITELIKEAHUMAN_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_WRITELIKEAHUMAN_FILENAME),
+    },
+    {
+      name: DEFAULT_HOWTOBEHUMAN_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_HOWTOBEHUMAN_FILENAME),
+    },
+  ];
+  for (const extra of extraContextFiles) {
+    try {
+      await fs.access(extra.filePath);
+      entries.push(extra);
+    } catch {
+      // Optional — file may not have been seeded
+    }
+  }
+
   // Diary: tail-heavy truncation handled by bootstrap.ts (DIARY_MAX_CHARS).
   const diaryPath = path.join(resolvedDir, "memory", DEFAULT_DIARY_FILENAME);
   try {
@@ -695,11 +744,7 @@ export async function loadExtraBootstrapFiles(
       ) {
         continue;
       }
-      // Only load files whose basename is a recognized bootstrap filename
       const baseName = path.basename(relPath);
-      if (!VALID_BOOTSTRAP_NAMES.has(baseName)) {
-        continue;
-      }
       const content = await readFileWithCache(realFilePath);
       result.push({
         name: baseName as WorkspaceBootstrapFileName,

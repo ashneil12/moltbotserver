@@ -24,18 +24,35 @@ describe("loadExtraBootstrapFiles", () => {
     }
   });
 
-  it("loads recognized bootstrap files from glob patterns", async () => {
+  it("loads files from glob patterns within workspace", async () => {
     const workspaceDir = await createWorkspaceDir("glob");
     const packageDir = path.join(workspaceDir, "packages", "core");
     await fs.mkdir(packageDir, { recursive: true });
     await fs.writeFile(path.join(packageDir, "TOOLS.md"), "tools", "utf-8");
-    await fs.writeFile(path.join(packageDir, "README.md"), "not bootstrap", "utf-8");
+    await fs.writeFile(path.join(packageDir, "README.md"), "readme", "utf-8");
 
     const files = await loadExtraBootstrapFiles(workspaceDir, ["packages/*/*"]);
 
-    expect(files).toHaveLength(1);
-    expect(files[0]?.name).toBe("TOOLS.md");
-    expect(files[0]?.content).toBe("tools");
+    expect(files).toHaveLength(2);
+    expect(files.some((f) => f.name === "TOOLS.md" && f.content === "tools")).toBe(true);
+    expect(files.some((f) => f.name === "README.md" && f.content === "readme")).toBe(true);
+  });
+
+  it("loads arbitrary-named extra files like writelikeahuman.md", async () => {
+    const workspaceDir = await createWorkspaceDir("arbitrary");
+    await fs.writeFile(path.join(workspaceDir, "writelikeahuman.md"), "voice guide", "utf-8");
+    await fs.writeFile(path.join(workspaceDir, "OPERATIONS.md"), "ops guide", "utf-8");
+
+    const files = await loadExtraBootstrapFiles(workspaceDir, [
+      "writelikeahuman.md",
+      "OPERATIONS.md",
+    ]);
+
+    expect(files).toHaveLength(2);
+    expect(files.some((f) => f.name === "writelikeahuman.md" && f.content === "voice guide")).toBe(
+      true,
+    );
+    expect(files.some((f) => f.name === "OPERATIONS.md" && f.content === "ops guide")).toBe(true);
   });
 
   it("keeps path-traversal attempts outside workspace excluded", async () => {

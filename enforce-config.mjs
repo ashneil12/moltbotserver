@@ -179,6 +179,36 @@ function enforceModels(configPath) {
     }
   }
 
+  // Per-agent model overrides from dashboard (JSON: {"main":"provider/model",...})
+  const agentModelsRaw = env("OPENCLAW_AGENT_MODELS");
+  if (agentModelsRaw) {
+    try {
+      const agentModels = JSON.parse(agentModelsRaw);
+      const list = (config.agents.list = config.agents.list || []);
+      for (const [agentId, rawRef] of Object.entries(agentModels)) {
+        if (!rawRef || typeof rawRef !== "string") {
+          continue;
+        }
+        const normalized = normalizeModelId(rawRef);
+        const existing = list.find((a) => a.id === agentId);
+        if (existing) {
+          // Merge: set/override primary, preserve other fields (fallbacks, etc.)
+          existing.model =
+            typeof existing.model === "object"
+              ? { ...existing.model, primary: normalized }
+              : { primary: normalized };
+        } else {
+          list.push({ id: agentId, model: { primary: normalized } });
+        }
+      }
+      console.log(
+        `[enforce-config] Per-agent model overrides applied: ${Object.keys(agentModels).join(", ")}`,
+      );
+    } catch {
+      console.warn("[enforce-config] ⚠ OPENCLAW_AGENT_MODELS is not valid JSON — skipping");
+    }
+  }
+
   writeConfig(configPath, config);
   console.log("[enforce-config] ✅ Model settings enforced");
 }
