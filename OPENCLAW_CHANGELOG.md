@@ -5,6 +5,29 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Honcho Memory Plugin Auto-Install (2026-02-27)
+
+**Purpose:** Automatically install the `@honcho-ai/openclaw-honcho` plugin at container startup when `HONCHO_API_KEY` is set. Previously, Honcho integration was lost during upstream rebase — the OPERATIONS.md documented Honcho tools and the conditional stripping logic in `workspace.ts` worked, but the actual plugin that provides the tools (`honcho_context`, `honcho_search`, `honcho_recall`, `honcho_analyze`) was never installed.
+
+### Changes
+
+| File                   | Change                                                                                                         | Why                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `docker-entrypoint.sh` | Added Honcho plugin auto-install section: checks `HONCHO_API_KEY`, installs plugin if missing, enforces config | Fresh deployments automatically get Honcho when API key is provided |
+
+### How It Works
+
+1. Entrypoint checks if `HONCHO_API_KEY` env var is set
+2. If plugin dir (`$CONFIG_DIR/extensions/openclaw-honcho/`) doesn't exist → runs `openclaw plugins install @honcho-ai/openclaw-honcho`
+3. Always patches `openclaw.json` with current API key in `plugins.entries.openclaw-honcho.config` (handles key rotation)
+4. All failures are non-fatal — gateway starts without Honcho if install fails
+
+### Upstream Sync Risk
+
+**None.** `docker-entrypoint.sh` is fully custom.
+
+---
+
 ## Architect-First Reinforcement, Memory Seeding & Sub-Agent Heartbeats (2026-02-27)
 
 **Purpose:** Deeply embed the principle of "think like an architect" (plan before acting, ask clarifying questions) throughout all agent-facing surfaces, seed structured memory files for all agents including sub-agents at workspace bootstrap, and enable heartbeat functionality for sub-agents.
