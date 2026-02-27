@@ -27,6 +27,7 @@ import { enqueueSystemEvent } from "../infra/system-events.js";
 import { getChildLogger } from "../logging.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
+import { startSecurityAuditScheduler } from "../security/scheduler.js";
 
 export type GatewayCronState = {
   cron: CronService;
@@ -350,6 +351,7 @@ export function buildGatewayCronService(params: {
   });
 
   startDiaryArchiveTimer({ cfg: params.cfg });
+  startSecurityAuditScheduler({ cfg: params.cfg, deps: params.deps });
 
   return {
     cron,

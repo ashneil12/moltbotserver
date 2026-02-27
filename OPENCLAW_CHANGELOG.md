@@ -5,6 +5,105 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Architect-First Reinforcement, Memory Seeding & Sub-Agent Heartbeats (2026-02-27)
+
+**Purpose:** Deeply embed the principle of "think like an architect" (plan before acting, ask clarifying questions) throughout all agent-facing surfaces, seed structured memory files for all agents including sub-agents at workspace bootstrap, and enable heartbeat functionality for sub-agents.
+
+### Changes
+
+| File                                    | Change                                                                                                                            | Impact                                         |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `SOUL.md`                               | Strengthened architect-first language — added "Count the Cost" framing, explicit plan-before-act requirements                     | All agents get clearer think-first guidance    |
+| `SOUL_DELEGATION_SNIPPET.md`            | Reinforced delegation principles with architect-first thinking                                                                    | Sub-agents inherit architectural mindset       |
+| `OPERATIONS.md`                         | Added architect-first reminders in operational guidance                                                                           | Operational context reinforces planning        |
+| `BOOTSTRAP.md`                          | Added startup verification of planning mindset                                                                                    | Boot sequence reinforces think-first           |
+| `IDENTITY.md`                           | Minor alignment with architect-first principles                                                                                   | Identity context consistency                   |
+| `docs/reference/templates/PRACTICAL.md` | Added lightweight architect-first guidance for new agent templates                                                                | New agents start with planning mindset         |
+| `src/agents/system-prompt.ts`           | Enhanced system prompt injection with architect-first framing                                                                     | Runtime prompt reinforcement                   |
+| `src/agents/workspace.ts`               | Seed `diary.md`, `self-review.md`, `open-loops.md`, `identity-scratchpad.md` for all agents including sub-agents during bootstrap | Sub-agents get structured memory from creation |
+| `enforce-config.mjs`                    | Added `heartbeat: {}` for sub-agents when not already configured                                                                  | Sub-agents can now run heartbeat cycles        |
+
+### Tests Added
+
+- `src/agents/system-prompt.test.ts` — 22 new lines covering architect-first prompt injection
+- `src/agents/workspace.test.ts` — 29 new lines covering memory file seeding
+- `src/agents/workspace.e2e.test.ts` — 25 new lines covering sub-agent workspace bootstrap
+
+### Upstream Sync Risk
+
+**Low.** `SOUL.md`, `OPERATIONS.md`, `BOOTSTRAP.md`, `IDENTITY.md` are fully custom. `workspace.ts` changes are additive (new seeding logic). `enforce-config.mjs` is fully custom. `system-prompt.ts` change is a small addition to an existing MoltBot-only block.
+
+---
+
+## noVNC Sandbox Browser Viewport Sizing (2026-02-27)
+
+**Purpose:** Fix the noVNC browser viewing area having excessive blank space by making the display adapt to the browser window size instead of using a fixed oversized resolution.
+
+### Changes
+
+| File                                    | Change                                                                                                                          | Why                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `scripts/sandbox-browser-entrypoint.sh` | Added viewport sizing configuration — set `DISPLAY_WIDTH` and `DISPLAY_HEIGHT` to sane defaults, added `-geometry` flag to Xvfb | Browser viewport matches container window instead of oversized default |
+
+### Upstream Sync Risk
+
+**None.** `sandbox-browser-entrypoint.sh` is fully custom to MoltBot.
+
+---
+
+## Fix: humanDelay Crash Loop (2026-02-26)
+
+**Purpose:** Remove invalid `messages.humanDelay` config key from `enforce-config.mjs` that caused the gateway container to crash-loop on every restart. The key doesn't exist in the OpenClaw config schema — the correct location for human typing delay is within the messages config under a different structure.
+
+### Changes
+
+| File                 | Change                                          | Why                                                        |
+| -------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| `enforce-config.mjs` | Removed `messages.humanDelay` setting (7 lines) | Invalid config key caused instant crash on gateway startup |
+
+### Upstream Sync Risk
+
+**None.** `enforce-config.mjs` is fully custom.
+
+---
+
+## Human Mode Dual Env Var & Bootstrap Allowlist Fix (2026-02-26)
+
+**Purpose:** Accept both `OPENCLAW_HUMAN_MODE` and `OPENCLAW_HUMAN_MODE_ENABLED` environment variables for toggling human voice mode, and fix the bootstrap file allowlist so `howtobehuman.md` and `writelikeahuman.md` are correctly loaded at startup.
+
+### Changes
+
+| File                                                      | Change                                                                                                       | Why                                                                                          |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `src/agents/workspace.ts`                                 | `resolveHumanModeEnabled()` now checks both `OPENCLAW_HUMAN_MODE` and `OPENCLAW_HUMAN_MODE_ENABLED` env vars | Different deployment configs used different env var names                                    |
+| `src/agents/workspace.ts`                                 | Added `howtobehuman.md` and `writelikeahuman.md` to `MINIMAL_BOOTSTRAP_ALLOWLIST`                            | Files were being rejected by the allowlist despite being configured as extra bootstrap files |
+| `enforce-config.mjs`                                      | Updated bootstrap file configuration to reference correct filenames                                          | Aligns enforce-config with the two-file human voice model                                    |
+| `src/agents/workspace.load-extra-bootstrap-files.test.ts` | Added 27 new test lines for allowlist validation                                                             | Ensures bootstrap files are correctly loaded                                                 |
+| `docs/reference/templates/naturalvoice.md`                | **DELETED** (955 lines)                                                                                      | Obsolete — replaced by `howtobehuman.md` + `writelikeahuman.md` in a previous change         |
+
+### Upstream Sync Risk
+
+**None.** All files are MoltBot-only. `workspace.ts` changes are within MoltBot custom logic blocks.
+
+---
+
+## CI & Entrypoint Infrastructure (2026-02-26)
+
+**Purpose:** Fix GHCR Docker image push permissions and wire `enforce-config.mjs` as the final config layer in the container entrypoint.
+
+### Changes
+
+| File                                   | Change                                                                   | Why                                                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/docker-build.yml`   | Added `provenance: false` to Docker build-push action                    | Disabled attestation/provenance to fix `denied: permission_denied: write_package` errors on GHCR push     |
+| `docker-entrypoint.sh` (via `8dee7ec`) | Added `enforce-config all` call as the final step before gateway startup | Ensures all MoltBot config overrides are applied as the last config layer, after any other config sources |
+
+### Upstream Sync Risk
+
+**None.** `docker-entrypoint.sh` changes are in MoltBot-only blocks. CI workflow is fully custom.
+
+---
+
 ## Cron Seeding & System Prompt Alignment (2026-02-26)
 
 **Purpose:** Align `enforce-config.mjs` cron seeding with the documented 3-tier reflection system and fix the SOUL.md system prompt description.
