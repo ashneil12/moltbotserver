@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
+import type { OpenClawConfig } from "../config/config.js";
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(fn, { prefix: "openclaw-models-" });
@@ -161,6 +161,40 @@ describe("models-config", () => {
       } finally {
         process.env.COPILOT_GITHUB_TOKEN = previous;
       }
+    });
+  });
+
+  it("uses tokenRef env var when github-copilot profile omits plaintext token", async () => {
+    await withTempHome(async (home) => {
+      await withUnsetCopilotTokenEnv(async () => {
+        const fetchMock = mockCopilotTokenExchangeSuccess();
+        const agentDir = path.join(home, "agent-profiles");
+        await fs.mkdir(agentDir, { recursive: true });
+        process.env.COPILOT_REF_TOKEN = "token-from-ref-env";
+        await fs.writeFile(
+          path.join(agentDir, "auth-profiles.json"),
+          JSON.stringify(
+            {
+              version: 1,
+              profiles: {
+                "github-copilot:default": {
+                  type: "token",
+                  provider: "github-copilot",
+                  tokenRef: { source: "env", provider: "default", id: "COPILOT_REF_TOKEN" },
+                },
+              },
+            },
+            null,
+            2,
+          ),
+        );
+
+        await ensureOpenClawModelsJson({ models: { providers: {} } }, agentDir);
+
+        const [, opts] = fetchMock.mock.calls[0] as [string, { headers?: Record<string, string> }];
+        expect(opts?.headers?.Authorization).toBe("Bearer token-from-ref-env");
+        delete process.env.COPILOT_REF_TOKEN;
+      });
     });
   });
 });
