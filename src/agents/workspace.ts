@@ -35,8 +35,7 @@ export const DEFAULT_KNOWLEDGE_INDEX_FILENAME = "_index.md";
 export const DEFAULT_OPERATIONS_FILENAME = "OPERATIONS.md";
 export const DEFAULT_PRACTICAL_FILENAME = "PRACTICAL.md";
 export const DEFAULT_MEMORY_HYGIENE_FILENAME = "memory-hygiene.md";
-export const DEFAULT_WRITELIKEAHUMAN_FILENAME = "writelikeahuman.md";
-export const DEFAULT_HOWTOBEHUMAN_FILENAME = "howtobehuman.md";
+export const DEFAULT_HUMANVOICE_FILENAME = "humanvoice.md";
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;
@@ -53,7 +52,7 @@ function resolveHonchoEnabled(): boolean {
  * Check if human voice mode is enabled.
  * Accepts both OPENCLAW_HUMAN_MODE=1 (canonical) and
  * OPENCLAW_HUMAN_MODE_ENABLED=true/1 (dashboard convention).
- * When enabled, howtobehuman.md and writelikeahuman.md are seeded into the workspace.
+ * When enabled, humanvoice.md is seeded into the workspace.
  * When disabled, references to these files are removed from SOUL.md.
  */
 export function resolveHumanModeEnabled(): boolean {
@@ -229,8 +228,7 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_OPERATIONS_FILENAME
   | typeof DEFAULT_PRACTICAL_FILENAME
   | typeof DEFAULT_MEMORY_HYGIENE_FILENAME
-  | typeof DEFAULT_WRITELIKEAHUMAN_FILENAME
-  | typeof DEFAULT_HOWTOBEHUMAN_FILENAME
+  | typeof DEFAULT_HUMANVOICE_FILENAME
   | (string & {});
 
 export type WorkspaceBootstrapFile = {
@@ -464,14 +462,11 @@ export async function ensureAgentWorkspace(params?: {
   await writeFileIfMissing(practicalPath, practicalTemplate);
   await writeFileIfMissing(memoryHygienePath, memoryHygieneTemplate);
 
-  // Human voice mode: seed writelikeahuman.md and howtobehuman.md when enabled
+  // Human voice mode: seed humanvoice.md when enabled
   if (humanModeEnabled) {
-    const writelikeahumanPath = path.join(dir, DEFAULT_WRITELIKEAHUMAN_FILENAME);
-    const howtobehumanPath = path.join(dir, DEFAULT_HOWTOBEHUMAN_FILENAME);
-    const writelikeahumanTemplate = await loadTemplate(DEFAULT_WRITELIKEAHUMAN_FILENAME);
-    const howtobehumanTemplate = await loadTemplate(DEFAULT_HOWTOBEHUMAN_FILENAME);
-    await writeFileIfMissing(writelikeahumanPath, writelikeahumanTemplate);
-    await writeFileIfMissing(howtobehumanPath, howtobehumanTemplate);
+    const humanvoicePath = path.join(dir, DEFAULT_HUMANVOICE_FILENAME);
+    const humanvoiceTemplate = await loadTemplate(DEFAULT_HUMANVOICE_FILENAME);
+    await writeFileIfMissing(humanvoicePath, humanvoiceTemplate);
   }
 
   // Seed memory sub-directory templates (diary, self-review, open-loops, identity-scratchpad)
@@ -634,12 +629,8 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
       filePath: path.join(resolvedDir, DEFAULT_OPERATIONS_FILENAME),
     },
     {
-      name: DEFAULT_WRITELIKEAHUMAN_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_WRITELIKEAHUMAN_FILENAME),
-    },
-    {
-      name: DEFAULT_HOWTOBEHUMAN_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_HOWTOBEHUMAN_FILENAME),
+      name: DEFAULT_HUMANVOICE_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_HUMANVOICE_FILENAME),
     },
   ];
   for (const extra of extraContextFiles) {
