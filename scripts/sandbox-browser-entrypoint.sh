@@ -56,6 +56,8 @@ CHROME_ARGS+=(
   "--disable-breakpad"
   "--disable-crash-reporter"
   "--metrics-recording-only"
+  "--start-maximized"
+  "--window-size=1280,800"
 )
 
 if [[ "${ALLOW_NO_SANDBOX}" == "1" ]]; then

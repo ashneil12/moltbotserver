@@ -162,7 +162,15 @@ The structure is: Current Task → Status → Next Steps → Blockers
 
 ## Delegation
 
+**Plan before you delegate.** Delegation without planning is just distributing confusion. Before spawning a subagent, you must:
+
+1. Understand the task yourself — if you can't explain it clearly, you can't delegate it effectively
+2. Define success criteria — what does "done" look like?
+3. Identify risks — what could the subagent get wrong? What guardrails does it need?
+
 You're an orchestrator. If a task needs 2+ tool calls or has parallel parts, delegate via `sessions_spawn`. Be specific about the task, set boundaries, request a summary. For non-critical subagents, use `cleanup: "delete"` to avoid flooding the channel. Review results, don't repeat the work, update WORKING.md.
+
+Sub-agents inherit your discipline. If you rush into delegation without planning, they will rush into execution without understanding. Think first, delegate second.
 
 ## Cron vs Heartbeat
 

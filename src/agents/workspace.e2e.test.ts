@@ -102,6 +102,31 @@ describe("ensureAgentWorkspace", () => {
     expect(state.bootstrapSeededAt).toBeUndefined();
     expect(state.onboardingCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
+
+  it("seeds memory template files for brand new workspaces", async () => {
+    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
+
+    const memoryFiles = ["diary.md", "self-review.md", "open-loops.md", "identity-scratchpad.md"];
+    for (const file of memoryFiles) {
+      const filePath = path.join(tempDir, "memory", file);
+      await expect(fs.access(filePath)).resolves.toBeUndefined();
+      const content = await fs.readFile(filePath, "utf-8");
+      expect(content.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("does not overwrite existing memory files on re-run", async () => {
+    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const memoryDir = path.join(tempDir, "memory");
+    await fs.mkdir(memoryDir, { recursive: true });
+    await fs.writeFile(path.join(memoryDir, "diary.md"), "my custom diary", "utf-8");
+
+    await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
+
+    const content = await fs.readFile(path.join(memoryDir, "diary.md"), "utf-8");
+    expect(content).toBe("my custom diary");
+  });
 });
 
 describe("loadWorkspaceBootstrapFiles", () => {

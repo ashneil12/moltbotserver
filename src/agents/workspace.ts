@@ -474,6 +474,20 @@ export async function ensureAgentWorkspace(params?: {
     await writeFileIfMissing(howtobehumanPath, howtobehumanTemplate);
   }
 
+  // Seed memory sub-directory templates (diary, self-review, open-loops, identity-scratchpad)
+  const memoryDir = path.join(dir, "memory");
+  await fs.mkdir(memoryDir, { recursive: true });
+  const memoryTemplateFiles = [
+    "memory/diary.md",
+    "memory/self-review.md",
+    "memory/open-loops.md",
+    "memory/identity-scratchpad.md",
+  ];
+  for (const relPath of memoryTemplateFiles) {
+    const templateContent = await loadTemplate(relPath);
+    await writeFileIfMissing(path.join(dir, relPath), templateContent);
+  }
+
   let state = await readWorkspaceOnboardingState(statePath);
   let stateDirty = false;
   const markState = (next: Partial<WorkspaceOnboardingState>) => {

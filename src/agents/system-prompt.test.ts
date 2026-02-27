@@ -473,4 +473,26 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("## Reactions");
     expect(prompt).toContain("Reactions are enabled for Telegram in MINIMAL mode.");
   });
+
+  it("includes operating discipline section in full mode", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+    });
+
+    expect(prompt).toContain("## Operating Discipline");
+    expect(prompt).toContain("think before you act");
+    expect(prompt).toContain("Understand");
+    expect(prompt).toContain("Plan");
+    expect(prompt).toContain("Step and verify");
+  });
+
+  it("includes operating discipline section in minimal mode (subagents)", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      promptMode: "minimal",
+    });
+
+    expect(prompt).toContain("## Operating Discipline");
+    expect(prompt).toContain("think before you act");
+  });
 });
