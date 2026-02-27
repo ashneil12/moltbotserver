@@ -625,18 +625,13 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
   // not injected into the system prompt on every message.
 
   // Extra context files: OPERATIONS, PRACTICAL, memory-hygiene (always optional).
+  // PRACTICAL.md and memory-hygiene.md are seeded into the workspace but NOT
+  // injected into context — their content overlaps with SOUL.md, OPERATIONS.md,
+  // and hardcoded system prompt sections. They remain as reference files.
   const extraContextFiles: Array<{ name: WorkspaceBootstrapFileName; filePath: string }> = [
     {
       name: DEFAULT_OPERATIONS_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_OPERATIONS_FILENAME),
-    },
-    {
-      name: DEFAULT_PRACTICAL_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_PRACTICAL_FILENAME),
-    },
-    {
-      name: DEFAULT_MEMORY_HYGIENE_FILENAME,
-      filePath: path.join(resolvedDir, DEFAULT_MEMORY_HYGIENE_FILENAME),
     },
     {
       name: DEFAULT_WRITELIKEAHUMAN_FILENAME,

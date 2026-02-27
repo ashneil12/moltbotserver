@@ -649,12 +649,6 @@ export function buildAgentSystemPrompt(params: {
     const hasBootstrapFile = validContextFiles.some(
       (file) => getBaseName(file.path) === "bootstrap.md" && !file.content?.includes("[MISSING]"),
     );
-    const hasMemoryHygieneFile = validContextFiles.some(
-      (file) => getBaseName(file.path) === "memory-hygiene.md",
-    );
-    const hasPracticalFile = validContextFiles.some(
-      (file) => getBaseName(file.path) === "practical.md",
-    );
     const hasHumanModeFiles = validContextFiles.some((file) => {
       const name = getBaseName(file.path);
       return name === "howtobehuman.md" || name === "writelikeahuman.md";
@@ -695,16 +689,7 @@ export function buildAgentSystemPrompt(params: {
         "OPERATIONS.md contains your operational procedures — memory management, security protocols, boot sequence, heartbeat behavior. Follow these as your functional rulebook.",
       );
     }
-    if (hasMemoryHygieneFile) {
-      lines.push(
-        "memory-hygiene.md is your guide to memory curation — what deserves to be remembered, how to write good entries, when to write them, and the discipline of pruning. Apply these principles whenever you read or write memory.",
-      );
-    }
-    if (hasPracticalFile) {
-      lines.push(
-        "PRACTICAL.md is the companion to SOUL.md — where SOUL asks 'who are you?', PRACTICAL asks 'how do you work?'. It covers your operational philosophy: how to take action (reversibility × authorization × stakes), task execution sequence, subagent orchestration, failure handling, security judgment, and the disposition of trustworthiness. Internalize these patterns.",
-      );
-    }
+
     if (hasHumanModeFiles) {
       lines.push(
         "",
