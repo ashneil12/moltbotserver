@@ -38,15 +38,20 @@ describe("loadExtraBootstrapFiles", () => {
     expect(files.some((f) => f.name === "README.md" && f.content === "readme")).toBe(true);
   });
 
-  it("loads arbitrary-named extra files like humanvoice.md", async () => {
+  it("loads arbitrary-named extra files like writelikeahuman.md", async () => {
     const workspaceDir = await createWorkspaceDir("arbitrary");
-    await fs.writeFile(path.join(workspaceDir, "humanvoice.md"), "voice guide", "utf-8");
+    await fs.writeFile(path.join(workspaceDir, "writelikeahuman.md"), "voice guide", "utf-8");
     await fs.writeFile(path.join(workspaceDir, "OPERATIONS.md"), "ops guide", "utf-8");
 
-    const files = await loadExtraBootstrapFiles(workspaceDir, ["humanvoice.md", "OPERATIONS.md"]);
+    const files = await loadExtraBootstrapFiles(workspaceDir, [
+      "writelikeahuman.md",
+      "OPERATIONS.md",
+    ]);
 
     expect(files).toHaveLength(2);
-    expect(files.some((f) => f.name === "humanvoice.md" && f.content === "voice guide")).toBe(true);
+    expect(files.some((f) => f.name === "writelikeahuman.md" && f.content === "voice guide")).toBe(
+      true,
+    );
     expect(files.some((f) => f.name === "OPERATIONS.md" && f.content === "ops guide")).toBe(true);
   });
 

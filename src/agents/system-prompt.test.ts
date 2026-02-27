@@ -324,35 +324,43 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).not.toContain("PRACTICAL.md is your operational philosophy");
   });
 
-  it("injects human voice protocol when humanvoice.md is present", () => {
+  it("injects human voice protocol when howtobehuman.md is present", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",
-      contextFiles: [{ path: "./humanvoice.md", content: "Voice guide" }],
+      contextFiles: [{ path: "./howtobehuman.md", content: "Voice guide" }],
     });
 
     expect(prompt).toContain("## Natural Voice (Active)");
-    expect(prompt).toContain("humanvoice.md");
+    expect(prompt).toContain("howtobehuman.md");
   });
 
-  it("does NOT inject human voice for old filenames (writelikeahuman/howtobehuman)", () => {
+  it("injects human voice protocol when writelikeahuman.md is present", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",
-      contextFiles: [
-        { path: "./writelikeahuman.md", content: "Old writing guide" },
-        { path: "./howtobehuman.md", content: "Old behavior guide" },
-      ],
+      contextFiles: [{ path: "./writelikeahuman.md", content: "Writing patterns" }],
+    });
+
+    expect(prompt).toContain("## Natural Voice (Active)");
+    expect(prompt).toContain("writelikeahuman.md");
+  });
+
+  it("does NOT inject human voice when only naturalvoice.md is present (old filename)", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [{ path: "./naturalvoice.md", content: "Old consolidated voice guide" }],
     });
 
     expect(prompt).not.toContain("## Natural Voice (Active)");
   });
 
-  it("does not inject memory-hygiene preamble (removed from injection)", () => {
+  it("adds memory-hygiene guidance when memory-hygiene file is present", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",
       contextFiles: [{ path: "./memory-hygiene.md", content: "Memory curation" }],
     });
 
-    expect(prompt).not.toContain("memory-hygiene.md is your guide to memory curation");
+    expect(prompt).toContain("memory-hygiene.md is your guide to memory curation");
+    expect(prompt).toContain("discipline of pruning");
   });
 
   it("summarizes the message tool when available", () => {
