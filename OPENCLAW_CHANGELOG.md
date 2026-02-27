@@ -5,6 +5,34 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## CDP Host Header Fix — Dual-Layer (2026-02-27)
+
+**Purpose:** Fix Chrome DevTools Protocol (CDP) connection failures when using Docker hostname URLs like `http://browser:9222`. Chromium 107+ rejects HTTP requests where the `Host` header isn't `localhost` or an IP address. Node.js `fetch()` silently ignores `Host` header overrides (forbidden per Fetch spec), so the existing `getHeadersWithAuth()` fix in `cdp.helpers.ts` had no effect on HTTP requests.
+
+### Layer 1 — Node.js Client Fix
+
+| File                         | Change                                                                                                       | Why                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `src/browser/cdp.helpers.ts` | Added `httpRequestWithHostOverride()` — uses `http.request()` instead of `fetch()` when Host override needed | `http.request()` respects custom Host headers; `fetch()` silently drops them                        |
+| `src/browser/cdp.helpers.ts` | Modified `fetchChecked()` to route through `httpRequestWithHostOverride` when a Host header override is set  | All CDP HTTP requests (via `fetchJson`/`fetchOk`) now properly send `Host: localhost`               |
+| `src/browser/chrome.ts`      | Changed `fetchChromeVersion()` to use `fetchJson()` instead of direct `fetch()`                              | Routes through the fixed `fetchChecked` path; was previously bypassing the Host header fix entirely |
+
+### Layer 2 — Container-Level Proxy
+
+| File                                    | Change                                                                                            | Why                                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `scripts/cdp-host-proxy.py`             | **NEW** — Python HTTP+WebSocket reverse proxy that rewrites Host header to `localhost`            | Belt-and-suspenders: fixes the Host header at the container level for any client            |
+| `scripts/sandbox-browser-entrypoint.sh` | Replaced `socat` TCP proxy with the Python CDP proxy; socat retained as fallback for older images | The Python proxy rewrites Host headers; socat just forwards TCP without header manipulation |
+| `Dockerfile.sandbox-browser`            | Added `COPY scripts/cdp-host-proxy.py /usr/local/bin/openclaw-cdp-host-proxy`                     | Makes the proxy script available in the container image                                     |
+
+### Upstream Sync Risk
+
+**⚠️ HIGH for `cdp.helpers.ts` and `chrome.ts`.** These files exist in upstream and are actively modified. The upstream merge on 2026-02-27 silently overwrote this fix. See `LOCAL_PATCHES.md` for verification commands.
+
+**None for Layer 2.** All container files (`cdp-host-proxy.py`, `sandbox-browser-entrypoint.sh`, `Dockerfile.sandbox-browser`) are fully custom.
+
+---
+
 ## Honcho Memory Plugin Auto-Install (2026-02-27)
 
 **Purpose:** Automatically install the `@honcho-ai/openclaw-honcho` plugin at container startup when `HONCHO_API_KEY` is set. Previously, Honcho integration was lost during upstream rebase — the OPERATIONS.md documented Honcho tools and the conditional stripping logic in `workspace.ts` worked, but the actual plugin that provides the tools (`honcho_context`, `honcho_search`, `honcho_recall`, `honcho_analyze`) was never installed.
