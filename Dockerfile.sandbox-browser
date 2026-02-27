@@ -28,6 +28,7 @@ RUN curl -fsSL "https://github.com/novnc/noVNC/archive/refs/tags/v${NOVNC_VERSIO
   && ln -s /opt/novnc/vnc.html /opt/novnc/index.html
 
 COPY scripts/sandbox-browser-entrypoint.sh /usr/local/bin/openclaw-sandbox-browser
+COPY scripts/cdp-host-proxy.py /usr/local/bin/openclaw-cdp-host-proxy
 RUN chmod +x /usr/local/bin/openclaw-sandbox-browser
 
 RUN useradd --create-home --shell /bin/bash sandbox

@@ -597,6 +597,49 @@ if [ -f "$ENFORCE_CONFIG_SCRIPT" ] && [ -s "$CONFIG_FILE" ]; then
 fi
 
 # =============================================================================
+# HONCHO MEMORY PLUGIN: Auto-install when HONCHO_API_KEY is set
+# The @honcho-ai/openclaw-honcho plugin provides cross-session AI memory tools
+# (honcho_context, honcho_search, honcho_recall, honcho_analyze).
+# It replaces the default memory-core plugin in the "memory" slot.
+# =============================================================================
+HONCHO_KEY="${HONCHO_API_KEY:-}"
+HONCHO_PLUGIN_DIR="$CONFIG_DIR/extensions/openclaw-honcho"
+
+if [ -n "$HONCHO_KEY" ]; then
+  # Install the plugin if not already present on the data volume
+  if [ ! -d "$HONCHO_PLUGIN_DIR" ]; then
+    echo "[entrypoint] Honcho API key detected — installing openclaw-honcho plugin..."
+    OPENCLAW_SCRIPT="/app/openclaw.mjs"
+    if [ -f "$OPENCLAW_SCRIPT" ]; then
+      if node "$OPENCLAW_SCRIPT" plugins install @honcho-ai/openclaw-honcho 2>&1; then
+        echo "[entrypoint] openclaw-honcho plugin installed"
+      else
+        echo "[entrypoint] WARNING: openclaw-honcho plugin install failed (non-fatal)"
+      fi
+    fi
+  else
+    echo "[entrypoint] openclaw-honcho plugin already installed"
+  fi
+
+  # Ensure the plugin config has the current API key (handles key rotation)
+  if [ -s "$CONFIG_FILE" ] && [ -d "$HONCHO_PLUGIN_DIR" ]; then
+    node -e "
+      const fs = require('fs');
+      const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+      const plugins = config.plugins = config.plugins || {};
+      const entries = plugins.entries = plugins.entries || {};
+      const honcho = entries['openclaw-honcho'] = entries['openclaw-honcho'] || {};
+      honcho.enabled = true;
+      honcho.config = honcho.config || {};
+      honcho.config.apiKey = process.env.HONCHO_API_KEY;
+      honcho.config.baseUrl = honcho.config.baseUrl || 'https://api.honcho.dev';
+      fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2) + '\n');
+    " 2>&1 && echo "[entrypoint] Honcho plugin config enforced" \
+           || echo "[entrypoint] WARNING: Honcho config enforcement failed (non-fatal)"
+  fi
+fi
+
+# =============================================================================
 # FIX OWNERSHIP: All files must be owned by node before we drop privileges.
 # The entrypoint runs as root and writes/patches config files throughout.
 # Without this final chown, gosu node → EACCES on the config file.

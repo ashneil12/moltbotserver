@@ -77,11 +77,21 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-SOCAT_LISTEN_ADDR="TCP-LISTEN:${CDP_PORT},fork,reuseaddr,bind=0.0.0.0"
-if [[ -n "${CDP_SOURCE_RANGE}" ]]; then
-  SOCAT_LISTEN_ADDR="${SOCAT_LISTEN_ADDR},range=${CDP_SOURCE_RANGE}"
+# Use the Python CDP proxy that rewrites the Host header to "localhost".
+# Chromium 107+ rejects CDP requests with non-localhost/non-IP Host headers,
+# which breaks Docker hostname-based URLs like "http://browser:9222".
+CDP_PROXY_SCRIPT="/usr/local/bin/openclaw-cdp-host-proxy"
+if [[ -f "${CDP_PROXY_SCRIPT}" ]]; then
+  python3 "${CDP_PROXY_SCRIPT}" "${CDP_PORT}" "${CHROME_CDP_PORT}" &
+else
+  # Fallback to socat if proxy script is not available (older images).
+  # Note: socat does not rewrite Host headers, so Docker hostnames may fail.
+  SOCAT_LISTEN_ADDR="TCP-LISTEN:${CDP_PORT},fork,reuseaddr,bind=0.0.0.0"
+  if [[ -n "${CDP_SOURCE_RANGE}" ]]; then
+    SOCAT_LISTEN_ADDR="${SOCAT_LISTEN_ADDR},range=${CDP_SOURCE_RANGE}"
+  fi
+  socat "${SOCAT_LISTEN_ADDR}" "TCP:127.0.0.1:${CHROME_CDP_PORT}" &
 fi
-socat "${SOCAT_LISTEN_ADDR}" "TCP:127.0.0.1:${CHROME_CDP_PORT}" &
 
 if [[ "${ENABLE_NOVNC}" == "1" && "${HEADLESS}" != "1" ]]; then
   if [[ "${NOVNC_NO_AUTH}" == "1" ]]; then

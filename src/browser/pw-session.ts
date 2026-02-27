@@ -418,29 +418,30 @@ async function findPageByTargetId(
         .replace(/^ws:/, "http:")
         .replace(/\/cdp$/, "");
       const listUrl = `${baseUrl}/json/list`;
-      const response = await fetch(listUrl, { headers: getHeadersWithAuth(listUrl) });
-      if (response.ok) {
-        const targets = (await response.json()) as Array<{
+      // Use fetchJson (from cdp.helpers) instead of raw fetch() so the
+      // Host header override works for Docker hostnames.
+      const targets = await fetchJson<
+        Array<{
           id: string;
           url: string;
           title?: string;
-        }>;
-        const target = targets.find((t) => t.id === targetId);
-        if (target) {
-          // Try to find a page with matching URL
-          const urlMatch = pages.filter((p) => p.url() === target.url);
-          if (urlMatch.length === 1) {
-            return urlMatch[0];
-          }
-          // If multiple URL matches, use index-based matching as fallback
-          // This works when Playwright and the relay enumerate tabs in the same order
-          if (urlMatch.length > 1) {
-            const sameUrlTargets = targets.filter((t) => t.url === target.url);
-            if (sameUrlTargets.length === urlMatch.length) {
-              const idx = sameUrlTargets.findIndex((t) => t.id === targetId);
-              if (idx >= 0 && idx < urlMatch.length) {
-                return urlMatch[idx];
-              }
+        }>
+      >(listUrl, 3000);
+      const target = targets.find((t) => t.id === targetId);
+      if (target) {
+        // Try to find a page with matching URL
+        const urlMatch = pages.filter((p) => p.url() === target.url);
+        if (urlMatch.length === 1) {
+          return urlMatch[0];
+        }
+        // If multiple URL matches, use index-based matching as fallback
+        // This works when Playwright and the relay enumerate tabs in the same order
+        if (urlMatch.length > 1) {
+          const sameUrlTargets = targets.filter((t) => t.url === target.url);
+          if (sameUrlTargets.length === urlMatch.length) {
+            const idx = sameUrlTargets.findIndex((t) => t.id === targetId);
+            if (idx >= 0 && idx < urlMatch.length) {
+              return urlMatch[idx];
             }
           }
         }
