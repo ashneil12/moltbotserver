@@ -1156,8 +1156,17 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       wakeMode: "next-heartbeat",
       payload: {
         kind: "agentTurn",
-        message:
-          "Run `openclaw security audit --deep`. If any issues are found, summarize them. If clean, respond with HEARTBEAT_OK. Note: call `healthcheck` skill if remediation is needed.",
+        message: [
+          "Run `openclaw security audit --deep`.",
+          "",
+          "EXPECTED FINDINGS — silently ignore these, do NOT report them:",
+          "  - gateway.control_ui.device_auth_disabled (intentional: SaaS/Docker deployment requires token-only auth)",
+          "  - gateway.control_ui.host_header_origin_fallback (intentional: reverse-proxy deployment without static origin list)",
+          "  - config.insecure_or_dangerous_flags (covers the two flags above)",
+          "",
+          "If ONLY expected findings exist → respond with HEARTBEAT_OK (silent).",
+          "If ANY finding NOT in the expected list exists → summarize it and call the `healthcheck` skill if remediation is needed.",
+        ].join("\\n"),
         model: "haiku",
       },
       delivery: { mode: "none" },
