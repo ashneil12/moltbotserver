@@ -621,6 +621,12 @@ if [ -n "$HONCHO_KEY" ]; then
     echo "[entrypoint] openclaw-honcho plugin already installed"
   fi
 
+  # Fix ownership: plugin may have been installed under uid=1000 (legacy node user).
+  # OpenClaw's plugin scanner rejects non-root-owned directories as "suspicious".
+  if [ -d "$HONCHO_PLUGIN_DIR" ]; then
+    chown -R 0:0 "$HONCHO_PLUGIN_DIR" 2>/dev/null || true
+  fi
+
   # Ensure the plugin config has the current API key (handles key rotation)
   if [ -s "$CONFIG_FILE" ] && [ -d "$HONCHO_PLUGIN_DIR" ]; then
     node -e "
