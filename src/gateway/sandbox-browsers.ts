@@ -105,6 +105,23 @@ function deriveLabel(sessionKey: string): string {
 // ── Path parsing ───────────────────────────────────────────────────────
 
 /**
+ * Determines if a proxied browser sub-path requires gateway auth.
+ * Only the entry page (vnc.html) and WebSocket (websockify) are sensitive.
+ * Static assets (CSS, JS, images, fonts) are public — matching the Caddy
+ * pattern for the main browser where only vnc.html + websockify are gated.
+ */
+function isSensitiveBrowserPath(subPath: string): boolean {
+  const normalized = subPath.toLowerCase();
+  if (normalized === "/" || normalized === "/vnc.html" || normalized === "/vnc_lite.html") {
+    return true;
+  }
+  if (normalized.includes("websockify")) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Parse "/sbx-browser/{id}/some/path" into { id, subPath }.
  * Returns null if the URL doesn't match the prefix or if the id is invalid.
  */
@@ -378,10 +395,17 @@ export async function handleSandboxBrowserRequest(
     return false;
   }
 
-  const authResult = await authorizeRequest(req, opts.auth, opts.rateLimiter);
-  if (!authResult.ok) {
-    sendGatewayAuthFailure(res, authResult);
-    return true;
+  // Auth is required for sensitive entry points (vnc.html, websockify) but NOT
+  // for static assets (CSS/JS/images/fonts). noVNC loads sub-resources without
+  // auth tokens — the real session security is on the websockify WebSocket.
+  // This matches Caddy's pattern for the main browser.
+  const isAuthRequired = isSensitiveBrowserPath(parsed.subPath);
+  if (isAuthRequired) {
+    const authResult = await authorizeRequest(req, opts.auth, opts.rateLimiter);
+    if (!authResult.ok) {
+      sendGatewayAuthFailure(res, authResult);
+      return true;
+    }
   }
 
   const registry = await readBrowserRegistry();
