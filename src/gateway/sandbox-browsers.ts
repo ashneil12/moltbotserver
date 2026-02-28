@@ -141,6 +141,25 @@ function findEntryByShortId(
   return entries.find((e) => deriveShortId(e) === targetId);
 }
 
+/**
+ * Resolve a container name from static browser profiles in config.
+ * Falls back when the sandbox registry doesn't have a match.
+ * Profiles with cdpUrl like "http://browser-<id>:<port>" map to container "browser-<id>".
+ */
+function findContainerByProfileId(targetId: string): string | undefined {
+  const config = loadConfig();
+  const profiles = config.browser?.profiles ?? {};
+  const profile = profiles[targetId] as { cdpUrl?: string } | undefined;
+  if (!profile?.cdpUrl) {
+    return undefined;
+  }
+  const expectedContainer = `browser-${targetId}`;
+  if (profile.cdpUrl.includes(`${expectedContainer}:`)) {
+    return expectedContainer;
+  }
+  return undefined;
+}
+
 // ── API: list browsers ─────────────────────────────────────────────────
 
 async function handleListBrowsers(_req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -167,7 +186,7 @@ async function handleListBrowsers(_req: IncomingMessage, res: ServerResponse): P
         id: name,
         label: name.charAt(0).toUpperCase() + name.slice(1),
         type: "agent",
-        path: `/browser-${name}`,
+        path: `${PROXY_PREFIX}${name}`,
       });
     }
   }
@@ -367,15 +386,16 @@ export async function handleSandboxBrowserRequest(
 
   const registry = await readBrowserRegistry();
   const entry = findEntryByShortId(registry.entries, parsed.id);
+  const containerName = entry?.containerName ?? findContainerByProfileId(parsed.id);
 
-  if (!entry) {
+  if (!containerName) {
     res.statusCode = 404;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.end(JSON.stringify({ error: `No sandbox browser found for: ${parsed.id}` }));
     return true;
   }
 
-  proxyHttpToContainer(entry.containerName, parsed.subPath, req, res);
+  proxyHttpToContainer(containerName, parsed.subPath, req, res);
   return true;
 }
 
@@ -407,13 +427,14 @@ export async function handleSandboxBrowserUpgrade(
 
   const registry = await readBrowserRegistry();
   const entry = findEntryByShortId(registry.entries, parsed.id);
+  const containerName = entry?.containerName ?? findContainerByProfileId(parsed.id);
 
-  if (!entry) {
+  if (!containerName) {
     socket.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
     socket.destroy();
     return true;
   }
 
-  proxyWsToContainer(entry.containerName, parsed.subPath, req, socket, head);
+  proxyWsToContainer(containerName, parsed.subPath, req, socket, head);
   return true;
 }
