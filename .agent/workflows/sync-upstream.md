@@ -41,13 +41,27 @@ This workflow syncs your fork with the official `https://github.com/openclaw/ope
    > Resolve any file conflicts manually if they arise.
 
 5. **Push your updated branch to your fork**:
+
    ```bash
    git push origin main --force-with-lease
    ```
+
    > `--force-with-lease` is safer than `--force` as it won't overwrite remote changes you haven't pulled.
+
+6. **Verify critical local patches survived** (⚠️ DO NOT SKIP):
+   ```bash
+   echo "=== CDP Host header fix ===" && grep -c 'httpRequestWithHostOverride' src/browser/cdp.helpers.ts
+   echo "=== chrome.ts fetchJson fix ===" && grep -c 'fetchJson<ChromeVersion>' src/browser/chrome.ts
+   echo "=== CDP proxy script ===" && ls scripts/cdp-host-proxy.py
+   echo "=== Entrypoint proxy ===" && grep -c 'CDP_PROXY_SCRIPT' scripts/sandbox-browser-entrypoint.sh
+   echo "=== Dockerfile proxy ===" && grep -c 'cdp-host-proxy' Dockerfile.sandbox-browser
+   ```
+   > All counts should be ≥ 1. If any return 0, the upstream merge overwrote a critical local patch.
+   > See `LOCAL_PATCHES.md` for the full list of patches and how to re-apply them.
 
 ## Notes
 
 - **Why rebase?** Rebasing replays your commits on top of the latest upstream, keeping a clean linear history. This is preferred over merge for forks.
 - **When to run?** Every few days or whenever you see "Your branch is behind" after `git fetch upstream`.
 - **Conflicts?** If the same file was modified by both you and upstream, you'll need to manually resolve. Git will pause and show you the conflicting files.
+- **⚠️ Silent overwrites:** Even without merge conflicts, upstream can silently overwrite local patches when it modifies the same files. The verification step in #6 catches this. See `LOCAL_PATCHES.md` for details.

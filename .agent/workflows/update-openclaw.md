@@ -96,6 +96,10 @@ For HIGH risk conflicts, show the specific diff:
 git diff main upstream/main -- <filename>
 ```
 
+> [!WARNING]
+> Even files that DON'T appear as conflicts can have local patches silently overwritten.
+> Check `LOCAL_PATCHES.md` for critical patches in files like `cdp.helpers.ts` and `chrome.ts`.
+
 ---
 
 ## Phase 4: Update Plan
@@ -154,6 +158,19 @@ npm run build
 ```
 
 ```bash
+# Verify critical local patches survived (DO NOT SKIP)
+echo "=== CDP Host header fix ===" && grep -c 'httpRequestWithHostOverride' src/browser/cdp.helpers.ts
+echo "=== chrome.ts fetchJson fix ===" && grep -c 'fetchJson<ChromeVersion>' src/browser/chrome.ts
+echo "=== CDP proxy script ===" && ls scripts/cdp-host-proxy.py
+echo "=== Entrypoint proxy ===" && grep -c 'CDP_PROXY_SCRIPT' scripts/sandbox-browser-entrypoint.sh
+echo "=== Dockerfile proxy ===" && grep -c 'cdp-host-proxy' Dockerfile.sandbox-browser
+```
+
+> [!CAUTION]
+> All counts must be ≥ 1. If any return 0, the upstream merge silently overwrote a critical local patch.
+> See `LOCAL_PATCHES.md` for the full list and re-application instructions.
+
+```bash
 # Pop stashed changes if any
 git stash pop || true
 ```
@@ -189,4 +206,6 @@ comm -12 <(git diff --name-only $MERGE_BASE upstream/main | sort) <(git diff --n
 
 ## Context Files
 
-See `.agent/OPENCLAW_CONTEXT.md` for documentation of local customizations that should be preserved during updates.
+- `OPENCLAW_CONTEXT.md` — full list of local customizations to preserve during updates
+- `OPENCLAW_CHANGELOG.md` — detailed change history with upstream sync risk ratings
+- `LOCAL_PATCHES.md` — **critical**: files with patches that get silently overwritten by upstream (includes verification commands)

@@ -18,8 +18,9 @@ else
   echo "[entrypoint] Sudo access ENABLED"
 fi
 
-# Fix Docker volume ownership — volumes are created as root:root
-# but the gateway process runs as node (uid 1000).
+# Fix Docker volume ownership — ensure config/workspace dirs exist and have
+# correct permissions.  While the gateway now runs as root, the node user
+# (uid 1000) may still own files from older deployments.
 CONFIG_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/workspace}}"
 for dir in "$CONFIG_DIR" "$WORKSPACE_DIR" /home/node; do
@@ -687,11 +688,6 @@ if [ -f "$OPENCLAW_SCRIPT" ]; then
   echo "[entrypoint] Device auto-approve scheduled (background)"
 fi
 
-# =============================================================================
-# FIX OWNERSHIP: Config files written by the entrypoint (as root) need correct
-# ownership. While the gateway now runs as root, the node user may still own
-# the data volume from older deployments, so normalize it.
-# =============================================================================
 chown -R node:node "$CONFIG_DIR" "$WORKSPACE_DIR" 2>/dev/null || true
 # Re-fix extensions ownership: the chown above sets everything to node:node,
 # but the plugin scanner REQUIRES extensions to be owned by root (uid=0).
@@ -699,7 +695,6 @@ chown -R node:node "$CONFIG_DIR" "$WORKSPACE_DIR" 2>/dev/null || true
 if [ -d "$CONFIG_DIR/extensions" ]; then
   chown -R root:root "$CONFIG_DIR/extensions" 2>/dev/null || true
 fi
-
 
 
 # Execute the main command as root — no privilege drop.

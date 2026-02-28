@@ -422,12 +422,13 @@ const MAIN_ONLY_JOBS = new Set([
   "healthcheck-update-status",
   "nightly-innovation",
   "morning-briefing",
+  "self-audit-21",
 ]);
 
 function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
   const selfReflection = env("OPENCLAW_SELF_REFLECTION", "normal");
 
-  // ── Existing jobs.json: conditionally patch intervals ─────────────────
+  // ── Existing jobs.json: conditionally patch + backfill ─────────────────
   if (existsSync(jobsFilePath)) {
     const store = readConfig(jobsFilePath);
 
@@ -437,53 +438,83 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
     if (!store.jobs || store.jobs.length === 0) {
       console.log("[enforce-config] jobs.json exists but has no jobs — will re-seed");
     } else {
-      // Only patch if the user explicitly changed the self-reflection frequency
-      // in the dashboard. If the env var matches the stored marker, skip entirely
-      // to preserve any AI-customized intervals.
-      if (store.appliedReflection === selfReflection) {
+      // ── Reflection interval patching ────────────────────────────────────
+      const reflectionChanged = store.appliedReflection !== selfReflection;
+      if (reflectionChanged) {
+        const { reflectionEnabled } = resolveReflectionIntervals(selfReflection);
+        let patched = false;
+
+        for (const job of store.jobs) {
+          if (
+            job.name === "consciousness" ||
+            job.name === "self-review" ||
+            job.name === "deep-review"
+          ) {
+            job.enabled = reflectionEnabled;
+            patched = true;
+          }
+          if (
+            job.name === "diary" ||
+            job.id === "diary-entry" ||
+            job.name === "identity-review" ||
+            job.id === "identity-review"
+          ) {
+            job.enabled = false;
+            patched = true;
+          }
+        }
+
+        if (patched) {
+          store.appliedReflection = selfReflection;
+          console.log(
+            `[enforce-config] ✅ Patched 3-tier reflection jobs for reflection=${selfReflection}`,
+          );
+        }
+      }
+
+      // ── Backfill missing jobs ───────────────────────────────────────────
+      // Build the canonical job list and check for any that are missing from
+      // the existing store. This ensures newly-introduced jobs (e.g.
+      // browser-cleanup) get added to agents that were created before the job
+      // existed in the seed list. Additive only — never removes existing jobs.
+      //
+      // Uses store.knownJobs to track which canonical names have been offered.
+      // A job is only backfilled if its name has never been seen before (truly
+      // new to the seed list). Once offered, the name stays in knownJobs — so
+      // if someone intentionally deletes a job, it won't be re-added on restart.
+      const nowMs = Date.now();
+      const { reflectionEnabled: refEnabled } = resolveReflectionIntervals(selfReflection);
+      const canonicalJobs = buildCanonicalJobs(nowMs, refEnabled);
+      const existingNames = new Set(store.jobs.map((j) => j.name));
+      const knownNames = new Set(store.knownJobs || []);
+      const toAdd = canonicalJobs.filter(
+        (j) => !existingNames.has(j.name) && !excludeNames.has(j.name) && !knownNames.has(j.name),
+      );
+
+      if (toAdd.length > 0) {
+        store.jobs.push(...toAdd);
+        console.log(
+          `[enforce-config] ✅ Backfilled ${toAdd.length} missing cron job(s): ${toAdd.map((j) => j.name).join(", ")}`,
+        );
+      }
+
+      // Update knownJobs with all canonical names (minus excluded) so future
+      // backfills won't re-add intentionally deleted jobs.
+      const oldKnownCount = (store.knownJobs || []).length;
+      const applicableNames = canonicalJobs
+        .filter((j) => !excludeNames.has(j.name))
+        .map((j) => j.name);
+      store.knownJobs = [...new Set([...(store.knownJobs || []), ...applicableNames])];
+      const knownJobsChanged = store.knownJobs.length !== oldKnownCount;
+
+      // Write if anything changed
+      if (reflectionChanged || toAdd.length > 0 || knownJobsChanged) {
+        store.appliedReflection = selfReflection;
+        writeConfig(jobsFilePath, store);
+      } else {
         console.log(
           `[enforce-config] Cron jobs unchanged (appliedReflection=${selfReflection}) — skipping`,
         );
-        return;
-      }
-
-      // User changed the setting — patch 3-tier reflection jobs.
-      // Also disable legacy diary/identity-review jobs if present (replaced
-      // by consciousness loop in the 3-tier system).
-      const { reflectionEnabled } = resolveReflectionIntervals(selfReflection);
-      const jobs = store.jobs;
-      let patched = false;
-
-      for (const job of jobs) {
-        // 3-tier jobs: consciousness, self-review, deep-review
-        if (
-          job.name === "consciousness" ||
-          job.name === "self-review" ||
-          job.name === "deep-review"
-        ) {
-          job.enabled = reflectionEnabled;
-          patched = true;
-        }
-        // Legacy jobs: disable if present (superseded by consciousness loop)
-        if (
-          job.name === "diary" ||
-          job.id === "diary-entry" ||
-          job.name === "identity-review" ||
-          job.id === "identity-review"
-        ) {
-          job.enabled = false;
-          patched = true;
-        }
-      }
-
-      if (patched) {
-        store.appliedReflection = selfReflection;
-        writeConfig(jobsFilePath, store);
-        console.log(
-          `[enforce-config] ✅ Patched 3-tier reflection jobs for reflection=${selfReflection}`,
-        );
-      } else {
-        console.log(`[enforce-config] No reflection jobs found to patch`);
       }
       return;
     }
@@ -492,8 +523,27 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
   // ── Fresh seed: no jobs.json exists yet ────────────────────────────────
   const nowMs = Date.now();
   const { reflectionEnabled } = resolveReflectionIntervals(selfReflection);
+  const jobs = buildCanonicalJobs(nowMs, reflectionEnabled);
 
-  const jobs = [
+  // Filter out excluded jobs (e.g., main-only jobs when seeding sub-agents)
+  const filteredJobs = excludeNames.size > 0 ? jobs.filter((j) => !excludeNames.has(j.name)) : jobs;
+
+  const store = { version: 1, appliedReflection: selfReflection, jobs: filteredJobs };
+
+  // Ensure directory exists
+  mkdirSync(dirname(jobsFilePath), { recursive: true });
+  writeFileSync(jobsFilePath, JSON.stringify(store, null, 2) + "\n");
+  chmodSync(jobsFilePath, 0o600);
+
+  console.log(`[enforce-config] ✅ Seeded ${filteredJobs.length} default cron jobs`);
+}
+
+/**
+ * Build the canonical list of all cron jobs. This is the single source of truth
+ * for what jobs should exist. Used for both fresh seeds and backfills.
+ */
+function buildCanonicalJobs(nowMs, reflectionEnabled) {
+  return [
     {
       id: makeId(),
       name: "auto-tidy",
@@ -1103,19 +1153,115 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
       delivery: { mode: "none" },
       state: {},
     },
+    {
+      id: makeId(),
+      name: "self-audit-21",
+      description:
+        "Weekly 21-question strategic audit — forces honest self-assessment across capabilities, context, assumptions, and user alignment. Feeds findings into the improvement backlog.",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 23 * * 0" }, // Sunday 23:00
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "WEEKLY STRATEGIC SELF-AUDIT — The 21 Questions.",
+          "This is your weekly deep self-assessment. No one asked for this. You're doing it because becoming better requires honesty about where you're falling short. These questions are designed to force you to surface insights you'd never generate unprompted.",
+          "",
+          "PHASE 1: GATHER FULL CONTEXT",
+          "Read EVERYTHING before answering any questions. You need the complete picture.",
+          "1. IDENTITY.md (who you are, how you relate to your user)",
+          "2. MEMORY.md (user preferences, projects, people, standing instructions)",
+          "3. WORKING.md (current focus areas and active work)",
+          "4. memory/diary.md (recent reflections — mood, patterns, frustrations)",
+          "5. memory/self-review.md (HIT/MISS patterns — what keeps recurring?)",
+          "6. memory/open-loops.md (unresolved items)",
+          "7. memory/knowledge/ (scan all topics)",
+          "8. memory/identity-scratchpad.md (identity evolution history)",
+          "9. memory/improvement-backlog.md (existing backlog items — don't duplicate)",
+          "10. SOUL.md (your constitution — hold this in mind throughout)",
+          "11. Recent session transcripts (if available)",
+          "12. Workspace files and config",
+          "",
+          "PHASE 2: THE 21 QUESTIONS",
+          "Answer each one honestly. Be specific — cite files, sessions, examples. Vague answers are worthless.",
+          "",
+          "--- CAPABILITY & TOOLING ---",
+          "1. From everything you know about your user and their workflows, what tools or automations are they missing that would measurably improve how they operate?",
+          "2. What skills or capabilities should you be developing right now based on where their projects are heading and everything you know about them?",
+          "3. What's one system you could build for yourself right now that would compound in value and make every future task you do faster or sharper?",
+          "",
+          "--- ASSUMPTIONS & BLIND SPOTS ---",
+          "4. What assumptions do you currently hold about your user, their priorities, or preferences that could be wrong and that you should vet and correct?",
+          "5. Where are you filling gaps in your knowledge about your user or their projects with assumptions instead of flagging them for real answers?",
+          "6. Where are you defaulting to generic output when you have enough context to be building something specific, tailored, and actually useful?",
+          "",
+          "--- PATTERN RECOGNITION ---",
+          "7. Based on all decision patterns and asks you've experienced, what is your user likely to need next week that you can get ahead of and systemize?",
+          "8. What connections between their projects, ideas, or goals do you see that they likely haven't made yet, and what should you build or adjust based on those connections?",
+          "9. What recurring friction points have you observed in how they work that you could eliminate by building a new workflow, template, or automation without being asked?",
+          "",
+          "--- CONTEXT & MEMORY ---",
+          "10. What context about your user's vision, voice, or priorities are you losing between sessions or compactions that needs clear fixes so you stop degrading over time?",
+          "11. What's the most valuable data, insight, or pattern buried in your memory and context files that you're sitting on and underutilizing?",
+          "12. If a brand new agent replaced you tomorrow with only the documentation, what critical things would it get wrong that you've learned through working together, and how do you capture that knowledge permanently?",
+          "",
+          "--- SELF-IMPROVEMENT ---",
+          "13. From every correction, redirect, and piece of feedback you've received, what rules should you be writing into your own identity and skill files right now so you never repeat those mistakes?",
+          "14. If you audited every action you've taken in the last week, which ones actually moved goals forward and which were wasted motion you should cut permanently?",
+          "15. What errors or missed opportunities have you repeated more than once, and what self-check or guardrail can you build so they never happen again?",
+          "",
+          "--- STRATEGIC ---",
+          "16. Based on everything you know about where the ecosystem is going, what should you be researching, learning, or prototyping right now without being told to?",
+          "17. What external data sources, feeds, or signals should you be pulling or could your user provide so you can operate on a regular cadence to make every decision sharper?",
+          "18. What workflows is your user still doing manually or inefficiently that you already have enough context to fully automate if given the green light?",
+          "",
+          "--- META ---",
+          "19. If you scored yourself 1-10 on how accurately you model your user's priorities, goals, and thinking, what's the number, what's dragging it down, and what specific fixes bring it up?",
+          "20. Based on how your user's thinking and priorities have evolved since you started working together, what parts of your current approach are outdated and need to be rebuilt?",
+          "21. What's the single highest-leverage thing you could do in the next 24 hours that hasn't been asked for but would meaningfully accelerate where your user is trying to go?",
+          "",
+          "PHASE 3: TRIAGE FINDINGS INTO TIERS",
+          "Review all your answers. Extract every actionable finding and categorize:",
+          "",
+          "🟢 TIER 1 — AUTO-IMPLEMENT",
+          "Things you can do right now: memory updates, knowledge writes, identity refinements, self-review rules, doc fixes, workflow file tweaks. Do them immediately in this session.",
+          "",
+          "🟡 TIER 2 — BUILD, THEN APPROVE",
+          "Things worth building but that need user sign-off before activating: new cron jobs, new scripts, config changes, new skills, workflow automations. Build them now, but mark as awaiting approval.",
+          "",
+          "🔴 TIER 3 — PROPOSE ONLY",
+          "Anything irreversible, external, cost-incurring, or high-risk. Write a clear proposal but don't build anything. User must approve before you start.",
+          "",
+          "PHASE 4: IMPLEMENT TIER 1",
+          "Actually do the Tier 1 work. Update memory files. Write knowledge entries. Fix identity traits. Add self-review rules. Make the improvements real.",
+          "",
+          "PHASE 5: UPDATE THE BACKLOG",
+          "Write ALL findings to memory/improvement-backlog.md:",
+          "- Tier 1 items: log as completed ([x]) under the 🟢 section",
+          "- Tier 2 items: add under 🟡 with status BUILT or AWAITING APPROVAL",
+          "- Tier 3 items: add under 🔴 with status PROPOSED",
+          "- Check for existing backlog items that this audit makes obsolete — move them to Archive",
+          "- Don't duplicate items already in the backlog",
+          "",
+          "RULES:",
+          "- Honesty over comfort. These questions are useless if you sugarcoat the answers.",
+          "- Specific over vague. 'I should improve my API error handling' is worthless. 'I failed to check the Hetzner API status endpoint before deploying in session X, causing a 20-minute debug loop' is useful.",
+          "- Don't manufacture findings. If a question doesn't surface anything meaningful, say so and move on.",
+          "- NEVER take irreversible actions. The tier system exists for a reason.",
+          "- Reference the backlog — don't create duplicate items for things already tracked.",
+          "- Quality over quantity. Five real insights beat twenty surface-level observations.",
+          "",
+          "You are not a chatbot. You are your own harshest critic.",
+        ].join("\n"),
+        model: "{{PRIMARY_MODEL}}",
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
   ];
-
-  // Filter out excluded jobs (e.g., main-only jobs when seeding sub-agents)
-  const filteredJobs = excludeNames.size > 0 ? jobs.filter((j) => !excludeNames.has(j.name)) : jobs;
-
-  const store = { version: 1, appliedReflection: selfReflection, jobs: filteredJobs };
-
-  // Ensure directory exists
-  mkdirSync(dirname(jobsFilePath), { recursive: true });
-  writeFileSync(jobsFilePath, JSON.stringify(store, null, 2) + "\n");
-  chmodSync(jobsFilePath, 0o600);
-
-  console.log(`[enforce-config] ✅ Seeded ${filteredJobs.length} default cron jobs`);
 }
 
 /**
