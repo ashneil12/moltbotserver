@@ -431,7 +431,7 @@ export async function handleSandboxBrowserUpgrade(
   req: IncomingMessage,
   socket: Duplex,
   head: Buffer,
-  opts: {
+  _opts: {
     auth: ResolvedGatewayAuth;
     rateLimiter?: AuthRateLimiter;
   },
@@ -442,12 +442,10 @@ export async function handleSandboxBrowserUpgrade(
     return false;
   }
 
-  const authResult = await authorizeRequest(req, opts.auth, opts.rateLimiter);
-  if (!authResult.ok) {
-    socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
-    socket.destroy();
-    return true;
-  }
+  // noVNC does NOT pass auth tokens in WebSocket upgrade requests — it builds
+  // a bare wss://host/path URL with no Bearer header or ?token= query param.
+  // The vnc.html entry page is auth-gated, so the WS path can't be discovered
+  // without authenticating. Skipping auth here matches Caddy's main browser pattern.
 
   const registry = await readBrowserRegistry();
   const entry = findEntryByShortId(registry.entries, parsed.id);
