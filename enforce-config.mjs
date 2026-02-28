@@ -415,7 +415,10 @@ function enforceCore(configPath) {
   console.log("[enforce-config] ✅ Core runtime settings enforced");
 }
 
-function seedCronJobs(jobsFilePath) {
+/** Job names that should ONLY run on the main agent (not sub-agents). */
+const MAIN_ONLY_JOBS = new Set(["healthcheck-security-audit", "healthcheck-update-status"]);
+
+function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
   const selfReflection = env("OPENCLAW_SELF_REFLECTION", "normal");
 
   // ── Existing jobs.json: conditionally patch intervals ─────────────────
@@ -919,14 +922,17 @@ function seedCronJobs(jobsFilePath) {
     },
   ];
 
-  const store = { version: 1, appliedReflection: selfReflection, jobs };
+  // Filter out excluded jobs (e.g., main-only jobs when seeding sub-agents)
+  const filteredJobs = excludeNames.size > 0 ? jobs.filter((j) => !excludeNames.has(j.name)) : jobs;
+
+  const store = { version: 1, appliedReflection: selfReflection, jobs: filteredJobs };
 
   // Ensure directory exists
   mkdirSync(dirname(jobsFilePath), { recursive: true });
   writeFileSync(jobsFilePath, JSON.stringify(store, null, 2) + "\n");
   chmodSync(jobsFilePath, 0o600);
 
-  console.log(`[enforce-config] ✅ Seeded ${jobs.length} default cron jobs`);
+  console.log(`[enforce-config] ✅ Seeded ${filteredJobs.length} default cron jobs`);
 }
 
 /**
@@ -966,10 +972,10 @@ function seedSubAgentCronJobs(dataDir) {
     const jobsFile = `${cronDir}/jobs.json`;
 
     // seedCronJobs handles both cases:
-    // - file missing → full seed
+    // - file missing → full seed (excluding main-only jobs)
     // - file exists → reflection interval patching only
     const existed = existsSync(jobsFile);
-    seedCronJobs(jobsFile);
+    seedCronJobs(jobsFile, { excludeNames: MAIN_ONLY_JOBS });
 
     if (!existed && existsSync(jobsFile)) {
       seeded++;

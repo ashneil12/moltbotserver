@@ -640,6 +640,35 @@ if [ -n "$HONCHO_KEY" ]; then
 fi
 
 # =============================================================================
+# AUTO-APPROVE DEVICE PAIRING: Background a loop that waits for the gateway
+# to accept connections, then auto-approves the pending local device.
+#
+# Why: The gateway requires device pairing for CLI RPC access (even with
+# token auth enabled). Inside a container, no one is around to manually run
+# `openclaw devices approve --latest`. This backgrounds the approval so it
+# doesn't block the `exec` that starts the gateway.
+#
+# The loop polls for up to 15 seconds. If the gateway isn't ready by then,
+# the device will remain pending (manual fallback via Control UI or SSH).
+# =============================================================================
+OPENCLAW_SCRIPT="/app/openclaw.mjs"
+if [ -f "$OPENCLAW_SCRIPT" ]; then
+  (
+    sleep 2  # Give gateway a head start
+    for i in $(seq 1 26); do
+      if node "$OPENCLAW_SCRIPT" devices list >/dev/null 2>&1; then
+        if node "$OPENCLAW_SCRIPT" devices approve --latest 2>/dev/null; then
+          echo "[entrypoint] Auto-approved local device pairing"
+        fi
+        break
+      fi
+      sleep 0.5
+    done
+  ) &
+  echo "[entrypoint] Device auto-approve scheduled (background)"
+fi
+
+# =============================================================================
 # FIX OWNERSHIP: All files must be owned by node before we drop privileges.
 # The entrypoint runs as root and writes/patches config files throughout.
 # Without this final chown, gosu node → EACCES on the config file.

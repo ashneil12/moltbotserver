@@ -517,6 +517,11 @@ export async function ensureAgentWorkspace(params?: {
   await writeFileIfMissing(practicalPath, practicalTemplate);
   await writeFileIfMissing(memoryHygienePath, memoryHygieneTemplate);
 
+  // Seed MEMORY.md — top-level long-term memory file (accessed via memory_search/QMD, not context)
+  const memoryFilePath = path.join(dir, DEFAULT_MEMORY_FILENAME);
+  const memoryTemplate = await loadTemplate(DEFAULT_MEMORY_FILENAME);
+  await writeFileIfMissing(memoryFilePath, memoryTemplate);
+
   // Human voice mode: seed writelikeahuman.md and howtobehuman.md when enabled
   if (humanModeEnabled) {
     const writelikeahumanPath = path.join(dir, DEFAULT_WRITELIKEAHUMAN_FILENAME);

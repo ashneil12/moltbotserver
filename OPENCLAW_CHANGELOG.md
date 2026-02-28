@@ -5,6 +5,57 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Gateway Auto-Approve & Sub-Agent Cron Filtering (2026-02-28)
+
+**Purpose:** Fix two issues that blocked CLI management after fresh deploys and caused new sub-agents to receive an incomplete cron job set.
+
+### Issue 1: Gateway Pairing Blocks CLI
+
+The gateway requires device pairing for CLI RPC access even with token auth. Inside a Docker container, no one is around to manually approve. The entrypoint now backgrounds a loop that waits for the gateway to start (up to 15s), then auto-approves the pending device.
+
+| File                   | Change                                                    | Why                                                                                            |
+| ---------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `docker-entrypoint.sh` | Added backgrounded device auto-approve loop before `exec` | CLI commands (`cron list`, `agents update`, etc.) no longer fail with `1008: pairing required` |
+
+### Issue 2: Sub-Agents Get Wrong Cron Set
+
+The `create-agent` skill's main agent was using `openclaw cron add` (RPC-based, blocked by pairing) and falling back to a manual 4-job subset. `enforce-config.mjs cron-seed` writes directly to disk and produces the full set — this is the canonical method.
+
+Additionally, `healthcheck-security-audit` and `healthcheck-update-status` only need to run on the main agent, not all sub-agents. Added `MAIN_ONLY_JOBS` filtering so sub-agents get 8 jobs.
+
+| File                                   | Change                                                                                                                 | Why                                                        |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `enforce-config.mjs`                   | Added `MAIN_ONLY_JOBS` set and `excludeNames` parameter to `seedCronJobs()`                                            | Sub-agents get 8 jobs; main-only healthcheck jobs excluded |
+| `enforce-config.mjs`                   | `seedSubAgentCronJobs()` passes `{ excludeNames: MAIN_ONLY_JOBS }`                                                     | Automatic filtering for all sub-agent workspace cron seeds |
+| `.agents/skills/create-agent/SKILL.md` | Step 10 rewritten: emphasizes disk-based seeding, warns against RPC method, adds reseed instructions for legacy agents | Prevents future agents from getting partial cron sets      |
+
+### Fixing Existing Agents
+
+Agents created before this fix (mm-ezra, mm-david, ocs-solomon, ocs-nehemiah) have legacy partial cron sets. To fix:
+
+```bash
+# Delete stale jobs and re-seed from enforce-config
+for agent in mm-ezra mm-david ocs-solomon ocs-nehemiah; do
+  rm -f /home/node/data/workspace-$agent/.openclaw/cron/jobs.json
+done
+node /app/enforce-config.mjs cron-seed
+```
+
+### Issue 3: MEMORY.md Never Seeded
+
+`MEMORY.md` is referenced in 40+ places (deep-review cron, memory_search, doctor-workspace, system prompt) but had no template and was never created during workspace bootstrap.
+
+| File                                 | Change                                                | Why                                                     |
+| ------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------- |
+| `docs/reference/templates/MEMORY.md` | **NEW** — Structured skeleton with section headers    | Agents get a consistent MEMORY.md layout on first boot  |
+| `src/agents/workspace.ts`            | Added `MEMORY.md` seeding to `ensureAgentWorkspace()` | Both main and sub-agent workspaces get it automatically |
+
+### Upstream Sync Risk
+
+**None.** `docker-entrypoint.sh`, `enforce-config.mjs`, `create-agent/SKILL.md`, and `workspace.ts` MEMORY.md seeding are all fully custom. The new template is additive.
+
+---
+
 ## CDP Host Header Fix — Dual-Layer (2026-02-27)
 
 **Purpose:** Fix Chrome DevTools Protocol (CDP) connection failures when using Docker hostname URLs like `http://browser:9222`. Chromium 107+ rejects HTTP requests where the `Host` header isn't `localhost` or an IP address. Node.js `fetch()` silently ignores `Host` header overrides (forbidden per Fetch spec), so the existing `getHeadersWithAuth()` fix in `cdp.helpers.ts` had no effect on HTTP requests.
