@@ -688,9 +688,9 @@ if [ -f "$OPENCLAW_SCRIPT" ]; then
 fi
 
 # =============================================================================
-# FIX OWNERSHIP: All files must be owned by node before we drop privileges.
-# The entrypoint runs as root and writes/patches config files throughout.
-# Without this final chown, gosu node → EACCES on the config file.
+# FIX OWNERSHIP: Config files written by the entrypoint (as root) need correct
+# ownership. While the gateway now runs as root, the node user may still own
+# the data volume from older deployments, so normalize it.
 # =============================================================================
 chown -R node:node "$CONFIG_DIR" "$WORKSPACE_DIR" 2>/dev/null || true
 # Re-fix extensions ownership: the chown above sets everything to node:node,
@@ -700,11 +700,7 @@ if [ -d "$CONFIG_DIR/extensions" ]; then
   chown -R root:root "$CONFIG_DIR/extensions" 2>/dev/null || true
 fi
 
-# Fix npm global directory ownership so skills can `npm i -g <pkg>` as node.
-# The base Node.js image owns /usr/local/{lib/node_modules,bin} as root,
-# but the gateway process runs as node and needs write access for skill installs
-# (e.g. clawhub, which uses the SKILL.md "install" metadata to run `npm i -g`).
-chown -R node:node /usr/local/lib/node_modules /usr/local/bin 2>/dev/null || true
+
 
 # Execute the main command as root — no privilege drop.
 # The agent already had passwordless sudo, so dropping to node was security theater.

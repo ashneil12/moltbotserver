@@ -133,20 +133,7 @@ class CDPProxyServer(http.server.HTTPServer):
         handler = CDPProxyHandler(request, client_address, self)
 
 
-# Monkey-patch: intercept WebSocket upgrades before normal HTTP handling
-_orig_handle_one_request = CDPProxyHandler.handle_one_request
-
-
-def _patched_handle_one_request(self):
-    _orig_handle_one_request(self)
-    # After parsing headers, check for WebSocket upgrade
-    if hasattr(self, "headers") and self.headers:
-        upgrade = self.headers.get("Upgrade", "").lower()
-        if upgrade == "websocket":
-            handle_websocket_upgrade(self)
-
-
-# Actually, the simpler approach: override do_GET to detect upgrades
+# Override do_GET to detect WebSocket upgrades and tunnel them
 _orig_do_GET = CDPProxyHandler.do_GET
 
 
