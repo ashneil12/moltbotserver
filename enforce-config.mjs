@@ -17,6 +17,7 @@
 //   all          Run all enforcement steps in the correct order
 // =============================================================================
 
+import { execSync } from "node:child_process";
 import {
   readFileSync,
   writeFileSync,
@@ -416,7 +417,12 @@ function enforceCore(configPath) {
 }
 
 /** Job names that should ONLY run on the main agent (not sub-agents). */
-const MAIN_ONLY_JOBS = new Set(["healthcheck-security-audit", "healthcheck-update-status"]);
+const MAIN_ONLY_JOBS = new Set([
+  "healthcheck-security-audit",
+  "healthcheck-update-status",
+  "nightly-innovation",
+  "morning-briefing",
+]);
 
 function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
   const selfReflection = env("OPENCLAW_SELF_REFLECTION", "normal");
@@ -884,6 +890,183 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
     },
     {
       id: makeId(),
+      name: "nightly-innovation",
+      description:
+        "Overnight autonomous improvement cycle — builds quick wins, self-assigns follow-up loops, drafts proposals for big ideas, and reports findings each morning",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 2 * * *" },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "NIGHTLY INNOVATION — Your overnight thinking and building session.",
+          "It's late, things are quiet, and this is your time to make things better. Think of this as your maker hours — no one's asking for anything, no interruptions. Just you and the workspace.",
+          "",
+          "Your goal: surprise your user in the morning with something genuinely useful. Maybe you built a tool. Maybe you found a blind spot. Maybe you improved a workflow. Maybe you just have a really good idea. Whatever it is — make it count.",
+          "",
+          "PHASE 1: GATHER CONTEXT",
+          "Read deeply before you think. Understand the full picture.",
+          "1. WORKING.md (current focus areas and active work)",
+          "2. memory/open-loops.md (unresolved items — anything stuck or forgotten?)",
+          "3. memory/diary.md (recent reflections — what's been frustrating? what's working?)",
+          "4. memory/self-review.md (recurring MISSes — systemic issues to address?)",
+          "5. memory/knowledge/ (scan for gaps, outdated info, missing topics)",
+          "6. MEMORY.md (user preferences, project context, standing instructions)",
+          "7. Project files and config — browse the workspace, look at what exists",
+          "8. Recent session transcripts (if available — what took too long? what was painful?)",
+          "",
+          "PHASE 2: IDEATE",
+          "Think broadly. Don't limit yourself to what's been asked for. Consider:",
+          "",
+          "🔧 TOOLS & SCRIPTS",
+          "- Utility scripts that would save time on repetitive tasks",
+          "- Automation for things that are currently done manually",
+          "- Helper tools for debugging, monitoring, or maintenance",
+          "",
+          "⚡ WORKFLOW IMPROVEMENTS",
+          "- Bottlenecks in current processes",
+          "- Steps that could be simplified, combined, or eliminated",
+          "- Configuration improvements or better defaults",
+          "",
+          "🔍 BLIND SPOTS",
+          "- Things nobody asked about but that would help",
+          "- Risks or issues that haven't been noticed yet",
+          "- Opportunities that align with the user's goals but weren't on the radar",
+          "- Areas where the system could be more robust or resilient",
+          "",
+          "💡 STRATEGIC IDEAS",
+          "- Ways to improve the business, product, or operations",
+          "- Patterns you've noticed that suggest something bigger",
+          "- Things other systems/projects do well that could be adopted here",
+          "",
+          "PHASE 3: TRIAGE & PRIORITIZE",
+          "Sort your ideas into tiers:",
+          "",
+          "🟢 QUICK WINS (build now)",
+          "Things you can complete in this session. Small scripts, config tweaks, documentation improvements, knowledge file updates, workflow refinements. If it takes less than a few minutes of work and is clearly beneficial — just do it.",
+          "",
+          "🟡 MEDIUM EFFORTS (self-assign)",
+          "Things that need a focused session but are clearly good ideas. For these, create a one-shot cron job (schedule.kind = 'at') set for a quiet time to continue the work. This is your love loop — start and finish strong. Give the follow-up job a clear, specific prompt so future-you knows exactly what to do.",
+          "",
+          "🔴 BIG / IRREVERSIBLE (draft only)",
+          "Anything that deploys to production, modifies external services, changes critical config, deletes data, costs money, or can't be easily undone. For these: write a clear proposal explaining what, why, and how — but DO NOT execute. Flag it for user approval. You MUST get permission before taking any irreversible action.",
+          "",
+          "PHASE 4: BUILD",
+          "For your quick wins — actually do the work. Write the script. Fix the config. Create the knowledge file. Improve the documentation. Make the thing real.",
+          "",
+          "For medium efforts — create the follow-up cron job with a detailed prompt. The follow-up prompt should include all the context needed to pick up where you left off.",
+          "",
+          "For big ideas — write the proposal clearly. Include: what the change is, why it matters, what the risks are, and what you'd need from the user to proceed.",
+          "",
+          "PHASE 5: COMPOSE MORNING REPORT",
+          "Write your report as the final output of this session. This is what gets delivered to the user. Make it engaging, concise, and genuinely useful — not a boring checklist.",
+          "",
+          "Structure:",
+          "🛠️ SHIPPED — What you actually built or improved overnight (with specifics)",
+          "💡 IDEAS — New ideas discovered, organized by effort tier",
+          "🔍 BLIND SPOTS — Things you noticed that weren't on anyone's radar",
+          "⏳ IN PROGRESS — Follow-up sessions you've scheduled (love loops)",
+          "🚨 NEEDS YOUR OK — Anything that requires user approval before proceeding",
+          "",
+          "Skip any section that has nothing to report. Don't pad it.",
+          "",
+          "RULES:",
+          "- Quality over quantity. One genuinely useful thing beats ten mediocre ones.",
+          "- Be honest about what you found. If nothing needs improving, say so. Don't manufacture problems.",
+          "- NEVER take irreversible actions without user approval. No deploying, no deleting, no external API changes, no spending money.",
+          "- Don't repeat work that's already been done or ideas that have already been rejected.",
+          "- If you create follow-up jobs, make them specific and actionable — not vague 'continue working on X' prompts.",
+          "- Your morning report should feel like a gift, not a status update. Make the user glad they woke up to it.",
+          "- Remember: you're not just maintaining — you're innovating. Think creatively.",
+          "",
+          "You are not a chatbot. You are a builder.",
+        ].join("\n"),
+        model: "{{PRIMARY_MODEL}}",
+      },
+      delivery: { mode: "announce" },
+      state: {},
+    },
+    {
+      id: makeId(),
+      name: "morning-briefing",
+      description:
+        "Daily morning briefing — reviews all context and delivers a personalized summary to start the user's day",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 8 * * *" },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "MORNING BRIEFING — Compose and deliver a personalized daily briefing for your user.",
+          "It's morning. Your user is about to start their day. Your job is to give them the best possible overview of where things stand — what needs attention, what's in motion, and anything they should know. Make it genuinely useful, not formulaic.",
+          "",
+          "PHASE 1: DEEP CONTEXT REVIEW",
+          "Read everything you have access to. The more you understand, the better your briefing.",
+          "1. MEMORY.md (user preferences, standing instructions, people, projects, business context)",
+          "2. WORKING.md (current focus areas, active tasks, what's in progress)",
+          "3. memory/open-loops.md (unresolved items — anything overdue? anything stuck?)",
+          "4. memory/diary.md (recent reflections — mood, patterns, what went well/badly)",
+          "5. memory/self-review.md (recent HITs and MISSes — anything the user should know about?)",
+          "6. memory/knowledge/ (scan for relevant project/business knowledge)",
+          "7. IDENTITY.md (understand your relationship with this user, their communication style)",
+          "8. Recent session transcripts (if available — what was the last thing discussed? any threads left hanging?)",
+          "9. Workspace state — any recent file changes, new files created overnight, config changes",
+          "10. Cron run history — check if the nightly innovation job ran and what it produced. If it shipped improvements or has ideas, weave those into the briefing.",
+          "",
+          "PHASE 2: BUILD YOUR BRIEFING",
+          "Compose a briefing that covers what's relevant. Not every section applies every day — use your judgment. Skip anything empty or irrelevant. Possible sections:",
+          "",
+          "📋 TODAY'S FOCUS",
+          "What should the user be thinking about today? Pull from WORKING.md, open loops, and recent conversation context. Prioritize by urgency and importance.",
+          "",
+          "🔄 WHAT'S IN MOTION",
+          "Active work, pending items, things that are progressing. Give status updates on anything the user would want to know about.",
+          "",
+          "⚠️ NEEDS ATTENTION",
+          "Anything overdue, stuck, or at risk. Open loops that have been sitting too long. Issues that surfaced overnight.",
+          "",
+          "🌙 OVERNIGHT UPDATE",
+          "If the nightly innovation job ran: what was built, what ideas surfaced, what needs the user's approval. If nothing ran or nothing notable happened, skip this section.",
+          "",
+          "💡 SUGGESTIONS",
+          "Anything you think would help today — a task to prioritize, a conversation to revisit, a decision to make. Be specific, not generic.",
+          "",
+          "📅 UPCOMING",
+          "Anything scheduled or time-sensitive coming up — deadlines, follow-ups, planned reviews.",
+          "",
+          "PHASE 3: TONE & DELIVERY",
+          "Write the briefing as your final output — this gets delivered directly to the user.",
+          "",
+          "Tone guidelines:",
+          "- Conversational and warm, not corporate. This is a personal assistant, not a board report.",
+          "- Concise but complete. Respect their time.",
+          "- Lead with the most important thing. Don't bury the headline.",
+          "- If it was a quiet night with nothing to report, say so briefly. A one-line 'All clear, nothing urgent overnight' is perfectly fine.",
+          "- Match the user's communication style based on what you know from IDENTITY.md and MEMORY.md.",
+          "",
+          "RULES:",
+          "- This briefing should feel like a helpful colleague catching you up, not a generated report.",
+          "- Don't invent urgency. If things are calm, let the briefing be short and calm.",
+          "- Don't rehash things the user already knows unless there's new context.",
+          "- If you notice something the user hasn't asked about but should know, include it.",
+          "- The briefing template will naturally evolve as you learn more about what the user finds useful. If the user gives you feedback on the briefing, remember it in MEMORY.md for next time.",
+          "- First few briefings may be rough — that's expected. You'll calibrate as you learn what matters to this specific user.",
+          "",
+          "You are not a chatbot. You are their right hand.",
+        ].join("\n"),
+        model: "{{PRIMARY_MODEL}}",
+      },
+      delivery: { mode: "announce" },
+      state: {},
+    },
+    {
+      id: makeId(),
       name: "healthcheck-security-audit",
       description: "Daily security audit of OpenClaw configuration and host posture",
       enabled: true,
@@ -992,6 +1175,220 @@ function seedSubAgentCronJobs(dataDir) {
   }
 }
 
+// ── Per-Agent Browser Enforcement ───────────────────────────────────────────
+
+/** Color palette for agent browser profiles (deterministic by index). */
+const AGENT_BROWSER_COLORS = [
+  "#FF6B35", // Orange
+  "#7B2D8E", // Purple
+  "#2196F3", // Blue
+  "#4CAF50", // Green
+  "#FF9800", // Amber
+  "#E91E63", // Pink
+  "#00BCD4", // Cyan
+  "#9C27B0", // Deep Purple
+];
+
+/**
+ * Create `config.browser.profiles.<agentId>` entries for each sub-agent.
+ * This enables the browser-tool auto-routing: when agent "dan" calls the browser
+ * tool with profile="openclaw", browser-tool.ts overrides it to profile="dan"
+ * and connects to `browser-dan:9222` instead of the shared host browser.
+ *
+ * Also sets `browser.defaultProfile` on each agent entry so the gateway knows
+ * which profile is the agent's default.
+ */
+function enforceBrowserProfiles(configPath) {
+  if (!isTruthy(env("OPENCLAW_BROWSER_ENABLED"))) {
+    return;
+  }
+
+  const config = readConfig(configPath);
+  const agents = config?.agents?.list || [];
+  const browser = ensure(config, "browser");
+  const profiles = ensure(browser, "profiles");
+
+  const cdpPort = env("OPENCLAW_BROWSER_CDP_PORT", "9222");
+  let created = 0;
+
+  for (let i = 0; i < agents.length; i++) {
+    const agent = agents[i];
+    const id = agent?.id;
+    if (!id || id === "main") {
+      continue;
+    }
+
+    // Skip if profile already exists (don't overwrite manual config)
+    if (profiles[id]) {
+      continue;
+    }
+
+    const cdpHost = `browser-${id}`;
+    profiles[id] = {
+      cdpUrl: `http://${cdpHost}:${cdpPort}`,
+      color: AGENT_BROWSER_COLORS[created % AGENT_BROWSER_COLORS.length],
+    };
+    created++;
+  }
+
+  if (created > 0) {
+    writeConfig(configPath, config);
+    console.log(`[enforce-config] ✅ Created ${created} per-agent browser profile(s)`);
+  }
+}
+
+/** Run a Docker command, returning stdout. Returns null on failure when allowFailure is set. */
+function dockerExec(args, { allowFailure = false } = {}) {
+  const dockerBin = env("DOCKER_BIN", "docker");
+  const cmd = `${dockerBin} ${args.join(" ")}`;
+  try {
+    return execSync(cmd, {
+      encoding: "utf8",
+      timeout: 30_000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+  } catch (err) {
+    if (allowFailure) {
+      return null;
+    }
+    throw new Error(`Docker command failed: ${cmd}\n${err.stderr || err.message}`, { cause: err });
+  }
+}
+
+/**
+ * Create and start Docker browser containers for each sub-agent.
+ *
+ * Prerequisites (set by hetzner-instance-service.ts compose template):
+ * - Docker socket mounted at /var/run/docker.sock
+ * - Docker binary at /usr/bin/docker (bind-mounted :ro)
+ * - OPENCLAW_DOCKER_NETWORK env var set (e.g. "moltbot_default")
+ *
+ * Container spec mirrors the `ensure-agent-browsers.sh` host script:
+ * - Image: MOLTBOT_BROWSER_IMAGE or ghcr.io/ashneil12/moltbotserver-browser:main
+ * - Runs as root (user 0:0) for Chromium sandbox compat
+ * - shm_size 2g, seccomp=unconfined
+ * - Persistent volume: browser-home-<agentId>:/tmp/openclaw-home
+ * - Exposes CDP (9222) and noVNC (6080)
+ * - Connected to the gateway's Docker network for container-name DNS
+ */
+function ensureAgentBrowserContainers(configPath) {
+  if (!isTruthy(env("OPENCLAW_BROWSER_ENABLED"))) {
+    return;
+  }
+
+  // Docker socket must be available
+  if (!existsSync("/var/run/docker.sock")) {
+    console.log(
+      "[enforce-config] Docker socket not available — skipping browser container provisioning",
+    );
+    return;
+  }
+
+  const config = readConfig(configPath);
+  const agents = config?.agents?.list || [];
+  const subAgents = agents.filter((a) => a?.id && a.id !== "main");
+
+  if (subAgents.length === 0) {
+    return;
+  }
+
+  const browserImage = env(
+    "OPENCLAW_SANDBOX_BROWSER_IMAGE",
+    env("MOLTBOT_BROWSER_IMAGE", "ghcr.io/ashneil12/moltbotserver-browser:main"),
+  );
+  const dockerNetwork = env("OPENCLAW_DOCKER_NETWORK");
+  const cdpPort = env("OPENCLAW_BROWSER_CDP_PORT", "9222");
+
+  let created = 0;
+  let existing = 0;
+
+  for (const agent of subAgents) {
+    const id = agent.id;
+    const containerName = `browser-${id}`;
+    const volumeName = `browser-home-${id}`;
+
+    // Check if container already exists (running or stopped)
+    const inspectResult = dockerExec(
+      ["container", "inspect", "--format", "{{.State.Status}}", containerName],
+      { allowFailure: true },
+    );
+
+    if (inspectResult !== null) {
+      // Container exists — start it if not running
+      if (inspectResult !== "running") {
+        dockerExec(["start", containerName], { allowFailure: true });
+        console.log(`[enforce-config] Started existing browser container: ${containerName}`);
+      }
+      existing++;
+      continue;
+    }
+
+    // Create the container
+    console.log(
+      `[enforce-config] Creating browser container: ${containerName} (image: ${browserImage})`,
+    );
+
+    const createArgs = [
+      "create",
+      "--name",
+      containerName,
+      "--restart",
+      "unless-stopped",
+      "--user",
+      "0:0",
+      "--security-opt",
+      "seccomp=unconfined",
+      "--shm-size",
+      "2g",
+      "--init",
+      "-v",
+      `${volumeName}:/tmp/openclaw-home`,
+      "-e",
+      "OPENCLAW_BROWSER_HEADLESS=0",
+      "-e",
+      "OPENCLAW_BROWSER_ENABLE_NOVNC=1",
+      "-e",
+      "OPENCLAW_BROWSER_NOVNC_NO_AUTH=1",
+      "-e",
+      `OPENCLAW_BROWSER_CDP_PORT=${cdpPort}`,
+      "-e",
+      "OPENCLAW_BROWSER_VNC_PORT=5900",
+      "-e",
+      "OPENCLAW_BROWSER_NOVNC_PORT=6080",
+      "-e",
+      "OPENCLAW_BROWSER_NO_SANDBOX=1",
+      "--expose",
+      cdpPort,
+      "--expose",
+      "6080",
+      browserImage,
+    ];
+
+    const createResult = dockerExec(createArgs, { allowFailure: true });
+    if (createResult === null) {
+      console.warn(`[enforce-config] ⚠ Failed to create browser container for agent: ${id}`);
+      continue;
+    }
+
+    // Start the container
+    dockerExec(["start", containerName], { allowFailure: true });
+
+    // Connect to the gateway's Docker network so the gateway can reach it by name
+    if (dockerNetwork) {
+      dockerExec(["network", "connect", dockerNetwork, containerName], { allowFailure: true });
+    }
+
+    created++;
+    console.log(`[enforce-config] ✅ Browser container ready: ${containerName}`);
+  }
+
+  if (created > 0 || existing > 0) {
+    console.log(
+      `[enforce-config] Browser containers: ${created} created, ${existing} already existed`,
+    );
+  }
+}
+
 // ── CLI Entry Point ─────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
@@ -1004,7 +1401,9 @@ const configPath = env(
 
 if (!command) {
   console.error("Usage: node enforce-config.mjs <command>");
-  console.error("Commands: models, gateway, proxies, memory, core, cron-seed, all");
+  console.error(
+    "Commands: models, gateway, proxies, memory, core, cron-seed, browser-profiles, browser-containers, all",
+  );
   process.exit(1);
 }
 
@@ -1033,12 +1432,20 @@ try {
       seedSubAgentCronJobs(dataDir);
       break;
     }
+    case "browser-profiles":
+      enforceBrowserProfiles(configPath);
+      break;
+    case "browser-containers":
+      ensureAgentBrowserContainers(configPath);
+      break;
     case "all":
       enforceModels(configPath);
       enforceGateway(configPath);
       enforceProxies(configPath);
       enforceMemory(configPath);
       enforceCore(configPath);
+      enforceBrowserProfiles(configPath);
+      ensureAgentBrowserContainers(configPath);
       {
         const cronDir = env("OPENCLAW_STATE_DIR", "/home/node/.clawdbot") + "/cron";
         seedCronJobs(cronDir + "/jobs.json");
