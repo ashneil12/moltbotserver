@@ -693,6 +693,12 @@ fi
 # Without this final chown, gosu node → EACCES on the config file.
 # =============================================================================
 chown -R node:node "$CONFIG_DIR" "$WORKSPACE_DIR" 2>/dev/null || true
+# Re-fix extensions ownership: the chown above sets everything to node:node,
+# but the plugin scanner REQUIRES extensions to be owned by root (uid=0).
+# Without this, it rejects them as "suspicious ownership (uid=1000)".
+if [ -d "$CONFIG_DIR/extensions" ]; then
+  chown -R root:root "$CONFIG_DIR/extensions" 2>/dev/null || true
+fi
 
 # Fix npm global directory ownership so skills can `npm i -g <pkg>` as node.
 # The base Node.js image owns /usr/local/{lib/node_modules,bin} as root,
