@@ -222,7 +222,15 @@ function enforceGateway(configPath) {
 
   const config = readConfig(configPath);
   ensure(config, "gateway");
-  config.gateway.auth = { mode: "token", token: gatewayToken };
+  config.gateway.auth = {
+    mode: "token",
+    token: gatewayToken,
+    rateLimit: {
+      maxAttempts: 10,
+      windowMs: 60000, // 1 minute window
+      lockoutMs: 300000, // 5 minute lockout after max attempts
+    },
+  };
 
   writeConfig(configPath, config);
   console.log("[enforce-config] ✅ Gateway token enforced");
