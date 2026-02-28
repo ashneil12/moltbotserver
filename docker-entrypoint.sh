@@ -558,49 +558,11 @@ if [ ! -d "$SUBAGENT_LOG_DIR" ]; then
 fi
 
 # =============================================================================
-# RUN OPENCLAW DOCTOR: Auto-repair common issues before gateway start
-# =============================================================================
-OPENCLAW_DOCTOR_SCRIPT="/app/openclaw.mjs"
-if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
-  echo "[entrypoint] Running openclaw doctor --fix..."
-  if node "$OPENCLAW_DOCTOR_SCRIPT" doctor --fix 2>&1 | head -20; then
-    echo "[entrypoint] openclaw doctor completed successfully"
-  else
-    echo "[entrypoint] WARNING: openclaw doctor returned errors (non-fatal, continuing)"
-  fi
-fi
-
-# =============================================================================
-# ENFORCE CONFIG: Apply all enforcement settings on top of inline config
-# This is the final configuration layer — model normalization, compaction,
-# loop detection, memory search, gateway binding, and cron job seeding.
-# =============================================================================
-ENFORCE_CONFIG_SCRIPT="/app/enforce-config.mjs"
-if [ -f "$ENFORCE_CONFIG_SCRIPT" ] && [ -s "$CONFIG_FILE" ]; then
-  echo "[entrypoint] Running enforce-config (all)..."
-  # Export env vars that enforce-config.mjs reads via process.env.
-  # Many OPENCLAW_* vars are already set by Docker, but the entrypoint
-  # remaps some to shorter names that enforce-config.mjs expects.
-  export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
-  export OPENCLAW_CONFIG_FILE="$CONFIG_FILE"
-  export OPENCLAW_DATA_DIR="${OPENCLAW_DATA_DIR:-/home/node/data}"
-  export OPENCLAW_SELF_REFLECTION="${OPENCLAW_SELF_REFLECTION:-normal}"
-  export GATEWAY_TOKEN="${GATEWAY_TOKEN:-}"
-  export GATEWAY_PORT="${GATEWAY_PORT:-18789}"
-  export GATEWAY_BIND="${GATEWAY_BIND:-lan}"
-  export AI_GATEWAY_URL="${AI_GATEWAY_URL:-}"
-  if node "$ENFORCE_CONFIG_SCRIPT" all 2>&1; then
-    echo "[entrypoint] enforce-config completed"
-  else
-    echo "[entrypoint] WARNING: enforce-config failed (non-fatal, continuing)"
-  fi
-fi
-
-# =============================================================================
 # HONCHO MEMORY PLUGIN: Auto-install when HONCHO_API_KEY is set
 # The @honcho-ai/openclaw-honcho plugin provides cross-session AI memory tools
 # (honcho_context, honcho_search, honcho_recall, honcho_analyze).
 # It replaces the default memory-core plugin in the "memory" slot.
+# Must run BEFORE openclaw doctor so the plugin is on disk when doctor validates.
 # =============================================================================
 HONCHO_KEY="${HONCHO_API_KEY:-}"
 HONCHO_PLUGIN_DIR="$CONFIG_DIR/extensions/openclaw-honcho"
@@ -654,6 +616,45 @@ if [ -n "$HONCHO_KEY" ]; then
       fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2) + '\n');
     " 2>&1 && echo "[entrypoint] Honcho plugin config enforced" \
            || echo "[entrypoint] WARNING: Honcho config enforcement failed (non-fatal)"
+  fi
+fi
+
+# =============================================================================
+# RUN OPENCLAW DOCTOR: Auto-repair common issues before gateway start
+# =============================================================================
+OPENCLAW_DOCTOR_SCRIPT="/app/openclaw.mjs"
+if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
+  echo "[entrypoint] Running openclaw doctor --fix..."
+  if node "$OPENCLAW_DOCTOR_SCRIPT" doctor --fix 2>&1 | head -20; then
+    echo "[entrypoint] openclaw doctor completed successfully"
+  else
+    echo "[entrypoint] WARNING: openclaw doctor returned errors (non-fatal, continuing)"
+  fi
+fi
+
+# =============================================================================
+# ENFORCE CONFIG: Apply all enforcement settings on top of inline config
+# This is the final configuration layer — model normalization, compaction,
+# loop detection, memory search, gateway binding, and cron job seeding.
+# =============================================================================
+ENFORCE_CONFIG_SCRIPT="/app/enforce-config.mjs"
+if [ -f "$ENFORCE_CONFIG_SCRIPT" ] && [ -s "$CONFIG_FILE" ]; then
+  echo "[entrypoint] Running enforce-config (all)..."
+  # Export env vars that enforce-config.mjs reads via process.env.
+  # Many OPENCLAW_* vars are already set by Docker, but the entrypoint
+  # remaps some to shorter names that enforce-config.mjs expects.
+  export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-${MOLTBOT_STATE_DIR:-${CLAWDBOT_STATE_DIR:-/home/node/.clawdbot}}}"
+  export OPENCLAW_CONFIG_FILE="$CONFIG_FILE"
+  export OPENCLAW_DATA_DIR="${OPENCLAW_DATA_DIR:-/home/node/data}"
+  export OPENCLAW_SELF_REFLECTION="${OPENCLAW_SELF_REFLECTION:-normal}"
+  export GATEWAY_TOKEN="${GATEWAY_TOKEN:-}"
+  export GATEWAY_PORT="${GATEWAY_PORT:-18789}"
+  export GATEWAY_BIND="${GATEWAY_BIND:-lan}"
+  export AI_GATEWAY_URL="${AI_GATEWAY_URL:-}"
+  if node "$ENFORCE_CONFIG_SCRIPT" all 2>&1; then
+    echo "[entrypoint] enforce-config completed"
+  else
+    echo "[entrypoint] WARNING: enforce-config failed (non-fatal, continuing)"
   fi
 fi
 
