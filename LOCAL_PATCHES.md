@@ -83,3 +83,14 @@ unreachable via WebSocket.
 - WebSocket upgrade chain: before the general WebSocket server handler
 
 **How to verify**: `grep -c 'handleSandboxBrowserRequest' src/gateway/server-http.ts`
+
+### 8. `src/agents/openclaw-tools.ts` — Browser Tool Agent Routing
+
+**Why**: `createBrowserTool()` was called without `agentId`, so the auto-routing code at
+`browser-tool.ts:300` never fired. Agents always used the default `openclaw` profile (main
+browser) instead of their dedicated container.
+
+**What**: Added `agentId: resolveSessionAgentId({ sessionKey, config })` to the
+`createBrowserTool()` call, matching the pattern already used in `moltbot-tools.ts`.
+
+**How to verify**: `grep -c 'agentId.*resolveSessionAgentId' src/agents/openclaw-tools.ts`
