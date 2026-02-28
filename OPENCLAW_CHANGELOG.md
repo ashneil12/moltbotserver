@@ -5,6 +5,67 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Run Gateway as Root & Fix npm Global Install Permissions (2026-02-28)
+
+**Purpose:** Remove the `gosu node` privilege drop so the OpenClaw gateway process runs as `root` inside the container. This eliminates permission issues when skills use `npm i -g` (e.g. ClawHub CLI install failing with `EACCES: permission denied, mkdir '/usr/local/lib/node_modules/clawhub'`).
+
+### Root Cause
+
+The entrypoint ran setup as `root` then dropped to `node` (uid 1000) via `gosu node` on the final `exec` line. The base Node.js Docker image owns `/usr/local/lib/node_modules` and `/usr/local/bin` as `root`, so when OpenClaw's skill install mechanism ran `npm i -g clawhub` as `node`, it failed with EACCES.
+
+### Changes
+
+| File                   | Change                                                                            | Why                                                                            |
+| ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `docker-entrypoint.sh` | Removed `gosu node` privilege drop — final `exec` now runs as `root`              | Eliminates all permission issues; agent already had passwordless sudo anyway   |
+| `docker-entrypoint.sh` | Added `chown -R node:node /usr/local/lib/node_modules /usr/local/bin` (defensive) | Safety net for any code that still expects `node` ownership of npm global dirs |
+
+### Security Assessment
+
+No practical security impact:
+
+- The `node` user already had **passwordless sudo** (`/etc/sudoers.d/node`), so the privilege boundary was security theater
+- **Docker container isolation** is the real security boundary — root inside the container ≠ root on the Hetzner host
+- The gateway is behind Caddy with token auth; no VNC/CDP ports are exposed to the internet
+
+### Upstream Sync Risk
+
+**None.** `docker-entrypoint.sh` is fully custom.
+
+---
+
+## Nightly Innovation & Morning Briefing Cron Jobs (2026-02-28)
+
+**Purpose:** Two new default cron jobs that create a daily rhythm: the AI works autonomously overnight building improvements, then delivers a personalized morning briefing to start the user's day.
+
+### Changes
+
+| File                     | Change                                                                        | Why                                                   |
+| ------------------------ | ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `cron/default-jobs.json` | Added `nightly-innovation` job (2 AM) — 5-phase prompt with announce delivery | Agents proactively build improvements overnight       |
+| `cron/default-jobs.json` | Added `morning-briefing` job (8 AM) — 3-phase prompt with announce delivery   | Users get a personalized daily briefing every morning |
+| `enforce-config.mjs`     | Added both jobs to `seedCronJobs()` fresh-seed array                          | Fresh installs get both jobs automatically            |
+| `enforce-config.mjs`     | Added both jobs to `MAIN_ONLY_JOBS` set                                       | Sub-agents excluded — only main agent runs these      |
+
+### Nightly Innovation (2 AM)
+
+- **Tiered approach**: Quick wins built immediately, medium efforts self-assigned via follow-up cron jobs ("love loops"), big/irreversible items drafted as proposals requiring user approval
+- **Safety**: Prompt explicitly prohibits irreversible actions without user consent
+
+### Morning Briefing (8 AM)
+
+- Reviews all available context: MEMORY.md, WORKING.md, open loops, diary, knowledge base, identity, recent sessions
+- Checks the nightly innovation job's output and weaves overnight findings into the briefing
+- Sections: Today's Focus, What's In Motion, Needs Attention, Overnight Update, Suggestions, Upcoming
+- Self-improving template — AI learns user preferences and calibrates over time
+- Users can refine the briefing by simply chatting with the AI
+
+### Upstream Sync Risk
+
+**None.** `cron/default-jobs.json` is a seed file, not upstream code. Additive change only.
+
+---
+
 ## Gateway Auto-Approve & Sub-Agent Cron Filtering (2026-02-28)
 
 **Purpose:** Fix two issues that blocked CLI management after fresh deploys and caused new sub-agents to receive an incomplete cron job set.

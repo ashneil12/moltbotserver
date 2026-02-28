@@ -675,5 +675,14 @@ fi
 # =============================================================================
 chown -R node:node "$CONFIG_DIR" "$WORKSPACE_DIR" 2>/dev/null || true
 
-# Execute the main command as node user (drop privileges from root)
-exec gosu node "$@" 2>/dev/null || exec su -s /bin/sh node -c "exec $*" 2>/dev/null || exec "$@"
+# Fix npm global directory ownership so skills can `npm i -g <pkg>` as node.
+# The base Node.js image owns /usr/local/{lib/node_modules,bin} as root,
+# but the gateway process runs as node and needs write access for skill installs
+# (e.g. clawhub, which uses the SKILL.md "install" metadata to run `npm i -g`).
+chown -R node:node /usr/local/lib/node_modules /usr/local/bin 2>/dev/null || true
+
+# Execute the main command as root — no privilege drop.
+# The agent already had passwordless sudo, so dropping to node was security theater.
+# Running as root eliminates permission issues (npm global installs, file ownership)
+# while Docker container isolation provides the real security boundary.
+exec "$@"
