@@ -60,6 +60,7 @@ import { getBearerToken } from "./http-utils.js";
 import { handleOpenAiHttpRequest } from "./openai-http.js";
 import { handleOpenResponsesHttpRequest } from "./openresponses-http.js";
 import { GATEWAY_CLIENT_MODES, normalizeGatewayClientMode } from "./protocol/client-info.js";
+import { handleSandboxBrowserRequest, handleSandboxBrowserUpgrade } from "./sandbox-browsers.js";
 import { isProtectedPluginRoutePath } from "./security-path.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
 import { handleToolsInvokeHttpRequest } from "./tools-invoke-http.js";
@@ -524,6 +525,14 @@ export function createGatewayHttpServer(opts: {
       ) {
         return;
       }
+      if (
+        await handleSandboxBrowserRequest(req, res, {
+          auth: resolvedAuth,
+          rateLimiter,
+        })
+      ) {
+        return;
+      }
       if (await handleSlackHttpRequest(req, res)) {
         return;
       }
@@ -675,6 +684,14 @@ export function attachGatewayUpgradeHandler(opts: {
         if (canvasHost.handleUpgrade(req, socket, head)) {
           return;
         }
+      }
+      if (
+        await handleSandboxBrowserUpgrade(req, socket, head, {
+          auth: resolvedAuth,
+          rateLimiter,
+        })
+      ) {
+        return;
       }
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit("connection", ws, req);
