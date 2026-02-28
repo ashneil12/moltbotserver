@@ -5,6 +5,81 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Honcho Pre-Baking & Gateway Browser Routing (2026-02-28)
+
+**Purpose:** Fix gateway crash loop caused by Honcho plugin ownership issues and wire the per-agent browser proxy into the gateway HTTP/WS router so the dashboard can display and interact with agent browsers.
+
+### Root Causes & Fixes
+
+#### 1. Honcho Plugin Ownership — Pre-Baked Into Docker Image
+
+**Problem:** The Honcho plugin installed at runtime via `openclaw plugins install` created files owned by `uid=1000` (the `node` user). The OpenClaw plugin scanner (`src/plugins/discovery.ts` lines 123–128) rejects plugins not owned by `root` (uid=0) or the current process user. Since the gateway now runs as `root`, only `uid=0` ownership passes the check.
+
+**Root Cause:** Docker UID remapping. Even `chown root:root` inside a running container doesn't always produce `uid=0` when writing to mounted volumes. The only reliable way to get `root` ownership is during the Docker image build.
+
+| File         | Change                                                                                                                                  | Why                                                     |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `Dockerfile` | Added pre-bake section (lines 70–82): `npm pack` → extract → move to `/app/prebaked-plugins/openclaw-honcho` → `npm install --omit=dev` | Plugin files have `root` ownership from the build layer |
+
+#### 2. Entrypoint Ordering — Honcho Before Doctor
+
+**Problem:** `openclaw doctor` ran before the Honcho plugin was copied to disk, causing an immediate fatal error because `plugins.slots.memory = 'openclaw-honcho'` referenced a plugin that didn't exist yet.
+
+| File                   | Change                                                                                    | Why                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `docker-entrypoint.sh` | Moved Honcho install/copy section before `openclaw doctor` (lines 560–660)                | Plugin must be on disk before validation                                   |
+| `docker-entrypoint.sh` | Prioritizes pre-baked plugin (`cp -a` from `/app/prebaked-plugins/`) over runtime install | Preserves root ownership; fallback to runtime install if pre-baked missing |
+| `docker-entrypoint.sh` | Sets `plugins.slots.memory = 'openclaw-honcho'` in config when `HONCHO_API_KEY` is set    | Gateway activates the plugin                                               |
+
+#### 3. Extensions Re-Chown — Global `chown` Reset Root Ownership
+
+**Problem:** Line 695 runs `chown -R node:node "$CONFIG_DIR"` to fix config file permissions. But `$CONFIG_DIR` includes `extensions/`, resetting the Honcho plugin from `uid=0` back to `uid=1000`. The plugin scanner then rejects it.
+
+| File                   | Change                                                                                     | Why                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| `docker-entrypoint.sh` | Added `chown -R root:root "$CONFIG_DIR/extensions"` after the global chown (lines 696–700) | Restores root ownership specifically for plugins |
+
+#### 4. Sandbox Browser Handlers — Dead Code in Gateway Router
+
+**Problem:** `handleSandboxBrowserRequest` and `handleSandboxBrowserUpgrade` were defined and exported in `sandbox-browsers.ts` but **never imported or called** in `server-http.ts`. The gateway's HTTP router served the SPA HTML at `/api/sandbox-browsers` instead of the browser list JSON, and the WebSocket proxy for noVNC was unreachable.
+
+| File                         | Change                                                                                                                     | Why                                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `src/gateway/server-http.ts` | Imported `handleSandboxBrowserRequest` and `handleSandboxBrowserUpgrade` from `sandbox-browsers.js`                        | Dead code needed to be wired in                                                |
+| `src/gateway/server-http.ts` | Inserted `handleSandboxBrowserRequest` in HTTP chain after `handleToolsInvokeHttpRequest`, before `handleSlackHttpRequest` | Route must be checked before the Control UI SPA catch-all                      |
+| `src/gateway/server-http.ts` | Inserted `handleSandboxBrowserUpgrade` in WebSocket upgrade chain before the general WS server                             | WebSocket upgrades for noVNC must be intercepted before the gateway WS handler |
+
+#### 5. noVNC Auth — Static Assets & WebSocket
+
+**Problem:** The sandbox browser proxy required gateway auth for **all** `/sbx-browser/` requests. noVNC loads CSS/JS/images as sub-resources in an iframe — these requests don't carry the auth token. Additionally, noVNC builds a bare `wss://host/path` WebSocket URL with no auth token or query params.
+
+| File                              | Change                                                                                                         | Why                                                              |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `src/gateway/sandbox-browsers.ts` | Added `isSensitiveBrowserPath()` helper — only `vnc.html`, `vnc_lite.html`, `/`, and `websockify` require auth | Static assets (CSS/JS/images/fonts) pass through unauthenticated |
+| `src/gateway/sandbox-browsers.ts` | HTTP proxy: auth check gated by `isSensitiveBrowserPath(parsed.subPath)`                                       | Sub-resources load without 401 errors                            |
+| `src/gateway/sandbox-browsers.ts` | WebSocket upgrade: removed auth check entirely (parameter renamed to `_opts`)                                  | noVNC doesn't pass tokens in WS upgrade requests                 |
+
+**Security model:** Matches Caddy's pattern for the main browser — `vnc.html` is the auth gate, static assets and the WebSocket pass through. The VNC session can't be accessed without first loading the authenticated entry page.
+
+### Verification Results
+
+| System                              | Status                        |
+| ----------------------------------- | ----------------------------- |
+| Gateway                             | Stable, all providers running |
+| Honcho memory plugin                | Loaded, initialized, ready    |
+| `/api/sandbox-browsers`             | Returns JSON (requires auth)  |
+| Static assets (`app/ui.js`, images) | HTTP 200 (no auth required)   |
+| `vnc.html` without token            | HTTP 401 (auth required)      |
+| All 5 Telegram providers            | Running                       |
+
+### Upstream Sync Risk
+
+**Low for `server-http.ts`** — the import and two insertion points touch upstream code but are small additions.
+**None for `sandbox-browsers.ts`** — fully custom file.
+**None for `Dockerfile` and `docker-entrypoint.sh`** — fully custom files.
+
+---
+
 ## Run Gateway as Root & Fix npm Global Install Permissions (2026-02-28)
 
 **Purpose:** Remove the `gosu node` privilege drop so the OpenClaw gateway process runs as `root` inside the container. This eliminates permission issues when skills use `npm i -g` (e.g. ClawHub CLI install failing with `EACCES: permission denied, mkdir '/usr/local/lib/node_modules/clawhub'`).
