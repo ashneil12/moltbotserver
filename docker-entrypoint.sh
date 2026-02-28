@@ -608,13 +608,22 @@ HONCHO_PLUGIN_DIR="$CONFIG_DIR/extensions/openclaw-honcho"
 if [ -n "$HONCHO_KEY" ]; then
   # Install the plugin if not already present on the data volume
   if [ ! -d "$HONCHO_PLUGIN_DIR" ]; then
-    echo "[entrypoint] Honcho API key detected — installing openclaw-honcho plugin..."
-    OPENCLAW_SCRIPT="/app/openclaw.mjs"
-    if [ -f "$OPENCLAW_SCRIPT" ]; then
-      if node "$OPENCLAW_SCRIPT" plugins install @honcho-ai/openclaw-honcho 2>&1; then
-        echo "[entrypoint] openclaw-honcho plugin installed"
-      else
-        echo "[entrypoint] WARNING: openclaw-honcho plugin install failed (non-fatal)"
+    # Prefer pre-baked plugin from image (has root ownership, avoids uid=1000 scanner rejection)
+    PREBAKED="/app/prebaked-plugins/openclaw-honcho"
+    if [ -d "$PREBAKED" ]; then
+      echo "[entrypoint] Honcho API key detected — copying pre-baked openclaw-honcho plugin..."
+      mkdir -p "$(dirname "$HONCHO_PLUGIN_DIR")"
+      cp -a "$PREBAKED" "$HONCHO_PLUGIN_DIR"
+      echo "[entrypoint] openclaw-honcho plugin installed (pre-baked)"
+    else
+      echo "[entrypoint] Honcho API key detected — installing openclaw-honcho plugin..."
+      OPENCLAW_SCRIPT="/app/openclaw.mjs"
+      if [ -f "$OPENCLAW_SCRIPT" ]; then
+        if node "$OPENCLAW_SCRIPT" plugins install @honcho-ai/openclaw-honcho 2>&1; then
+          echo "[entrypoint] openclaw-honcho plugin installed"
+        else
+          echo "[entrypoint] WARNING: openclaw-honcho plugin install failed (non-fatal)"
+        fi
       fi
     fi
   else
@@ -639,6 +648,9 @@ if [ -n "$HONCHO_KEY" ]; then
       honcho.config = honcho.config || {};
       honcho.config.apiKey = process.env.HONCHO_API_KEY;
       honcho.config.baseUrl = honcho.config.baseUrl || 'https://api.honcho.dev';
+      // Set Honcho as the memory slot plugin
+      const slots = plugins.slots = plugins.slots || {};
+      slots.memory = 'openclaw-honcho';
       fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2) + '\n');
     " 2>&1 && echo "[entrypoint] Honcho plugin config enforced" \
            || echo "[entrypoint] WARNING: Honcho config enforcement failed (non-fatal)"

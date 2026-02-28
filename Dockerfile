@@ -60,12 +60,26 @@ RUN pnpm ui:build
 # Expose the CLI binary without requiring npm global writes as non-root.
 USER root
 RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw \
- && chmod 755 /app/openclaw.mjs
+  && chmod 755 /app/openclaw.mjs
 
 ENV NODE_ENV=production
 
 # Make our custom entrypoint executable
 RUN chmod +x /app/docker-entrypoint.sh
+
+# Pre-bake Honcho memory plugin into the image.
+# Installing at build time (as root) ensures correct uid=0 ownership.
+# The entrypoint copies it to the data volume on startup, avoiding the
+# runtime npm install that creates files with uid=1000 (rejected by the
+# plugin scanner as "suspicious ownership").
+RUN mkdir -p /app/prebaked-plugins \
+  && cd /tmp \
+  && npm pack @honcho-ai/openclaw-honcho 2>/dev/null \
+  && tar xzf honcho-ai-openclaw-honcho-*.tgz \
+  && mv package /app/prebaked-plugins/openclaw-honcho \
+  && cd /app/prebaked-plugins/openclaw-honcho \
+  && npm install --omit=dev --ignore-scripts 2>/dev/null \
+  && rm -rf /tmp/honcho-ai-openclaw-honcho-*.tgz /tmp/package
 
 # Run entrypoint as root so it can fix Docker volume ownership (volumes
 # are created as root but the gateway runs as node).  The entrypoint
