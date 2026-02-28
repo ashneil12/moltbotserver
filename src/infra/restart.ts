@@ -296,6 +296,25 @@ export function triggerOpenClawRestart(): RestartAttempt {
   const tried: string[] = [];
   if (process.platform !== "darwin") {
     if (process.platform === "linux") {
+      // Docker/managed-platform: the gateway runs as PID 1 (entrypoint uses `exec`).
+      // systemd/systemctl does not exist in containers — send SIGUSR1 directly to
+      // PID 1 so the gateway's built-in restart handler picks it up.
+      if (process.env.OPENCLAW_MANAGED_PLATFORM === "1") {
+        const target = "kill -USR1 1 (managed platform)";
+        tried.push(target);
+        try {
+          process.kill(1, "SIGUSR1");
+          return { ok: true, method: "supervisor", tried };
+        } catch (err) {
+          return {
+            ok: false,
+            method: "supervisor",
+            detail: err instanceof Error ? err.message : String(err),
+            tried,
+          };
+        }
+      }
+
       const unit = normalizeSystemdUnit(
         process.env.OPENCLAW_SYSTEMD_UNIT,
         process.env.OPENCLAW_PROFILE,

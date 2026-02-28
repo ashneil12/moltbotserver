@@ -109,3 +109,69 @@ describe.runIf(process.platform !== "win32")("cleanStaleGatewayProcessesSync", (
     expect(killSpy).not.toHaveBeenCalled();
   });
 });
+
+import { triggerOpenClawRestart } from "./restart.js";
+
+describe.runIf(process.platform === "linux")("triggerOpenClawRestart — managed platform", () => {
+  const originalEnv = process.env.OPENCLAW_MANAGED_PLATFORM;
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env.OPENCLAW_MANAGED_PLATFORM;
+    } else {
+      process.env.OPENCLAW_MANAGED_PLATFORM = originalEnv;
+    }
+  });
+
+  it("sends SIGUSR1 to PID 1 and returns ok when OPENCLAW_MANAGED_PLATFORM=1", () => {
+    process.env.OPENCLAW_MANAGED_PLATFORM = "1";
+    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => true);
+
+    const result = triggerOpenClawRestart();
+
+    expect(result.ok).toBe(true);
+    expect(result.method).toBe("supervisor");
+    expect(result.tried).toEqual(["kill -USR1 1 (managed platform)"]);
+    expect(killSpy).toHaveBeenCalledWith(1, "SIGUSR1");
+    // Should NOT have attempted systemctl
+    expect(spawnSyncMock).not.toHaveBeenCalledWith(
+      "systemctl",
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("returns ok=false with error detail when process.kill throws in managed platform", () => {
+    process.env.OPENCLAW_MANAGED_PLATFORM = "1";
+    vi.spyOn(process, "kill").mockImplementation(() => {
+      throw new Error("Operation not permitted");
+    });
+
+    const result = triggerOpenClawRestart();
+
+    expect(result.ok).toBe(false);
+    expect(result.method).toBe("supervisor");
+    expect(result.detail).toBe("Operation not permitted");
+    expect(result.tried).toEqual(["kill -USR1 1 (managed platform)"]);
+  });
+
+  it("falls through to systemctl when OPENCLAW_MANAGED_PLATFORM is not set", () => {
+    delete process.env.OPENCLAW_MANAGED_PLATFORM;
+    spawnSyncMock.mockReturnValue({
+      error: new Error("not found"),
+      status: null,
+      stdout: "",
+      stderr: "",
+    });
+    vi.spyOn(process, "kill").mockImplementation(() => true);
+
+    const result = triggerOpenClawRestart();
+
+    expect(result.method).toBe("systemd");
+    expect(spawnSyncMock).toHaveBeenCalledWith(
+      "systemctl",
+      expect.arrayContaining(["restart"]),
+      expect.anything(),
+    );
+  });
+});
