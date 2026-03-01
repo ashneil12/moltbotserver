@@ -60,6 +60,19 @@ USER root
 RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw \
   && chmod 755 /app/openclaw.mjs
 
+# Install qmd — the local-first memory search sidecar used when
+# memory.backend = "qmd" (OPENCLAW_QMD_ENABLED=true).
+# Must be installed at build time so the binary is present in the image;
+# omitting this causes spawn ENOENT errors every 5 minutes at runtime.
+# Uses bun (already installed) to install the package, then creates a shim
+# at /usr/local/bin/qmd that runs the TypeScript source via bun run.
+RUN /root/.bun/bin/bun install --trust -g https://github.com/tobi/qmd \
+  && QMD_SRC=$(find /root/.bun /home -path "*/node_modules/@tobilu/qmd/src/qmd.ts" 2>/dev/null | head -1) \
+  && if [ -z "$QMD_SRC" ]; then echo "ERROR: qmd source not found after install" && exit 1; fi \
+  && printf '#!/bin/sh\nexec /root/.bun/bin/bun run %s "$@"\n' "$QMD_SRC" > /usr/local/bin/qmd \
+  && chmod +x /usr/local/bin/qmd \
+  && qmd --version
+
 ENV NODE_ENV=production
 
 # Make our custom entrypoint executable

@@ -69,8 +69,18 @@ function isMediaSizeLimitError(err: unknown): boolean {
   return errMsg.includes("exceeds") && errMsg.includes("MB limit");
 }
 
+/** Maximum time (ms) to wait for a single media file download before aborting. */
+const MEDIA_DOWNLOAD_TIMEOUT_MS = 15_000;
+
 function isRecoverableMediaGroupError(err: unknown): boolean {
-  return err instanceof MediaFetchError || isMediaSizeLimitError(err);
+  if (err instanceof MediaFetchError || isMediaSizeLimitError(err)) {
+    return true;
+  }
+  // Treat download timeouts as recoverable so one hung image doesn't abort the whole group.
+  if (err instanceof Error && err.message === "media download timed out") {
+    return true;
+  }
+  return false;
 }
 
 function hasInboundMedia(msg: Message): boolean {
@@ -338,7 +348,15 @@ export const registerTelegramHandlers = ({
       for (const { ctx } of entry.messages) {
         let media;
         try {
-          media = await resolveMedia(ctx, mediaMaxBytes, opts.token, opts.proxyFetch);
+          media = await Promise.race([
+            resolveMedia(ctx, mediaMaxBytes, opts.token, opts.proxyFetch),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error("media download timed out")),
+                MEDIA_DOWNLOAD_TIMEOUT_MS,
+              ),
+            ),
+          ]);
         } catch (mediaErr) {
           if (!isRecoverableMediaGroupError(mediaErr)) {
             throw mediaErr;
@@ -900,7 +918,9 @@ export const registerTelegramHandlers = ({
             .then(async () => {
               await processMediaGroup(existing);
             })
-            .catch(() => undefined);
+            .catch((err) => {
+              runtime.error?.(danger(`media group processing chain failed: ${String(err)}`));
+            });
           await mediaGroupProcessing;
         }, mediaGroupTimeoutMs);
       } else {
@@ -912,7 +932,9 @@ export const registerTelegramHandlers = ({
               .then(async () => {
                 await processMediaGroup(entry);
               })
-              .catch(() => undefined);
+              .catch((err) => {
+                runtime.error?.(danger(`media group processing chain failed: ${String(err)}`));
+              });
             await mediaGroupProcessing;
           }, mediaGroupTimeoutMs),
         };
@@ -923,7 +945,15 @@ export const registerTelegramHandlers = ({
 
     let media: Awaited<ReturnType<typeof resolveMedia>> = null;
     try {
-      media = await resolveMedia(ctx, mediaMaxBytes, opts.token, opts.proxyFetch);
+      media = await Promise.race([
+        resolveMedia(ctx, mediaMaxBytes, opts.token, opts.proxyFetch),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("media download timed out")),
+            MEDIA_DOWNLOAD_TIMEOUT_MS,
+          ),
+        ),
+      ]);
     } catch (mediaErr) {
       if (isMediaSizeLimitError(mediaErr)) {
         if (sendOversizeWarning) {

@@ -32,11 +32,15 @@ Xvfb :1 -screen 0 1280x800x24 -ac -nolisten tcp &
 if [[ "${HEADLESS}" == "1" ]]; then
   CHROME_ARGS=(
     "--headless=new"
-    "--disable-gpu"
   )
 else
   CHROME_ARGS=()
 fi
+
+# Always disable GPU: these containers run under Xvfb which has no real GPU.
+# Without this flag, Chromium spawns a --type=gpu-process subprocess that can
+# spin at 100% CPU with no bound, starving the host and causing SSH hangs.
+CHROME_ARGS+=("--disable-gpu")
 
 if [[ "${CDP_PORT}" -ge 65535 ]]; then
   CHROME_CDP_PORT="$((CDP_PORT - 1))"

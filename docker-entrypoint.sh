@@ -634,6 +634,36 @@ if [ -f "$OPENCLAW_DOCTOR_SCRIPT" ]; then
 fi
 
 # =============================================================================
+# QMD MEMORY SIDECAR: Install qmd binary when OPENCLAW_QMD_ENABLED=true
+# qmd is a local-first markdown search sidecar (BM25 + vectors + reranking).
+# It is NOT bundled in the base image — must be installed via bun at runtime
+# until a Dockerfile rebuild bakes it in permanently.
+# Gated on OPENCLAW_QMD_ENABLED so instances that don't use qmd pay no cost.
+# =============================================================================
+if [ "${OPENCLAW_QMD_ENABLED:-false}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-false}" = "1" ]; then
+  if command -v qmd &>/dev/null; then
+    echo "[entrypoint] qmd already available: $(qmd --version 2>&1 | head -1)"
+  else
+    echo "[entrypoint] Installing qmd memory sidecar..."
+    BUN_BIN="/root/.bun/bin/bun"
+    if [ -f "$BUN_BIN" ]; then
+      "$BUN_BIN" install --trust -g https://github.com/tobi/qmd 2>&1 | tail -3
+      # Find the installed TS entry point and create a bun-run shim at /usr/local/bin/qmd
+      QMD_SRC=$(find /root/.bun /home -path "*/node_modules/@tobilu/qmd/src/qmd.ts" 2>/dev/null | head -1)
+      if [ -n "$QMD_SRC" ]; then
+        printf '#!/bin/sh\nexec /root/.bun/bin/bun run %s "$@"\n' "$QMD_SRC" > /usr/local/bin/qmd
+        chmod +x /usr/local/bin/qmd
+        echo "[entrypoint] qmd installed: $(qmd --version 2>&1 | head -1)"
+      else
+        echo "[entrypoint] WARNING: qmd source not found after install — memory search will fall back to builtin"
+      fi
+    else
+      echo "[entrypoint] WARNING: bun not found — cannot install qmd. Memory search will fall back to builtin."
+    fi
+  fi
+fi
+
+# =============================================================================
 # ENFORCE CONFIG: Apply all enforcement settings on top of inline config
 # This is the final configuration layer — model normalization, compaction,
 # loop detection, memory search, gateway binding, and cron job seeding.
