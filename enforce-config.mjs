@@ -500,12 +500,14 @@ function enforceCore(configPath) {
 
 /** Job names that should ONLY run on the main agent (not sub-agents). */
 const MAIN_ONLY_JOBS = new Set([
-  "healthcheck-security-audit",
   "healthcheck-update-status",
   "nightly-innovation",
   "morning-briefing",
   "self-audit-21",
 ]);
+
+/** Job names that have been deprecated and should be actively removed from existing stores. */
+const DEPRECATED_JOBS = new Set(["healthcheck-security-audit"]);
 
 function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
   const selfReflection = env("OPENCLAW_SELF_REFLECTION", "normal");
@@ -554,6 +556,16 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
         }
       }
 
+      // ── Remove deprecated jobs ────────────────────────────────────────
+      const beforePurge = store.jobs.length;
+      store.jobs = store.jobs.filter((j) => !DEPRECATED_JOBS.has(j.name));
+      const purged = beforePurge - store.jobs.length;
+      if (purged > 0) {
+        console.log(
+          `[enforce-config] ✅ Purged ${purged} deprecated cron job(s): ${[...DEPRECATED_JOBS].join(", ")}`,
+        );
+      }
+
       // ── Backfill missing jobs ───────────────────────────────────────────
       // Build the canonical job list and check for any that are missing from
       // the existing store. This ensures newly-introduced jobs (e.g.
@@ -590,7 +602,7 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
       const knownJobsChanged = store.knownJobs.length !== oldKnownCount;
 
       // Write if anything changed
-      if (reflectionChanged || toAdd.length > 0 || knownJobsChanged) {
+      if (reflectionChanged || toAdd.length > 0 || knownJobsChanged || purged > 0) {
         store.appliedReflection = selfReflection;
         writeConfig(jobsFilePath, store);
       } else {
@@ -1224,34 +1236,6 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
         model: "{{PRIMARY_MODEL}}",
       },
       delivery: { mode: "announce" },
-      state: {},
-    },
-    {
-      id: makeId(),
-      name: "healthcheck-security-audit",
-      description: "Daily security audit of OpenClaw configuration and host posture",
-      enabled: true,
-      createdAtMs: nowMs,
-      updatedAtMs: nowMs,
-      schedule: { kind: "cron", expr: "0 6 * * *" },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: {
-        kind: "agentTurn",
-        message: [
-          "Run `openclaw security audit --deep`.",
-          "",
-          "EXPECTED FINDINGS — silently ignore these, do NOT report them:",
-          "  - gateway.control_ui.device_auth_disabled (intentional: SaaS/Docker deployment requires token-only auth)",
-          "  - gateway.control_ui.host_header_origin_fallback (intentional: reverse-proxy deployment without static origin list)",
-          "  - config.insecure_or_dangerous_flags (covers the two flags above)",
-          "",
-          "If ONLY expected findings exist → respond with HEARTBEAT_OK (silent).",
-          "If ANY finding NOT in the expected list exists → summarize it and call the `healthcheck` skill if remediation is needed.",
-        ].join("\\n"),
-        model: "haiku",
-      },
-      delivery: { mode: "none" },
       state: {},
     },
     {

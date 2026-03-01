@@ -182,26 +182,6 @@
       }
     },
     {
-      "id": "healthcheck-security-audit",
-      "name": "healthcheck:security-audit",
-      "description": "Daily security audit of OpenClaw configuration and host posture",
-      "enabled": true,
-      "schedule": {
-        "kind": "cron",
-        "expr": "0 6 * * *"
-      },
-      "sessionTarget": "isolated",
-      "wakeMode": "next-heartbeat",
-      "payload": {
-        "kind": "agentTurn",
-        "message": "Run `openclaw security audit --deep`. If any issues are found, summarize them. If clean, respond with HEARTBEAT_OK. Note: call `healthcheck` skill if remediation is needed.",
-        "model": "haiku"
-      },
-      "delivery": {
-        "mode": "none"
-      }
-    },
-    {
       "id": "healthcheck-update-status",
       "name": "healthcheck:update-status",
       "description": "Weekly check for OpenClaw updates",
