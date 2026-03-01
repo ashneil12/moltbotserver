@@ -353,6 +353,80 @@ function enforceCore(configPath) {
     tools.loopDetection.enabled = true;
   }
 
+  // Elevated tools — auto-derive allowFrom for each channel from existing paired
+  // user IDs. Any user authorized for DM access on a channel should also be able
+  // to use elevated tools (file access, exec, etc.) without separate config.
+  {
+    const dataDir = env("OPENCLAW_DATA_DIR", "/home/node/data");
+    const channels = config.channels || {};
+    const perChannel = {}; // { channelName: Set<string> }
+
+    // 1. Collect from channel config allowFrom entries (per-account and top-level)
+    for (const [channelName, channelCfg] of Object.entries(channels)) {
+      const ids = (perChannel[channelName] = perChannel[channelName] || new Set());
+      // Top-level allowFrom
+      for (const id of channelCfg.allowFrom || []) {
+        if (id !== "*") {
+          ids.add(String(id));
+        }
+      }
+      // Per-account allowFrom
+      const accounts = channelCfg.accounts || {};
+      for (const account of Object.values(accounts)) {
+        for (const id of account.allowFrom || []) {
+          if (id !== "*") {
+            ids.add(String(id));
+          }
+        }
+      }
+    }
+
+    // 2. Collect from credential store files (<channel>-*-allowFrom.json)
+    try {
+      const credDir = `${dataDir}/credentials`;
+      if (existsSync(credDir)) {
+        for (const file of readdirSync(credDir)) {
+          if (!file.endsWith("-allowFrom.json")) {
+            continue;
+          }
+          // Extract channel name: "telegram-mm-ezra-allowFrom.json" → "telegram"
+          const channelName = file.split("-")[0];
+          if (!channelName) {
+            continue;
+          }
+          try {
+            const store = readConfig(`${credDir}/${file}`);
+            const ids = (perChannel[channelName] = perChannel[channelName] || new Set());
+            for (const id of store.allowFrom || []) {
+              if (id !== "*") {
+                ids.add(String(id));
+              }
+            }
+          } catch {
+            // skip unreadable files
+          }
+        }
+      }
+    } catch {
+      // credentials dir may not exist yet
+    }
+
+    // 3. Merge into tools.elevated.allowFrom.<channel>
+    for (const [channelName, ids] of Object.entries(perChannel)) {
+      if (ids.size === 0) {
+        continue;
+      }
+      const elevated = ensure(tools, "elevated");
+      const allowFrom = ensure(elevated, "allowFrom");
+      // Merge with any existing entries rather than overwriting
+      const existing = new Set((allowFrom[channelName] || []).map(String));
+      for (const id of ids) {
+        existing.add(id);
+      }
+      allowFrom[channelName] = [...existing];
+    }
+  }
+
   // Workspace
   defaults.workspace = env("OPENCLAW_WORKSPACE_DIR", "/home/node/workspace");
 
