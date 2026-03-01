@@ -156,7 +156,7 @@ const BAILIAN_MODELS = [
   {
     id: "qwen3.5-plus",
     name: "qwen3.5-plus",
-    reasoning: false,
+    reasoning: true,
     input: ["text", "image"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: 1000000,
@@ -165,7 +165,7 @@ const BAILIAN_MODELS = [
   {
     id: "qwen3-max-2026-01-23",
     name: "qwen3-max-2026-01-23",
-    reasoning: false,
+    reasoning: true,
     input: ["text"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: 262144,
@@ -174,7 +174,7 @@ const BAILIAN_MODELS = [
   {
     id: "qwen3-coder-next",
     name: "qwen3-coder-next",
-    reasoning: false,
+    reasoning: true,
     input: ["text"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: 262144,
@@ -183,7 +183,7 @@ const BAILIAN_MODELS = [
   {
     id: "qwen3-coder-plus",
     name: "qwen3-coder-plus",
-    reasoning: false,
+    reasoning: true,
     input: ["text"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: 1000000,
@@ -219,7 +219,7 @@ const BAILIAN_MODELS = [
   {
     id: "kimi-k2.5",
     name: "kimi-k2.5",
-    reasoning: false,
+    reasoning: true,
     input: ["text", "image"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: 262144,
@@ -228,50 +228,11 @@ const BAILIAN_MODELS = [
 ];
 
 /**
- * Routing presets for Bailian models. Each preset assigns models to routing
- * slots (primary, heartbeat, subagent, coding, fallbacks). These only apply
- * when the corresponding OPENCLAW_*_MODEL env var is NOT already set.
- */
-const BAILIAN_PRESETS = {
-  balanced: {
-    primary: "bailian/glm-5",
-    heartbeat: "bailian/glm-4.7",
-    subagent: "bailian/qwen3-coder-next",
-    coding: "bailian/qwen3-coder-next",
-    fallbacks: "bailian/glm-4.7,bailian/qwen3.5-plus,bailian/MiniMax-M2.5",
-  },
-  coding: {
-    primary: "bailian/qwen3-coder-next",
-    heartbeat: "bailian/glm-4.7",
-    subagent: "bailian/qwen3-coder-plus",
-    coding: "bailian/qwen3-coder-next",
-    fallbacks: "bailian/glm-5,bailian/qwen3-coder-plus,bailian/glm-4.7",
-  },
-  research: {
-    primary: "bailian/qwen3.5-plus",
-    heartbeat: "bailian/glm-4.7",
-    subagent: "bailian/glm-5",
-    coding: "bailian/qwen3-coder-next",
-    fallbacks: "bailian/glm-5,bailian/qwen3-max-2026-01-23,bailian/kimi-k2.5",
-  },
-  budget: {
-    primary: "bailian/glm-4.7",
-    heartbeat: "bailian/MiniMax-M2.5",
-    subagent: "bailian/glm-4.7",
-    coding: "bailian/qwen3-coder-plus",
-    fallbacks: "bailian/MiniMax-M2.5,bailian/glm-4.7",
-  },
-};
-
-/**
- * Register the Bailian provider and apply routing presets.
+ * Register the Bailian provider in openclaw.json.
  *
  * When BAILIAN_API_KEY is set:
- * 1. Registers `models.providers.bailian` with all 8 Coding Plan models
+ * 1. Registers `models.providers.bailian` with all Coding Plan models
  * 2. Wires all models into `agents.defaults.models` for /model switching
- * 3. Applies BAILIAN_PRESET routing defaults (balanced/coding/research/budget)
- *    into process.env so enforceModels() picks them up — but ONLY where the
- *    user hasn't already set an explicit OPENCLAW_*_MODEL env var.
  *
  * Idempotent: skips registration if providers.bailian already exists.
  */
@@ -313,37 +274,8 @@ function enforceProviders(configPath) {
 
   writeConfig(configPath, config);
 
-  // Apply routing preset into process.env (only fills unset vars)
-  const presetName = env("BAILIAN_PRESET", "balanced");
-  const preset = BAILIAN_PRESETS[presetName];
-  if (!preset) {
-    console.warn(
-      `[enforce-config] ⚠ Unknown BAILIAN_PRESET="${presetName}". Valid: ${Object.keys(BAILIAN_PRESETS).join(", ")}`,
-    );
-    return;
-  }
-
-  // Map preset slots → env var names. Only set if the env var is currently empty.
-  const mapping = [
-    ["OPENCLAW_DEFAULT_MODEL", preset.primary],
-    ["DEFAULT_MODEL", preset.primary],
-    ["OPENCLAW_HEARTBEAT_MODEL", preset.heartbeat],
-    ["HEARTBEAT_MODEL", preset.heartbeat],
-    ["OPENCLAW_SUBAGENT_MODEL", preset.subagent],
-    ["OPENCLAW_CODING_MODEL", preset.coding],
-    ["OPENCLAW_FALLBACK_MODELS", preset.fallbacks],
-  ];
-
-  let applied = 0;
-  for (const [envName, value] of mapping) {
-    if (!process.env[envName]?.trim()) {
-      process.env[envName] = value;
-      applied++;
-    }
-  }
-
   console.log(
-    `[enforce-config] ✅ Bailian routing preset "${presetName}" applied (${applied} env vars filled, explicit overrides preserved)`,
+    `[enforce-config] \u2705 Bailian provider registered (${BAILIAN_MODELS.length} models)`,
   );
 }
 
