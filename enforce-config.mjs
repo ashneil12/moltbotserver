@@ -115,6 +115,14 @@ const CANONICAL_MODEL_IDS = {
   // Google
   "gemini-2.0-flash": "gemini-2.0-flash",
   "gemini-2.5-pro": "gemini-2.5-pro",
+  // Bailian (Alibaba Cloud Coding Plan)
+  "glm-5": "glm-5",
+  "glm-4.7": "glm-4.7",
+  "kimi-k2.5": "kimi-k2.5",
+  "qwen3.5-plus": "qwen3.5-plus",
+  "qwen3-max-2026-01-23": "qwen3-max-2026-01-23",
+  "qwen3-coder-next": "qwen3-coder-next",
+  "qwen3-coder-plus": "qwen3-coder-plus",
 };
 
 /**
@@ -139,6 +147,204 @@ function normalizeModelId(modelRef) {
     return `${provider}/${canonical}`;
   }
   return modelRef;
+}
+
+// ── Bailian Provider (Alibaba Cloud Coding Plan) ────────────────────────────
+
+/** All 8 models available under the Bailian Coding Plan. */
+const BAILIAN_MODELS = [
+  {
+    id: "qwen3.5-plus",
+    name: "qwen3.5-plus",
+    reasoning: false,
+    input: ["text", "image"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 1000000,
+    maxTokens: 65536,
+  },
+  {
+    id: "qwen3-max-2026-01-23",
+    name: "qwen3-max-2026-01-23",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 262144,
+    maxTokens: 65536,
+  },
+  {
+    id: "qwen3-coder-next",
+    name: "qwen3-coder-next",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 262144,
+    maxTokens: 65536,
+  },
+  {
+    id: "qwen3-coder-plus",
+    name: "qwen3-coder-plus",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 1000000,
+    maxTokens: 65536,
+  },
+  {
+    id: "MiniMax-M2.5",
+    name: "MiniMax-M2.5",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 1000000,
+    maxTokens: 65536,
+  },
+  {
+    id: "glm-5",
+    name: "glm-5",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 202752,
+    maxTokens: 16384,
+  },
+  {
+    id: "glm-4.7",
+    name: "glm-4.7",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 202752,
+    maxTokens: 16384,
+  },
+  {
+    id: "kimi-k2.5",
+    name: "kimi-k2.5",
+    reasoning: false,
+    input: ["text", "image"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 262144,
+    maxTokens: 32768,
+  },
+];
+
+/**
+ * Routing presets for Bailian models. Each preset assigns models to routing
+ * slots (primary, heartbeat, subagent, coding, fallbacks). These only apply
+ * when the corresponding OPENCLAW_*_MODEL env var is NOT already set.
+ */
+const BAILIAN_PRESETS = {
+  balanced: {
+    primary: "bailian/glm-5",
+    heartbeat: "bailian/glm-4.7",
+    subagent: "bailian/qwen3-coder-next",
+    coding: "bailian/qwen3-coder-next",
+    fallbacks: "bailian/glm-4.7,bailian/qwen3.5-plus,bailian/MiniMax-M2.5",
+  },
+  coding: {
+    primary: "bailian/qwen3-coder-next",
+    heartbeat: "bailian/glm-4.7",
+    subagent: "bailian/qwen3-coder-plus",
+    coding: "bailian/qwen3-coder-next",
+    fallbacks: "bailian/glm-5,bailian/qwen3-coder-plus,bailian/glm-4.7",
+  },
+  research: {
+    primary: "bailian/qwen3.5-plus",
+    heartbeat: "bailian/glm-4.7",
+    subagent: "bailian/glm-5",
+    coding: "bailian/qwen3-coder-next",
+    fallbacks: "bailian/glm-5,bailian/qwen3-max-2026-01-23,bailian/kimi-k2.5",
+  },
+  budget: {
+    primary: "bailian/glm-4.7",
+    heartbeat: "bailian/MiniMax-M2.5",
+    subagent: "bailian/glm-4.7",
+    coding: "bailian/qwen3-coder-plus",
+    fallbacks: "bailian/MiniMax-M2.5,bailian/glm-4.7",
+  },
+};
+
+/**
+ * Register the Bailian provider and apply routing presets.
+ *
+ * When BAILIAN_API_KEY is set:
+ * 1. Registers `models.providers.bailian` with all 8 Coding Plan models
+ * 2. Wires all models into `agents.defaults.models` for /model switching
+ * 3. Applies BAILIAN_PRESET routing defaults (balanced/coding/research/budget)
+ *    into process.env so enforceModels() picks them up — but ONLY where the
+ *    user hasn't already set an explicit OPENCLAW_*_MODEL env var.
+ *
+ * Idempotent: skips registration if providers.bailian already exists.
+ */
+function enforceProviders(configPath) {
+  const bailianKey = env("BAILIAN_API_KEY");
+  if (!bailianKey) {
+    return;
+  }
+
+  const config = readConfig(configPath);
+  const models = ensure(config, "models");
+  models.mode = models.mode || "merge";
+  const providers = ensure(models, "providers");
+
+  // Only inject if not already configured (don't overwrite manual config)
+  if (providers.bailian) {
+    console.log("[enforce-config] Bailian provider already configured — skipping registration");
+  } else {
+    providers.bailian = {
+      baseUrl: "https://coding-intl.dashscope.aliyuncs.com/v1",
+      apiKey: bailianKey,
+      api: "openai-completions",
+      models: BAILIAN_MODELS,
+    };
+    console.log(
+      `[enforce-config] ✅ Bailian provider registered (${BAILIAN_MODELS.length} models)`,
+    );
+  }
+
+  // Wire all Bailian models into agents.defaults.models for /model switching
+  const defaults = ensure(config, "agents", "defaults");
+  defaults.models = defaults.models || {};
+  for (const model of BAILIAN_MODELS) {
+    const ref = `bailian/${model.id}`;
+    if (!defaults.models[ref]) {
+      defaults.models[ref] = {};
+    }
+  }
+
+  writeConfig(configPath, config);
+
+  // Apply routing preset into process.env (only fills unset vars)
+  const presetName = env("BAILIAN_PRESET", "balanced");
+  const preset = BAILIAN_PRESETS[presetName];
+  if (!preset) {
+    console.warn(
+      `[enforce-config] ⚠ Unknown BAILIAN_PRESET="${presetName}". Valid: ${Object.keys(BAILIAN_PRESETS).join(", ")}`,
+    );
+    return;
+  }
+
+  // Map preset slots → env var names. Only set if the env var is currently empty.
+  const mapping = [
+    ["OPENCLAW_DEFAULT_MODEL", preset.primary],
+    ["DEFAULT_MODEL", preset.primary],
+    ["OPENCLAW_HEARTBEAT_MODEL", preset.heartbeat],
+    ["HEARTBEAT_MODEL", preset.heartbeat],
+    ["OPENCLAW_SUBAGENT_MODEL", preset.subagent],
+    ["OPENCLAW_CODING_MODEL", preset.coding],
+    ["OPENCLAW_FALLBACK_MODELS", preset.fallbacks],
+  ];
+
+  let applied = 0;
+  for (const [envName, value] of mapping) {
+    if (!process.env[envName]?.trim()) {
+      process.env[envName] = value;
+      applied++;
+    }
+  }
+
+  console.log(
+    `[enforce-config] ✅ Bailian routing preset "${presetName}" applied (${applied} env vars filled, explicit overrides preserved)`,
+  );
 }
 
 // ── Enforcement Commands ────────────────────────────────────────────────────
@@ -506,9 +712,6 @@ const MAIN_ONLY_JOBS = new Set([
   "self-audit-21",
 ]);
 
-/** Job names that have been deprecated and should be actively removed from existing stores. */
-const DEPRECATED_JOBS = new Set(["healthcheck-security-audit"]);
-
 function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
   const selfReflection = env("OPENCLAW_SELF_REFLECTION", "normal");
 
@@ -556,16 +759,6 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
         }
       }
 
-      // ── Remove deprecated jobs ────────────────────────────────────────
-      const beforePurge = store.jobs.length;
-      store.jobs = store.jobs.filter((j) => !DEPRECATED_JOBS.has(j.name));
-      const purged = beforePurge - store.jobs.length;
-      if (purged > 0) {
-        console.log(
-          `[enforce-config] ✅ Purged ${purged} deprecated cron job(s): ${[...DEPRECATED_JOBS].join(", ")}`,
-        );
-      }
-
       // ── Backfill missing jobs ───────────────────────────────────────────
       // Build the canonical job list and check for any that are missing from
       // the existing store. This ensures newly-introduced jobs (e.g.
@@ -602,7 +795,7 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
       const knownJobsChanged = store.knownJobs.length !== oldKnownCount;
 
       // Write if anything changed
-      if (reflectionChanged || toAdd.length > 0 || knownJobsChanged || purged > 0) {
+      if (reflectionChanged || toAdd.length > 0 || knownJobsChanged) {
         store.appliedReflection = selfReflection;
         writeConfig(jobsFilePath, store);
       } else {
@@ -1688,7 +1881,11 @@ try {
     case "browser-containers":
       ensureAgentBrowserContainers(configPath);
       break;
+    case "providers":
+      enforceProviders(configPath);
+      break;
     case "all":
+      enforceProviders(configPath);
       enforceModels(configPath);
       enforceGateway(configPath);
       enforceProxies(configPath);

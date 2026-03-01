@@ -48,6 +48,55 @@ export OPENCLAW_MANAGED_PLATFORM=1
 # SaaS mode: disable device auth for Control UI (use token-only auth)
 DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AUTH:-false}}"
 
+# ── Bailian Preset Early Resolution ──────────────────────────────────────────
+# When BAILIAN_API_KEY is set, resolve preset defaults into env vars BEFORE
+# model variables are declared below. This ensures SOUL.md template rendering
+# (which uses $CODING_MODEL, $DEFAULT_MODEL, etc.) sees the preset values.
+# enforce-config.mjs does the same logic later for its own enforcement pass.
+# Explicit env vars always take precedence over preset defaults.
+if [ -n "${BAILIAN_API_KEY:-}" ]; then
+  _PRESET="${BAILIAN_PRESET:-balanced}"
+  case "$_PRESET" in
+    balanced)
+      : "${OPENCLAW_DEFAULT_MODEL:=bailian/glm-5}"
+      : "${OPENCLAW_HEARTBEAT_MODEL:=bailian/glm-4.7}"
+      : "${OPENCLAW_SUBAGENT_MODEL:=bailian/qwen3-coder-next}"
+      : "${OPENCLAW_CODING_MODEL:=bailian/qwen3-coder-next}"
+      : "${OPENCLAW_FALLBACK_MODELS:=bailian/glm-4.7,bailian/qwen3.5-plus,bailian/MiniMax-M2.5}"
+      ;;
+    coding)
+      : "${OPENCLAW_DEFAULT_MODEL:=bailian/qwen3-coder-next}"
+      : "${OPENCLAW_HEARTBEAT_MODEL:=bailian/glm-4.7}"
+      : "${OPENCLAW_SUBAGENT_MODEL:=bailian/qwen3-coder-plus}"
+      : "${OPENCLAW_CODING_MODEL:=bailian/qwen3-coder-next}"
+      : "${OPENCLAW_FALLBACK_MODELS:=bailian/glm-5,bailian/qwen3-coder-plus,bailian/glm-4.7}"
+      ;;
+    research)
+      : "${OPENCLAW_DEFAULT_MODEL:=bailian/qwen3.5-plus}"
+      : "${OPENCLAW_HEARTBEAT_MODEL:=bailian/glm-4.7}"
+      : "${OPENCLAW_SUBAGENT_MODEL:=bailian/glm-5}"
+      : "${OPENCLAW_CODING_MODEL:=bailian/qwen3-coder-next}"
+      : "${OPENCLAW_FALLBACK_MODELS:=bailian/glm-5,bailian/qwen3-max-2026-01-23,bailian/kimi-k2.5}"
+      ;;
+    budget)
+      : "${OPENCLAW_DEFAULT_MODEL:=bailian/glm-4.7}"
+      : "${OPENCLAW_HEARTBEAT_MODEL:=bailian/MiniMax-M2.5}"
+      : "${OPENCLAW_SUBAGENT_MODEL:=bailian/glm-4.7}"
+      : "${OPENCLAW_CODING_MODEL:=bailian/qwen3-coder-plus}"
+      : "${OPENCLAW_FALLBACK_MODELS:=bailian/MiniMax-M2.5,bailian/glm-4.7}"
+      ;;
+    *)
+      echo "[entrypoint] WARNING: Unknown BAILIAN_PRESET='$_PRESET' — using balanced"
+      : "${OPENCLAW_DEFAULT_MODEL:=bailian/glm-5}"
+      : "${OPENCLAW_HEARTBEAT_MODEL:=bailian/glm-4.7}"
+      : "${OPENCLAW_SUBAGENT_MODEL:=bailian/qwen3-coder-next}"
+      : "${OPENCLAW_CODING_MODEL:=bailian/qwen3-coder-next}"
+      : "${OPENCLAW_FALLBACK_MODELS:=bailian/glm-4.7,bailian/qwen3.5-plus,bailian/MiniMax-M2.5}"
+      ;;
+  esac
+  echo "[entrypoint] Bailian preset '$_PRESET' applied: primary=${OPENCLAW_DEFAULT_MODEL} heartbeat=${OPENCLAW_HEARTBEAT_MODEL}"
+fi
+
 # Model configuration (set via dashboard setup wizard)
 # Check OPENCLAW_ONBOARD_MODEL as fallback (set by onboarding flow)
 DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-${OPENCLAW_ONBOARD_MODEL:-${MOLTBOT_DEFAULT_MODEL:-}}}"
@@ -682,6 +731,8 @@ if [ -f "$ENFORCE_CONFIG_SCRIPT" ] && [ -s "$CONFIG_FILE" ]; then
   export GATEWAY_PORT="${GATEWAY_PORT:-18789}"
   export GATEWAY_BIND="${GATEWAY_BIND:-lan}"
   export AI_GATEWAY_URL="${AI_GATEWAY_URL:-}"
+  export BAILIAN_API_KEY="${BAILIAN_API_KEY:-}"
+  export BAILIAN_PRESET="${BAILIAN_PRESET:-}"
   if node "$ENFORCE_CONFIG_SCRIPT" all 2>&1; then
     echo "[entrypoint] enforce-config completed"
   else
