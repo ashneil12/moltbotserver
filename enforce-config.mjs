@@ -603,10 +603,10 @@ function enforceCore(configPath) {
     "NEVER message for: routine status, 'still running,' low-priority completions.",
   ].join("\n");
 
-  // Concurrency
-  defaults.maxConcurrent = Number(env("OPENCLAW_MAX_CONCURRENT", "1"));
+  // Concurrency — defaults match docker-entrypoint.sh
+  defaults.maxConcurrent = Number(env("OPENCLAW_MAX_CONCURRENT", "4"));
   defaults.subagents = defaults.subagents || {};
-  defaults.subagents.maxConcurrent = Number(env("OPENCLAW_SUBAGENT_MAX_CONCURRENT", "2"));
+  defaults.subagents.maxConcurrent = Number(env("OPENCLAW_SUBAGENT_MAX_CONCURRENT", "8"));
 
   // Messages queue
   const messages = ensure(config, "messages");
@@ -1816,11 +1816,15 @@ function enforceHonchoFork() {
         throw new Error(`Fork has no dist/ directory — unexpected repo structure`);
       }
 
-      // Atomically replace the plugin's dist/ directory
-      execSync(`rm -rf "${pluginDir}/dist" && cp -r "${clonedDist}" "${pluginDir}/dist"`, {
-        encoding: "utf8",
-        timeout: 15_000,
-      });
+      // Safe swap: copy to dist.new first, then rename into place.
+      // If copy fails mid-way, old dist/ is preserved (we don't delete it first).
+      const distNew = `${pluginDir}/dist.new`;
+      const distOld = `${pluginDir}/dist`;
+      execSync(`cp -r "${clonedDist}" "${distNew}"`, { encoding: "utf8", timeout: 15_000 });
+      if (existsSync(distOld)) {
+        execSync(`rm -rf "${distOld}"`, { encoding: "utf8", timeout: 10_000 });
+      }
+      execSync(`mv "${distNew}" "${distOld}"`, { encoding: "utf8", timeout: 5_000 });
 
       console.log("[enforce-config] ✅ Honcho fork installed successfully");
     } finally {

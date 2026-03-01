@@ -588,8 +588,7 @@ if [ -n "$HONCHO_KEY" ]; then
         PLUGIN_DEST="$(dirname "$HONCHO_PLUGIN_DIR")"
         mkdir -p "$PLUGIN_DEST"
         if git clone --depth=1 https://github.com/ashneil12/openclaw-honcho-multiagent.git "$HONCHO_PLUGIN_DIR" 2>&1 \
-          && cd "$HONCHO_PLUGIN_DIR" \
-          && npm install --omit=dev --ignore-scripts 2>/dev/null; then
+          && (cd "$HONCHO_PLUGIN_DIR" && npm install --omit=dev --ignore-scripts 2>/dev/null); then
           echo "[entrypoint] openclaw-honcho plugin installed (patched fork)"
         else
           echo "[entrypoint] WARNING: fork install failed, falling back to vanilla npm..."
