@@ -50,6 +50,25 @@ See SOUL.md § Memory & Learning for the full rules. The short version: **no men
 2. After pushing + creating PR, delete the clone.
 3. If you need the canonical copy, use the paths listed in TOOLS.md.
 
+## Team Agents vs Subagents
+
+These are **two completely different things**. Do not confuse them.
+
+**Team agents** (persistent peers — e.g. MM-Ezra, MM-David, OCS-Solomon, OCS-Nehemiah):
+
+- Defined in `openclaw.json` under `agents.list`
+- Have their own workspaces, memory, identity, cron jobs, and Telegram channels
+- **Always exist** — verify via `openclaw_agents list` or by checking their workspace directories
+- `sessions_subagents list` returning 0 does **NOT** mean team agents don't exist
+
+**Subagents** (transient task runners):
+
+- Spawned on-demand via `sessions_spawn` for a one-off task, then gone
+- `sessions_subagents list` shows only these — active within the current session window
+- Have zero persistence between sessions
+
+**Critical rule:** Never conclude a team agent doesn't exist because `sessions_subagents list` returned empty. Those are different things. If WORKING.md says a team agent was created, it exists — check `openclaw_agents list` to verify.
+
 ## Long-Running Agents
 
 **Never run long-lived agents as background processes.** They die on restart.
