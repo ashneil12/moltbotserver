@@ -10,6 +10,7 @@
  * Fires on a configurable interval (default 14 days).
  */
 
+import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
@@ -35,6 +36,51 @@ const EXCERPT_TAIL_LINES = 30;
 const DIARY_RELATIVE_PATH = "memory/diary.md";
 const SCRATCHPAD_RELATIVE_PATH = "memory/identity-scratchpad.md";
 const ARCHIVE_STATE_FILENAME = ".diary-archive-state.json";
+
+/** Downloads older than this are pruned from the agent workspace downloads/ folder. */
+const DOWNLOADS_PRUNE_AFTER_MS = 10 * 24 * 60 * 60 * 1000;
+
+// ---------------------------------------------------------------------------
+// Download pruning
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete files in `<workspaceDir>/downloads/` that have not been modified
+ * for longer than `maxAgeMs`. Subdirectories are left intact.
+ */
+async function pruneOldDownloads(
+  workspaceDir: string,
+  maxAgeMs: number = DOWNLOADS_PRUNE_AFTER_MS,
+): Promise<void> {
+  const downloadsDir = path.join(workspaceDir, "downloads");
+  let entries: Dirent[] = [];
+  try {
+    entries = await fs.readdir(downloadsDir, { withFileTypes: true });
+  } catch {
+    // Downloads folder doesn't exist yet — nothing to prune
+    return;
+  }
+  const cutoffMs = Date.now() - maxAgeMs;
+  let pruned = 0;
+  for (const entry of entries) {
+    if (!entry.isFile()) {
+      continue;
+    }
+    const filePath = path.join(downloadsDir, entry.name);
+    try {
+      const stat = await fs.stat(filePath);
+      if (stat.mtimeMs < cutoffMs) {
+        await fs.unlink(filePath);
+        pruned += 1;
+      }
+    } catch {
+      // Best-effort; skip files we can't stat or delete
+    }
+  }
+  if (pruned > 0) {
+    log.info(`diary-archive: pruned ${pruned} old download(s) from ${downloadsDir}`);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // State persistence
@@ -304,6 +350,11 @@ export async function runDiaryArchiveSweep(
         error: String(err),
       });
     }
+
+    // Always prune old downloads regardless of whether a diary archive ran.
+    await pruneOldDownloads(workspaceDir).catch((err) =>
+      log.warn(`diary-archive: download prune failed for ${workspaceDir}: ${String(err)}`),
+    );
   }
 
   if (results.length > 0) {

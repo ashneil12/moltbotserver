@@ -400,8 +400,6 @@ export async function ensureChromeExtensionRelayServer(opts: {
             userAgent: "OpenClaw-Extension-Relay",
             jsVersion: "V8",
           };
-        case "Browser.setDownloadBehavior":
-          return {};
         case "Target.setAutoAttach":
         case "Target.setDiscoverTargets":
           return {};

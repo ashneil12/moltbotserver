@@ -1,7 +1,9 @@
+import { listAgentIds, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { loadConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveBrowserConfig } from "./config.js";
 import { ensureBrowserControlAuth } from "./control-auth.js";
+import { setDownloadWorkspaceForCdp } from "./download-workspace-registry.js";
 import { type BrowserServerState, createBrowserRouteContext } from "./server-context.js";
 import { ensureExtensionRelayForProfiles, stopKnownBrowserProfiles } from "./server-lifecycle.js";
 
@@ -51,6 +53,28 @@ export async function startBrowserControlServiceFromConfig(): Promise<BrowserSer
     onWarn: (message) => logService.warn(message),
   });
 
+  // Register per-profile workspace paths so auto-downloads land in the right agent workspace.
+  const agentIds = listAgentIds(cfg);
+  for (const [profileName, profileCfg] of Object.entries(resolved.profiles)) {
+    const cdpUrl = profileCfg.cdpUrl;
+    if (!cdpUrl) {
+      continue;
+    }
+    // A profile name conventionally matches an agent ID. Try exact match first,
+    // then fall back to the default agent workspace.
+    const matchedAgentId = agentIds.find((id) => id === profileName);
+    const agentId = matchedAgentId ?? profileName;
+    try {
+      const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+      setDownloadWorkspaceForCdp(cdpUrl, workspaceDir);
+      logService.info(`browser downloads: ${profileName} → ${workspaceDir}/downloads`);
+    } catch (err) {
+      logService.warn(
+        `browser downloads: could not resolve workspace for ${profileName}: ${String(err)}`,
+      );
+    }
+  }
+
   logService.info(
     `Browser control service ready (profiles=${Object.keys(resolved.profiles).length})`,
   );
@@ -67,6 +91,15 @@ export async function stopBrowserControlService(): Promise<void> {
     getState: () => state,
     onWarn: (message) => logService.warn(message),
   });
+
+  // Clear workspace registry for all profiles.
+  if (current) {
+    for (const profileCfg of Object.values(current.resolved.profiles)) {
+      if (profileCfg.cdpUrl) {
+        setDownloadWorkspaceForCdp(profileCfg.cdpUrl, null);
+      }
+    }
+  }
 
   state = null;
 

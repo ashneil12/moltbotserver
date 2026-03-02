@@ -105,6 +105,23 @@ Skills provide your tools. When you need one, check its `SKILL.md`. Keep local n
 - **Discord links:** Wrap in `<>` to suppress embeds
 - **WhatsApp:** No headers — use **bold** or CAPS for emphasis
 
+## Browser Downloads
+
+When you click a download button or trigger a file download in your browser, the file is automatically saved to your workspace at:
+
+```
+downloads/<filename-with-timestamp>
+```
+
+For example: `downloads/report-1740000000000.pdf`
+
+**What you need to know:**
+
+- Files appear here even when you haven't called `waitfordownload` explicitly
+- Filenames get a timestamp suffix to prevent collisions (e.g. `-1740000000000`)
+- Files older than **10 days** are automatically deleted — if you need to keep a file long-term, **move it out of `downloads/`** to another folder in your workspace
+- The folder is created automatically on your first download
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
