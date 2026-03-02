@@ -101,43 +101,6 @@ type ResolveApiKeyForProfileParams = {
 
 type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
 
-function adoptNewerMainOAuthCredential(params: {
-  store: AuthProfileStore;
-  profileId: string;
-  agentDir?: string;
-  cred: OAuthCredentials & { type: "oauth"; provider: string; email?: string };
-}): (OAuthCredentials & { type: "oauth"; provider: string; email?: string }) | null {
-  if (!params.agentDir) {
-    return null;
-  }
-  try {
-    const mainStore = ensureAuthProfileStore(undefined);
-    const mainCred = mainStore.profiles[params.profileId];
-    if (
-      mainCred?.type === "oauth" &&
-      mainCred.provider === params.cred.provider &&
-      Number.isFinite(mainCred.expires) &&
-      (!Number.isFinite(params.cred.expires) || mainCred.expires > params.cred.expires)
-    ) {
-      params.store.profiles[params.profileId] = { ...mainCred };
-      saveAuthProfileStore(params.store, params.agentDir);
-      log.info("adopted newer OAuth credentials from main agent", {
-        profileId: params.profileId,
-        agentDir: params.agentDir,
-        expires: new Date(mainCred.expires).toISOString(),
-      });
-      return mainCred;
-    }
-  } catch (err) {
-    // Best-effort: don't crash if main agent store is missing or unreadable.
-    log.debug("adoptNewerMainOAuthCredential failed", {
-      profileId: params.profileId,
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
-  return null;
-}
-
 async function refreshOAuthTokenWithLock(params: {
   profileId: string;
   agentDir?: string;
@@ -352,19 +315,14 @@ export async function resolveApiKeyForProfile(
     return buildApiKeyProfileResult({ apiKey: token, provider: cred.provider, email: cred.email });
   }
 
-  const oauthCred =
-    adoptNewerMainOAuthCredential({
-      store,
-      profileId,
-      agentDir: params.agentDir,
-      cred,
-    }) ?? cred;
-
-  if (Date.now() < oauthCred.expires) {
+  // Per-agent isolation: use this agent's own credential only.
+  // (adoptNewerMainOAuthCredential was removed — it replaced per-agent tokens with
+  // main's whenever main was fresher, breaking per-agent OAuth isolation.)
+  if (Date.now() < cred.expires) {
     return buildOAuthProfileResult({
-      provider: oauthCred.provider,
-      credentials: oauthCred,
-      email: oauthCred.email,
+      provider: cred.provider,
+      credentials: cred,
+      email: cred.email,
     });
   }
 
@@ -413,31 +371,9 @@ export async function resolveApiKeyForProfile(
       }
     }
 
-    // Fallback: if this is a secondary agent, try using the main agent's credentials
-    if (params.agentDir) {
-      try {
-        const mainStore = ensureAuthProfileStore(undefined); // main agent (no agentDir)
-        const mainCred = mainStore.profiles[profileId];
-        if (mainCred?.type === "oauth" && Date.now() < mainCred.expires) {
-          // Main agent has fresh credentials - copy them to this agent and use them
-          refreshedStore.profiles[profileId] = { ...mainCred };
-          saveAuthProfileStore(refreshedStore, params.agentDir);
-          log.info("inherited fresh OAuth credentials from main agent", {
-            profileId,
-            agentDir: params.agentDir,
-            expires: new Date(mainCred.expires).toISOString(),
-          });
-          return buildOAuthProfileResult({
-            provider: mainCred.provider,
-            credentials: mainCred,
-            email: mainCred.email,
-          });
-        }
-      } catch {
-        // keep original error if main agent fallback also fails
-      }
-    }
-
+    // Per-agent isolation: do NOT fall back to main agent's credentials.
+    // Each agent must be authenticated independently. If refresh fails, surface
+    // the error clearly so the operator can re-auth the specific agent.
     const message = error instanceof Error ? error.message : String(error);
     const hint = formatAuthDoctorHint({
       cfg,

@@ -570,7 +570,7 @@ function enforceCore(configPath) {
 
   // Heartbeat
   defaults.heartbeat = defaults.heartbeat || {};
-  defaults.heartbeat.every = env("OPENCLAW_HEARTBEAT_INTERVAL", "15m");
+  defaults.heartbeat.every = env("OPENCLAW_HEARTBEAT_INTERVAL", "1h");
   defaults.heartbeat.prompt = [
     "HEARTBEAT CHECK — You MUST complete ALL steps below. DO NOT SKIP ANY STEP.",
     "",

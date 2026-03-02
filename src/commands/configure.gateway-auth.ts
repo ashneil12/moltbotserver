@@ -75,6 +75,7 @@ export async function promptAuthConfig(
   cfg: OpenClawConfig,
   runtime: RuntimeEnv,
   prompter: WizardPrompter,
+  agentDir?: string,
 ): Promise<OpenClawConfig> {
   const authChoice = await promptAuthChoiceGrouped({
     prompter,
@@ -95,6 +96,7 @@ export async function promptAuthConfig(
       prompter,
       runtime,
       setDefaultModel: true,
+      agentDir,
     });
     next = applied.config;
   } else {

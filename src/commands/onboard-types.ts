@@ -159,4 +159,15 @@ export type OnboardOptions = {
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;
+  /**
+   * When true, after a successful OAuth flow the resulting credentials are
+   * copied into every sibling agent's auth store (legacy behaviour).
+   * Defaults to false — per-agent isolation is the new default.
+   */
+  syncSiblingAgents?: boolean;
+  /**
+   * Target a specific agent by ID for an OAuth or credential flow.
+   * When set, the auth write is scoped to that agent's directory only.
+   */
+  targetAgentId?: string;
 };

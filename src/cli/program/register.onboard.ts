@@ -85,7 +85,13 @@ export function registerOnboardCommand(program: Command) {
       "API key persistence mode: plaintext|ref (default: plaintext)",
     )
     .option("--cloudflare-ai-gateway-account-id <id>", "Cloudflare Account ID")
-    .option("--cloudflare-ai-gateway-gateway-id <id>", "Cloudflare AI Gateway ID");
+    .option("--cloudflare-ai-gateway-gateway-id <id>", "Cloudflare AI Gateway ID")
+    .option("--agent <agentId>", "Scope OAuth / credential write to a specific agent (by agent ID)")
+    .option(
+      "--sync-all",
+      "After OAuth, copy the token into every sibling agent's store (legacy opt-in; default: off)",
+      false,
+    );
 
   for (const providerFlag of ONBOARD_PROVIDER_AUTH_FLAGS) {
     command.option(providerFlag.cliOption, providerFlag.description);
@@ -192,6 +198,8 @@ export function registerOnboardCommand(program: Command) {
           skipUi: Boolean(opts.skipUi),
           nodeManager: opts.nodeManager as NodeManagerChoice | undefined,
           json: Boolean(opts.json),
+          targetAgentId: opts.agent as string | undefined,
+          syncSiblingAgents: Boolean(opts.syncAll),
         },
         defaultRuntime,
       );

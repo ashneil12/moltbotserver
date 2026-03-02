@@ -95,7 +95,9 @@ export async function applyAuthChoiceOpenAI(
     }
     if (creds) {
       const profileId = await writeOAuthCredentials("openai-codex", creds, params.agentDir, {
-        syncSiblingAgents: true,
+        // Default: false (per-agent isolation). Pass syncSiblingAgents:true via opts to
+        // replicate the old "broadcast to all sibling agents" behaviour.
+        syncSiblingAgents: params.opts?.syncSiblingAgents === true,
       });
       nextConfig = applyAuthProfileConfig(nextConfig, {
         profileId,
