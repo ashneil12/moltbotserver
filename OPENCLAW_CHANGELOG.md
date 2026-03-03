@@ -5,6 +5,189 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Typing TTL "Still Thinking" Callback & Auto-Reply Cleanup (2026-03-03)
+
+**Purpose:** When long-running LLM tool calls exceed the 2-minute typing indicator TTL, the user previously saw the typing indicator stop with no feedback. Now the system sends a "⏳ Still thinking, hang tight..." status message so users know the agent is still working.
+
+### Changes
+
+| File                                       | Change                                                                              | Why                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `src/auto-reply/reply/typing.ts`           | Added `onTtlExpired` callback, fired when TTL expires while LLM run is still active | Core hook for the "still thinking" feature                            |
+| `src/auto-reply/reply/reply-dispatcher.ts` | Added `onTtlExpired` option; default sends status message via `deliver`             | Provides sensible default without requiring per-channel configuration |
+| `src/auto-reply/reply/get-reply.ts`        | Passes `opts.onTtlExpired` into `createTypingController`                            | Wires the callback through the reply pipeline                         |
+| `src/auto-reply/dispatch.ts`               | Destructures + forwards `onTtlExpired` from dispatcher into reply options           | Connects the buffered dispatch path                                   |
+| `src/auto-reply/types.ts`                  | Added `onTtlExpired` field on `GetReplyOptions`                                     | Type safety for the new option                                        |
+
+### Upstream Sync Risk
+
+**Medium.** Five upstream auto-reply files touched with small additions (new optional field + callback plumbing). Each change is a few lines — conflicts will be straightforward single-line resolves if upstream modifies these signatures.
+
+---
+
+## Browser Auto-Download to Agent Workspace (2026-03-02)
+
+**Purpose:** When an agent clicks a download link during browser tool use, the file is automatically saved to the agent's `workspace/downloads/` directory. Previously downloads were lost unless the agent explicitly used `waitfordownload`.
+
+### Changes
+
+| File                                         | Change                                                                                              | Why                                                          |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `src/browser/download-workspace-registry.ts` | **NEW** — Per-CDP-URL workspace registry + shared `sanitizeAutoDownloadFilename()` helper           | Maps browser profiles to agent workspace paths               |
+| `src/browser/control-service.ts`             | Registers per-profile workspace paths on start; clears on stop                                      | Wires browser profiles to download destinations              |
+| `src/browser/pw-tools-core.interactions.ts`  | Auto-download capture on `clickViaPlaywright` — 3s download race after every click                  | Catches downloads triggered by navigation-free links         |
+| `src/browser/pw-tools-core.downloads.ts`     | Uses shared `sanitizeAutoDownloadFilename()` instead of inline sanitizer                            | DRY: consolidated duplicate sanitization logic               |
+| `src/browser/pw-session.ts`                  | `findPageByTargetId` uses `fetchJson` instead of raw `fetch()` for Docker Host header compatibility | Fixes target resolution failures when using Docker hostnames |
+
+### Upstream Sync Risk
+
+**Medium.** `control-service.ts`, `pw-tools-core.interactions.ts`, `pw-tools-core.downloads.ts`, and `pw-session.ts` are actively maintained upstream. The download registry is a new custom file (no conflicts). The `pw-session.ts` change replaces `fetch()` with `fetchJson()` in one function — same fix pattern as the CDP Host header work.
+
+---
+
+## Per-Agent OAuth Isolation (2026-03-02)
+
+**Purpose:** OAuth tokens are now scoped per-agent instead of being silently shared across all agents. Previously, `adoptNewerMainOAuthCredential()` would overwrite a sub-agent's OAuth token with the main agent's whenever the main agent's was fresher, and a fallback path would inherit main-agent credentials when refresh failed. This broke per-agent OAuth isolation (e.g., different Google accounts per agent).
+
+### Changes
+
+| File                                       | Change                                                                                    | Why                                                                  |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `src/agents/auth-profiles/oauth.ts`        | Removed `adoptNewerMainOAuthCredential()` (~37 lines) and main-agent fallback (~22 lines) | Each agent must be authenticated independently                       |
+| `src/cli/program/register.onboard.ts`      | Added `--agent <agentId>` and `--sync-all` CLI flags                                      | Scope credential writes to a specific agent; opt-in legacy broadcast |
+| `src/commands/auth-choice.apply.openai.ts` | `syncSiblingAgents` default changed `true` → `opts?.syncSiblingAgents === true`           | Per-agent isolation is the new default                               |
+| `src/commands/configure.gateway-auth.ts`   | Added `agentDir?: string` parameter to `promptAuthConfig()`                               | Auth wizard can target a specific agent directory                    |
+| `src/commands/onboard-types.ts`            | Added `syncSiblingAgents` and `targetAgentId` fields on `OnboardOptions`                  | Type definitions for the new CLI options                             |
+
+### Upstream Sync Risk
+
+**High for `oauth.ts`** — ~60 lines of code removed from an actively-maintained upstream file. Upstream may add new credential-sharing logic that conflicts.
+**Medium for CLI/commands** — small additions to option definitions that upstream may extend.
+
+---
+
+## Heartbeat Default Interval: 30m → 1h (2026-03-02)
+
+**Purpose:** Reduce heartbeat frequency from every 30 minutes to every 1 hour. The 30-minute interval was generating too much traffic and unnecessary model invocations for agents that don't need frequent check-ins.
+
+### Changes
+
+| File                                 | Change                                                   | Why                            |
+| ------------------------------------ | -------------------------------------------------------- | ------------------------------ |
+| `src/auto-reply/heartbeat.ts`        | `DEFAULT_HEARTBEAT_EVERY` changed from `"30m"` to `"1h"` | Reduced unnecessary heartbeats |
+| `src/config/types.agent-defaults.ts` | Updated JSDoc comment `default: 30m` → `default: 1h`     | Documentation alignment        |
+
+### Upstream Sync Risk
+
+**Low.** Single-line constant change. If upstream changes the default, the conflict is trivial.
+
+---
+
+## Telegram Media Download Timeout (2026-03-01)
+
+**Purpose:** Prevent hung media downloads (stuck Telegram API calls) from blocking processing of entire message groups. Added a 15-second timeout on all `resolveMedia` calls. Previously, a single stuck download could block an entire media group indefinitely.
+
+### Changes
+
+| File                           | Change                                                                                            | Why                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `src/telegram/bot-handlers.ts` | Added `MEDIA_DOWNLOAD_TIMEOUT_MS = 15_000`; wrapped `resolveMedia` in `Promise.race` with timeout | Hard cap on media download wait time                         |
+| `src/telegram/bot-handlers.ts` | Timeout errors treated as recoverable in `isRecoverableMediaGroupError`                           | One hung image doesn't abort the whole media group           |
+| `src/telegram/bot-handlers.ts` | Replaced swallowed `.catch(() => undefined)` with error logging                                   | Failures are now visible in logs instead of silently dropped |
+
+### Upstream Sync Risk
+
+**Medium.** `bot-handlers.ts` is actively maintained upstream. Changes are localized (timeout wrapping + error classification) but touch the media processing hot path.
+
+---
+
+## NEXT_WAKE Parsing Fix (2026-03-02)
+
+**Purpose:** Fix `NEXT_WAKE:` directive being missed when the agent's response is long enough that the directive falls outside the truncated summary. Now parses from the full `outputText`. Also added `NEXT_WAKE` support for main session jobs by parsing from the static payload text.
+
+### Changes
+
+| File                        | Change                                                                                | Why                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `src/cron/service/timer.ts` | `parseNextWakeDuration()` reads from full `outputText` instead of truncated `summary` | Directives in long responses were being silently dropped |
+| `src/cron/service/timer.ts` | Main session jobs parse `NEXT_WAKE` from static payload text                          | Session jobs now support dynamic scheduling              |
+
+### Upstream Sync Risk
+
+**Medium.** `timer.ts` is core cron infrastructure. Changes are in the MoltBot-custom `parseNextWakeDuration` function and its call sites.
+
+---
+
+## Alibaba Cloud / Bailian Provider (2026-03-01)
+
+**Purpose:** Add Alibaba Cloud (Bailian/DashScope) as an implicit AI provider, removing the preset system and enabling reasoning-mode support for Qwen3 and Kimi models. Also removed the `healthcheck-security-audit` cron job (the security scanner modules handle this better).
+
+### Changes
+
+| File                     | Change                                               | Why                                    |
+| ------------------------ | ---------------------------------------------------- | -------------------------------------- |
+| `enforce-config.mjs`     | Bailian provider configuration + model normalization | Alibaba Cloud integration              |
+| `enforce-config.mjs`     | Removed `healthcheck-security-audit` from cron seed  | Redundant with content-scanner modules |
+| `cron/default-jobs.json` | Removed `healthcheck-security-audit` job definition  | Same                                   |
+
+### Upstream Sync Risk
+
+**None.** All files are fully custom.
+
+---
+
+## Honcho Fork Bake-In (2026-03-01)
+
+**Purpose:** Replace the npm-installed `@honcho-ai/openclaw-honcho` plugin with a patched fork. The fork's `dist/` directory is cloned and baked into the Docker image, replacing the standard npm-installed version.
+
+### Changes
+
+| File                 | Change                                                                          | Why                                                 |
+| -------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `enforce-config.mjs` | Added `enforceHonchoFork()` — clones fork, copies `dist/` over installed plugin | Patched version fixes issues in the upstream plugin |
+| `Dockerfile`         | Bakes the patched fork into the Docker image build                              | Fork changes available at container start           |
+
+### Upstream Sync Risk
+
+**None.** Both files are fully custom.
+
+---
+
+## Gateway Self-Restart & Rate Limit Enforcement (2026-02-28)
+
+**Purpose:** Enable the gateway to self-restart inside Docker managed-platform containers (for config reloads that require a process restart), and enforce `gateway.auth.rateLimit` configuration.
+
+### Changes
+
+| File                   | Change                                                           | Why                                                   |
+| ---------------------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| `docker-entrypoint.sh` | Gateway self-restart support for managed-platform containers     | Config reloads that need a restart now work in Docker |
+| `enforce-config.mjs`   | Added `gateway.auth.rateLimit` enforcement in `enforceGateway()` | Rate limiting applied consistently across deployments |
+
+### Upstream Sync Risk
+
+**None.** Both files are fully custom.
+
+---
+
+## Self-Audit-21 Weekly Job & agentId Browser Fix (2026-02-28)
+
+**Purpose:** Two unrelated fixes: (1) Add a weekly 21-question strategic self-audit cron job that feeds an improvement backlog, (2) Pass `agentId` to `createBrowserTool()` in `openclaw-tools.ts` so agents route to their dedicated browser containers instead of all sharing the main browser.
+
+### Changes
+
+| File                           | Change                                                            | Why                                                |
+| ------------------------------ | ----------------------------------------------------------------- | -------------------------------------------------- |
+| `cron/default-jobs.json`       | Added `self-audit-21` job (Sun 11 PM)                             | Weekly strategic audit for continuous improvement  |
+| `enforce-config.mjs`           | `self-audit-21` in seed array + `MAIN_ONLY_JOBS`                  | Only main agent runs the audit                     |
+| `src/agents/openclaw-tools.ts` | `agentId: resolveSessionAgentId()` added to `createBrowserTool()` | Agents use their own browser, not the main agent's |
+
+### Upstream Sync Risk
+
+**Low.** `openclaw-tools.ts` is the only upstream file touched — single-line addition. Cron files are fully custom.
+
+---
+
 ## Honcho Pre-Baking & Gateway Browser Routing (2026-02-28)
 
 **Purpose:** Fix gateway crash loop caused by Honcho plugin ownership issues and wire the per-agent browser proxy into the gateway HTTP/WS router so the dashboard can display and interact with agent browsers.
