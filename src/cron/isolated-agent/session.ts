@@ -63,7 +63,12 @@ export function resolveCronSession(params: {
     ...entry,
     // Always update these core fields
     sessionId,
-    updatedAt: params.nowMs,
+    // Preserve the original updatedAt when reusing a fresh session so that
+    // cron/system activity (e.g. nightly innovation, pre-reset flush) between
+    // midnight and the daily reset hour does not bump the timestamp past the
+    // reset boundary, which would prevent evaluateSessionFreshness from ever
+    // detecting the session as stale.  Only new sessions get the current time.
+    updatedAt: isNewSession ? params.nowMs : (entry?.updatedAt ?? params.nowMs),
     systemSent,
     // When starting a fresh session (forceNew / isolated), clear delivery routing
     // state inherited from prior sessions. Without this, lastThreadId leaks into

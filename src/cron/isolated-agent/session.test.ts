@@ -231,6 +231,38 @@ describe("resolveCronSession", () => {
       });
     });
 
+    it("preserves updatedAt from original entry when reusing a fresh session", () => {
+      const originalUpdatedAt = NOW_MS - 3_600_000; // 1 hour ago
+      const result = resolveWithStoredEntry({
+        entry: {
+          sessionId: "existing-session-id-202",
+          updatedAt: originalUpdatedAt,
+          systemSent: true,
+        },
+        fresh: true,
+      });
+
+      expect(result.isNewSession).toBe(false);
+      // updatedAt should be preserved, NOT bumped to NOW_MS.
+      // This ensures cron/system activity between midnight and the daily
+      // reset hour does not prevent evaluateSessionFreshness from detecting
+      // the session as stale.
+      expect(result.sessionEntry.updatedAt).toBe(originalUpdatedAt);
+    });
+
+    it("sets updatedAt to nowMs for new sessions (stale entry)", () => {
+      const result = resolveWithStoredEntry({
+        entry: {
+          sessionId: "old-session-id",
+          updatedAt: NOW_MS - 86_400_000,
+        },
+        fresh: false,
+      });
+
+      expect(result.isNewSession).toBe(true);
+      expect(result.sessionEntry.updatedAt).toBe(NOW_MS);
+    });
+
     it("creates new sessionId when entry exists but has no sessionId", () => {
       const result = resolveWithStoredEntry({
         entry: {

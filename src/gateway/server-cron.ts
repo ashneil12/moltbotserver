@@ -511,7 +511,7 @@ export function buildGatewayCronService(params: {
   const resetAtHour = params.cfg.session?.reset?.atHour;
   startPreResetFlushTimer({
     cfg: params.cfg,
-    sessionStorePath: sessionStorePath,
+    resolveSessionStorePath,
     resetAtHour: typeof resetAtHour === "number" ? resetAtHour : undefined,
     runIsolatedAgentJob: async ({ job, message }) => {
       const { agentId, cfg: runtimeConfig } = resolveCronAgent(job.agentId);

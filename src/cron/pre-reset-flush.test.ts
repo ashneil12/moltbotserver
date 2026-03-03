@@ -154,7 +154,7 @@ describe("runPreResetFlushSweep", () => {
     // This tests that the function signature is correct
     const deps: PreResetFlushDeps = {
       cfg: {} as PreResetFlushDeps["cfg"],
-      sessionStorePath: "/nonexistent/sessions.json",
+      resolveSessionStorePath: () => "/nonexistent/sessions.json",
       runIsolatedAgentJob: mockRunIsolatedAgentJob,
       log: mockLog,
     };
@@ -191,7 +191,7 @@ describe("pre-reset flush timer", () => {
     };
     const deps = {
       cfg: {} as PreResetFlushDeps["cfg"],
-      sessionStorePath: "/nonexistent/sessions.json",
+      resolveSessionStorePath: () => "/nonexistent/sessions.json",
       runIsolatedAgentJob: vi
         .fn<PreResetFlushDeps["runIsolatedAgentJob"]>()
         .mockResolvedValue({ status: "ok" } as unknown as RunCronAgentTurnResult),

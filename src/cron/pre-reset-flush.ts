@@ -7,16 +7,17 @@
  * fires once daily at `resetAtHour - leadMinutes` (default 3:40 AM).
  */
 
-import type { OpenClawConfig } from "../config/config.js";
-import type { RunCronAgentTurnResult } from "./isolated-agent.js";
-import type { CronJob } from "./types.js";
+import { listAgentIds } from "../agents/agent-scope.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
+import type { OpenClawConfig } from "../config/config.js";
 import {
   loadSessionStore,
   updateSessionStoreEntry,
   type SessionEntry,
 } from "../config/sessions.js";
 import { DEFAULT_RESET_AT_HOUR } from "../config/sessions/reset.js";
+import type { RunCronAgentTurnResult } from "./isolated-agent.js";
+import type { CronJob } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -135,7 +136,7 @@ export type PreResetFlushResult = {
 
 export type PreResetFlushDeps = {
   cfg: OpenClawConfig;
-  sessionStorePath: string;
+  resolveSessionStorePath: (agentId: string) => string;
   runIsolatedAgentJob: (params: {
     job: CronJob;
     message: string;
@@ -147,22 +148,34 @@ export type PreResetFlushDeps = {
 };
 
 /**
- * Sweep all sessions in the store and run pre-reset memory flush turns
- * on eligible ones.
+ * Sweep all agent session stores and run pre-reset memory flush turns
+ * on eligible sessions across every agent.
  */
 export async function runPreResetFlushSweep(deps: PreResetFlushDeps): Promise<PreResetFlushResult> {
   const nowMs = Date.now();
-  const store = loadSessionStore(deps.sessionStorePath, { skipCache: true });
-  const eligible: Array<{ key: string; entry: SessionEntry }> = [];
+  const agentIds = listAgentIds(deps.cfg);
+  const eligible: Array<{ agentId: string; key: string; entry: SessionEntry; storePath: string }> =
+    [];
 
-  for (const [key, entry] of Object.entries(store)) {
-    if (entry && isEligibleForPreResetFlush(key, entry, nowMs)) {
-      eligible.push({ key, entry });
+  for (const agentId of agentIds) {
+    const storePath = deps.resolveSessionStorePath(agentId);
+    let store: Record<string, SessionEntry>;
+    try {
+      store = loadSessionStore(storePath, { skipCache: true });
+    } catch {
+      // Store doesn't exist yet for this agent — skip
+      continue;
+    }
+
+    for (const [key, entry] of Object.entries(store)) {
+      if (entry && isEligibleForPreResetFlush(key, entry, nowMs)) {
+        eligible.push({ agentId, key, entry, storePath });
+      }
     }
   }
 
   if (eligible.length === 0) {
-    deps.log.info({}, "pre-reset-flush: no eligible sessions");
+    deps.log.info({ agents: agentIds.length }, "pre-reset-flush: no eligible sessions");
     return { flushed: 0, skipped: 0, errors: 0 };
   }
 
@@ -174,17 +187,17 @@ export async function runPreResetFlushSweep(deps: PreResetFlushDeps): Promise<Pr
   const skipped = eligible.length - toFlush.length;
 
   deps.log.info(
-    { eligible: eligible.length, flushing: toFlush.length, skipped },
-    `pre-reset-flush: starting sweep for ${toFlush.length} session(s)`,
+    { eligible: eligible.length, flushing: toFlush.length, skipped, agents: agentIds.length },
+    `pre-reset-flush: starting sweep for ${toFlush.length} session(s) across ${agentIds.length} agent(s)`,
   );
 
   let flushed = 0;
   let errors = 0;
 
-  for (const { key, entry } of toFlush) {
+  for (const { agentId, key, entry, storePath } of toFlush) {
     try {
-      // Build a synthetic cron job for the flush turn
-      const syntheticJob = buildPreResetFlushJob(key, entry);
+      // Build a synthetic cron job for the flush turn, scoped to the correct agent
+      const syntheticJob = buildPreResetFlushJob(key, entry, agentId);
       await deps.runIsolatedAgentJob({
         job: syntheticJob,
         message: PRE_RESET_FLUSH_PROMPT,
@@ -193,7 +206,7 @@ export async function runPreResetFlushSweep(deps: PreResetFlushDeps): Promise<Pr
       // Mark session as flushed
       try {
         await updateSessionStoreEntry({
-          storePath: deps.sessionStorePath,
+          storePath,
           sessionKey: key,
           update: async () => ({ preResetFlushAt: Date.now() }),
         });
@@ -203,20 +216,20 @@ export async function runPreResetFlushSweep(deps: PreResetFlushDeps): Promise<Pr
 
       flushed++;
       deps.log.info(
-        { sessionKey: key, tokens: entry.totalTokens },
-        `pre-reset-flush: flushed session ${key}`,
+        { agentId, sessionKey: key, tokens: entry.totalTokens },
+        `pre-reset-flush: flushed session ${key} (agent: ${agentId})`,
       );
     } catch (err) {
       errors++;
       deps.log.warn(
-        { sessionKey: key, err: String(err) },
-        `pre-reset-flush: failed to flush session ${key}`,
+        { agentId, sessionKey: key, err: String(err) },
+        `pre-reset-flush: failed to flush session ${key} (agent: ${agentId})`,
       );
     }
   }
 
   deps.log.info(
-    { flushed, skipped, errors },
+    { flushed, skipped, errors, agents: agentIds.length },
     `pre-reset-flush: sweep complete — flushed=${flushed} skipped=${skipped} errors=${errors}`,
   );
 
@@ -227,10 +240,11 @@ export async function runPreResetFlushSweep(deps: PreResetFlushDeps): Promise<Pr
 // Synthetic job builder
 // ---------------------------------------------------------------------------
 
-function buildPreResetFlushJob(sessionKey: string, _entry: SessionEntry): CronJob {
+function buildPreResetFlushJob(sessionKey: string, _entry: SessionEntry, agentId: string): CronJob {
   const now = Date.now();
   return {
     id: `__pre-reset-flush:${sessionKey}`,
+    agentId,
     name: "Pre-reset memory flush",
     description: "Automated pre-reset memory flush before daily session expiry",
     enabled: true,
