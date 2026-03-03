@@ -16,6 +16,9 @@ export type TypingController = {
 export function createTypingController(params: {
   onReplyStart?: () => Promise<void> | void;
   onCleanup?: () => void;
+  /** Called when the typing TTL expires while the LLM run is still active.
+   *  Use this to send a "still thinking" status message. */
+  onTtlExpired?: () => void;
   typingIntervalSeconds?: number;
   typingTtlMs?: number;
   silentToken?: string;
@@ -24,6 +27,7 @@ export function createTypingController(params: {
   const {
     onReplyStart,
     onCleanup,
+    onTtlExpired,
     typingIntervalSeconds = 6,
     typingTtlMs = 2 * 60_000,
     silentToken = SILENT_REPLY_TOKEN,
@@ -94,6 +98,11 @@ export function createTypingController(params: {
         return;
       }
       log?.(`typing TTL reached (${formatTypingTtl(typingTtlMs)}); stopping typing indicator`);
+      // Notify caller that the TTL expired while the run is still active.
+      // This lets them send a "still thinking" status message.
+      if (!runComplete && onTtlExpired) {
+        onTtlExpired();
+      }
       cleanup();
     }, typingTtlMs);
   };

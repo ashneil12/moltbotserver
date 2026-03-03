@@ -20,16 +20,23 @@ describe("typing controller", () => {
     await typing.startTypingLoop();
     expect(onReplyStart).toHaveBeenCalledTimes(1);
 
-    vi.advanceTimersByTime(2_000);
+    // Advance in 1s steps so the async tick() resolves between intervals
+    // (the keepalive loop has a tickInFlight guard that blocks concurrent ticks).
+    await vi.advanceTimersByTimeAsync(1_001);
+    expect(onReplyStart).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1_000);
     expect(onReplyStart).toHaveBeenCalledTimes(3);
 
+    // After run completes, the start guard blocks new onReplyStart calls —
+    // the interval tick fires but triggerTyping() is blocked.
     typing.markRunComplete();
-    vi.advanceTimersByTime(1_000);
-    expect(onReplyStart).toHaveBeenCalledTimes(4);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(onReplyStart).toHaveBeenCalledTimes(3);
 
+    // markDispatchIdle triggers cleanup (sealed), no more ticks.
     typing.markDispatchIdle();
-    vi.advanceTimersByTime(2_000);
-    expect(onReplyStart).toHaveBeenCalledTimes(4);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(onReplyStart).toHaveBeenCalledTimes(3);
   });
 
   it("keeps typing until both idle and run completion are set", async () => {
@@ -45,11 +52,14 @@ describe("typing controller", () => {
     expect(onReplyStart).toHaveBeenCalledTimes(1);
 
     typing.markDispatchIdle();
-    vi.advanceTimersByTime(2_000);
+    // Advance in 1s steps so the async tick() resolves between intervals.
+    await vi.advanceTimersByTimeAsync(1_001);
+    expect(onReplyStart).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1_000);
     expect(onReplyStart).toHaveBeenCalledTimes(3);
 
     typing.markRunComplete();
-    vi.advanceTimersByTime(2_000);
+    await vi.advanceTimersByTimeAsync(2_000);
     expect(onReplyStart).toHaveBeenCalledTimes(3);
   });
 
@@ -90,6 +100,45 @@ describe("typing controller", () => {
     await typing.startTypingOnText("late tool result");
     vi.advanceTimersByTime(5_000);
     expect(onReplyStart).toHaveBeenCalledTimes(1);
+  });
+
+  it("invokes onTtlExpired when TTL fires during active run", async () => {
+    vi.useFakeTimers();
+    const onTtlExpired = vi.fn();
+    const onReplyStart = vi.fn(async () => {});
+    const typing = createTypingController({
+      onReplyStart,
+      onTtlExpired,
+      typingIntervalSeconds: 1,
+      typingTtlMs: 5_000,
+    });
+
+    await typing.startTypingLoop();
+    expect(onTtlExpired).not.toHaveBeenCalled();
+
+    // Advance past the TTL (run is still active)
+    vi.advanceTimersByTime(5_001);
+    expect(onTtlExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT invoke onTtlExpired after run completion", async () => {
+    vi.useFakeTimers();
+    const onTtlExpired = vi.fn();
+    const onReplyStart = vi.fn(async () => {});
+    const typing = createTypingController({
+      onReplyStart,
+      onTtlExpired,
+      typingIntervalSeconds: 1,
+      typingTtlMs: 5_000,
+    });
+
+    await typing.startTypingLoop();
+    typing.markRunComplete();
+    typing.markDispatchIdle();
+
+    // TTL fires but run is already complete — should NOT call onTtlExpired
+    vi.advanceTimersByTime(5_001);
+    expect(onTtlExpired).not.toHaveBeenCalled();
   });
 });
 

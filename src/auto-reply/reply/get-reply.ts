@@ -115,6 +115,7 @@ export async function getReplyFromConfig(
   const typing = createTypingController({
     onReplyStart: opts?.onReplyStart,
     onCleanup: opts?.onTypingCleanup,
+    onTtlExpired: opts?.onTtlExpired,
     typingIntervalSeconds,
     silentToken: SILENT_REPLY_TOKEN,
     log: defaultRuntime.log,

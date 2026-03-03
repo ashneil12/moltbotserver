@@ -39,7 +39,10 @@ function readConfig(path) {
   try {
     const raw = readFileSync(path, "utf8").trim();
     return raw ? JSON.parse(raw) : {};
-  } catch {
+  } catch (err) {
+    if (err?.code !== "ENOENT") {
+      console.warn(`[enforce-config] ⚠ Failed to read ${path}: ${err.message}`);
+    }
     return {};
   }
 }
@@ -318,6 +321,19 @@ function enforceModels(configPath) {
     }
   }
 
+  // Deduplicate: remove the primary model from fallbacks to avoid
+  // retrying the same endpoint that just failed.
+  if (defaults.model.primary && Array.isArray(defaults.model.fallbacks)) {
+    const primary = defaults.model.primary;
+    const before = defaults.model.fallbacks.length;
+    defaults.model.fallbacks = defaults.model.fallbacks.filter((fb) => fb !== primary);
+    if (defaults.model.fallbacks.length < before) {
+      console.log(
+        `[enforce-config] Removed primary model ${primary} from fallbacks (was duplicated)`,
+      );
+    }
+  }
+
   // Per-agent model overrides from dashboard (JSON: {"main":"provider/model",...})
   const agentModelsRaw = env("OPENCLAW_AGENT_MODELS");
   if (agentModelsRaw) {
@@ -474,6 +490,10 @@ function enforceCore(configPath) {
     prompt:
       "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store.",
   };
+
+  // Bootstrap: increase per-file char limit so SOUL.md (~25K), writelikeahuman.md (~34K),
+  // and howtobehuman.md (~32K) are injected in full. Total budget (150K) accommodates this.
+  defaults.bootstrapMaxChars = 50_000;
 
   // Context pruning
   defaults.contextPruning = {
@@ -642,6 +662,14 @@ const MAIN_ONLY_JOBS = new Set([
   "nightly-innovation",
   "morning-briefing",
   "self-audit-21",
+]);
+
+/**
+ * Agents that should receive specific main-only jobs.
+ * Format: agentId → Set of job names to INCLUDE (overriding MAIN_ONLY_JOBS exclusion).
+ */
+const AGENT_ADVANCED_CRON_OVERRIDES = new Map([
+  ["jael", new Set(["nightly-innovation", "self-audit-21", "morning-briefing"])],
 ]);
 
 function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
@@ -1533,7 +1561,11 @@ function seedSubAgentCronJobs(dataDir) {
     // - file missing → full seed (excluding main-only jobs)
     // - file exists → reflection interval patching only
     const existed = existsSync(jobsFile);
-    seedCronJobs(jobsFile, { excludeNames: MAIN_ONLY_JOBS });
+    const overrides = AGENT_ADVANCED_CRON_OVERRIDES.get(agentName);
+    const effectiveExcludes = overrides
+      ? new Set([...MAIN_ONLY_JOBS].filter((n) => !overrides.has(n)))
+      : MAIN_ONLY_JOBS;
+    seedCronJobs(jobsFile, { excludeNames: effectiveExcludes });
 
     if (!existed && existsSync(jobsFile)) {
       seeded++;

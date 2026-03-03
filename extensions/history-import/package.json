@@ -1,0 +1,12 @@
+{
+  "name": "@openclaw/history-import",
+  "version": "0.1.0",
+  "description": "Import chat histories from ChatGPT and Claude into OpenClaw",
+  "type": "module",
+  "dependencies": {},
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

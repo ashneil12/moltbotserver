@@ -63,12 +63,17 @@ export type ReplyDispatcherWithTypingOptions = Omit<ReplyDispatcherOptions, "onI
   onIdle?: () => void;
   /** Called when the typing controller is cleaned up (e.g., on NO_REPLY). */
   onCleanup?: () => void;
+  /** Called when the typing TTL expires while the LLM run is still active.
+   *  Defaults to sending a brief "still thinking" status message via `deliver`. */
+  onTtlExpired?: () => void;
 };
 
 type ReplyDispatcherWithTypingResult = {
   dispatcher: ReplyDispatcher;
   replyOptions: Pick<GetReplyOptions, "onReplyStart" | "onTypingController" | "onTypingCleanup">;
   markDispatchIdle: () => void;
+  /** Resolved TTL-expiry callback to pass to the typing controller. */
+  onTtlExpired: () => void;
 };
 
 export type ReplyDispatcher = {
@@ -211,10 +216,21 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
 export function createReplyDispatcherWithTyping(
   options: ReplyDispatcherWithTypingOptions,
 ): ReplyDispatcherWithTypingResult {
-  const { typingCallbacks, onReplyStart, onIdle, onCleanup, ...dispatcherOptions } = options;
+  const { typingCallbacks, onReplyStart, onIdle, onCleanup, onTtlExpired, ...dispatcherOptions } =
+    options;
   const resolvedOnReplyStart = onReplyStart ?? typingCallbacks?.onReplyStart;
   const resolvedOnIdle = onIdle ?? typingCallbacks?.onIdle;
   const resolvedOnCleanup = onCleanup ?? typingCallbacks?.onCleanup;
+  const resolvedOnTtlExpired =
+    onTtlExpired ??
+    (() => {
+      // Default: send a brief status message so the user knows we're still working.
+      void options
+        .deliver({ text: "⏳ Still thinking, hang tight..." }, { kind: "block" })
+        .catch(() => {
+          // Best-effort — swallow delivery errors so we don't crash the typing cleanup path.
+        });
+    });
   let typingController: TypingController | undefined;
   const dispatcher = createReplyDispatcher({
     ...dispatcherOptions,
@@ -237,5 +253,6 @@ export function createReplyDispatcherWithTyping(
       typingController?.markDispatchIdle();
       resolvedOnIdle?.();
     },
+    onTtlExpired: resolvedOnTtlExpired,
   };
 }

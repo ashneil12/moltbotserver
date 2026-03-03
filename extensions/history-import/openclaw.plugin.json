@@ -1,0 +1,22 @@
+{
+  "id": "history-import",
+  "name": "History Import",
+  "description": "Import chat histories from ChatGPT and Claude. Makes all conversations searchable via memory_search and optionally seeds identity files.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "maxSampleConversations": {
+        "type": "number",
+        "description": "Max conversations to sample for identity reasoning (default: 50)"
+      }
+    }
+  },
+  "skills": ["skills/history-import"],
+  "uiHints": {
+    "maxSampleConversations": {
+      "label": "Max Sample Conversations",
+      "placeholder": "50"
+    }
+  }
+}

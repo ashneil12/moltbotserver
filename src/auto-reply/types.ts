@@ -32,6 +32,9 @@ export type GetReplyOptions = {
   onReplyStart?: () => Promise<void> | void;
   /** Called when the typing controller cleans up (e.g., run ended with NO_REPLY). */
   onTypingCleanup?: () => void;
+  /** Called when the typing TTL expires while the LLM run is still active.
+   *  Use this to send a "still thinking" status message to the user. */
+  onTtlExpired?: () => void;
   onTypingController?: (typing: TypingController) => void;
   isHeartbeat?: boolean;
   /** Policy-level typing control for run classes (user/system/internal/heartbeat). */
