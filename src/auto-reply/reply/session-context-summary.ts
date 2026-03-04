@@ -5,7 +5,7 @@ import { createSubsystemLogger } from "../../logging/subsystem.js";
 const log = createSubsystemLogger("session-context");
 
 /** Maximum characters to keep in the session-context.md file. */
-export const MAX_SESSION_CONTEXT_CHARS = 20_000;
+export const MAX_SESSION_CONTEXT_CHARS = 24_000;
 
 /** Maximum number of recent user messages to extract from a transcript. */
 const MAX_USER_MESSAGES = 30;
