@@ -2,15 +2,16 @@ FROM debian:bookworm-slim@sha256:98f4b71de414932439ac6ac690d7060df1f27161073c503
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install base dependencies (without browser — Chrome is added separately)
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   bash \
   ca-certificates \
-  chromium \
   curl \
   fonts-liberation \
   fonts-noto-color-emoji \
   git \
+  gnupg \
   jq \
   procps \
   python3 \
@@ -20,11 +21,15 @@ RUN apt-get update \
   xvfb \
   && rm -rf /var/lib/apt/lists/*
 
-# Debian's Chromium package ships /etc/chromium.d/default-flags which injects
-# --enable-gpu-rasterization unconditionally. Under Xvfb (no real GPU) this
-# spawns a --type=gpu-process child that can spin at 100% CPU indefinitely.
-# Remove just that line; keep all other system flags intact.
-RUN sed -i '/--enable-gpu-rasterization/d' /etc/chromium.d/default-flags
+# Install Google Chrome Stable (required for Chrome Web Store extension installation;
+# Debian's chromium package is blocked by the Web Store with "Installation is not enabled")
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+  | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+  > /etc/apt/sources.list.d/google-chrome.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends google-chrome-stable \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install noVNC from GitHub (Debian package is outdated and has broken assets)
 ARG NOVNC_VERSION=1.5.0
