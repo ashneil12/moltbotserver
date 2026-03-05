@@ -627,6 +627,9 @@ function enforceCore(configPath) {
   // doesn't warn about auto-loading unknown extensions.
   const plugins = ensure(config, "plugins");
   plugins.allow = ["openclaw-honcho"];
+  if (isTruthy(env("CAMOFOX_ENABLED"))) {
+    plugins.allow.push("camofox-browser");
+  }
 
   // Gateway UI / bind / port
   const gateway = ensure(config, "gateway");
@@ -647,10 +650,15 @@ function enforceCore(configPath) {
   }
   gateway.controlUi = {
     enabled: true,
-    dangerouslyDisableDeviceAuth: true,
-    dangerouslyAllowHostHeaderOriginFallback: true,
     allowedOrigins: [...allowedOrigins],
   };
+
+  // Managed platform: disable device auth (dashboard handles auth via token).
+  // Community (self-hosted) deployments keep device auth for full security.
+  if (isTruthy(env("OPENCLAW_MANAGED_PLATFORM"))) {
+    gateway.controlUi.dangerouslyDisableDeviceAuth = true;
+    gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
+  }
 
   // Compaction + memory flush
   const defaults = ensure(config, "agents", "defaults");
@@ -786,6 +794,7 @@ function buildAnnounceDelivery() {
 /** Job names that should ONLY run on the main agent (not sub-agents). */
 const MAIN_ONLY_JOBS = new Set([
   "healthcheck-update-status",
+  "healthcheck-security-audit",
   "nightly-innovation",
   "morning-briefing",
   "self-audit-21",
@@ -917,7 +926,7 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
  * for what jobs should exist. Used for both fresh seeds and backfills.
  */
 function buildCanonicalJobs(nowMs, reflectionEnabled) {
-  return [
+  const jobs = [
     {
       id: makeId(),
       name: "auto-tidy",
@@ -1646,6 +1655,47 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       state: {},
     },
   ];
+
+  // Security audit — only for non-managed (community) deployments.
+  // Managed platform has dedicated content-scanner + data-classification modules.
+  if (!isTruthy(env("OPENCLAW_MANAGED_PLATFORM"))) {
+    jobs.push({
+      id: makeId(),
+      name: "healthcheck-security-audit",
+      description: "Weekly security audit of the deployment",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "every", everyMs: 604800000, anchorMs: nowMs }, // 7 days
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "SECURITY AUDIT — Run a security health check on this deployment.",
+          "",
+          "STEP 1: Run `openclaw security audit --deep`",
+          "STEP 2: Review each finding and its severity",
+          "STEP 3: For CRITICAL/HIGH findings, take immediate remediation action if safe",
+          "STEP 4: For MEDIUM/LOW findings, log them to memory/security-audit.md",
+          "STEP 5: If any finding requires user attention (e.g., exposed ports, missing auth),",
+          "        send a brief summary message.",
+          "",
+          "If `openclaw security audit` is not available, perform manual checks:",
+          "- Verify gateway auth is configured (token or device auth)",
+          "- Check for open ports that shouldn't be exposed",
+          "- Verify workspace file permissions are reasonable",
+          "- Check disk space and resource usage",
+          "",
+          "Only message the user if there are actionable findings.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    });
+  }
+
+  return jobs;
 }
 
 /**

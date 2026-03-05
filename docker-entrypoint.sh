@@ -41,9 +41,10 @@ GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-${CLAWDBOT_GATEWAY_PORT:-${PORT:-18789}}}
 
 # Security: Disable mDNS/Bonjour broadcasting (prevents information disclosure)
 export OPENCLAW_DISABLE_BONJOUR=1
-# MoltBot managed platform: block upstream openclaw update CLI and RPC.
-# Updates are delivered via Docker image pull from the dashboard.
-export OPENCLAW_MANAGED_PLATFORM=1
+# OPENCLAW_MANAGED_PLATFORM is injected by the dashboard's docker-compose template.
+# When set to "1", enables SaaS-mode behaviors: auto-onboard, auto-approve device
+# pairing, and disables device auth. Community (self-hosted) deployments that lack
+# this env var get the normal setup flow with full security.
 
 # SaaS mode: disable device auth for Control UI (use token-only auth)
 DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-${MOLTBOT_DISABLE_DEVICE_AUTH:-false}}"
@@ -69,11 +70,6 @@ IMAGE_MODEL="${OPENCLAW_IMAGE_MODEL:-${DEFAULT_MODEL}}"
 # Concurrency settings (configurable via dashboard)
 MAX_CONCURRENT="${OPENCLAW_MAX_CONCURRENT:-4}"
 SUBAGENT_MAX_CONCURRENT="${OPENCLAW_SUBAGENT_MAX_CONCURRENT:-8}"
-
-# Human delay settings (natural response timing for messaging channels)
-HUMAN_DELAY_ENABLED="${OPENCLAW_HUMAN_DELAY_ENABLED:-false}"
-HUMAN_DELAY_MIN="${OPENCLAW_HUMAN_DELAY_MIN:-800}"
-HUMAN_DELAY_MAX="${OPENCLAW_HUMAN_DELAY_MAX:-2500}"
 
 # Agent workspace directory (where SOUL.md, WORKING.md, memory/ etc live)
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-/home/node/workspace}}"
@@ -223,11 +219,7 @@ if [ ! -f "$CONFIG_FILE" ] || [ "$DISABLE_DEVICE_AUTH" = "true" ] || [ "$DISABLE
   "messages": {
     "queue": {
       "mode": "collect"
-    }$(if [ "$HUMAN_DELAY_ENABLED" = "true" ] || [ "$HUMAN_DELAY_ENABLED" = "1" ]; then echo ",
-    \"humanDelay\": {
-      \"min\": ${HUMAN_DELAY_MIN},
-      \"max\": ${HUMAN_DELAY_MAX}
-    }"; fi)
+    }
   }
 }
 EOF
@@ -251,8 +243,10 @@ fi
 
 # =============================================================================
 # AUTO-ONBOARD: Run non-interactive onboard when OPENCLAW_AUTO_ONBOARD=true
-# This allows the dashboard to pre-configure instances during deployment
+# This allows the dashboard to pre-configure instances during deployment.
+# Only active in managed-platform mode — community users run normal setup.
 # =============================================================================
+if [ "${OPENCLAW_MANAGED_PLATFORM:-}" = "1" ]; then
 AUTO_ONBOARD="${OPENCLAW_AUTO_ONBOARD:-false}"
 ONBOARD_MARKER="$CONFIG_DIR/.onboard-complete"
 
@@ -435,6 +429,7 @@ if [ "$AUTO_ONBOARD" = "true" ] || [ "$AUTO_ONBOARD" = "1" ]; then
     " 2>&1 || echo '[entrypoint] WARNING: controlUi enforcement failed (non-fatal)'
   fi
 fi
+fi  # end OPENCLAW_MANAGED_PLATFORM auto-onboard guard
 
 # Security: Ensure SOUL.md (Prompt Hardening) is present in the workspace
 # This file is copied into the image at build time (/app/SOUL.md)
@@ -787,6 +782,9 @@ fi
 # AUTO-APPROVE DEVICE PAIRING: Background a loop that waits for the gateway
 # to accept connections, then auto-approves the pending local device.
 #
+# Only active in managed-platform mode — community users go through normal
+# device pairing flow for security.
+#
 # Why: The gateway requires device pairing for CLI RPC access (even with
 # token auth enabled). Inside a container, no one is around to manually run
 # `openclaw devices approve --latest`. This backgrounds the approval so it
@@ -795,6 +793,7 @@ fi
 # The loop polls for up to 15 seconds. If the gateway isn't ready by then,
 # the device will remain pending (manual fallback via Control UI or SSH).
 # =============================================================================
+if [ "${OPENCLAW_MANAGED_PLATFORM:-}" = "1" ]; then
 OPENCLAW_SCRIPT="/app/openclaw.mjs"
 if [ -f "$OPENCLAW_SCRIPT" ]; then
   (
@@ -811,6 +810,7 @@ if [ -f "$OPENCLAW_SCRIPT" ]; then
   ) &
   echo "[entrypoint] Device auto-approve scheduled (background)"
 fi
+fi  # end OPENCLAW_MANAGED_PLATFORM auto-approve guard
 
 chown -R node:node "$CONFIG_DIR" "$WORKSPACE_DIR" 2>/dev/null || true
 # Re-fix extensions ownership: the chown above sets everything to node:node,

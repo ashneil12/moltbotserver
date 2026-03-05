@@ -5,6 +5,34 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Managed Platform Mode Gating — Community Self-Hosting Support (2026-03-05)
+
+**Purpose:** Enable community users to self-host the enhanced OpenClaw fork with full security, while managed (OCS/MoltBot) deployments remain unaffected. Previously, SaaS-mode security bypasses (disabled device auth, auto-onboard, auto-approve device pairing) were hardcoded. Now they're gated behind `OPENCLAW_MANAGED_PLATFORM=1`, which the dashboard already injects via docker-compose.
+
+### Changes
+
+| File                   | Change                                                                                                                 | Why                                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `docker-entrypoint.sh` | Removed hardcoded `export OPENCLAW_MANAGED_PLATFORM=1`                                                                 | Env var now injected by dashboard docker-compose only                                       |
+| `docker-entrypoint.sh` | Gated auto-onboard block (lines 252–437) behind `OPENCLAW_MANAGED_PLATFORM`                                            | Community users go through normal `openclaw onboard` setup                                  |
+| `docker-entrypoint.sh` | Gated auto-approve device pairing (lines 786–813) behind `OPENCLAW_MANAGED_PLATFORM`                                   | Community users get normal device pairing flow for security                                 |
+| `enforce-config.mjs`   | Gated `dangerouslyDisableDeviceAuth` and `dangerouslyAllowHostHeaderOriginFallback` behind `OPENCLAW_MANAGED_PLATFORM` | Community users get full device auth security                                               |
+| `enforce-config.mjs`   | Added `healthcheck-security-audit` cron job for non-managed deployments                                                | Community users get weekly security audits (managed platform has dedicated scanner modules) |
+| `enforce-config.mjs`   | Added `healthcheck-security-audit` to `MAIN_ONLY_JOBS`                                                                 | Sub-agents don't run duplicate audits                                                       |
+
+### Deployment Modes
+
+| Mode                        | How                                                            | Security Bypasses                                                    |
+| --------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Managed (OCS)**           | Dashboard sets `OPENCLAW_MANAGED_PLATFORM=1` in docker-compose | Active: auto-onboard, auto-approve, disabled device auth             |
+| **Community (self-hosted)** | Deploy Docker image without the env var                        | Inactive: normal setup flow, full device auth, weekly security audit |
+
+### Upstream Sync Risk
+
+**None.** `docker-entrypoint.sh` and `enforce-config.mjs` are fully custom files.
+
+---
+
 ## Chromium Stealth Hardening & Playwright Anti-Detection (2026-03-05)
 
 **Purpose:** Reduce browser detectability by anti-bot systems (Twitter/X, Cloudflare, etc.) through two layers: Docker/Chrome-level hardening and Playwright-level JavaScript evasions.

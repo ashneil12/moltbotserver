@@ -52,18 +52,21 @@ function resolveHonchoEnabled(): boolean {
 
 /**
  * Check if human voice mode is enabled.
- * Accepts both OPENCLAW_HUMAN_MODE=1 (canonical) and
- * OPENCLAW_HUMAN_MODE_ENABLED=true/1 (dashboard convention).
+ * Defaults to TRUE — human voice mode is active unless explicitly disabled
+ * via OPENCLAW_HUMAN_MODE=0 or OPENCLAW_HUMAN_MODE_ENABLED=false.
  * When enabled, openclaw-human-v1.md is seeded into the workspace.
  * When disabled, references to these files are removed from SOUL.md.
  */
 export function resolveHumanModeEnabled(): boolean {
   const short = process.env.OPENCLAW_HUMAN_MODE?.trim();
-  if (short === "1") {
-    return true;
+  if (short === "0") {
+    return false;
   }
   const long = process.env.OPENCLAW_HUMAN_MODE_ENABLED?.trim();
-  return long === "true" || long === "1";
+  if (long === "false" || long === "0") {
+    return false;
+  }
+  return true;
 }
 
 /**

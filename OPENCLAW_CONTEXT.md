@@ -167,4 +167,5 @@ These exist in upstream AND have local changes. Conflicts are likely.
 14. **Telegram media timeout** — `grep -c 'MEDIA_DOWNLOAD_TIMEOUT_MS' src/telegram/bot-handlers.ts` must return ≥ 1. Without this, hung media downloads block entire message groups.
 15. **SQL tool registration** — `grep -c 'createSqlQueryTool' src/agents/openclaw-tools.ts` must return ≥ 1. Without this, agents lose `sql_query` and `sql_execute` tools.
 16. **Browser startup sweep** — `grep -c 'sweepStaleBrowserContainers' src/gateway/server-startup.ts` must return ≥ 1. Without this, browser containers won't auto-update when the gateway restarts after an image update. Also verify `grep -c 'readDockerImageId' src/agents/sandbox/docker.ts` returns ≥ 1.
-17. **Build verification** — `npm install && npm run build`
+17. **Managed-platform gating** — `grep -c 'OPENCLAW_MANAGED_PLATFORM' docker-entrypoint.sh` must return ≥ 3 (auto-onboard guard, auto-approve guard, comment). `grep -c 'OPENCLAW_MANAGED_PLATFORM' enforce-config.mjs` must return ≥ 2 (device auth guard, security audit guard). Without these, community deployments get SaaS-mode bypasses.
+18. **Build verification** — `npm install && npm run build`
