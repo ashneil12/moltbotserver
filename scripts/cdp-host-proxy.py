@@ -125,8 +125,16 @@ def handle_websocket_upgrade(handler):
             pass
 
 
-class CDPProxyServer(http.server.HTTPServer):
-    """HTTP server that detects WebSocket upgrades and tunnels them."""
+class CDPProxyServer(http.server.ThreadingHTTPServer):
+    """Threaded HTTP server that detects WebSocket upgrades and tunnels them.
+
+    Using ThreadingHTTPServer (not HTTPServer) is critical: WebSocket tunnels
+    block their handler thread for the lifetime of the connection (via
+    t1.join()/t2.join() in handle_websocket_upgrade). A single-threaded server
+    would be unable to serve /json/version health checks while any WebSocket
+    connection is active, causing 'CDP not reachable' failures.
+    """
+    daemon_threads = True
 
     def finish_request(self, request, client_address):
         # Peek at the request to detect WebSocket upgrades
