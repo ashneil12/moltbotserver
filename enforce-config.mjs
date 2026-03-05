@@ -745,23 +745,35 @@ function enforceCore(configPath) {
   messages.queue = { mode: "collect" };
 
   // Browser (conditional)
+  // IMPORTANT: merge rather than overwrite — ensure-agent-browsers.sh adds
+  // per-agent profiles to this section. Overwriting would wipe them on every
+  // gateway restart. We enforce the core settings and update only the default
+  // `openclaw` profile's cdpUrl; all other profiles are preserved.
   if (isTruthy(env("OPENCLAW_BROWSER_ENABLED"))) {
     const cdpHost = env("OPENCLAW_BROWSER_CDP_HOST", "browser");
     const cdpPort = env("OPENCLAW_BROWSER_CDP_PORT", "9222");
+    const existingBrowser = config.browser || {};
+    const existingProfiles = existingBrowser.profiles || {};
     config.browser = {
+      ...existingBrowser,
       enabled: true,
       headless: false,
       noSandbox: true,
-      attachOnly: true,
       evaluateEnabled: true,
       defaultProfile: "openclaw",
+      // Merge profiles: update the default openclaw profile but preserve
+      // all per-agent profiles added by ensure-agent-browsers.sh
       profiles: {
+        ...existingProfiles,
         openclaw: {
           cdpUrl: `http://${cdpHost}:${cdpPort}`,
           color: "#FF4500",
         },
       },
     };
+    // Remove attachOnly if it was previously set — it blocks server-side
+    // sub-agent profiles from auto-connecting to their CDP containers.
+    delete config.browser.attachOnly;
   }
 
   writeConfig(configPath, config);
