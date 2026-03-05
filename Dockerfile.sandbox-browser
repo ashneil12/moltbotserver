@@ -10,6 +10,9 @@ RUN apt-get update \
   curl \
   fonts-liberation \
   fonts-noto-color-emoji \
+  fonts-noto \
+  fonts-dejavu-core \
+  fonts-freefont-ttf \
   git \
   gnupg \
   jq \

@@ -18,6 +18,7 @@ import {
   assertBrowserNavigationResultAllowed,
   withBrowserNavigationPolicy,
 } from "./navigation-guard.js";
+import { getStealthScript } from "./stealth-scripts.js";
 
 export type BrowserConsoleMessage = {
   type: string;
@@ -297,6 +298,9 @@ function observeContext(context: BrowserContext) {
   }
   observedContexts.add(context);
   ensureContextState(context);
+  context.addInitScript(getStealthScript()).catch(() => {
+    // Best-effort: some CDP-connected contexts may not support addInitScript
+  });
 
   for (const page of context.pages()) {
     ensurePageState(page);

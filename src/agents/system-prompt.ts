@@ -534,9 +534,23 @@ export function buildAgentSystemPrompt(params: {
         ].join("\n")
       : "",
     "",
-    // ── Camoufox anti-detection browser ──────────────────────────────────
-    // Removed: Camofox integration is "Coming Soon" — no runtime support yet.
-    // When re-enabled, the plugin will register its own tools automatically.
+    // ── Camoufox anti-detection browser guidance ────────────────────────
+    // When the camofox plugin is installed, the agent gets camofox_* tools
+    // instead of the built-in browser tool. Provide usage guidance.
+    availableTools.has("camofox_navigate") && !isMinimal
+      ? [
+          "## Camofox Stealth Browser",
+          "You have a stealth Firefox browser (Camoufox) with C++ level anti-detection. Use the `camofox_*` tools instead of the `browser` tool.",
+          "- `camofox_navigate` — go to a URL or use search macros like `@google_search query`, `@youtube_search query`",
+          "- `camofox_snapshot` — get an accessibility snapshot with element references (e1, e2, etc.)",
+          "- `camofox_click` / `camofox_type` — interact with elements by reference",
+          "- `camofox_screenshot` — capture a visual screenshot",
+          "- `camofox_create_tab` / `camofox_close_tab` / `camofox_list_tabs` — tab management",
+          "- `camofox_scroll` — scroll the page",
+          "- Prefer `web_search` for quick lookups. Use Camofox when you need to interact with pages, bypass bot detection, fill forms, or scrape dynamic content.",
+          "- Always call `camofox_snapshot` after navigating to see what's on the page before interacting.",
+        ].join("\n")
+      : "",
     // Skip model aliases for subagent/none modes
     params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
       ? "## Model Aliases"

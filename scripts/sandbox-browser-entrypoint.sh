@@ -30,9 +30,17 @@ HEADLESS="${OPENCLAW_BROWSER_HEADLESS:-${CLAWDBOT_BROWSER_HEADLESS:-0}}"
 ALLOW_NO_SANDBOX="${OPENCLAW_BROWSER_NO_SANDBOX:-${CLAWDBOT_BROWSER_NO_SANDBOX:-0}}"
 NOVNC_PASSWORD="${OPENCLAW_BROWSER_NOVNC_PASSWORD:-${CLAWDBOT_BROWSER_NOVNC_PASSWORD:-}}"
 NOVNC_NO_AUTH="${OPENCLAW_BROWSER_NOVNC_NO_AUTH:-0}"
-DISABLE_GRAPHICS_FLAGS="${OPENCLAW_BROWSER_DISABLE_GRAPHICS_FLAGS:-1}"
+DISABLE_GRAPHICS_FLAGS="${OPENCLAW_BROWSER_DISABLE_GRAPHICS_FLAGS:-0}"
 DISABLE_EXTENSIONS="${OPENCLAW_BROWSER_DISABLE_EXTENSIONS:-0}"
 RENDERER_PROCESS_LIMIT="${OPENCLAW_BROWSER_RENDERER_PROCESS_LIMIT:-2}"
+
+# ── Stealth: timezone and user-agent overrides ──
+TZ_OVERRIDE="${OPENCLAW_BROWSER_TZ:-}"
+UA_OVERRIDE="${OPENCLAW_BROWSER_USER_AGENT:-}"
+
+if [[ -n "${TZ_OVERRIDE}" ]]; then
+  export TZ="${TZ_OVERRIDE}"
+fi
 
 mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
@@ -45,7 +53,7 @@ find "${HOME}/.chrome" -name 'SingletonLock' -delete 2>/dev/null || true
 find "${HOME}/.chrome" -name 'SingletonCookie' -delete 2>/dev/null || true
 find "${HOME}/.chrome" -name 'SingletonSocket' -delete 2>/dev/null || true
 
-Xvfb :1 -screen 0 1280x800x24 -ac -nolisten tcp &
+Xvfb :1 -screen 0 1920x1080x24 -ac -nolisten tcp &
 
 if [[ "${HEADLESS}" == "1" ]]; then
   CHROME_ARGS=(
@@ -74,14 +82,22 @@ CHROME_ARGS+=(
   "--no-default-browser-check"
   "--disable-dev-shm-usage"
   "--disable-background-networking"
-  "--disable-features=TranslateUI"
+  "--disable-features=TranslateUI,AutofillServerCommunication"
   "--disable-breakpad"
   "--disable-crash-reporter"
   "--no-zygote"
   "--metrics-recording-only"
   "--start-maximized"
-  "--window-size=1280,800"
+  "--window-size=1920,1080"
+  # ── Stealth flags ──
+  "--disable-blink-features=AutomationControlled"
+  "--lang=en-US"
 )
+
+# Stealth: optional user-agent override
+if [[ -n "${UA_OVERRIDE}" ]]; then
+  CHROME_ARGS+=("--user-agent=${UA_OVERRIDE}")
+fi
 
 DISABLE_GRAPHICS_FLAGS_LOWER="${DISABLE_GRAPHICS_FLAGS,,}"
 if [[ "${DISABLE_GRAPHICS_FLAGS_LOWER}" == "1" || "${DISABLE_GRAPHICS_FLAGS_LOWER}" == "true" || "${DISABLE_GRAPHICS_FLAGS_LOWER}" == "yes" || "${DISABLE_GRAPHICS_FLAGS_LOWER}" == "on" ]]; then
