@@ -20,15 +20,6 @@ const KEEP_VALUE = "__keep__";
 const MANUAL_VALUE = "__manual__";
 const VLLM_VALUE = "__vllm__";
 const PROVIDER_FILTER_THRESHOLD = 30;
-const VLLM_DEFAULT_BASE_URL = "http://127.0.0.1:8000/v1";
-const VLLM_DEFAULT_CONTEXT_WINDOW = 128000;
-const VLLM_DEFAULT_MAX_TOKENS = 8192;
-const VLLM_DEFAULT_COST = {
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-};
 
 // Models that are internal routing features and should not be shown in selection lists.
 // These may be valid as defaults (e.g., set automatically during auth flow) but are not
@@ -470,12 +461,9 @@ export async function promptModelAllowlist(params: {
 
 export function applyPrimaryModel(cfg: OpenClawConfig, model: string): OpenClawConfig {
   const defaults = cfg.agents?.defaults;
-  const existingModel = defaults?.model;
   const existingModels = defaults?.models;
-  const fallbacks =
-    typeof existingModel === "object" && existingModel !== null && "fallbacks" in existingModel
-      ? (existingModel as { fallbacks?: string[] }).fallbacks
-      : undefined;
+  // Intentionally do NOT preserve existing fallbacks when switching primary.
+  // Each provider/model selection should be self-contained with no auto-generated fallback chain.
   return {
     ...cfg,
     agents: {
@@ -483,7 +471,6 @@ export function applyPrimaryModel(cfg: OpenClawConfig, model: string): OpenClawC
       defaults: {
         ...defaults,
         model: {
-          ...(fallbacks ? { fallbacks } : undefined),
           primary: model,
         },
         models: {
@@ -531,46 +518,10 @@ export function applyModelAllowlist(cfg: OpenClawConfig, models: string[]): Open
 }
 
 export function applyModelFallbacksFromSelection(
-  cfg: OpenClawConfig,
-  selection: string[],
+  _cfg: OpenClawConfig,
+  _selection: string[],
 ): OpenClawConfig {
-  const normalized = normalizeModelKeys(selection);
-  if (normalized.length <= 1) {
-    return cfg;
-  }
-
-  const resolved = resolveConfiguredModelRef({
-    cfg,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  const resolvedKey = modelKey(resolved.provider, resolved.model);
-  if (!normalized.includes(resolvedKey)) {
-    return cfg;
-  }
-
-  const defaults = cfg.agents?.defaults;
-  const existingModel = defaults?.model;
-  const existingPrimary =
-    typeof existingModel === "string"
-      ? existingModel
-      : existingModel && typeof existingModel === "object"
-        ? existingModel.primary
-        : undefined;
-
-  const fallbacks = normalized.filter((key) => key !== resolvedKey);
-  return {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...defaults,
-        model: {
-          ...(typeof existingModel === "object" ? existingModel : undefined),
-          primary: existingPrimary ?? resolvedKey,
-          fallbacks,
-        },
-      },
-    },
-  };
+  // No-op: model selection no longer auto-generates a fallback chain.
+  // Fallbacks can still be configured manually via `models fallbacks add`.
+  return _cfg;
 }

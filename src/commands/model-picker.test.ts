@@ -176,7 +176,7 @@ describe("applyModelAllowlist", () => {
 });
 
 describe("applyModelFallbacksFromSelection", () => {
-  it("sets fallbacks from selection when the primary is included", () => {
+  it("returns config unchanged (no-op — fallbacks are no longer auto-generated)", () => {
     const config = {
       agents: {
         defaults: {
@@ -189,13 +189,10 @@ describe("applyModelFallbacksFromSelection", () => {
       "anthropic/claude-opus-4-5",
       "anthropic/claude-sonnet-4-5",
     ]);
-    expect(next.agents?.defaults?.model).toEqual({
-      primary: "anthropic/claude-opus-4-5",
-      fallbacks: ["anthropic/claude-sonnet-4-5"],
-    });
+    expect(next).toBe(config);
   });
 
-  it("keeps existing fallbacks when the primary is not selected", () => {
+  it("returns config unchanged even when primary is not in selection", () => {
     const config = {
       agents: {
         defaults: {
@@ -205,9 +202,6 @@ describe("applyModelFallbacksFromSelection", () => {
     } as OpenClawConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.2"]);
-    expect(next.agents?.defaults?.model).toEqual({
-      primary: "anthropic/claude-opus-4-5",
-      fallbacks: ["openai/gpt-5.2"],
-    });
+    expect(next).toBe(config);
   });
 });

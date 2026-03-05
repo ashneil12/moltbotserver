@@ -6,17 +6,6 @@ import type {
   ModelProviderConfig,
 } from "../config/types.models.js";
 
-function extractAgentDefaultModelFallbacks(model: unknown): string[] | undefined {
-  if (!model || typeof model !== "object") {
-    return undefined;
-  }
-  if (!("fallbacks" in model)) {
-    return undefined;
-  }
-  const fallbacks = (model as { fallbacks?: unknown }).fallbacks;
-  return Array.isArray(fallbacks) ? fallbacks.map((v) => String(v)) : undefined;
-}
-
 export function applyOnboardAuthAgentModelsAndProviders(
   cfg: OpenClawConfig,
   params: {
@@ -44,7 +33,8 @@ export function applyAgentDefaultModelPrimary(
   cfg: OpenClawConfig,
   primary: string,
 ): OpenClawConfig {
-  const existingFallbacks = extractAgentDefaultModelFallbacks(cfg.agents?.defaults?.model);
+  // Intentionally do NOT preserve existing fallbacks when setting a new primary.
+  // Each provider/model selection should be self-contained with no auto-generated fallback chain.
   return {
     ...cfg,
     agents: {
@@ -52,7 +42,6 @@ export function applyAgentDefaultModelPrimary(
       defaults: {
         ...cfg.agents?.defaults,
         model: {
-          ...(existingFallbacks ? { fallbacks: existingFallbacks } : undefined),
           primary,
         },
       },
