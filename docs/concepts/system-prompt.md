@@ -19,6 +19,7 @@ The prompt is intentionally compact and uses fixed sections:
 - **Tooling**: current tool list + short descriptions.
 - **Safety**: short guardrail reminder to avoid power-seeking behavior or bypassing oversight.
 - **Skills** (when available): tells the model how to load skill instructions on demand.
+- **Memory Recall** (when `memory_search`/`memory_get` available): instructs the agent to search workspace memory files for relevant context before answering any non-trivial question.
 - **OpenClaw Self-Update**: how to run `config.apply` and `update.run`.
 - **Workspace**: working directory (`agents.defaults.workspace`).
 - **Documentation**: local path to OpenClaw docs (repo or npm package) and when to read them.

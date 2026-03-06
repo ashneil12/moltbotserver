@@ -49,7 +49,7 @@ function buildMemorySection(params: {
   }
   const lines = [
     "## Memory Recall",
-    "Before answering anything about prior work, decisions, dates, people, preferences, or todos: run memory_search on MEMORY.md + memory/*.md; then use memory_get to pull only the needed lines. If low confidence after search, say you checked.",
+    "Before answering any non-trivial question — anything involving project details, configurations, architecture, past decisions, names, processes, technical specifics, preferences, dates, or prior work — run memory_search with a few keywords from the request to check MEMORY.md + memory/*.md for relevant context; then use memory_get to pull only the needed lines. Skip this for simple greetings, casual conversation, general knowledge, or when the answer is already visible in your loaded context above. If low confidence after search, say you checked.",
   ];
   if (params.citationsMode === "off") {
     lines.push(
