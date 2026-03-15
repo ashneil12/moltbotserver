@@ -21,7 +21,7 @@
 
 **Optimized Claw** is a production-hardened fork of [OpenClaw](https://github.com/openclaw/openclaw) — the open-source personal AI assistant. It tracks upstream closely but ships battle-tested fixes, multi-agent structure, security hardening, and infrastructure improvements needed to run OpenClaw reliably in production with multiple agents.
 
-Everything from upstream works as-is. Optimized Claw adds the layer on top: per-agent browser containers, autonomous consciousness loops, content security, memory improvements, Docker reliability fixes, and tooling that makes multi-agent deployments actually stable.
+Everything from upstream works as-is. Optimized Claw adds the layer on top: per-agent browser containers, autonomous consciousness loops, content security, a deep memory stack, session health monitoring, Docker reliability fixes, and tooling that makes multi-agent deployments actually stable.
 
 If you want a single-agent personal assistant, upstream OpenClaw is great. If you want to run a **team of agents** on a server, keeping them secure, self-aware, and structured for multi-agent operation — this fork is for you.
 
@@ -46,12 +46,13 @@ Optimized Claw is a better fit than stock upstream if you are:
 
 ### 🔒 Security
 
-| Feature                  | Description                                                                                                                                                                                    |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [ACIP](ACIP_SECURITY.md) | Advanced Cognitive Inoculation Prompt — baked into every agent. Defends against prompt injection, data exfiltration, and instruction manipulation across all external content and tool outputs |
-| Content Scanner          | Automatic content scanning with risk scoring on all external inputs (browser, web-fetch, cron). Scans everything agents touch from the outside world                                           |
-| Data Classification      | Three-tier classification (Confidential / Internal / Public) with PII detection                                                                                                                |
-| Event Logger             | Structured JSONL event logging with PII redaction, log rotation, and queryable history                                                                                                         |
+| Feature                    | Description                                                                                                                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [ACIP](ACIP_SECURITY.md)   | Advanced Cognitive Inoculation Prompt — baked into every agent. Defends against prompt injection, data exfiltration, and instruction manipulation across all external content and tool outputs |
+| Content Scanner            | Automatic content scanning with risk scoring on all external inputs (browser, web-fetch, cron). Scans everything agents touch from the outside world                                           |
+| Workspace Context Scanning | Bootstrap files (SOUL.md, IDENTITY.md, etc.) are scanned for prompt injection before entering the system prompt. Quarantined content is wrapped with ACIP boundary markers. Fail-open design   |
+| Data Classification        | Three-tier classification (Confidential / Internal / Public) with PII detection                                                                                                                |
+| Event Logger               | Structured JSONL event logging with PII redaction, log rotation, and queryable history                                                                                                         |
 
 ### 🤖 Multi-Agent Architecture
 
@@ -62,10 +63,11 @@ Optimized Claw is a better fit than stock upstream if you are:
 | Per-Agent Browser Containers     | Each agent gets a dedicated browser sandbox via Docker, not a shared browser                                                                                                                                                                                               |
 | Per-Agent OAuth                  | Removed credential inheritance — agents use only their own OAuth tokens                                                                                                                                                                                                    |
 | Autonomous Self-Improvement      | Each agent runs its own consciousness loop, self-review, deep review, and nightly innovation — standalone by default, not relying on external orchestration                                                                                                                |
-| Pre-Seeded Cron Jobs             | 10 default cron jobs (reflection, maintenance, briefings, innovation, audits) automatically seeded per agent with `MAIN_ONLY_JOBS` filtering for sub-agents                                                                                                                |
+| Pre-Seeded Cron Jobs             | 12+ default cron jobs (reflection, maintenance, briefings, innovation, audits, memory extraction, skill evolution) automatically seeded per agent with `MAIN_ONLY_JOBS` filtering for sub-agents                                                                           |
 | Browser-Only Sandbox Mode        | `browser-only` sandbox mode for agents that need browser access without full containers                                                                                                                                                                                    |
 | Agent Browser Routing            | `createBrowserTool()` passes `agentId` so agents route to their own containers                                                                                                                                                                                             |
 | Per-Agent CLI Onboarding         | `--agent` and `--sync-all` flags for scoped credential setup                                                                                                                                                                                                               |
+| Self-Delegation Guidance         | Agents taught when and how to break their own work into focused subtasks via `sessions_spawn`, keeping context clean across independent workstreams                                                                                                                        |
 
 ### 🧠 Consciousness & Memory
 
@@ -75,26 +77,44 @@ This fork has a significantly deeper memory stack than upstream. Rather than tre
 
 1. When a session resets, `session-context-summary.ts` runs trajectory compression: the first/last turns of the conversation are preserved verbatim, and the middle is compressed into key decisions, tool usage, and user intents. This gets written to `memory/session-context.md` and is loaded automatically on the next session boot.
 2. Every session is indexed into an FTS5 SQLite database (`memory/sessions.db`) so the `session_search` tool can do fast keyword lookup across all past conversations — complementing the embedding-based `memory_search`.
-3. The 3-tier reflection system runs entirely autonomously: self-review (every 12h), consciousness loop (every 5h by default, dynamically adjustable via `NEXT_WAKE:` directives), and deep review (every 48h). These are not just prompts — they write structured entries to `memory/self-review.md`, `diary.md`, and the improvement backlog, which feed back into future heartbeats.
+3. The 3-tier reflection system runs entirely autonomously: self-review (06:00 + 18:00 UTC), consciousness loop (every 12h), and deep review (every 2 days at 04:00 UTC). These are not just prompts — they write structured entries to `memory/self-review.md`, `diary.md`, and the improvement backlog, which feed back into future heartbeats.
 
 The result: agents remember what they did, learn from their patterns, and carry their state forward even after compactions.
 
-| Feature                     | Description                                                                                                                                                                              |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3-Tier Reflection System    | Self-review (12h), consciousness loop (5h default, dynamic via `NEXT_WAKE:`), deep-review (48h) — runs autonomously per agent                                                            |
-| Pre-Reset Memory Flush      | Deterministic memory flush before session reset — ensures no context is lost between compactions                                                                                         |
-| Trajectory Compression      | Smarter session context carryover — preserves first/last turns verbatim, compresses middle via key decisions, tool usage, and user intents                                               |
-| Session Search              | FTS5-powered keyword search across past conversations — complements embedding-based memory search                                                                                        |
-| Session Context Carryover   | Rolling `memory/session-context.md` persists context across session resets                                                                                                               |
-| QMD Always-On               | When `OPENCLAW_QMD_ENABLED=true`, QMD is enforced as the primary memory backend with 5-minute update intervals, boot-time sync, and hybrid vector+text search. No manual config required |
-| Skill Auto-Creation         | Agents create and manage their own skill documents autonomously in `workspace/skills/`                                                                                                   |
-| Knowledge Base Indexer      | Auto-scans `memory/knowledge/*.md` and builds a queryable `_index.md`                                                                                                                    |
-| Improvement Backlog         | Structured backlog system for self-generated improvement proposals with tiered triage (auto-implement / build-then-approve / propose-only)                                               |
-| Nightly Innovation          | 5-phase autonomous building cron (2 AM) with backlog integration — agents build improvements overnight                                                                                   |
-| Morning Briefing            | Personalized daily summary (8 AM) with backlog surfacing and correction-awareness                                                                                                        |
-| Weekly Self-Audit           | 21-question strategic audit feeding the improvement backlog                                                                                                                              |
-| Diary Archival & Continuity | Automatic diary rotation with continuity summaries across archive boundaries                                                                                                             |
-| Auto-Tidy                   | Scheduled workspace cleanup — prunes stale entries from MEMORY.md, open-loops, self-review, session-context, and backlog                                                                 |
+| Feature                       | Description                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3-Tier Reflection System      | Self-review (2× daily), consciousness loop (12h), deep-review (every 2 days) — runs autonomously per agent on fixed cron schedules                                                                                                                                                                                                                       |
+| Lossless Claw (LCM)           | [DAG-based conversation memory](https://github.com/martian-engineering/lossless-claw) pre-baked into Docker image. Replaces default sliding-window compaction with SQLite-backed persistent summarization. Sessions never reset (3-year idle timeout)                                                                                                    |
+| Pre-Reset Memory Flush        | Deterministic memory flush before session reset — ensures no context is lost between compactions                                                                                                                                                                                                                                                         |
+| Trajectory Compression        | Smarter session context carryover — preserves first/last turns verbatim, compresses middle via key decisions, tool usage, and user intents                                                                                                                                                                                                               |
+| Session Search                | FTS5-powered keyword search across past conversations with [OpenViking](https://github.com/volcengine/OpenViking)-inspired hotness scoring (access count + recency decay) and mechanical query rewriting (OR-expansion)                                                                                                                                  |
+| Session Context Carryover     | Rolling `memory/session-context.md` persists context across session resets                                                                                                                                                                                                                                                                               |
+| BrainX Memory Enrichment      | Cron-based [fact extraction](https://github.com/Mdx2025/-BrainX-The-First-Brain-for-OpenClaw) from session transcripts (URLs, repos, env vars, services) + advisory warning detection (deploy failures, dangerous commands, auth errors) — writes to `memory/extracted-facts.md` and `memory/advisory-warnings.md`, auto-injected into bootstrap context |
+| Memory Extraction             | [OpenViking](https://github.com/volcengine/OpenViking)-inspired LLM-powered semantic fact extraction — 5 categories (`[preference]`, `[fact]`, `[entity]`, `[decision]`, `[open]`) with deduplication against existing memory                                                                                                                            |
+| Tool Usage Statistics         | [OpenViking](https://github.com/volcengine/OpenViking)-inspired per-tool usage tracking — call counts, success/failure rates, durations. Stored in shared `sessions.db`                                                                                                                                                                                  |
+| QMD Always-On                 | When `OPENCLAW_QMD_ENABLED=true`, QMD is enforced as the primary memory backend with 5-minute update intervals, boot-time sync, and hybrid vector+text search. No manual config required                                                                                                                                                                 |
+| Skill Auto-Creation           | Agents create and manage their own skill documents autonomously in `workspace/skills/`                                                                                                                                                                                                                                                                   |
+| Skill Evolution               | Weekly cron generates `SKILL.md` files from recurring failure patterns — inspired by [MetaClaw](https://github.com/aiming-lab/MetaClaw). Reviews self-review MISS logs, distinguishes behavioral rules from procedural skills, auto-discovers from 3+ occurrences                                                                                        |
+| Progressive Disclosure Skills | Token-efficient skill indexing — compact one-line-per-skill index in system prompt, full SKILL.md loaded on demand via `skill_view` tool. Inspired by [Hermes Agent](https://github.com/NousResearch/hermes-agent). ~50-60% token savings                                                                                                                |
+| Knowledge Base Indexer        | Auto-scans `memory/knowledge/*.md` and builds a queryable `_index.md`                                                                                                                                                                                                                                                                                    |
+| Improvement Backlog           | Structured backlog system for self-generated improvement proposals with tiered triage (auto-implement / build-then-approve / propose-only)                                                                                                                                                                                                               |
+| Nightly Innovation            | 5-phase autonomous building cron (2 AM) with backlog integration — agents build improvements overnight                                                                                                                                                                                                                                                   |
+| Morning Briefing              | Personalized daily summary (8 AM) with backlog surfacing, correction-awareness, and Standing Corrections from `MEMORY.md`                                                                                                                                                                                                                                |
+| Weekly Self-Audit             | 21-question strategic audit feeding the improvement backlog                                                                                                                                                                                                                                                                                              |
+| Diary Archival & Continuity   | Automatic diary rotation with continuity summaries across archive boundaries                                                                                                                                                                                                                                                                             |
+| Auto-Tidy                     | Scheduled workspace cleanup — prunes stale entries from MEMORY.md, open-loops, self-review, session-context, backlog, and BrainX files                                                                                                                                                                                                                   |
+
+### 🛡️ Stability & Resilience
+
+| Feature                          | Description                                                                                                                                                                                                                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session Health Sentinel          | [Autoresearch](https://github.com/karpathy/autoresearch)-inspired circuit breaker detecting cascading failures. Pure-function state management, degradation detection, and recovery hint injection. Wired into agent-runner at success/error/exception boundaries                        |
+| Crash Taxonomy                   | Every failover error is classified as `retry`, `adapt`, or `abandon` via `resolveFixability()`. Backward-compatible with existing `FailoverError` handling                                                                                                                               |
+| Post-Promotion Evidence Counters | [ACE Platform](https://github.com/DannyMac180/ace-platform)-inspired `[0H/0M]` hit/miss counters on promoted CRITICAL rules. Fully deterministic (prefix stemming, zero LLM calls). Rules where M ≥ H after 3+ observations are flagged for review                                       |
+| Identity Change-Log              | JSONL append log at `memory/reflection-change-log.jsonl` — tracks every identity file modification with timestamp, job ID, lines changed, promotions count. Auto-pruned at 200 entries                                                                                                   |
+| Stale Snapshot Prevention        | Three guards against ephemeral/stale data: (1) ephemeral path detection for `/tmp` and `tmpfs` mounts, (2) workspace freshness validation with auto-refresh, (3) session store `createdAt` tracking for deduplication — credit: [Brad Mills (@bradmillscan)](https://x.com/bradmillscan) |
+| Autonomous Problem-Solving       | Agents exhaust all alternative approaches before escalating. Layered at 4 levels: system prompt procedure, SOUL.md philosophy, IDENTITY.md behavior, OPERATIONS.md drift detection                                                                                                       |
+| Cron Schedule Redesign           | All cron jobs converted from unpredictable interval-based (`anchorMs: nowMs`) to fixed [croner](https://github.com/hexagon/croner) expressions or staggered anchors — eliminates the 10-job startup burst on boot                                                                        |
 
 ### 💾 Backup & Restore
 
@@ -106,16 +126,18 @@ A full lifecycle backup system runs on a configurable schedule (default: every 1
 4. **Local copy** — a local copy is saved to `~/.clawdbot/local-backups/` (configurable via `MOLTBOT_LOCAL_BACKUP_DIR`), retained for 14 days
 5. **Alert on failure** — if all attempts fail, the dashboard is notified via the `/alert` endpoint
 
-Restores are one-click from the dashboard, or import any `.tar.gz` from a community self-hosted instance to migrate to managed hosting.
+Restores are one-click from the dashboard, or import any `.tar.gz` from a community self-hosted instance to migrate to managed hosting. Cross-fork migration is supported — restored configs are validated and normalized before the gateway starts (JSON validation, `RESTORE_KEY` sanitization for path traversal/injection prevention).
 
 ### 🐳 Docker & Deployment
 
-| Feature                   | Description                                                                                                              |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| CDP Host Header Fix       | `http.request()` workaround for Node.js `fetch()` silently dropping `Host` headers — without this, Docker hostnames fail |
-| Browser Startup Sweep     | Auto-updates stale browser containers on gateway boot                                                                    |
-| Pre-Installed CLI Tooling | `ffmpeg`, `imagemagick`, `pandoc`, `yt-dlp`, `sqlite3`, `ripgrep`, and 15+ more tools baked into Docker image            |
-| Diagnostics Toolkit       | System health checks: PID file, port reachability, error rate, disk space                                                |
+| Feature                   | Description                                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| LCM Pre-Baked             | [Lossless Claw](https://github.com/martian-engineering/lossless-claw) plugin pre-installed in Docker image — no runtime `npm install` needed. Subshell fallback for build resilience |
+| CDP Host Header Fix       | `http.request()` workaround for Node.js `fetch()` silently dropping `Host` headers — without this, Docker hostnames fail                                                             |
+| Browser Startup Sweep     | Auto-updates stale browser containers on gateway boot                                                                                                                                |
+| Pre-Installed CLI Tooling | `ffmpeg`, `imagemagick`, `pandoc`, `yt-dlp`, `sqlite3`, `ripgrep`, and 15+ more tools baked into Docker image                                                                        |
+| Diagnostics Toolkit       | System health checks: PID file, port reachability, error rate, disk space                                                                                                            |
+| Document Converter        | Background sidecar converting `.pdf`, `.docx`, `.csv`, `.odt`, `.rtf`, `.epub` to markdown in agent workspaces                                                                       |
 
 ### 🌐 Browser Control
 
@@ -130,25 +152,27 @@ Restores are one-click from the dashboard, or import any `.tar.gz` from a commun
 
 ### ⚡ Performance & Reliability
 
-| Feature                | Description                                                                                                                                              |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Telegram Media Timeout | 15s timeout on media downloads prevents hung downloads from blocking groups                                                                              |
-| Typing TTL Callback    | "⏳ Still thinking" feedback when LLM runs exceed the typing indicator TTL                                                                               |
-| Heartbeat Tuning       | Default interval changed from 30m to 1h to reduce unnecessary wakeups                                                                                    |
-| Exec Approval UX       | Long commands (e.g. multi-line heredocs) are height-capped and scrollable in the approval modal — buttons are always reachable within the timeout window |
-| General Fixes          | Ongoing bug fixes, reliability improvements, and edge-case handling across the codebase                                                                  |
+| Feature                    | Description                                                                                                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared File Utilities      | Crash-safe `atomicWriteFile()`, `readTextFileIfExists()`, `writeTextFileIfChanged()` extracted to shared `atomic-file.ts` — eliminates ~85 lines of duplicated patterns across 5 files |
+| Telegram Media Timeout     | 15s timeout on media downloads prevents hung downloads from blocking groups                                                                                                            |
+| Typing TTL Callback        | "⏳ Still thinking" feedback when LLM runs exceed the typing indicator TTL                                                                                                             |
+| Heartbeat Tuning           | Default interval changed from 30m to 1h to reduce unnecessary wakeups                                                                                                                  |
+| Exec Approval UX           | Long commands (e.g. multi-line heredocs) are height-capped and scrollable in the approval modal — buttons are always reachable within the timeout window                               |
+| Shell Injection Prevention | `enforceLCM()` uses `cpSync` + path validation instead of `execSync` with shell commands                                                                                               |
 
 ### 🛠️ Agent Identity & Tooling
 
 | Feature                    | Description                                                                                                                                                                      |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SOUL.md                    | Actionable identity framework — 3-tier reflection, cyclical self-renewal ontology, 7 Biblical principles, Ship of Theseus protection. Not a philosophical essay — a constitution |
-| IDENTITY.md                | Per-agent identity document — relationship model, personality traits, communication preferences, CRITICAL rules promoted from self-review patterns                               |
-| System Prompt Enhancements | Architect-first thinking, stale identity nudges (72h mtime check), comprehensive tool guidance, human voice detection                                                            |
+| SOUL.md                    | Actionable identity framework — 3-tier reflection, **Bias for Action** philosophy (act first, report results, confirm only for irreversible actions), Ship of Theseus protection |
+| IDENTITY.md                | Per-agent identity document — relationship model, personality traits, communication preferences, CRITICAL rules promoted from self-review patterns with evidence counters        |
+| System Prompt Enhancements | Architect-first thinking, stale identity nudges (72h mtime check), comprehensive tool guidance, human voice detection, autonomous problem-solving procedure                      |
 | SQL Tools                  | `sql_query` (read-only memory index) + `sql_execute` (read-write workspace databases)                                                                                            |
-| Session Search Tool        | Agent-facing FTS5 search across past conversations                                                                                                                               |
+| Session Search Tool        | Agent-facing FTS5 search across past conversations with query rewriting and hotness scoring                                                                                      |
 | Skill Management Tool      | Autonomous skill CRUD with safety boundaries and human-authored protection                                                                                                       |
-| Workspace Search Tool      | `workspace_search` — searches only workspace-kind QMD collections, distinct from personal `memory_search` (business mode + QMD required)                                         |
+| Skill View Tool            | Progressive disclosure — loads full SKILL.md content on demand by name. Path traversal prevention, 200K char truncation                                                          |
+| Workspace Search Tool      | `workspace_search` — searches only workspace-kind QMD collections, distinct from personal `memory_search` (QMD required)                                                         |
 
 > [!IMPORTANT]
 > **Migrating from another setup? Read this before copying identity files.**
@@ -276,7 +300,7 @@ Please:
 
 If your current OpenClaw setup is already stable and doing everything you need, you probably **do not** need to move.
 
-Switch to Optimized Claw if you specifically want the fork-only behavior: multi-agent structure, browser-container hardening, consciousness loops, or the other production patches listed above.
+Switch to Optimized Claw if you specifically want the fork-only behavior: multi-agent structure, browser-container hardening, consciousness loops, LCM session memory, or the other production patches listed above.
 
 ### Existing Source Checkout
 
@@ -393,6 +417,10 @@ These environment variables control features unique to Optimized Claw. Set them 
 | `OPENCLAW_BROWSER_ENABLED`       | `0`                         | Enable per-agent browser containers. When set, `browser` is added to every agent's effective tool allowlist regardless of profile                                                      |
 | `MOLTBOT_BACKUP_ENABLED`         | —                           | Set to `true` to enable scheduled automatic backups. Requires `MOLTBOT_SUPABASE_URL`, `MOLTBOT_SUPABASE_SERVICE_ROLE_KEY`, and `MOLTBOT_INSTANCE_ID`                                   |
 | `MOLTBOT_LOCAL_BACKUP_DIR`       | `~/.clawdbot/local-backups` | Local directory for 14-day backup retention alongside cloud copies                                                                                                                     |
+| `LCM_FRESH_TAIL_COUNT`           | `20`                        | Messages to keep unsummarized in LCM context assembly                                                                                                                                  |
+| `LCM_CONTEXT_THRESHOLD`          | —                           | Token threshold to trigger LCM summarization                                                                                                                                           |
+| `LCM_SUMMARY_PROVIDER`           | —                           | Provider for LCM summarization model (e.g. `google`)                                                                                                                                   |
+| `LCM_SUMMARY_MODEL`              | —                           | Model for LCM summarization (e.g. `gemini-2.5-flash-lite-preview-06-17`)                                                                                                               |
 
 ---
 
@@ -400,7 +428,19 @@ These environment variables control features unique to Optimized Claw. Set them 
 
 Optimized Claw is built on top of [OpenClaw](https://github.com/openclaw/openclaw) by Peter Steinberger and the OpenClaw community. All upstream contributors are recognized.
 
-Many improvements in this fork were drawn from ideas, techniques, and prior work shared across the AI agent community — on Twitter/X, GitHub, Discord servers, and elsewhere. I didn't always keep track of the original sources while iterating quickly, so not everything has a traceable attribution link.
+This fork incorporates ideas, techniques, and patterns from across the AI agent community. Key inspirations include:
+
+- **[Lossless Claw](https://github.com/martian-engineering/lossless-claw)** by [Martian Engineering](https://github.com/martian-engineering) — DAG-based conversation memory engine
+- **[BrainX](https://github.com/Mdx2025/-BrainX-The-First-Brain-for-OpenClaw)** — fact extraction and advisory warning patterns
+- **[OpenViking](https://github.com/volcengine/OpenViking)** by Volcengine — hotness scoring, query rewriting, per-tool statistics, automatic memory extraction
+- **[karpathy/autoresearch](https://github.com/karpathy/autoresearch)** by [Andrej Karpathy](https://github.com/karpathy) — session health sentinel circuit-breaker pattern and structured learning log
+- **[ACE Platform](https://github.com/DannyMac180/ace-platform)** by [Danny McAteer](https://github.com/DannyMac180) — post-promotion evidence counters and structured outcome logging
+- **[MetaClaw](https://github.com/aiming-lab/MetaClaw)** — failure-driven skill evolution via structured reflection
+- **[Hermes Agent](https://github.com/NousResearch/hermes-agent)** by NousResearch — progressive disclosure architecture for token-efficient skill indexing
+- **[Brad Mills (@bradmillscan)](https://x.com/bradmillscan)** — stale snapshot prevention analysis and ephemeral path failure modes
+- **[Camofox](https://github.com/nicedaycode/camofox)** — browser fingerprint camouflage
+
+Many other improvements were drawn from ideas shared on Twitter/X, GitHub, Discord servers, and elsewhere. I didn't always keep track of the original sources while iterating quickly, so not everything has a traceable attribution link.
 
 **If you recognize a pattern, technique, or feature in this fork that originated in your repo or your work, please reach out.** I'm happy to add proper credit and a link. Email [info@openclawservers.com](mailto:info@openclawservers.com) and I'll get it sorted.
 
