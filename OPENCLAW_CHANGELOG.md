@@ -5,6 +5,51 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Memory Search Enhancements — Source-Aware Ranking & Temporal Decay Defaults (2026-03-15)
+
+**Purpose:** Improve memory search relevance by prioritizing agent-specific knowledge files and boosting recent information. Inspired by graph-RAG relevance patterns seen in [MiroFish](https://github.com/666ghj/MiroFish) (by [666ghj](https://github.com/666ghj)).
+
+### Feature 1 — Source-Aware Ranking
+
+Agent knowledge files receive a 1.15× score multiplier after the initial hybrid score merge. This ensures that agent-written memory, identity, and diary files rank higher than generic workspace documents.
+
+| File                              | Change                                                                                                                                                                                    | Upstream Risk          |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `src/memory/source-boost.ts`      | **[NEW]** Source-aware ranking module. Precompiled regex patterns match `MEMORY.md`, `memory/*.md`, `IDENTITY.md`, `identity-scratchpad.md`, `WORKING.md`. `applySourceBoostToResults()`. | None — new             |
+| `src/memory/source-boost.test.ts` | **[NEW]** 24 unit tests: pattern matching (positive/negative), score application, immutability, property preservation.                                                                    | None — test            |
+| `src/memory/hybrid.ts`            | Integrated `applySourceBoostToResults()` into `mergeHybridResults()` pipeline — applied after score merge, before temporal decay.                                                         | Low — import + 2 lines |
+
+### Feature 2 — Temporal Decay Enabled by Default
+
+Temporal decay (half-life–based recency boosting) is now **enabled by default** with a 14-day half-life (was: disabled, 30-day). Recent memory entries rank higher without any configuration.
+
+| File                           | Change                                                                                    | Upstream Risk          |
+| ------------------------------ | ----------------------------------------------------------------------------------------- | ---------------------- |
+| `src/agents/memory-search.ts`  | `DEFAULT_TEMPORAL_DECAY_ENABLED` → `true`, `DEFAULT_TEMPORAL_DECAY_HALF_LIFE_DAYS` → `14` | Low — constant changes |
+| `src/memory/temporal-decay.ts` | `DEFAULT_TEMPORAL_DECAY_CONFIG` updated to match: `enabled: true`, `halfLifeDays: 14`     | Low — constant changes |
+| `src/config/schema.help.ts`    | Help text updated to reflect new defaults (`true` / `14 days`)                            | Low — help text only   |
+| `src/config/types.tools.ts`    | JSDoc `@default` comments updated for `temporalDecay.enabled` and `halfLifeDays`          | Low — comment changes  |
+
+### Pipeline Order
+
+```
+Hybrid score merge → Source boost (1.15×) → Temporal decay → Sort → MMR re-ranking
+```
+
+### Tests
+
+- ✅ `source-boost.test.ts`: 24/24 passed
+- ✅ `hybrid.test.ts`: 6/6 passed (assertions updated for source boost)
+- ✅ `temporal-decay.test.ts`: 6/6 passed (assertions updated for source boost)
+- ✅ `schema.help.quality.test.ts`: 20/20 passed
+
+### Upstream Sync Risk
+
+**None for new files** — `source-boost.ts` and `source-boost.test.ts` are fully custom.
+**Low for modified files** — constant value changes + import additions. Clean merge expected.
+
+---
+
 ## Health Sentinel — Comprehensive Cleanup (2026-03-15)
 
 **Purpose:** Code quality audit and refactoring across all sentinel files (8 source + 3 test).

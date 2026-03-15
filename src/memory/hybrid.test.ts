@@ -59,8 +59,8 @@ describe("memory hybrid helpers", () => {
     expect(merged).toHaveLength(2);
     const a = merged.find((r) => r.path === "memory/a.md");
     const b = merged.find((r) => r.path === "memory/b.md");
-    expect(a?.score).toBeCloseTo(0.7 * 0.9);
-    expect(b?.score).toBeCloseTo(0.3 * 1.0);
+    expect(a?.score).toBeCloseTo(0.7 * 0.9 * 1.15);
+    expect(b?.score).toBeCloseTo(0.3 * 1.0 * 1.15);
   });
 
   it("mergeHybridResults prefers keyword snippet when ids overlap", async () => {
@@ -93,6 +93,44 @@ describe("memory hybrid helpers", () => {
 
     expect(merged).toHaveLength(1);
     expect(merged[0]?.snippet).toBe("kw-a");
-    expect(merged[0]?.score).toBeCloseTo(0.5 * 0.2 + 0.5 * 1.0);
+    expect(merged[0]?.score).toBeCloseTo((0.5 * 0.2 + 0.5 * 1.0) * 1.15);
+  });
+
+  it("mergeHybridResults applies source-aware boost to knowledge files", async () => {
+    const merged = await mergeHybridResults({
+      vectorWeight: 1,
+      textWeight: 0,
+      temporalDecay: { enabled: false },
+      vector: [
+        {
+          id: "knowledge",
+          path: "MEMORY.md",
+          startLine: 1,
+          endLine: 2,
+          source: "memory",
+          snippet: "agent knowledge",
+          vectorScore: 0.7,
+        },
+        {
+          id: "generic",
+          path: "docs/readme.md",
+          startLine: 1,
+          endLine: 2,
+          source: "memory",
+          snippet: "generic doc",
+          vectorScore: 0.75,
+        },
+      ],
+      keyword: [],
+    });
+
+    expect(merged).toHaveLength(2);
+    const knowledge = merged.find((r) => r.path === "MEMORY.md");
+    const generic = merged.find((r) => r.path === "docs/readme.md");
+    // MEMORY.md at 0.7 * 1.15 = 0.805 should outrank generic at 0.75 * 1.0
+    expect(knowledge?.score).toBeCloseTo(0.7 * 1.15);
+    expect(generic?.score).toBeCloseTo(0.75);
+    expect(knowledge?.score ?? 0).toBeGreaterThan(generic?.score ?? 0);
+    expect(merged[0]?.path).toBe("MEMORY.md");
   });
 });

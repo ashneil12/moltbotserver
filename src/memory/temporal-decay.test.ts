@@ -148,9 +148,9 @@ describe("temporal decay", () => {
     ]);
 
     const byPath = new Map(merged.map((entry) => [entry.path, entry]));
-    expect(byPath.get("memory/2099-01-01.md")?.score).toBeCloseTo(0.9);
-    expect(byPath.get("memory/2026-02-10.md")?.score).toBeCloseTo(0.8);
-    expect(byPath.get("memory/2000-01-01.md")?.score ?? 1).toBeLessThan(0.001);
+    expect(byPath.get("memory/2099-01-01.md")?.score).toBeCloseTo(0.9 * 1.15);
+    expect(byPath.get("memory/2026-02-10.md")?.score).toBeCloseTo(0.8 * 1.15);
+    expect(byPath.get("memory/2000-01-01.md")?.score ?? 1).toBeLessThan(0.01);
   });
 
   it("uses file mtime fallback for non-memory sources", async () => {

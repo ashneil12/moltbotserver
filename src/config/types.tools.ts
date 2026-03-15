@@ -428,9 +428,9 @@ export type MemorySearchConfig = {
       };
       /** Optional temporal decay to boost recency in hybrid scoring. */
       temporalDecay?: {
-        /** Enable temporal decay (default: false). */
+        /** Enable temporal decay (default: true). */
         enabled?: boolean;
-        /** Half-life in days for exponential decay (default: 30). */
+        /** Half-life in days for exponential decay (default: 14). */
         halfLifeDays?: number;
       };
     };

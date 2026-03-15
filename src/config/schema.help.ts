@@ -854,9 +854,9 @@ export const FIELD_HELP: Record<string, string> = {
   "agents.defaults.memorySearch.query.hybrid.mmr.lambda":
     "Sets MMR relevance-vs-diversity balance (0 = most diverse, 1 = most relevant, default: 0.7). Lower values reduce repetition; higher values keep tightly relevant but may duplicate.",
   "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled":
-    "Applies recency decay so newer memory can outrank older memory when scores are close. Enable when timeliness matters; keep off for timeless reference knowledge.",
+    "Applies recency decay so newer memory can outrank older memory when scores are close (default: true). Disable for timeless reference knowledge where recency should not influence ranking.",
   "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays":
-    "Controls how fast older memory loses rank when temporal decay is enabled (half-life in days, default: 30). Lower values prioritize recent context more aggressively.",
+    "Controls how fast older memory loses rank when temporal decay is enabled (half-life in days, default: 14). Lower values prioritize recent context more aggressively.",
   "agents.defaults.memorySearch.cache.enabled":
     "Caches computed chunk embeddings in SQLite so reindexing and incremental updates run faster (default: true). Keep this enabled unless investigating cache correctness or minimizing disk usage.",
   memory: "Memory backend configuration (global).",

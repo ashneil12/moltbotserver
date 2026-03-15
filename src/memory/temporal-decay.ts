@@ -7,8 +7,8 @@ export type TemporalDecayConfig = {
 };
 
 export const DEFAULT_TEMPORAL_DECAY_CONFIG: TemporalDecayConfig = {
-  enabled: false,
-  halfLifeDays: 30,
+  enabled: true,
+  halfLifeDays: 14,
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;

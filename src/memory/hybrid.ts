@@ -1,4 +1,5 @@
 import { applyMMRToHybridResults, type MMRConfig, DEFAULT_MMR_CONFIG } from "./mmr.js";
+import { applySourceBoostToResults } from "./source-boost.js";
 import {
   applyTemporalDecayToHybridResults,
   type TemporalDecayConfig,
@@ -136,9 +137,12 @@ export async function mergeHybridResults(params: {
     };
   });
 
+  // Apply source-aware ranking (boost agent knowledge files)
+  const boosted = applySourceBoostToResults(merged);
+
   const temporalDecayConfig = { ...DEFAULT_TEMPORAL_DECAY_CONFIG, ...params.temporalDecay };
   const decayed = await applyTemporalDecayToHybridResults({
-    results: merged,
+    results: boosted,
     temporalDecay: temporalDecayConfig,
     workspaceDir: params.workspaceDir,
     nowMs: params.nowMs,
