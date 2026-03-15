@@ -5,6 +5,500 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Comprehensive Cleanup & Security Hardening (2026-03-15)
+
+**Purpose:** Full audit and cleanup of all uncommitted changes (23 files). Removed ~185 lines of dead SupaSwarm code, hardened LCM plugin installation against shell injection, and made the Docker LCM prebake step resilient to npm registry failures.
+
+### Dead Code Removal
+
+| File                                       | Lines Removed | What                                                                                                                                                              |
+| ------------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enforce-config.mjs`                       | ~135          | `SUPASWARM_MODELS` array (38 lines), `if (false) { ... }` SupaSwarm registration block (87 lines), stale JSDoc on `enforceProviders()`, unused `changed` variable |
+| `src/commands/onboard-auth.models.ts`      | ~34           | All SupaSwarm exports: `SUPASWARM_DEFAULT_MODEL_ID`, `SUPASWARM_DEFAULT_MODEL_REF`, cost/window constants, model catalog, `buildSupaSwarmModelDefinition()`       |
+| `src/commands/onboard-auth.credentials.ts` | ~16           | `SUPASWARM_DEFAULT_MODEL_REF` re-export, `setSupaSwarmConfig()` function                                                                                          |
+
+**Verification:** `grep -rn` for `supaswarm` across `src/` and `enforce-config.mjs` returns zero matches.
+
+### Security Hardening — `enforceLCM()`
+
+| Before                                              | After                                                              | Why                                                                                  |
+| --------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `execSync('cp -r "${prebakedDir}" "${pluginDir}"')` | `cpSync(prebakedDir, pluginDir, { recursive: true })`              | Eliminates shell injection surface — `prebakedDir`/`pluginDir` derived from env vars |
+| No validation before `chown` execSync               | Path validated against shell metacharacter regex before `execSync` | Defense-in-depth for the remaining shell call (no `cpSync` equivalent for `chown`)   |
+| `cpSync` not imported                               | Added to `node:fs` import list                                     | Required for the above change                                                        |
+
+### Dockerfile LCM Prebake Robustness
+
+| Before                                                             | After                                                                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Hard `&&` chain — `npm pack` failure kills the entire Docker build | Subshell with `\|\| echo` fallback — logs "non-fatal" and continues; `enforceLCM()` handles the missing prebake gracefully at runtime |
+
+### Tests
+
+5/5 suites, 59/59 tests passed: `diary-archive` (36), `skills` (14), `skills.build-workspace-skills-prompt` (7), `skills.resolveskillspromptforrun` (2).
+
+### Upstream Sync Risk
+
+**None.** All changes are in fully custom files (`enforce-config.mjs`, `Dockerfile`, MoltBot-added TypeScript sections).
+
+---
+
+## Failure-Driven Skill Evolution Cron Job (2026-03-15)
+
+**Purpose:** Automatically generate reusable `SKILL.md` files from recurring failure patterns. Inspired by [MetaClaw](https://github.com/aiming-lab/MetaClaw)'s concept of failure-driven adaptation via structured reflection, adapted to MoltBot's existing self-review → skill auto-discovery pipeline.
+
+### Architecture
+
+```
+self-review.md (MISS log, maintained by deep-review cron)
+  │  3+ occurrences OR flagged "PROMOTION REQUIRED"
+  ▼
+skill-evolution cron (weekly)
+  ├─ Phase 1: Identify candidates from self-review + diary context
+  ├─ Phase 2: Evaluate: behavioral rule → skip (IDENTITY.md handles these)
+  │                      procedural skill → generate
+  │                      duplicate → skip
+  ├─ Phase 3: Generate max 2 SKILL.md files per cycle
+  └─ Phase 4: Log to diary.md
+
+.agents/skills/<skill-name>/SKILL.md
+  └─ Auto-discovered by workspace skill loader at next agent run
+```
+
+### Changes (moltbotserver-source)
+
+| File                 | Change                                                                                               | Upstream Risk            |
+| -------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ |
+| `enforce-config.mjs` | Added `skill-evolution` job in `buildCanonicalJobs()` between `deep-review` and `nightly-innovation` | None — fully custom file |
+
+### Job Configuration
+
+| Property       | Value                                           | Rationale                                                      |
+| -------------- | ----------------------------------------------- | -------------------------------------------------------------- |
+| Schedule       | Every 7 days (`everyMs: 604800000`), +6h offset | Weekly cadence, offset from reflection jobs                    |
+| Scope          | All agents (not in `MAIN_ONLY_JOBS`)            | Each agent evolves its own skill library from its own failures |
+| Enabled        | Gated behind `reflectionEnabled`                | Only active when reflection system is enabled                  |
+| Delivery       | `none` (silent)                                 | No user-facing output                                          |
+| Session        | `isolated`, `next-heartbeat`                    | Dedicated context, doesn't interfere with conversations        |
+| Max skills/run | 2                                               | Quality over quantity                                          |
+
+### Prompt Design
+
+The job uses a pure cron-prompt approach (no TypeScript changes). The prompt instructs the agent to:
+
+1. Read `memory/self-review.md` for recurring MISS patterns (3+ occurrences)
+2. Cross-reference `memory/diary.md` for failure context
+3. Check existing `.agents/skills/` to avoid duplicates
+4. Distinguish behavioral rules (→ skip, handled by CRITICAL promotion in IDENTITY.md) from procedural skills (→ generate)
+5. Create SKILL.md files with proper YAML frontmatter, `## When to Use`, `## Steps`, `## Common Pitfalls` sections
+6. Log results to `memory/diary.md`
+
+### How Existing Agents Get It
+
+The `buildCanonicalJobs()` backfill mechanism in `seedCronJobs()` detects new canonical jobs not yet in `knownJobs` and adds them automatically on the next gateway restart.
+
+### Upstream Sync Risk
+
+**None.** `enforce-config.mjs` is a fully custom file. The new job follows the exact same structure as existing canonical jobs.
+
+---
+
+## Progressive Disclosure Skills — Token-Efficient Skill Index (2026-03-15)
+
+**Purpose:** Reduce system prompt token usage by ~50-60% for the skills index. Instead of embedding full XML skill metadata (name, description, file location) for every skill, the system prompt now shows a compact one-line-per-skill index. The agent loads full SKILL.md content on demand via a new `skill_view` tool. Inspired by the [Hermes Agent](https://github.com/NousResearch/hermes-agent) progressive disclosure architecture.
+
+### Architecture
+
+```
+System Prompt → compact index (name + description ≤80 chars per skill)
+Agent needs skill → skill_view(name) → loads full SKILL.md content
+Agent needs linked file → skill_view(name, file="references/api.md") → loads relative file
+```
+
+### Changes (moltbotserver-source)
+
+| File                                           | Change                                                                                                     | Upstream Risk              |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `src/config/types.skills.ts`                   | Added `progressiveDisclosure?: boolean` to `SkillsConfig` (default: `true`)                                | Low — additive field       |
+| `src/agents/skills/workspace.ts`               | Added `formatSkillsCompactPrompt()` — Hermes-style `- name: desc (≤80)` format                             | Low — new private function |
+| `src/agents/skills/workspace.ts`               | `resolveWorkspaceSkillPromptState()` routes to compact or XML format based on config                       | Low — conditional branch   |
+| `src/agents/tools/skill-view-tool.ts`          | **NEW** — `skill_view` tool: O(1) name lookup, path traversal guard, 200K char truncation, ENOENT handling | None — fully custom        |
+| `src/agents/openclaw-tools.ts`                 | Conditional `skill_view` registration when progressive disclosure enabled + skills available               | Low — additive             |
+| `src/agents/pi-tools.ts`                       | Added `resolvedSkills` option threading to `createOpenClawTools`                                           | Low — additive field       |
+| `src/agents/pi-embedded-runner/run/attempt.ts` | Passes `resolvedSkills` from `skillsSnapshot` to tool creation                                             | Low — single field         |
+| `src/agents/pi-embedded-runner/compact.ts`     | Same as above for compact runner                                                                           | Low — single field         |
+| 4 test files                                   | Updated to pass `progressiveDisclosure: false` for legacy format assertions; added compact format test     | None — test changes        |
+
+### Design Decisions
+
+- **Default: true** — progressive disclosure saves tokens by default. Set `skills.progressiveDisclosure: false` in openclaw.json to revert to upstream XML format.
+- **Conditional tool registration** — `skill_view` is only registered when progressive disclosure is active AND resolved skills exist. When disabled, agents use the generic `read` tool with file paths from the XML format.
+- **Security** — `skill_view` includes path traversal prevention (resolved path must stay inside skill's `baseDir`), content truncation at 200K chars, and proper ENOENT error messages.
+- **Case-insensitive matching** — skill names are indexed both as-is and lowercase for resilient lookup.
+
+### Upstream Sync Risk
+
+**Low for `workspace.ts`** — new private function + conditional branch in `resolveWorkspaceSkillPromptState`. If upstream changes the function signature, re-wire.
+**Low for `openclaw-tools.ts`, `pi-tools.ts`** — additive field threading. Clean merge.
+**None for `skill-view-tool.ts`** — fully custom new file.
+
+---
+
+## Self-Delegation Guidance in OPERATIONS.md (2026-03-15)
+
+**Purpose:** Teach agents when and how to break their own work into focused subtasks using existing `sessions_spawn` infrastructure. The delegation section already covered planning and orchestration, but was missing the key self-delegation pattern — spawning subtasks to keep your own context clean.
+
+### Changes (moltbotserver-source)
+
+| File            | Change                                                                                          | Upstream Risk          |
+| --------------- | ----------------------------------------------------------------------------------------------- | ---------------------- |
+| `OPERATIONS.md` | Added "Self-Delegation — When to Break Your Own Work Into Subtasks" subsection under Delegation | None — custom template |
+
+### Content Added
+
+- **4 triggers** for self-delegation: 3+ independent items, research vs execution phases, large tool outputs, different expertise profiles
+- **Code examples** showing focused `sessions_spawn(mode="run")` patterns with structured result requests
+- **4 anti-patterns**: don't over-delegate, don't delegate context-dependent tasks, keep delegation flat, don't spawn-and-forget
+- **Result synthesis guidance**: distill child outputs into coherent answers
+
+### Upstream Sync Risk
+
+**None.** `OPERATIONS.md` is a custom workspace template.
+
+---
+
+## SupaSwarm Integration Hiding (2026-03-15)
+
+**Purpose:** Remove all SupaSwarm references from the onboarding CLI, auth choice menus, and provider config. SupaSwarm remains functional at runtime (enforce-config.mjs handles provider registration when env vars are set) but is no longer visible in the setup flow.
+
+### Changes (moltbotserver-source)
+
+| File                                              | Change                                                                                                                                       | Upstream Risk           |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `src/commands/auth-choice-options.ts`             | Removed `supaswarm` from `API_KEY_TOKEN_PROVIDER_AUTH_CHOICE`                                                                                | None — custom additions |
+| `src/commands/auth-choice.apply.api-providers.ts` | Removed entire `supaswarm-api-key` auth choice handler (~43 lines)                                                                           | None — custom code      |
+| `src/commands/auth-choice.preferred-provider.ts`  | Removed `supaswarm-api-key` → `supaswarm` mapping                                                                                            | None — custom entry     |
+| `src/commands/onboard-auth.config-core.ts`        | Removed `applySupaSwarmProviderConfig()` + `applySupaSwarmConfig()` (~40 lines)                                                              | None — custom code      |
+| `src/commands/onboard-auth.ts`                    | Removed SupaSwarm re-exports                                                                                                                 | None — custom exports   |
+| `src/commands/onboard-provider-auth-flags.ts`     | Removed `supaswarmApiKey` CLI flag definition                                                                                                | None — custom entry     |
+| `src/commands/onboard-types.ts`                   | Removed `supaswarm-api-key` from `BuiltInAuthChoice`, `supaswarm` from group IDs, `supaswarmApiKey`/`supaSwarmBaseUrl` from `OnboardOptions` | None — custom types     |
+| `src/secrets/provider-env-vars.ts`                | Removed `supaswarm` from `PROVIDER_ENV_VARS`                                                                                                 | None — custom entry     |
+| `enforce-config.mjs`                              | SupaSwarm runtime registration wrapped in `if (false)` guard (dead code, ready for re-enable)                                                | None — custom file      |
+
+### Upstream Sync Risk
+
+**None.** All SupaSwarm code was custom. The `if (false)` guard in enforce-config.mjs preserves the implementation for easy re-enable.
+
+---
+
+## Lossless Claw (LCM) Plugin — Pre-Bake & Enforcement (2026-03-15)
+
+**Purpose:** Pre-bake the [Lossless Claw](https://github.com/martian-engineering/lossless-claw) context engine plugin into the Docker image and auto-install it on container startup. Provides DAG-based conversation memory as an alternative to default compaction.
+
+### Changes (moltbotserver-source)
+
+| File                 | Change                                                                                               | Upstream Risk      |
+| -------------------- | ---------------------------------------------------------------------------------------------------- | ------------------ |
+| `Dockerfile`         | Added `npm pack @martian-engineering/lossless-claw` + install step in pre-bake layer                 | None — custom file |
+| `enforce-config.mjs` | Added `enforceLCM()` — copies pre-baked plugin to extensions dir on startup if not already installed | None — custom file |
+| `enforce-config.mjs` | Added `lcm` command + included in `all` command chain                                                | None — custom file |
+
+### Upstream Sync Risk
+
+**None.** All changes are in fully custom files.
+
+---
+
+## Workspace Context Security Scanning (2026-03-15)
+
+**Purpose:** Scan workspace bootstrap files (SOUL.md, IDENTITY.md, AGENTS.md, etc.) for prompt injection before they enter the system prompt. Quarantined content gets wrapped with ACIP boundary markers so the agent treats it as untrusted. Fail-open design: if the scanner crashes, content passes through unchanged.
+
+### Changes (moltbotserver-source)
+
+| File                                        | Change                                                                                                                                | Upstream Risk                           |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `src/agents/workspace.ts`                   | Added `scanWorkspaceContent()` helper; applied to both `loadWorkspaceBootstrapFiles()` and `loadExtraBootstrapFilesWithDiagnostics()` | Medium — touches core bootstrap loading |
+| `src/security/external-content.ts`          | Added `workspace_context` to `ExternalContentSource` type + label                                                                     | Low — additive                          |
+| `src/agents/workspace.context-scan.test.ts` | **NEW** — 7 tests: clean pass-through, injection quarantine, mixed files, fail-open, low-severity skip                                | None — test file                        |
+
+### Design Decisions
+
+- **Fail-open** — scanner failure means content passes through unchanged (availability over strictness)
+- **ACIP boundary markers** — quarantined content is wrapped, not dropped, so agents can still see it but treat it as untrusted
+- **Shared helper** — single `scanWorkspaceContent()` function serves both core and extra bootstrap loaders, eliminating code duplication
+
+### Upstream Sync Risk
+
+**Medium for `workspace.ts`** — `loadWorkspaceBootstrapFiles` is core infrastructure. The scanner adds a thin wrapper around the loaded content. If upstream refactors the bootstrap loading pattern, re-apply.
+**Low for `external-content.ts`** — single additive entry in the source type union + labels.
+
+---
+
+## Lossless Claw (LCM) — Deployment Bake-in & Bug Fix (2026-03-15)
+
+**Purpose:** Bake the [Lossless Claw](https://github.com/martian-engineering/lossless-claw) context engine plugin (by [Martian Engineering](https://github.com/martian-engineering)) into the Docker image so it survives container rebuilds, and configure it as the default context engine across all deployments. LCM replaces the default sliding-window compaction with DAG-based conversation memory backed by SQLite, providing persistent summarization and conversation continuity.
+
+### Architecture
+
+```
+Docker Build (Dockerfile)
+  └─ npm pack @martian-engineering/lossless-claw
+     → /app/prebaked-plugins/lossless-claw/
+
+Container Startup (enforce-config.mjs)
+  ├─ enforceLCM()    → copies prebaked plugin to extensions dir
+  └─ enforceCore()   → sets contextEngine slot, enables plugin, configures 3-year session idle
+
+Runtime
+  └─ Gateway loads lossless-claw as contextEngine
+     └─ SQLite DAG at $STATE_DIR/lcm.db
+```
+
+### Changes (moltbotserver-source)
+
+| File                 | Change                                                                                                                                                                                                                                                   | Upstream Risk            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `Dockerfile`         | Pre-bake `@martian-engineering/lossless-claw` from npm into `/app/prebaked-plugins/lossless-claw/` using `npm pack` + `cp -a` (handles dotfiles). Follows existing Honcho pre-bake pattern.                                                              | None — custom section    |
+| `enforce-config.mjs` | `enforceCore()`: sets `plugins.slots.contextEngine = "lossless-claw"`, `plugins.entries["lossless-claw"].enabled = true`, adds to `plugins.allow` if array exists. Sets `session.reset.mode = "idle"`, `idleMinutes = 1576800` (3 years).                | None — fully custom file |
+| `enforce-config.mjs` | **NEW** `enforceLCM()`: copies pre-baked plugin from `/app/prebaked-plugins/` to extensions dir on startup (skip if already installed). Sets `root:root` ownership for plugin scanner.                                                                   | None — fully custom file |
+| `enforce-config.mjs` | Added `lcm` CLI command + wired `enforceLCM()` into `all` command after `enforceHonchoFork()`. Updated header comment.                                                                                                                                   | None — fully custom file |
+| `enforce-config.mjs` | **Bug fix**: Added missing `statSync` to `node:fs` import — was used at line 2071 in `seedSubAgentCronJobs()` for symlink resolution but never imported. Would crash with `ReferenceError` on any deploy with symlinked sub-agent workspace directories. | None — fully custom file |
+
+### Configuration Defaults
+
+| Setting                                    | Value               | Rationale                                  |
+| ------------------------------------------ | ------------------- | ------------------------------------------ |
+| `plugins.slots.contextEngine`              | `"lossless-claw"`   | LCM replaces default compaction            |
+| `plugins.entries["lossless-claw"].enabled` | `true`              | Plugin active by default                   |
+| `session.reset.idleMinutes`                | `1576800` (3 years) | Preserves LCM conversation DAG continuity  |
+| `session.reset.mode`                       | `"idle"`            | Only idle-based reset, no scheduled resets |
+
+### Environment Variables (in `.env`)
+
+| Variable                | Purpose                                                          |
+| ----------------------- | ---------------------------------------------------------------- |
+| `LCM_FRESH_TAIL_COUNT`  | Messages to keep unsummarized (default: 20)                      |
+| `LCM_CONTEXT_THRESHOLD` | Token threshold to trigger summarization                         |
+| `LCM_SUMMARY_PROVIDER`  | Summarization model provider (e.g. `google`)                     |
+| `LCM_SUMMARY_MODEL`     | Summarization model (e.g. `gemini-2.5-flash-lite-preview-06-17`) |
+
+### Compatibility
+
+No conflicts with existing memory layers:
+
+| Layer                                                                      | Storage                            | Scope                       |
+| -------------------------------------------------------------------------- | ---------------------------------- | --------------------------- |
+| [**ByteRover**](https://byterover.dev) (`main.sqlite`)                     | Workspace file chunks + embeddings | Semantic recall of files    |
+| [**LCM**](https://github.com/martian-engineering/lossless-claw) (`lcm.db`) | Conversation message DAG           | Session continuity          |
+| [**Honcho**](https://github.com/plastic-labs/honcho) (disabled)            | Supabase                           | Cross-session user profiles |
+
+### Upstream Sync Risk
+
+**None.** `Dockerfile` pre-bake section and `enforce-config.mjs` are fully custom files.
+
+---
+
+## SOUL.md Philosophy Rewrite — BIAS FOR ACTION & Documentation Emphasis (2026-03-15)
+
+**Purpose:** Transform the operating philosophy from cautious "restate and wait" to proactive "act first, report results." Also rewrite the documentation discipline to emphasize proactive recording — WORKING.md updates mid-task, skill creation from complex workflows, and knowledge base writes.
+
+### Changes (moltbotserver-source)
+
+| File                                               | Change                                                                                                                                                                                                                          | Upstream Risk        |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `SOUL.md`                                          | **Take Initiative** — removed RESTATEMENT RULE ("restate what you will do, wait for confirmation"), replaced with BIAS FOR ACTION ("act first, report results, reserve confirmation for destructive/irreversible actions only") | None — fully custom  |
+| `SOUL.md`                                          | **Think Architecturally** — removed "RESTATEMENT RULE" subsection (mandatory restate-and-wait); replaced with "REVERSIBILITY CHECK" (binary test: reversible → act, irreversible → confirm)                                     | None — fully custom  |
+| `SOUL.md`                                          | **Record Everything** — complete rewrite with structured guidance: what to write, where (WORKING.md, memory, skills, knowledge base), and when (mid-task, not just end-of-task)                                                 | None — fully custom  |
+| `docs/reference/templates/SOUL.md`                 | Mirrored all changes from main SOUL.md                                                                                                                                                                                          | None — fully custom  |
+| `src/agents/system-prompt.ts`                      | Added step 5 "Document" to Operating Discipline sequence (`understand → scope → act → verify → document`)                                                                                                                       | Low — custom section |
+| `src/agents/system-prompt.ts`                      | Fixed context summary flow description: was `understand → scope → act → verify`, now includes `→ document` to match full 5-step sequence                                                                                        | Low — custom section |
+| `docs/reference/templates/openclaw-business-v1.md` | Added "DOCUMENT AS YOU GO" section after REVERSIBILITY CHECK — WORKING.md updates, skill creation, knowledge capture                                                                                                            | None — fully custom  |
+
+### Philosophy Change
+
+| Before                                                                                            | After                                                                                                     |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| "Restate what you will do AND what you will NOT touch. Wait for confirmation. This is mandatory." | "BIAS FOR ACTION: the best version of you is the one people wake up to and think: glad that was handled." |
+| Confirmation required for every non-trivial action                                                | Confirmation reserved for destructive/irreversible actions only                                           |
+| Documentation as afterthought                                                                     | Documentation as part of action — "Acting includes documenting"                                           |
+
+### Design Decisions
+
+- **Reversibility as the decision boundary** — instead of asking "is this non-trivial?" (subjective), agents now ask "can this be undone?" (objective). Reversible changes (file edits, memory writes) proceed immediately. Irreversible changes (deletes, deploys, external API calls) still require confirmation.
+- **Documentation woven into action** — WORKING.md updates happen mid-task, not after. Skill creation happens after completing complex workflows. Knowledge base entries happen when discovering reusable patterns.
+- **Consistency across all SOUL.md copies** — main SOUL.md, docs template, Chinese translation template, and system-prompt.ts all updated in sync.
+
+### Upstream Sync Risk
+
+**None.** All modified files are custom SOUL.md variants or MoltBot-custom sections of `system-prompt.ts`.
+
+---
+
+## SupaSwarm — Hidden from UI, Server-Side Auto-Registration (2026-03-14–15)
+
+**Purpose:** Remove SupaSwarm from the user-facing onboarding UI (dropdown, CLI flags, auth flow) while keeping it available as a server-side auto-registered provider via `enforce-config.mjs`. This makes SupaSwarm a managed-platform-only capability — community users don't see it, but MoltBot instances get it automatically when configured.
+
+### UI Removal (moltbotserver-source)
+
+| File                                              | Change                                                                                                                                                                                         | Upstream Risk |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `src/commands/auth-choice-options.ts`             | Removed `supaswarm-api-key` dropdown option                                                                                                                                                    | Low           |
+| `src/commands/auth-choice.apply.api-providers.ts` | Removed `supaswarm-api-key` auth flow (~43 lines), removed imports for `applySupaSwarmConfig`, `setSupaSwarmConfig`, `SUPASWARM_DEFAULT_MODEL_REF`                                             | Low           |
+| `src/commands/onboard-auth.config-core.ts`        | Removed `applySupaSwarmProviderConfig` and `applySupaSwarmConfig` functions (~40 lines), removed model imports                                                                                 | Low           |
+| `src/commands/onboard-auth.ts`                    | Removed re-exports: `applySupaSwarmConfig`, `applySupaSwarmProviderConfig`, `setSupaSwarmConfig`, `SUPASWARM_DEFAULT_MODEL_REF`, `buildSupaSwarmModelDefinition`, `SUPASWARM_DEFAULT_MODEL_ID` | Low           |
+| `src/commands/onboard-provider-auth-flags.ts`     | Removed `supaswarmApiKey` flag definition                                                                                                                                                      | Low           |
+| `src/commands/onboard-types.ts`                   | Removed `supaswarm-api-key` from `BuiltInAuthChoice`, `supaswarm` from `BuiltInAuthChoiceGroupId`, `supaswarmApiKey`/`supaSwarmBaseUrl` from `OnboardOptions`                                  | Low           |
+| `src/secrets/provider-env-vars.ts`                | Removed `supaswarm: ["SUPASWARM_API_KEY"]` from `PROVIDER_ENV_VARS`                                                                                                                            | Low           |
+
+### Server-Side Registration (moltbotserver-source)
+
+| File                 | Change                                                                                                                                                                                                                   | Upstream Risk       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| `enforce-config.mjs` | Added `ensureSupaSwarmProvider()` — registers SupaSwarm as an OpenAI-compatible provider with 4 models (swarm-auto, swarm-pulse, swarm-drive, swarm-overdrive) when `SUPASWARM_BASE_URL` and `SUPASWARM_API_KEY` are set | None — fully custom |
+| `enforce-config.mjs` | Self-contained model definitions in `SUPASWARM_MODELS` array (128K context, 8K max tokens, cost metadata)                                                                                                                | None — fully custom |
+| `enforce-config.mjs` | Idempotent — only registers if provider not already configured                                                                                                                                                           | None — fully custom |
+
+### Dead Code — Fully Removed
+
+The dead SupaSwarm model definitions in `onboard-auth.models.ts` and `onboard-auth.credentials.ts`, along with the `if (false)` block and `SUPASWARM_MODELS` array in `enforce-config.mjs`, were fully removed in the "Comprehensive Cleanup & Security Hardening" pass (2026-03-15). Zero SupaSwarm references remain anywhere in the codebase.
+
+### Upstream Sync Risk
+
+**Low for UI removal files** — small deletions from enum unions and option arrays. Upstream may add new providers to these lists but won't conflict with removed entries.
+**None for `enforce-config.mjs`** — fully custom file.
+
+---
+
+## Lossless Claw (LCM) Context Engine — Docker Pre-Bake (2026-03-15)
+
+**Purpose:** Pre-bake the [Lossless Claw](https://github.com/martian-engineering/lossless-claw) (LCM) context engine plugin (by [Martian Engineering](https://github.com/martian-engineering)) into the Docker image so it's available on first boot without runtime `npm install`. LCM provides DAG-based conversation memory with SQLite-backed summarization, replacing default compaction.
+
+### Changes (moltbotserver-source)
+
+| File         | Change                                                                                                                              | Upstream Risk         |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `Dockerfile` | Added `RUN` block: `npm pack @martian-engineering/lossless-claw`, extract, install deps into `/app/prebaked-plugins/lossless-claw/` | None — custom section |
+
+### Architecture
+
+```
+Dockerfile (build time)
+  └─ npm pack @martian-engineering/lossless-claw
+     └─ extract + npm install --omit=dev → /app/prebaked-plugins/lossless-claw/
+
+docker-entrypoint.sh (runtime)
+  └─ copies /app/prebaked-plugins/lossless-claw → data volume (if not already present)
+
+enforce-config.mjs (runtime)
+  └─ sets contextEngine slot to "lossless-claw" in openclaw.json
+```
+
+### Design Decisions
+
+- **Same pattern as Honcho** — follows the existing `prebaked-plugins/openclaw-honcho` pre-bake pattern in the Dockerfile.
+- **Build-time install** — `npm pack` from registry + `npm install --omit=dev` ensures all dependencies are resolved at image build time. No network calls at container startup.
+- **Cleanup** — tar artifacts removed after extraction to avoid bloating the image layer.
+
+### Upstream Sync Risk
+
+**None.** `Dockerfile` is fully custom. The `prebaked-plugins` directory pattern is established.
+
+---
+
+## Progressive Disclosure for Skills — Compact Prompt Format (2026-03-15)
+
+**Purpose:** Reduce prompt token usage by ~50-60% for the skills index by switching to a compact format with on-demand loading. Inspired by the [Hermes Agent](https://github.com/NousResearch/hermes-agent) progressive disclosure architecture. Instead of including file paths in the system prompt and requiring the agent to use the generic `read` tool, the system prompt now lists only skill names and descriptions. The agent uses a new `skill_view` tool to load full SKILL.md content when needed.
+
+### Changes (moltbotserver-source)
+
+| File                                                                  | Change                                                                                                                                                                                                | Upstream Risk           |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `src/agents/skills/workspace.ts`                                      | `buildWorkspaceSkillsPrompt()` now supports two formats: compact (progressive disclosure, default) and XML (legacy). Compact format emits `- name: description` list + `skill_view(name)` instruction | Low — modified function |
+| `src/agents/skills/workspace.ts`                                      | `resolveSkillsPromptForRun()` passes `config` through for progressive disclosure check                                                                                                                | Low — modified function |
+| `src/agents/tools/skill-view-tool.ts`                                 | **NEW** — `createSkillViewTool()` factory. Takes `resolvedSkills` array, agent calls with skill name, gets full SKILL.md content                                                                      | None — custom new file  |
+| `src/agents/openclaw-tools.ts`                                        | Added `resolvedSkills` option + conditional `skill_view` tool registration when progressive disclosure is enabled                                                                                     | Low — additive          |
+| `src/agents/pi-tools.ts`                                              | Added `resolvedSkills` option, forwarded to `createOpenClawTools`                                                                                                                                     | Low — additive          |
+| `src/agents/pi-embedded-runner/compact.ts`                            | Added `resolvedSkills` from `skillsSnapshot` to tool creation params                                                                                                                                  | Low — additive          |
+| `src/agents/pi-embedded-runner/run/attempt.ts`                        | Added `resolvedSkills` from `skillsSnapshot` to tool creation params                                                                                                                                  | Low — additive          |
+| `src/config/types.skills.ts`                                          | Added `progressiveDisclosure?: boolean` config option (default: true)                                                                                                                                 | Low — additive          |
+| `src/security/external-content.ts`                                    | Added `"workspace_context"` to `ExternalContentSource` union + label                                                                                                                                  | Low — additive          |
+| `src/agents/skills.test.ts`                                           | Added test: "uses compact format when progressive disclosure is enabled (default)"                                                                                                                    | None — test             |
+| `src/agents/skills.build-workspace-skills-prompt.*.test.ts` (3 files) | Updated existing tests to pass `progressiveDisclosure: false` for backward compat                                                                                                                     | None — tests            |
+
+### Compact Format Example
+
+```
+<available_skills>
+- deploy-agent: Deploy an agent to production infrastructure
+- create-cron: Set up and configure cron jobs for agents
+Use skill_view(name) to load full instructions before using a skill.
+</available_skills>
+```
+
+vs. legacy XML format:
+
+```xml
+<available_skills>
+<skill name="deploy-agent" description="Deploy an agent to production">
+  Read full instructions at: /workspace/skills/deploy-agent/SKILL.md
+</skill>
+...
+</available_skills>
+```
+
+### Design Decisions
+
+- **Default on** — `progressiveDisclosure` defaults to `true`. Set to `false` in config to revert to upstream XML format.
+- **Tool-based loading** — `skill_view` is registered alongside the existing `skill_manage` tool. It requires `resolvedSkills` to be passed through the tool creation chain.
+- **Backward-compatible tests** — all existing tests explicitly set `progressiveDisclosure: false` to preserve their assertions.
+
+### Upstream Sync Risk
+
+**Low for `skills/workspace.ts`** — modifies `buildWorkspaceSkillsPrompt` and `resolveSkillsPromptForRun` with config-gated branches.
+**Low for tool chain files** — additive `resolvedSkills` option threaded through existing parameters.
+**None for `skill-view-tool.ts`** — fully custom new file.
+
+---
+
+## Workspace Context Security Scanning (2026-03-15)
+
+**Purpose:** Scan workspace context files (SOUL.md, OPERATIONS.md, etc.) for prompt injection before they are included in the system prompt. These files are loaded from the workspace and could be modified by external users or compromised tools.
+
+### Changes (moltbotserver-source)
+
+| File                               | Change                                                                                                                                        | Upstream Risk  |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/agents/workspace.ts`          | Added `scanAndLog()` call on workspace context file contents before system prompt injection. Uses `source: "workspace_context"` for tracking. | Low — additive |
+| `src/security/external-content.ts` | Added `"workspace_context"` to `ExternalContentSource` type union and `EXTERNAL_SOURCE_LABELS` map                                            | Low — additive |
+
+### Design Decisions
+
+- **Scan before injection** — workspace context files like SOUL.md, OPERATIONS.md, and WORKING.md are loaded from the filesystem and injected into the system prompt. If any file has been tampered with (e.g., by a tool writing to the workspace), the injection patterns would be caught by the existing content scanner.
+- **Non-blocking** — scan results are logged via `scanAndLog()` (which uses the shared EventLogger). High-risk content generates warnings but does not block prompt assembly — avoiding false positives from locking the agent out of its own SOUL.md.
+- **Complements existing scanning** — web fetch, browser snapshots, cron hooks, and channel metadata were already scanned. Workspace context was the last unscanned external content source entering the system prompt.
+
+### Upstream Sync Risk
+
+**Low.** Both changes are small, additive, and in MoltBot-custom code paths. `external-content.ts` only adds a new union member; `workspace.ts` adds a few lines after existing file-loading logic.
+
+---
+
+## OPERATIONS.md — Self-Delegation Guidance (2026-03-15)
+
+**Purpose:** Add structured guidance for self-delegation (agent-to-self task scheduling) in OPERATIONS.md, documenting when and how to use `NEXT_WAKE:` directives for follow-up tasks.
+
+### Changes (moltbotserver-source)
+
+| File            | Change                                                                                                                           | Upstream Risk       |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `OPERATIONS.md` | Added "Self-Delegation" section with guidelines for using `NEXT_WAKE:` directives, follow-up task patterns, and escalation rules | None — fully custom |
+
+### Upstream Sync Risk
+
+**None.** `OPERATIONS.md` is a fully custom file.
+
+---
+
 ## Per-Agent Browser Fix: Variable Substitution & OOM Crash (v1.0.3, 2026-03-11)
 
 **Purpose:** Fix two bugs in `ensure-agent-browsers.sh` that prevented per-agent browser containers from launching correctly.
@@ -85,7 +579,7 @@ docker-entrypoint.sh
 
 ## `workspace_search` QMD Initialization Hardening (2026-03-11)
 
-**Purpose:** Fix `workspace_search` silently disappearing on fresh container instances. On first deploy, `qmd` binary compilation (llama.cpp) takes longer than the 30-second command timeout, causing `addCollection` to time out. The tool then registered without a backing collection, making every search return empty. Silent failure made this nearly impossible to diagnose.
+**Purpose:** Fix `workspace_search` silently disappearing on fresh container instances. On first deploy, [QMD](https://github.com/nichochar/qmd) binary compilation ([llama.cpp](https://github.com/ggml-org/llama.cpp)) takes longer than the 30-second command timeout, causing `addCollection` to time out. The tool then registered without a backing collection, making every search return empty. Silent failure made this nearly impossible to diagnose.
 
 ### Root Cause
 
@@ -419,7 +913,7 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ## Hermes-Inspired Features — Trajectory Compression, Session Search & Skill Auto-Creation (2026-03-09)
 
-**Purpose:** Implement three agent-improvement features inspired by the [Hermes Agent](https://github.com/NousResearch/hermes-agent): smarter context carryover via trajectory compression, exact keyword search for conversation history, and autonomous skill document management.
+**Purpose:** Implement three agent-improvement features inspired by the [Hermes Agent](https://github.com/NousResearch/hermes-agent) architecture (by [Nous Research](https://nousresearch.com/)): smarter context carryover via trajectory compression, exact keyword search for conversation history, and autonomous skill document management.
 
 ### Code Changes (moltbotserver-source)
 
@@ -556,9 +1050,9 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ---
 
-## Chromium Stealth Hardening & Playwright Anti-Detection (2026-03-05)
+## Chromium Stealth Hardening & [Playwright](https://playwright.dev) Anti-Detection (2026-03-05)
 
-**Purpose:** Reduce browser detectability by anti-bot systems (Twitter/X, Cloudflare, etc.) through two layers: Docker/Chrome-level hardening and Playwright-level JavaScript evasions.
+**Purpose:** Reduce browser detectability by anti-bot systems (Twitter/X, Cloudflare, etc.) through two layers: Docker/Chrome-level hardening and [Playwright](https://playwright.dev)-level JavaScript evasions.
 
 ### Layer 1 — Docker & Chrome Flags
 
@@ -793,7 +1287,7 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ## Alibaba Cloud / Bailian Provider (2026-03-01)
 
-**Purpose:** Add Alibaba Cloud (Bailian/DashScope) as an implicit AI provider, removing the preset system and enabling reasoning-mode support for Qwen3 and Kimi models. Also removed the `healthcheck-security-audit` cron job (the security scanner modules handle this better).
+**Purpose:** Add [Alibaba Cloud (Bailian/DashScope)](https://dashscope.aliyun.com) as an implicit AI provider, removing the preset system and enabling reasoning-mode support for Qwen3 and Kimi models. Also removed the `healthcheck-security-audit` cron job (the security scanner modules handle this better).
 
 ### Changes
 
@@ -809,9 +1303,9 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ---
 
-## Honcho Fork Bake-In (2026-03-01)
+## [Honcho](https://github.com/plastic-labs/honcho) Fork Bake-In (2026-03-01)
 
-**Purpose:** Replace the npm-installed `@honcho-ai/openclaw-honcho` plugin with a patched fork. The fork's `dist/` directory is cloned and baked into the Docker image, replacing the standard npm-installed version.
+**Purpose:** Replace the npm-installed [`@honcho-ai/openclaw-honcho`](https://github.com/plastic-labs/openclaw-honcho) plugin (by [Plastic Labs](https://plasticlabs.ai)) with a patched fork. The fork's `dist/` directory is cloned and baked into the Docker image, replacing the standard npm-installed version.
 
 ### Changes
 
@@ -861,9 +1355,9 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ---
 
-## Honcho Pre-Baking & Gateway Browser Routing (2026-02-28)
+## [Honcho](https://github.com/plastic-labs/honcho) Pre-Baking & Gateway Browser Routing (2026-02-28)
 
-**Purpose:** Fix gateway crash loop caused by Honcho plugin ownership issues and wire the per-agent browser proxy into the gateway HTTP/WS router so the dashboard can display and interact with agent browsers.
+**Purpose:** Fix gateway crash loop caused by [Honcho](https://github.com/plastic-labs/honcho) plugin (by [Plastic Labs](https://plasticlabs.ai)) ownership issues and wire the per-agent browser proxy into the gateway HTTP/WS router so the dashboard can display and interact with agent browsers.
 
 ### Root Causes & Fixes
 
