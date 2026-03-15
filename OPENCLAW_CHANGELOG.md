@@ -5,6 +5,163 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Health Sentinel — Comprehensive Cleanup (2026-03-15)
+
+**Purpose:** Code quality audit and refactoring across all sentinel files (8 source + 3 test).
+
+| File                             | Change                                                                                                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `health-sentinel.ts`             | Consolidated duplicate `TrendAnalysis` import, updated module doc for all features, simplified `resolveConfig` (spread + filter vs field-by-field), hoisted `ONE_WEEK_MS` to top-level constant |
+| `health-sentinel-incidents.ts`   | Removed dead `healthyChecks` variable in inbox composer                                                                                                                                         |
+| `health-sentinel-phase2.test.ts` | Fixed type-safety lint errors: proper `as any` casts for partial `HealthSummary` mocks, added missing `accountId` to channel test fixture                                                       |
+
+All 101 tests pass after cleanup (no behavioural changes).
+
+---
+
+## Health Sentinel Phase 3 — Operational Automation (2026-03-15)
+
+**Purpose:** Incident file writing, categorised inbox summaries, weekly drift checks (backup freshness, file permission audits), and TTL-based auto-cleanup of old incidents, summaries, and history.
+
+### New Files
+
+| File                                         | Purpose                                                                                                                                                         |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/logging/health-sentinel-incidents.ts`   | Incident markdown writer (`writeIncidentFiles`), inbox summary writer (`writeInboxSummary`), TTL cleanup (`cleanupOldFiles`, `cleanupOldHistory`, `runCleanup`) |
+| `src/logging/health-sentinel-phase3.test.ts` | 19 tests: incident files, inbox summaries, TTL cleanup, weekly probe gating, integration                                                                        |
+
+### Modified Files
+
+| File                                   | Change                                                                                                                                                                             | Upstream Risk      |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `src/logging/health-sentinel.ts`       | Added: weekly probe gate (once/week via `lastWeeklyProbeRunMs`), incident files on escalation, inbox summary after every run, TTL cleanup on each cycle, retention config defaults | Low — fully custom |
+| `src/logging/health-sentinel-types.ts` | Added: `incidentRetentionDays`, `historyRetentionDays` to `SentinelConfig`; `WeeklyProbes` interface; `weeklyProbes` to `SentinelDeps`                                             | Low — fully custom |
+| `src/logging/diagnostic.ts`            | Wired: `weeklyProbes` with `checkBackupFreshness` (config .bak file age) and `checkFilePermissions` (root-owned state dir detection)                                               | Low — additive     |
+
+### Retention Defaults
+
+| Setting                 | Default | What Gets Cleaned                                       |
+| ----------------------- | ------- | ------------------------------------------------------- |
+| `incidentRetentionDays` | 7       | `{stateDir}/incidents/*.md` and `{stateDir}/inbox/*.md` |
+| `historyRetentionDays`  | 14      | Old entries in `sentinel-history.jsonl`                 |
+
+### Tests
+
+- ✅ `health-sentinel-phase3.test.ts`: 19/19 passed
+- ✅ `health-sentinel-phase2.test.ts`: 28/28 passed (regression)
+- ✅ `health-sentinel.test.ts`: 12/12 passed (regression)
+- ✅ `channel-health-monitor.test.ts`: 28/28 passed (regression)
+- ✅ `channel-health-policy.test.ts`: 14/14 passed (regression)
+
+---
+
+## Health Sentinel Phase 2 — Enhanced Self-Healing (2026-03-15)
+
+**Purpose:** Six enhancements to the Health Sentinel: disk-cleanup playbook, trend-aware history tracking, persistent rate-limit state across restarts, configurable thresholds via `openclaw.json`, dashboard surface, and doctor-derived probes.
+
+### New Files
+
+| File                                         | Purpose                                                                                                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/logging/health-sentinel-history.ts`     | JSONL-based history tracking: `appendSentinelReport()`, `getRecentReports()`, `detectTrends()` (persistent/flapping/improving), `formatTrendContext()`. Auto-truncates at 1MB. |
+| `src/logging/health-sentinel-phase2.test.ts` | 28 tests: history, trends, disk-cleanup playbook, configurable thresholds, persistent state, doctor probes, dashboard surface                                                  |
+
+### Modified Files
+
+| File                                       | Change                                                                                                                                                                                                                                                                                                                          | Upstream Risk                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `src/logging/health-sentinel.ts`           | Added: configurable thresholds via `resolveConfig()`, persistent rate-limit state (load/save JSON), history integration, doctor probes appended before classification, `getLastSentinelReport()` dashboard surface, `disk.log_directory` warn → `auto-fixable` (was `warning`), unknown check types classified by actual status | Low — fully custom file                   |
+| `src/logging/health-sentinel-types.ts`     | Added: `SentinelConfig` interface, `DoctorProbes` interface, `SentinelDeps.stateDir/config/doctorProbes` fields                                                                                                                                                                                                                 | Low — fully custom file                   |
+| `src/logging/health-sentinel-playbooks.ts` | Added: `disk-cleanup` playbook (rotates event logs, verifies disk size dropped), `RemediationContext.rotateEventLogs/checkDiskSpaceMB`                                                                                                                                                                                          | Low — fully custom file                   |
+| `src/logging/diagnostic.ts`                | Wired: `stateDir`, `config`, full `remediationContext` (channel restart + probe + disk ops), `doctorProbes` (state dir exist + ephemeral path)                                                                                                                                                                                  | Low — additive to existing sentinel block |
+
+### Architecture Extension
+
+```
+Sentinel Check (every ~30 min)
+  ├─ Doctor probes: state dir exists?, ephemeral storage?
+  ├─ loadPersistentState() from {stateDir}/sentinel-rate-limit.json
+  ├─ Classify: disk warn → auto-fixable (disk-cleanup playbook)
+  ├─ Tier 1: channel-restart + disk-cleanup playbooks
+  ├─ Tier 2: trend-enriched escalation ("persistent: ..., flapping: ...")
+  ├─ appendSentinelReport() → {stateDir}/sentinel-history.jsonl
+  ├─ savePersistentState() → survives restarts
+  └─ lastReport = report (dashboard surface via getLastSentinelReport())
+```
+
+### Configurable Thresholds (`openclaw.json → diagnostics.sentinel`)
+
+| Setting                  | Default       | Purpose                    |
+| ------------------------ | ------------- | -------------------------- |
+| `maxRemediationsPerHour` | 5             | Cap auto-fixes             |
+| `issueCooldownMs`        | 900000 (15m)  | Per-issue retry delay      |
+| `escalationCooldownMs`   | 1800000 (30m) | Agent escalation delay     |
+| `maxEscalationsPerHour`  | 3             | Cap agent wake-ups         |
+| `maxConsecutiveFailures` | 3             | Failures before escalation |
+| `diskWarnThresholdMB`    | 500           | Disk warning threshold     |
+| `errorRateThreshold`     | 50            | Error count threshold      |
+
+### Tests
+
+- ✅ `health-sentinel-phase2.test.ts`: 28/28 passed
+- ✅ `health-sentinel.test.ts`: 12/12 passed (regression)
+- ✅ `channel-health-monitor.test.ts`: 28/28 passed (regression)
+- ✅ `channel-health-policy.test.ts`: 14/14 passed (regression)
+
+---
+
+**Purpose:** Two-tier self-healing system that runs every ~30 minutes via the diagnostic heartbeat. Tier 1 (deterministic) auto-fixes known issues like channel outages via playbooks. Tier 2 (agent-driven) escalates unresolved issues to the agent as structured system events, enabling AI-powered diagnosis and remediation before involving the user.
+
+### New Files
+
+| File                                       | Purpose                                                                                                                                                               |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/logging/health-sentinel.ts`           | Main sentinel orchestrator — classify → fix → verify → escalate pipeline with rate limiting (max 5 fixes/hour, 15-min per-issue cooldown, 30-min escalation cooldown) |
+| `src/logging/health-sentinel-types.ts`     | Shared types: `ClassifiedIssue`, `SentinelReport`, `RateLimitState`, `SentinelDeps`, `RemediationPlaybook`                                                            |
+| `src/logging/health-sentinel-playbooks.ts` | Remediation playbook registry. DI-based `RemediationContext` for testability. `channel-restart` playbook (stop+start via gateway RPC with verify-after-fix)           |
+| `src/logging/health-sentinel.test.ts`      | 12 unit tests: classification, orchestration, escalation, rate limiting, graceful error handling                                                                      |
+
+### Modified Files
+
+| File                        | Change                                                                                                                                                                                  | Upstream Risk                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `src/logging/diagnostic.ts` | Added `sentinelCycleCount` (every 60th heartbeat = ~30 min). Dynamic imports sentinel + infra modules, wires deps, runs `runSentinelCheck()`. Added to `resetDiagnosticStateForTest()`. | Low — additive counter + conditional block after existing health check |
+
+### Architecture
+
+```
+Every ~30 min (diagnostic heartbeat, 60th × 30s cycle)
+  ├─ Probes: channel health, error rate, disk, gateway port
+  ├─ Classifies: healthy | auto-fixable | needs-agent | warning
+  ├─ Tier 1: playbook remediation (channel restart) + verify
+  └─ Tier 2: composes structured report → enqueueSystemEvent → requestHeartbeatNow
+       └─ Agent receives "[HEALTH SENTINEL] Issues detected..." in heartbeat session
+          └─ Agent reasons, fixes, or escalates to user
+```
+
+### Rate Limiting
+
+| Limit                           | Value  | Purpose                        |
+| ------------------------------- | ------ | ------------------------------ |
+| Max remediations/hour           | 5      | Prevent auto-fix storm         |
+| Per-issue cooldown              | 15 min | Don't hammer the same fix      |
+| Escalation cooldown             | 30 min | Don't spam the agent           |
+| Max escalations/hour            | 3      | Cap agent wake-ups             |
+| Consecutive failures → escalate | 3      | Auto-fix giving up → ask agent |
+
+### Tests
+
+- ✅ `health-sentinel.test.ts`: 12/12 passed
+- ✅ `channel-health-monitor.test.ts`: 28/28 passed (regression)
+- ✅ `channel-health-policy.test.ts`: 14/14 passed (regression)
+
+### Upstream Sync Risk
+
+**None for new files** — 3 new source files + 1 test file, fully custom.
+**Low for `diagnostic.ts`** — additive counter + conditional block inside existing heartbeat interval.
+
+---
+
 ## Comprehensive Codebase Cleanup — DRY, Tests & Code Quality (2026-03-15)
 
 **Purpose:** Extract shared utilities, eliminate boilerplate, fix dead code, add missing test coverage, and improve SQLite resource management.

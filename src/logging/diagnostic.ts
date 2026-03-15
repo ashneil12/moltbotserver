@@ -330,6 +330,7 @@ export function logActiveRuns() {
 
 let heartbeatInterval: NodeJS.Timeout | null = null;
 let healthCheckCycleCount = 0;
+let sentinelCycleCount = 0;
 
 export function startDiagnosticHeartbeat(config?: OpenClawConfig) {
   if (heartbeatInterval) {
@@ -435,6 +436,208 @@ export function startDiagnosticHeartbeat(config?: OpenClawConfig) {
         });
     }
 
+    // Health Sentinel: every ~30 minutes (every 60th heartbeat at 30s intervals)
+    sentinelCycleCount += 1;
+    if (sentinelCycleCount >= 60) {
+      sentinelCycleCount = 0;
+      Promise.all([
+        import("./health-sentinel.js"),
+        import("../gateway/call.js"),
+        import("./diagnostics-toolkit.js"),
+        import("../infra/system-events.js"),
+        import("../infra/heartbeat-wake.js"),
+        import("../config/sessions.js"),
+        import("./event-log.js"),
+        import("../infra/ephemeral-path.js"),
+        import("../config/paths.js"),
+      ])
+        .then(
+          ([
+            { runSentinelCheck },
+            { callGateway },
+            { runHealthCheck },
+            { enqueueSystemEvent },
+            { requestHeartbeatNow },
+            { resolveMainSessionKey },
+            { rotateEventLogs },
+            { isEphemeralPath },
+            { resolveStateDir },
+          ]) => {
+            const cfg = loadConfig();
+            const sessionKey = resolveMainSessionKey(cfg);
+            const stateDir = resolveStateDir(process.env, () => {
+              try {
+                return require("node:os").homedir();
+              } catch {
+                return "/tmp";
+              }
+            });
+
+            return runSentinelCheck({
+              getHealthSnapshot: async () => {
+                return await callGateway<import("../commands/health.js").HealthSummary>({
+                  method: "health",
+                  params: { probe: true },
+                  config: cfg,
+                  timeoutMs: 30_000,
+                });
+              },
+              runHealthCheck,
+              enqueueSystemEvent: (text, opts) => enqueueSystemEvent(text, { sessionKey, ...opts }),
+              requestHeartbeatNow,
+              resolveMainSessionKey: () => sessionKey,
+              stateDir,
+              config:
+                (cfg as Record<string, unknown>).diagnostics &&
+                typeof (cfg as Record<string, unknown>).diagnostics === "object"
+                  ? (((cfg as Record<string, unknown>).diagnostics as Record<string, unknown>)
+                      .sentinel as import("./health-sentinel-types.js").SentinelConfig | undefined)
+                  : undefined,
+              remediationContext: {
+                restartChannel: async (channelId: string, accountId: string) => {
+                  await callGateway({
+                    method: "channel-restart",
+                    params: { channelId, accountId },
+                    config: cfg,
+                    timeoutMs: 15_000,
+                  });
+                },
+                probeChannelHealth: async (channelId: string) => {
+                  try {
+                    const result = await callGateway<{ ok?: boolean }>({
+                      method: "channel-health",
+                      params: { channelId, probe: true },
+                      config: cfg,
+                      timeoutMs: 10_000,
+                    });
+                    return result?.ok === true;
+                  } catch {
+                    return false;
+                  }
+                },
+                rotateEventLogs: (baseDir: string) => rotateEventLogs(baseDir),
+                checkDiskSpaceMB: (dir: string) => {
+                  const fs = require("node:fs");
+                  const path = require("node:path");
+                  try {
+                    if (!fs.existsSync(dir)) {
+                      return 0;
+                    }
+                    let total = 0;
+                    for (const f of fs.readdirSync(dir)) {
+                      try {
+                        const s = fs.statSync(path.join(dir, f));
+                        if (s.isFile()) {
+                          total += s.size;
+                        }
+                      } catch {
+                        /* skip */
+                      }
+                    }
+                    return Math.round(total / 1024 / 1024);
+                  } catch {
+                    return 0;
+                  }
+                },
+              },
+              doctorProbes: {
+                checkStateDirExists: () => {
+                  const fs = require("node:fs");
+                  const exists = fs.existsSync(stateDir);
+                  return {
+                    name: "doctor.state_dir",
+                    status: exists ? ("pass" as const) : ("fail" as const),
+                    detail: exists
+                      ? `State directory exists: ${stateDir}`
+                      : `State directory missing: ${stateDir}`,
+                  };
+                },
+                checkEphemeralPaths: () => {
+                  const checks: import("./diagnostics-toolkit.js").CheckResult[] = [];
+                  const result = isEphemeralPath(stateDir);
+                  if (result.ephemeral) {
+                    checks.push({
+                      name: "doctor.ephemeral_state",
+                      status: "warn",
+                      detail: `State dir is on ephemeral storage: ${result.reason}`,
+                    });
+                  }
+                  return checks;
+                },
+              },
+              weeklyProbes: {
+                checkBackupFreshness: () => {
+                  const fs = require("node:fs");
+                  const configPath =
+                    require("../config/paths.js").resolveConfigPath?.(process.env) ??
+                    "openclaw.json";
+                  const bakPath = `${configPath}.bak`;
+                  try {
+                    if (!fs.existsSync(bakPath)) {
+                      return {
+                        name: "weekly.backup_freshness",
+                        status: "warn" as const,
+                        detail: `No config backup found at ${bakPath}`,
+                      };
+                    }
+                    const stat = fs.statSync(bakPath);
+                    const ageMs = Date.now() - stat.mtimeMs;
+                    const ageDays = Math.round(ageMs / (24 * 60 * 60_000));
+                    if (ageDays > 7) {
+                      return {
+                        name: "weekly.backup_freshness",
+                        status: "warn" as const,
+                        detail: `Config backup is ${ageDays} days old (${bakPath})`,
+                      };
+                    }
+                    return {
+                      name: "weekly.backup_freshness",
+                      status: "pass" as const,
+                      detail: `Config backup is ${ageDays} day(s) old`,
+                    };
+                  } catch {
+                    return {
+                      name: "weekly.backup_freshness",
+                      status: "warn" as const,
+                      detail: "Could not check backup freshness",
+                    };
+                  }
+                },
+                checkFilePermissions: () => {
+                  const fs = require("node:fs");
+                  const checks: import("./diagnostics-toolkit.js").CheckResult[] = [];
+                  try {
+                    const stat = fs.statSync(stateDir);
+                    if (stat.uid === 0 && process.getuid?.() !== 0) {
+                      checks.push({
+                        name: "weekly.root_owned_state",
+                        status: "warn" as const,
+                        detail: `State directory ${stateDir} is owned by root — possible Docker residue`,
+                      });
+                    }
+                  } catch {
+                    // skip if we can't stat
+                  }
+                  return checks;
+                },
+              },
+            });
+          },
+        )
+        .then((report) => {
+          if (!report.healthy) {
+            diag.warn?.(
+              `[health-sentinel] ${report.issues.length} issue(s), ` +
+                `${report.remediations.length} remediation(s), ` +
+                `escalated=${report.escalatedToAgent}`,
+            );
+          }
+        })
+        .catch((err) => {
+          diag.debug(`health sentinel check failed: ${String(err)}`);
+        });
+    }
+
     for (const [, state] of diagnosticSessionStates) {
       const ageMs = now - state.lastActivity;
       if (state.state === "processing" && ageMs > stuckSessionWarnMs) {
@@ -469,6 +672,7 @@ export function resetDiagnosticStateForTest(): void {
   webhookStats.lastReceived = 0;
   lastActivityAt = 0;
   healthCheckCycleCount = 0;
+  sentinelCycleCount = 0;
   stopDiagnosticHeartbeat();
 }
 
