@@ -450,7 +450,7 @@ describe("buildAgentSystemPrompt", () => {
     });
 
     expect(prompt).toContain("SOUL.md defines your core operating principles");
-    expect(prompt).toContain("RESTATEMENT RULE");
+    expect(prompt).toContain("BIAS FOR ACTION");
     expect(prompt).toContain("MINIMAL CHANGE");
   });
 
