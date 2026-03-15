@@ -4,9 +4,11 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   CONSCIOUSNESS_IDENTITY_COOLDOWN_MS,
+  appendReflectionChangeLog,
   applyReflectionRunPostflight,
   captureReflectionFileSnapshot,
   dedupeSelfReviewFile,
+  pruneReflectionChangeLog,
   updateReflectionInbox,
 } from "./reflection-artifacts.js";
 
@@ -196,5 +198,121 @@ describe("dedupeSelfReviewFile", () => {
     );
     expect(selfReview.match(/Pattern check:/g)).toHaveLength(1);
     expect(selfReview).toContain("[2026-03-07 10:00 UTC]");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reflection change-log tests
+// ---------------------------------------------------------------------------
+
+describe("appendReflectionChangeLog", () => {
+  it("writes a valid JSONL entry", async () => {
+    await appendReflectionChangeLog(workspaceDir, {
+      ts: "2026-03-15T19:00:00.000Z",
+      jobId: "self-review",
+      file: "IDENTITY.md",
+      linesChanged: 2,
+      reverted: false,
+      promotions: 1,
+    });
+
+    const logPath = path.join(workspaceDir, "memory", "reflection-change-log.jsonl");
+    const content = await fs.readFile(logPath, "utf-8");
+    const lines = content.trim().split("\n");
+    expect(lines).toHaveLength(1);
+
+    const entry = JSON.parse(lines[0]);
+    expect(entry.jobId).toBe("self-review");
+    expect(entry.file).toBe("IDENTITY.md");
+    expect(entry.linesChanged).toBe(2);
+    expect(entry.promotions).toBe(1);
+  });
+
+  it("appends to existing log", async () => {
+    const logPath = path.join(workspaceDir, "memory", "reflection-change-log.jsonl");
+    await fs.writeFile(
+      logPath,
+      '{"ts":"2026-03-14","jobId":"deep-review","file":"IDENTITY.md","linesChanged":0,"reverted":false,"promotions":0}\n',
+      "utf-8",
+    );
+
+    await appendReflectionChangeLog(workspaceDir, {
+      ts: "2026-03-15T19:00:00.000Z",
+      jobId: "consciousness",
+      file: "IDENTITY.md",
+      linesChanged: 3,
+      reverted: true,
+      promotions: 0,
+    });
+
+    const content = await fs.readFile(logPath, "utf-8");
+    const lines = content.trim().split("\n");
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[0]).jobId).toBe("deep-review");
+    expect(JSON.parse(lines[1]).jobId).toBe("consciousness");
+  });
+});
+
+describe("pruneReflectionChangeLog", () => {
+  it("keeps only the last N entries", async () => {
+    const logPath = path.join(workspaceDir, "memory", "reflection-change-log.jsonl");
+    const entries = Array.from({ length: 10 }, (_, i) =>
+      JSON.stringify({
+        ts: `2026-03-${(i + 1).toString().padStart(2, "0")}`,
+        jobId: `job-${i}`,
+        file: "IDENTITY.md",
+        linesChanged: 1,
+        reverted: false,
+        promotions: 0,
+      }),
+    );
+    await fs.writeFile(logPath, entries.join("\n") + "\n", "utf-8");
+
+    await pruneReflectionChangeLog(logPath, 3);
+
+    const content = await fs.readFile(logPath, "utf-8");
+    const lines = content.trim().split("\n");
+    expect(lines).toHaveLength(3);
+    expect(JSON.parse(lines[0]).jobId).toBe("job-7");
+    expect(JSON.parse(lines[2]).jobId).toBe("job-9");
+  });
+
+  it("no-ops when under the limit", async () => {
+    const logPath = path.join(workspaceDir, "memory", "reflection-change-log.jsonl");
+    const content = '{"ts":"2026-03-15","jobId":"test"}\n';
+    await fs.writeFile(logPath, content, "utf-8");
+
+    await pruneReflectionChangeLog(logPath, 200);
+
+    const after = await fs.readFile(logPath, "utf-8");
+    expect(after).toBe(content);
+  });
+});
+
+describe("updateReflectionInbox with problematic rules", () => {
+  it("includes problematic rules in the inbox markdown", async () => {
+    await fs.writeFile(
+      path.join(workspaceDir, "IDENTITY.md"),
+      "# IDENTITY\n\n## CRITICAL Rules\n\n- **CRITICAL [1H/3M]:** Always verify API health before calling\n- **CRITICAL [5H/1M]:** Check file existence before reading\n",
+      "utf-8",
+    );
+
+    const summary = await updateReflectionInbox({
+      cfg: { session: { store: sessionStorePath } } as never,
+      agentId: "main",
+      workspaceDir,
+      lastRunAtMs: Date.parse("2026-03-07T10:30:00Z"),
+    });
+
+    expect(summary.problematicRules).toHaveLength(1);
+    expect(summary.problematicRules[0].text).toContain("verify API health");
+
+    const inbox = await fs.readFile(
+      path.join(workspaceDir, "memory", "reflection-inbox.md"),
+      "utf-8",
+    );
+    expect(inbox).toContain("## Problematic Rules");
+    expect(inbox).toContain("[1H/3M]");
+    expect(inbox).toContain("verify API health");
   });
 });

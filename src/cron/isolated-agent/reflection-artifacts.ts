@@ -4,7 +4,16 @@ import path from "node:path";
 import type { OpenClawConfig } from "../../config/config.js";
 import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
 import { isCronSessionKey } from "../../routing/session-key.js";
-import { countMissPatterns, extractEntries, promoteMissPatterns } from "../diary-archive.js";
+import {
+  correlateHitMissWithRules,
+  countMissPatterns,
+  extractEntries,
+  extractExistingCriticalRules,
+  flagProblematicRules,
+  promoteMissPatterns,
+  updateEvidenceCounters,
+  type ProblematicRule,
+} from "../diary-archive.js";
 
 const REFLECTION_JOB_SUFFIXES = ["consciousness", "self-review", "deep-review"] as const;
 
@@ -23,6 +32,10 @@ const IDENTITY_RELATIVE_PATH = "IDENTITY.md";
 const SCRATCHPAD_RELATIVE_PATH = "memory/identity-scratchpad.md";
 const REFLECTION_STATE_RELATIVE_PATH = "memory/.reflection-state.json";
 export const REFLECTION_INBOX_RELATIVE_PATH = "memory/reflection-inbox.md";
+const REFLECTION_CHANGE_LOG_RELATIVE_PATH = "memory/reflection-change-log.jsonl";
+
+/** Maximum number of entries to keep in the reflection change log. */
+const CHANGE_LOG_MAX_ENTRIES = 200;
 
 export const CONSCIOUSNESS_IDENTITY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 export const CONSCIOUSNESS_MAX_IDENTITY_CHANGED_LINES = 16;
@@ -51,6 +64,7 @@ export type ReflectionInboxSummary = {
   watchFixes: string[];
   sessionActivity: ReflectionSessionActivity;
   state: ReflectionState;
+  problematicRules: ProblematicRule[];
 };
 
 export type ReflectionFileSnapshot = {
@@ -301,6 +315,16 @@ function buildReflectionInboxMarkdown(summary: ReflectionInboxSummary): string {
     );
   }
 
+  if (summary.problematicRules.length > 0) {
+    lines.push("", "## Problematic Rules");
+    lines.push(
+      "> CRITICAL rules where misses \u2265 hits after 3+ observations. Consider demotion or rewording.",
+    );
+    for (const rule of summary.problematicRules) {
+      lines.push(`- [${rule.hits}H/${rule.misses}M] ${rule.text}`);
+    }
+  }
+
   lines.push("");
   return `${lines.join("\n")}\n`;
 }
@@ -311,13 +335,14 @@ export async function updateReflectionInbox(params: {
   workspaceDir: string;
   lastRunAtMs: number;
 }): Promise<ReflectionInboxSummary> {
-  const [state, changedFiles, selfReviewContent] = await Promise.all([
+  const [state, changedFiles, selfReviewContent, identityContent] = await Promise.all([
     readReflectionState(params.workspaceDir),
     collectChangedFilesSince({
       workspaceDir: params.workspaceDir,
       lastRunAtMs: params.lastRunAtMs,
     }),
     readTextFileIfExists(path.join(params.workspaceDir, SELF_REVIEW_RELATIVE_PATH)),
+    readTextFileIfExists(path.join(params.workspaceDir, IDENTITY_RELATIVE_PATH)),
   ]);
   const sessionActivity = collectSessionActivitySince({
     cfg: params.cfg,
@@ -325,12 +350,14 @@ export async function updateReflectionInbox(params: {
     lastRunAtMs: params.lastRunAtMs,
   });
   const { promotionsDue, watchFixes } = summarizeMissPatterns(selfReviewContent);
+  const problematicRules = identityContent ? flagProblematicRules(identityContent) : [];
   const summary: ReflectionInboxSummary = {
     changedFiles,
     promotionsDue,
     watchFixes,
     sessionActivity,
     state,
+    problematicRules,
   };
   const inboxPath = path.join(params.workspaceDir, REFLECTION_INBOX_RELATIVE_PATH);
   await writeTextFileIfChanged(inboxPath, buildReflectionInboxMarkdown(summary));
@@ -452,15 +479,19 @@ export async function applyReflectionRunPostflight(params: {
 
   const identityChanged = after.identity !== params.before.identity;
   const scratchpadChanged = after.scratchpad !== params.before.scratchpad;
+  let reverted = false;
+  let promotionCount = 0;
 
   if (isSelfReviewJobId(params.jobId)) {
     if (identityChanged) {
       await writeOptionalFile(identityPath, params.before.identity);
+      reverted = true;
     }
     if (scratchpadChanged) {
       await writeOptionalFile(scratchpadPath, params.before.scratchpad);
     }
     const promotions = await promoteMissPatterns(params.workspaceDir);
+    promotionCount = promotions.promoted;
     if (promotions.promoted > 0) {
       state = {
         ...state,
@@ -482,6 +513,7 @@ export async function applyReflectionRunPostflight(params: {
       ) {
         await writeOptionalFile(identityPath, params.before.identity);
         await writeOptionalFile(scratchpadPath, params.before.scratchpad);
+        reverted = true;
       } else {
         allowIdentityWrite = true;
       }
@@ -490,6 +522,7 @@ export async function applyReflectionRunPostflight(params: {
     }
 
     const promotions = await promoteMissPatterns(params.workspaceDir);
+    promotionCount = promotions.promoted;
     if (allowIdentityWrite || promotions.promoted > 0) {
       state = {
         ...state,
@@ -510,6 +543,98 @@ export async function applyReflectionRunPostflight(params: {
     }
   }
 
+  // --- Evidence counter update (deterministic, no LLM calls) ---
+  // Read the current self-review and identity files, correlate HIT/MISS
+  // entries with existing CRITICAL rules, and update the counters.
+  try {
+    const [currentSelfReview, currentIdentity] = await Promise.all([
+      readTextFileIfExists(path.join(params.workspaceDir, SELF_REVIEW_RELATIVE_PATH)),
+      readTextFileIfExists(identityPath),
+    ]);
+    if (currentSelfReview && currentIdentity) {
+      const existingRules = extractExistingCriticalRules(currentIdentity);
+      const deltas = correlateHitMissWithRules(currentSelfReview, existingRules);
+      if (deltas.size > 0) {
+        const updatedIdentity = updateEvidenceCounters(currentIdentity, deltas);
+        if (updatedIdentity !== currentIdentity) {
+          await writeTextFileIfChanged(identityPath, updatedIdentity);
+        }
+      }
+    }
+  } catch {
+    // Best-effort — evidence counter failures should never fail the postflight
+  }
+
+  // --- Structured change-log (Feature 2) ---
+  const linesChanged = identityChanged
+    ? countChangedLines(params.before.identity ?? "", after.identity ?? "")
+    : 0;
+  if (identityChanged || promotionCount > 0) {
+    await appendReflectionChangeLog(params.workspaceDir, {
+      ts: new Date(nowMs).toISOString(),
+      jobId: normalizeJobId(params.jobId),
+      file: "IDENTITY.md",
+      linesChanged,
+      reverted,
+      promotions: promotionCount,
+    });
+  }
+
   await dedupeSelfReviewFile(params.workspaceDir);
   await writeReflectionState(params.workspaceDir, state);
+}
+
+// ---------------------------------------------------------------------------
+// Structured reflection change-log (ACE-inspired)
+// ---------------------------------------------------------------------------
+
+/** A single entry in the reflection change log. */
+export type ReflectionChangeLogEntry = {
+  ts: string;
+  jobId: string;
+  file: string;
+  linesChanged: number;
+  reverted: boolean;
+  promotions: number;
+};
+
+/**
+ * Append a structured change-log entry to `memory/reflection-change-log.jsonl`.
+ * Each entry is one JSON object per line.  Best-effort — failures are
+ * silently ignored to never break the postflight.
+ */
+export async function appendReflectionChangeLog(
+  workspaceDir: string,
+  entry: ReflectionChangeLogEntry,
+): Promise<void> {
+  const logPath = path.join(workspaceDir, REFLECTION_CHANGE_LOG_RELATIVE_PATH);
+  try {
+    await fs.mkdir(path.dirname(logPath), { recursive: true });
+    await fs.appendFile(logPath, `${JSON.stringify(entry)}\n`, "utf-8");
+    await pruneReflectionChangeLog(logPath);
+  } catch {
+    // Best-effort — never fail the postflight
+  }
+}
+
+/**
+ * Keep only the last {@link CHANGE_LOG_MAX_ENTRIES} entries in the change log.
+ * Avoids unbounded growth of the JSONL file.
+ */
+export async function pruneReflectionChangeLog(
+  logPath: string,
+  maxEntries: number = CHANGE_LOG_MAX_ENTRIES,
+): Promise<void> {
+  let content: string;
+  try {
+    content = await fs.readFile(logPath, "utf-8");
+  } catch {
+    return;
+  }
+  const lines = content.split("\n").filter((line) => line.trim().length > 0);
+  if (lines.length <= maxEntries) {
+    return;
+  }
+  const trimmed = lines.slice(lines.length - maxEntries);
+  await writeTextFileIfChanged(logPath, `${trimmed.join("\n")}\n`);
 }

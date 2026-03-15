@@ -5,6 +5,393 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## ACE-Inspired Stability Features (2026-03-15)
+
+**Purpose:** Close two remaining gaps in the OpenClaw reflection pipeline, inspired by the [ACE Platform](https://github.com/DannyMac180/ace-platform) (by [Danny McAteer](https://github.com/DannyMac180)). ACE tracks `helpful`/`harmful` counters on all playbook bullets and keeps structured outcome logs. OpenClaw lacked post-promotion effectiveness tracking on CRITICAL rules and structured auditing of identity modifications.
+
+### Feature 1 — Post-Promotion Evidence Counters
+
+Promoted CRITICAL rules now include `[0H/0M]` counters (hits/misses). After every reflection job, the postflight deterministically scans self-review HIT/MISS entries, correlates them with existing CRITICAL rules via 4-char prefix stemming (handles inflections like "verify"→"verified"), and increments counters in IDENTITY.md. Zero LLM calls — fully deterministic.
+
+Rules where M ≥ H after 3+ observations are flagged as "problematic" and surfaced in `reflection-inbox.md` for the deep-review cron to evaluate for demotion or rewording.
+
+| File                                              | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Upstream Risk                                                                                                          |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/cron/diary-archive.ts`                       | **NEW functions:** `parseEvidenceCounters()`, `stemWord()`/`buildStemSet()` (crude prefix stemmer), `correlateHitMissWithRules()`, `updateEvidenceCounters()`, `flagProblematicRules()`. Updated `extractExistingCriticalRules()` regex to handle `[XH/YM]` tags. Changed `promoteMissPatterns()` format from `**CRITICAL:**` to `**CRITICAL [0H/0M]:**`.                                                                                                                                                                        | Low — additive functions + format change isolated to our CRITICAL promotion pipeline                                   |
+| `src/cron/isolated-agent/reflection-artifacts.ts` | **Postflight wiring:** evidence counter correlation, inbox problematic rules section. Added imports for `correlateHitMissWithRules`, `extractExistingCriticalRules`, `flagProblematicRules`, `updateEvidenceCounters`. Extended `ReflectionInboxSummary` with `problematicRules`. `updateReflectionInbox()` reads identity file and calls `flagProblematicRules()`. `buildReflectionInboxMarkdown()` renders `## Problematic Rules`. `applyReflectionRunPostflight()` runs evidence counter update after revert/promotion logic. | Medium — touches shared `ReflectionInboxSummary` type (but flows through `reflection-preflight.ts` via type inference) |
+
+### Feature 2 — Structured Identity Change-Log
+
+JSONL append log at `memory/reflection-change-log.jsonl`. Each entry records: timestamp, job ID, file modified, lines changed, whether reverted, promotions count. Auto-pruned at 200 entries.
+
+| File                                              | Change                                                                                                                                                                                                                                             | Upstream Risk                                        |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `src/cron/isolated-agent/reflection-artifacts.ts` | **NEW functions:** `appendReflectionChangeLog()`, `pruneReflectionChangeLog()`, `ReflectionChangeLogEntry` type. New constant `REFLECTION_CHANGE_LOG_RELATIVE_PATH`. Postflight writes change-log entry when identity changes or promotions occur. | Low — additive functions, best-effort error handling |
+
+### Tests
+
+- ✅ `diary-archive.test.ts`: 55/55 passed (20 new — `parseEvidenceCounters`, `correlateHitMissWithRules`, `updateEvidenceCounters`, `flagProblematicRules`, updated promotion format)
+- ✅ `reflection-artifacts.test.ts`: 5 new tests added (`appendReflectionChangeLog`, `pruneReflectionChangeLog`, `updateReflectionInbox` with problematic rules) — blocked by pre-existing `@modelcontextprotocol/sdk` import chain
+- ✅ TypeScript compilation: zero new errors
+
+---
+
+## Stale Snapshot Prevention Guards (2026-03-15)
+
+**Purpose:** Prevent three layered failure modes identified in [Brad Mills' (@bradmillscan)](https://x.com/bradmillscan) multi-day OpenClaw stability analysis: (1) critical data stored in ephemeral `/tmp` paths lost on restart, (2) stale workspace/skill paths in long-lived LCM sessions silently breaking agent functionality, (3) session unification race conditions picking up stale context over fresh context.
+
+### Guard 1 — Ephemeral Path Detection
+
+| File                                     | Change                                                                                                                                                                       | Upstream Risk                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `src/infra/ephemeral-path.ts`            | **NEW** — `isEphemeralPath()` utility. Detects `/tmp`, `os.tmpdir()`, `/var/tmp`, macOS `/private/tmp`, and Linux `tmpfs`/`ramfs` mounts via `/proc/self/mountinfo` parsing. | None — new file                       |
+| `src/infra/ephemeral-path.test.ts`       | **NEW** — 15 tests: tmpdir detection, prefix false-positive protection, mountinfo line parsing.                                                                              | None — test file                      |
+| `src/commands/doctor-state-integrity.ts` | Added ephemeral path check in `noteStateIntegrity()` for state dir, sessions dir, and store path. CRITICAL warning with remediation step (`OPENCLAW_STATE_DIR=~/.openclaw`). | Low — additive, after existing checks |
+| `src/config/sessions/paths.ts`           | Added deduplicated one-time stderr warning in `resolveStorePath()` when resolved path is ephemeral. Non-blocking.                                                            | Low — log-only addition               |
+
+### Guard 2 — Session Context Freshness Validation
+
+| File                                             | Change                                                                                                                                                       | Upstream Risk                      |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| `src/auto-reply/reply/session-freshness.ts`      | **NEW** — `validateSessionPathFreshness()`. Checks workspace dir exists on disk + workspace dir matches session report. Returns `{ fresh, staleReasons[] }`. | None — new file                    |
+| `src/auto-reply/reply/session-freshness.test.ts` | **NEW** — 8 tests: fresh/stale workspace, file-not-directory, mismatch, combined staleness.                                                                  | None — test file                   |
+| `src/auto-reply/reply/session-updates.ts`        | Integrated freshness validation into `ensureSkillSnapshot()`. When workspace is stale, silently forces skill snapshot refresh via `shouldForceRefresh` flag. | Low — non-breaking behavior change |
+| `src/auto-reply/reply/commands-system-prompt.ts` | Added workspace existence check before `buildWorkspaceSkillSnapshot()`. Missing workspace → empty skills (no crash).                                         | Low — defensive guard              |
+
+### Guard 3 — Session Store `createdAt` Tracking
+
+| File                           | Change                                                                                                                                                                                                                                             | Upstream Risk                       |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `src/config/sessions/types.ts` | Added `createdAt?: number` to `SessionEntry` type. Optional for backward compat.                                                                                                                                                                   | Low — additive field                |
+| `src/config/sessions/store.ts` | `recordSessionMetaFromInbound()` now sets `createdAt: Date.now()` on new entries. `resolveSessionStoreEntry()` prefers most recent `createdAt` over `updatedAt` when deduplicating legacy keys. Falls back to `updatedAt` when `createdAt` absent. | Low — behavior change for edge case |
+
+### Tests
+
+- ✅ `ephemeral-path.test.ts`: 15/15 passed
+- ✅ `session-freshness.test.ts`: 8/8 passed
+- ✅ TypeScript compilation: zero new errors (all errors are pre-existing)
+
+### Cleanup & Refactoring (post-implementation audit)
+
+| File                                             | Change                                                                                                                                                                                                                 |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/infra/ephemeral-path.ts`                    | **Perf:** Cached ephemeral roots via lazy `getEphemeralRoots()` — avoids rebuilding array and calling `os.tmpdir()` per invocation. Used `Set` for deduplication of resolved roots.                                    |
+| `src/config/sessions/paths.ts`                   | **Memory safety:** Capped dedup `Set` at 100 entries to prevent unbounded growth in long-running processes. Replaced raw `process.stderr.write` with `createSubsystemLogger("sessions/paths")` for structured logging. |
+| `src/auto-reply/reply/commands-system-prompt.ts` | **Observability:** Added `log.warn` with `createSubsystemLogger("commands-system-prompt")` when workspace directory is missing — previous version silently returned empty skills.                                      |
+| `src/infra/ephemeral-path.test.ts`               | **Test quality:** Replaced conditional `if (platform)` with vitest `it.skipIf` for consistent test counts across platforms.                                                                                            |
+| `src/config/sessions/store.ts`                   | **Edge case hardening:** Guard 3 `createdAt` comparison now handles mixed presence (only one entry has `createdAt`). Entry WITH `createdAt` wins since it was created under the new guard system.                      |
+
+### Upstream Sync Risk
+
+**None for new files** — 4 new files with no upstream conflict possible.
+**Low for modified files** — all changes are additive (imports, fields, conditional guards after existing logic).
+
+---
+
+## Cron Schedule Redesign — Overlap Elimination & Startup Burst Fix (2026-03-15)
+
+**Purpose:** Audit and redesign all cron job schedules across `vercel.json`, `enforce-config.mjs`, and `default-jobs.json` to eliminate overlapping schedules, prevent a 10-job startup burst (all interval jobs using `anchorMs: nowMs` fired simultaneously on boot), and refine sub-agent cron seeding.
+
+### Schedule Changes — Interval → Fixed Cron (6 jobs)
+
+Interval-based jobs with `anchorMs: nowMs` fired unpredictably and all at once on startup. Converted to fixed [croner](https://github.com/hexagon/croner) 5-field cron expressions for wall-clock predictability.
+
+| Job                        | Was                          | Now                                                  |
+| -------------------------- | ---------------------------- | ---------------------------------------------------- |
+| `self-review`              | every 12h, `anchorMs: nowMs` | `0 6,18 * * *` (06:00 + 18:00 UTC)                   |
+| `deep-review`              | every 48h, `anchorMs: nowMs` | `0 4 */2 * *` (every 2 days at 04:00 UTC)            |
+| `browser-cleanup`          | every 24h, `anchorMs: nowMs` | `0 14 * * *` (daily 14:00 UTC)                       |
+| `brainx-extract-facts`     | every 8h, `anchorMs: nowMs`  | `0 1,9,17 * * *` (3× daily: 01:00, 09:00, 17:00 UTC) |
+| `brainx-advisory-warnings` | every 4h, `anchorMs: nowMs`  | `0 3,7,11,15,19,23 * * *` (6× daily, odd hours)      |
+| `memory-extraction`        | every 24h, `anchorMs: nowMs` | `0 10 * * *` (daily 10:00 UTC)                       |
+
+### Schedule Changes — Staggered Anchors (4 remaining interval jobs)
+
+Jobs that benefit from interval semantics (variable cadence, `NEXT_WAKE:` overrides) kept `kind: "every"` but got staggered anchor offsets to prevent the startup burst.
+
+| Job                          | Interval | Anchor Offset   |
+| ---------------------------- | -------- | --------------- |
+| `auto-tidy`                  | 72h      | `nowMs + 1h`    |
+| `openclaw-backup`            | 12h      | `nowMs + 30min` |
+| `consciousness`              | 12h      | `nowMs + 2h`    |
+| `healthcheck-security-audit` | 7d       | `nowMs + 4h`    |
+
+### Vercel Dashboard Fix
+
+| File                            | Fix                                                                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `moltbot-dashboard/vercel.json` | `cleanup-safety-snapshots` moved from `0 0 * * *` → `30 0 * * *` to resolve exact midnight overlap with `server-metrics` |
+
+### Sub-Agent Seeding — `MAIN_ONLY_JOBS` Expansion
+
+Added 3 jobs to the `MAIN_ONLY_JOBS` Set in `enforce-config.mjs` to prevent redundant seeding to sub-agents:
+
+| Job                        | Reason                                                              |
+| -------------------------- | ------------------------------------------------------------------- |
+| `openclaw-backup`          | Platform-level — backs up the entire state directory, not per-agent |
+| `brainx-extract-facts`     | Global processor — uses `listAgentIds()` to iterate all agents      |
+| `brainx-advisory-warnings` | Global processor — uses `listAgentIds()` to iterate all agents      |
+
+### Safety Bounds — `scanMemoryFiles()` (`advisory-warnings.ts`)
+
+Added `MAX_FILES = 50` and `MAX_FILE_BYTES = 256KB` limits to `scanMemoryFiles()` in `src/brainx/advisory-warnings.ts`. Prevents unbounded memory consumption on workspaces with many memory files or oversized individual files. Uses `fs.statSync()` pre-check before `readFileSync()`.
+
+### `default-jobs.json` Sync
+
+Synced 5 schedule entries in `cron/default-jobs.json` to match the updated schedules in `enforce-config.mjs`.
+
+### Verification
+
+- ✅ All 11 cron expressions confirmed valid 5-field croner format
+- ✅ BrainX tests: 3 suites, 63/63 passed
+- ✅ No startup burst — interval jobs staggered by 30min–4h offsets
+
+### Upstream Sync Risk
+
+**None** — `enforce-config.mjs` is fully custom. `cron/default-jobs.json` is fully custom. `src/brainx/advisory-warnings.ts` is fully custom. `moltbot-dashboard/vercel.json` is fully custom.
+
+---
+
+## Cron Payload Sync — `enforce-config.mjs` ← `default-jobs.json` (2026-03-15)
+
+**Purpose:** Sync all cron job payloads in `enforce-config.mjs` with the more evolved `default-jobs.json` versions. `default-jobs.json` had accumulated improvements (anti-waste rules, boundary rules, HEARTBEAT_OK guidance, Standing Corrections, content hygiene) that weren't reflected in the enforced seed payloads — meaning newly provisioned agents got the robust version, but the enforce path could overwrite with stale ones.
+
+### Payload Upgrades (7 jobs)
+
+| Job                  | Key Changes                                                                                                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `auto-tidy`          | Full Phase 2 content hygiene (WORKING.md, self-review, open-loops, session-context, MEMORY, improvement-backlog, diary). BrainX file awareness — trim at caps (16k/4k), flag if stale >7 days.                                 |
+| `self-review`        | Anti-waste rules, `reflection-inbox.md` as starting point, **Phase 4: Cross-Pollinate Corrections** (MISS fixes → `MEMORY.md ## Standing Corrections`), `lightContext: true`, `model: "{{PRIMARY_MODEL}}"`.                    |
+| `consciousness`      | Schedule 5h → **12h**. `NEXT_WAKE` default → **12h** (was 2h — mismatch). Anti-waste/boundary rules, `HEARTBEAT_OK` guidance, identity mostly read-only (deep-review owns broad edits), `lightContext`.                        |
+| `deep-review`        | New **Phase 0: Mandatory Promotion Scan** (reflection-inbox + self-review MISS patterns → force promote to CRITICAL in IDENTITY.md). BrainX file cleanup in Phase 4 (prune stale facts, resolve old warnings). `lightContext`. |
+| `morning-briefing`   | **Correction Check** at top of payload: read `self-review.md` + `MEMORY.md Standing Corrections` before composing. Anti-repeat rule added to RULES section.                                                                    |
+| `self-audit-21`      | "Read ENTIRE backlog including 📦 Archive before writing" anti-duplicate rule.                                                                                                                                                 |
+| `nightly-innovation` | Already in sync — no changes needed.                                                                                                                                                                                           |
+
+### New Jobs (2)
+
+| Job                       | Schedule | Description                                                                                                                                                                                                                                                                                                  |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `memory-extraction`       | 24h      | LLM-powered semantic fact extraction into `memory/extracted-facts.md`. 5 categories: `[preference]`, `[fact]`, `[entity]`, `[decision]`, `[open]`. Deduplicates against existing memory. Complements regex-based `brainx-extract-facts`. Inspired by [OpenViking](https://github.com/volcengine/OpenViking). |
+| `workspace-doc-converter` | Disabled | On-demand trigger for the workspace document converter. Background sidecar handles this automatically.                                                                                                                                                                                                       |
+
+### Bug Fixes
+
+| Fix                         | File                 | Detail                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missing noise patterns (×5) | `noise-patterns.ts`  | `SYSTEM TASK`, `SKILL EVOLUTION`, `SECURITY AUDIT`, `Run openclaw` patterns missing from `CRON_PROMPT_PATTERNS`. 6 cron jobs (`brainx-extract-facts`, `brainx-advisory-warnings`, `skill-evolution`, `healthcheck-security-audit`, `healthcheck-update-status`, `openclaw-backup`) were leaking into session context as real user messages. |
+| Reflection patching gap     | `enforce-config.mjs` | `skill-evolution` uses `reflectionEnabled` at seed time but wasn't toggled in the reflection patching loop for existing agents. Disabling reflection wouldn't disable it for already-provisioned agents. Now included in 4-tier reflection patching.                                                                                        |
+
+### Upstream Sync Risk
+
+**None** — `enforce-config.mjs` is fully custom. `noise-patterns.ts` is fully custom. `cron/default-jobs.json` is fully custom.
+
+---
+
+## OpenViking Feature Adoptions + Codebase Cleanup (2026-03-15)
+
+**Purpose:** Adopt four features from [Volcengine/OpenViking](https://github.com/volcengine/OpenViking) into the OpenClaw memory subsystem: hotness scoring for search results, mechanical query rewriting, per-tool usage statistics, and automatic structured memory extraction. Followed by a comprehensive cleanup pass across all modified files.
+
+### Feature 1 — Hotness Scoring (session-search.ts)
+
+Inspired by [OpenViking's hotness scoring](https://github.com/volcengine/OpenViking) — frequently accessed search results are ranked higher via a decay-weighted access signal.
+
+| File                                     | Change                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/auto-reply/reply/session-search.ts` | Added `access_count` INTEGER and `last_accessed` REAL columns via idempotent `ALTER TABLE` migration. FTS5 query restructured as **subquery + LEFT JOIN** (FTS5 doesn't support table aliases in MATCH clauses). Scoring blends FTS5 rank with `sigmoid(log1p(access_count)) × exp_decay(age_days, half_life=7)`. New `recordAccess()` method auto-increments hits. |
+
+### Feature 2 — Query Rewriting (session-search-tool.ts)
+
+Inspired by [OpenViking's query expansion](https://github.com/volcengine/OpenViking) — mechanical OR-expansion for better recall without LLM latency.
+
+| File                                      | Change                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/agents/tools/session-search-tool.ts` | New `expandQuery()` function — multi-word queries get OR-expanded variants (e.g. `docker networking` → `docker OR networking`). Quoted phrases, single words, and explicit boolean queries skip expansion. New `mergeSearchResults()` deduplicates by `sessionId:timestamp:role`, keeps best rank per entry. Search now runs 2 variants (original + OR-expanded), merges results. |
+
+### Feature 3 — Tool Usage Statistics (NEW: tool-stats.ts)
+
+Inspired by [OpenViking's per-tool statistics accumulation](https://github.com/volcengine/OpenViking).
+
+| File                                     | Change                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/auto-reply/reply/tool-stats.ts`     | **NEW** — `ToolStatsIndex` class backed by `tool_stats` table in shared `sessions.db`. Tracks `call_count`, `success_count`, `fail_count`, `total_duration_ms`, `last_used` per tool per agent. `recordToolCall()` (upsert), `recordToolCalls()` (transaction-wrapped batch), `getToolStats()`, `getTopTools()` (SQL LIMIT). |
+| `src/auto-reply/reply/session-search.ts` | `indexTranscriptForSearch()` now extracts tool calls from assistant `toolCall`/`tool_use`/`function` blocks plus tool result success/failure, then records via `ToolStatsIndex.recordToolCalls()`.                                                                                                                           |
+
+### Feature 4 — Automatic Memory Extraction (cron job)
+
+Inspired by [OpenViking's automatic memory extraction](https://github.com/volcengine/OpenViking) — structured fact extraction with deduplication against existing memory files.
+
+| File                                     | Change                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cron/default-jobs.json`                 | New `memory-extraction` job (24h interval). 5-category extraction prompt: `[preference]`, `[fact]`, `[entity]`, `[decision]`, `[open]`. Agent reads recent transcripts, deduplicates against `memory/extracted-facts.md` and `MEMORY.md`, appends only new structured facts. Includes size-check phase (consolidate/prune at 200 lines). |
+| `src/auto-reply/reply/noise-patterns.ts` | Added `MEMORY EXTRACTION` to `CRON_PROMPT_PATTERNS` to prevent session-context pollution.                                                                                                                                                                                                                                                |
+
+### Codebase Cleanup (14+ fixes)
+
+Comprehensive cleanup pass across all OpenViking-modified files.
+
+**Performance:**
+
+| Fix                                | Files                                | Detail                                                                                                                                                         |
+| ---------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transaction-wrapped batch SQL (×3) | `session-search.ts`, `tool-stats.ts` | `indexMessages()` and `recordToolCalls()` wrapped in explicit BEGIN/COMMIT — reduces N fsyncs to 1. `getTopTools()` uses SQL `LIMIT` instead of JS `.slice()`. |
+| O(1) cache cleanup (×2)            | `session-search.ts`, `tool-stats.ts` | Stored `workspaceDir` field on instances, replaced O(n) `[...entries()].find()` with direct `Map.delete(this.workspaceDir)`.                                   |
+
+**Code Quality:**
+
+| Fix                             | Files                    | Detail                                                                                                |
+| ------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Orphaned JSDoc                  | `session-search.ts`      | Stale "Close the database" comment before `recordAccess()` moved to correct location above `close()`. |
+| Verbose inline `import()` types | `session-search-tool.ts` | Replaced with proper `SessionSearchResult` import.                                                    |
+| Unused constant                 | `session-search-tool.ts` | Removed dead `MAX_SUMMARY_TOKENS`.                                                                    |
+| Unused variable                 | `session-search-tool.ts` | Prefixed `roleFilter` → `_roleFilter`.                                                                |
+
+**Robustness:**
+
+| Fix                      | Files               | Detail                                                                                     |
+| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------ |
+| Improved error detection | `session-search.ts` | Tool result error heuristic now case-insensitive + catches `"failed:"` and `"exception:"`. |
+| Replaced `findLast()`    | `session-search.ts` | ES2023's `findLast()` → plain reverse `for` loop for broader Node.js compatibility.        |
+| Transaction rollback     | `tool-stats.ts`     | `recordToolCalls()` catches failures and issues ROLLBACK.                                  |
+| Empty batch guard        | `tool-stats.ts`     | Early return on empty call arrays.                                                         |
+
+### Upstream Sync Risk
+
+**None** — all changes are in fully custom files (`session-search.ts`, `tool-stats.ts`, `session-search-tool.ts`, `noise-patterns.ts`, `default-jobs.json`).
+
+---
+
+## Context Injection — Bootstrap Budget & BrainX Files (2026-03-15)
+
+**Purpose:** Wire BrainX-generated memory files into the agent's bootstrap context so extracted facts and advisory warnings are automatically visible every turn. Also tripled the WORKING.md budget to give agents more working-state context.
+
+### Changes
+
+| File                                          | Change                                                                                                                                                                                                                  |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/agents/pi-embedded-helpers/bootstrap.ts` | `WORKING_MAX_CHARS` 4k → **12k**. New constants: `EXTRACTED_FACTS_MAX_CHARS` (16k), `ADVISORY_WARNINGS_MAX_CHARS` (4k). Wired into `buildBootstrapContextFiles()` with `hasBuiltInCap` to suppress truncation warnings. |
+| `src/agents/workspace.ts`                     | Registered `memory/extracted-facts.md` and `memory/advisory-warnings.md` as optional bootstrap entries in `loadWorkspaceBootstrapFiles()`. Only included when files exist on disk (after first cron run).               |
+| `enforce-config.mjs`                          | Auto-tidy cron updated: agents now know to leave brainx auto-generated files alone and flag stale entries (>7 days).                                                                                                    |
+
+### Upstream Sync Risk
+
+**Low for `workspace.ts`** — new entries appended after session-context block.
+**None for `bootstrap.ts`** — MoltBot-custom constants + conditions.
+**None for `enforce-config.mjs`** — fully custom cron definition.
+
+---
+
+## Agent Resilience — Autonomous Problem-Solving (2026-03-15)
+
+**Purpose:** Teach agents to exhaust all alternative approaches before escalating failure to the user. Instead of surrendering at the first obstacle, agents now diagnose failures, try different tools, strategies, workarounds, and documentation searches. When escalating is truly necessary, agents report what was tried and why each approach failed. Inspired by emergent behavior observed in [Anthropic Claude](https://www.anthropic.com) agents that autonomously discover workarounds when explicitly encouraged to try alternatives.
+
+### Changes (moltbotserver-source)
+
+| File                                     | Change                                                                                                                                                                                                                                                           | Upstream Risk        |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `src/agents/system-prompt.ts`            | New **"Autonomous Problem-Solving"** section after Operating Discipline: diagnose → try alternatives → escalate with report. Conditionally injected in `full` prompt mode only. +`import path from "node:path"` added for `path.resolve` usage in health nudges. | Low — custom section |
+| `src/agents/system-prompt.ts`            | Sharpened **"OVER-DELIVERY IS FAILURE"** wording — distinguished _scope expansion_ (reckless) from _effort within scope_ (thorough and relentless). Original wording treated all extra effort as "over-delivery."                                                | Low — custom section |
+| `SOUL.md`                                | Added **"Exhaust Before Escalating"** subsection under "Take Initiative" — philosophical framing: failure isn't always a dead end, and the best agents treat it as a routing problem                                                                             | None — fully custom  |
+| `docs/reference/templates/SOUL.md`       | Mirrored "Exhaust Before Escalating" to template for new workspaces                                                                                                                                                                                              | None — fully custom  |
+| `IDENTITY.md`                            | Added resilience bullet under "How You Work": try multiple alternatives before escalating, report what was attempted                                                                                                                                             | None — fully custom  |
+| `docs/reference/templates/IDENTITY.md`   | Mirrored resilience bullet to template                                                                                                                                                                                                                           | None — fully custom  |
+| `docs/reference/templates/OPERATIONS.md` | Added **"First-failure surrender"** entry to Drift Detector section — teaches agents to recognize when they're giving up too easily                                                                                                                              | None — fully custom  |
+| `src/agents/system-prompt.test.ts`       | 3 new tests: section present in full prompts, omitted in minimal, sharpened wording verified                                                                                                                                                                     | None — test file     |
+
+### Layered Design
+
+The resilience principle is injected at four layers to reinforce behavior:
+
+```
+Hardcoded (system-prompt.ts)  →  Step-by-step procedure when tools/actions fail
+Philosophy (SOUL.md)          →  "Failure is a routing problem, not a dead end"
+Identity (IDENTITY.md)        →  "I don't surrender at the first obstacle"
+Operations (OPERATIONS.md)    →  Drift detector catches premature escalation
+```
+
+### Upstream Sync Risk
+
+**Low for `system-prompt.ts`** — new conditionally-injected section + wording tweak in MoltBot-custom "Operating Discipline."
+**None for all other files** — fully custom workspace templates and doc files.
+
+---
+
+## system-prompt.ts Cleanup — Bug Fix & Refactoring (2026-03-15)
+
+**Purpose:** Three fixes found during comprehensive codebase audit: a latent bug in health nudges, dead code removal, and a repeated-condition refactor.
+
+### Fix 1 — Bug: `fs.statSync` with relative path (L887-888)
+
+| Before                           | After                                                                                   | Why                                                                                                                                                                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fs.statSync(identityFile.path)` | `path.resolve(params.workspaceDir, identityFile.path)` then `fs.statSync(absolutePath)` | `EmbeddedContextFile.path` is a display path (e.g. `./IDENTITY.md`), not an absolute path. `statSync` would only work if `process.cwd()` happened to match the workspace directory — the stale IDENTITY.md health nudge was silently broken in most deployments. |
+
+### Fix 2 — Dead code: no-op ternary (L573)
+
+| Before                               | After   |
+| ------------------------------------ | ------- |
+| `hasGateway && !isMinimal ? "" : ""` | Removed |
+
+The ternary always produced `""` regardless of condition. Was leftover from a refactor of the self-update section.
+
+### Fix 3 — Refactor: model-alias repeated condition (L609-618)
+
+| Before                                                                                                                                | After                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Same `params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal` condition evaluated **4 times** on consecutive lines | Single conditional spread: `...((params.modelAliasLines?.length ?? 0) > 0 && !isMinimal ? [...] : [])` |
+
+Follows the conditional-spread pattern used elsewhere in the file (e.g. docsSection, sandboxInfo).
+
+### Verification
+
+- ✅ TypeScript compilation — passed (zero `system-prompt.ts` errors)
+- ⚠️ Vitest blocked by pre-existing `@modelcontextprotocol/sdk` dependency issue
+
+### Upstream Sync Risk
+
+**Low.** All fixes are in MoltBot-custom sections of `system-prompt.ts`.
+
+---
+
+## BrainX-Inspired Memory Enrichment (2026-03-15)
+
+**Purpose:** Standalone cron-based fact extraction and advisory warning system, adapted from [BrainX](https://github.com/Mdx2025/-BrainX-The-First-Brain-for-OpenClaw). Designed for LCM compatibility (sessions never reset, memory flush inactive). Zero upstream conflicts.
+
+### New Files
+
+| File                                                   | Purpose                                                                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/brainx/paths.ts`                                  | Shared utilities: path resolution, transcript parsing (5MB read cap), CLI arg parsing                                                 |
+| `src/brainx/extract-facts.ts`                          | Scans session JSONL transcripts → extracts URLs, repos, ports, branches, env var names, services → writes `memory/extracted-facts.md` |
+| `src/brainx/advisory-warnings.ts`                      | Scans diary/memory files → detects deploy failures, dangerous commands, auth errors, crashes → writes `memory/advisory-warnings.md`   |
+| `src/brainx/paths.test.ts`                             | 14 tests for shared module                                                                                                            |
+| `src/brainx/extract-facts.test.ts`                     | 26 tests for fact extractor                                                                                                           |
+| `src/brainx/advisory-warnings.test.ts`                 | 23 tests for advisory warnings                                                                                                        |
+| `docs/reference/templates/memory/MEMORY_GUIDELINES.md` | Workspace template — quality guidance for agent diary writes                                                                          |
+
+### Modified Files
+
+| File                      | Change                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `enforce-config.mjs`      | Added 2 cron entries: `brainx-extract-facts` (8h), `brainx-advisory-warnings` (4h) |
+| `tsdown.config.ts`        | Added brainx entry points so scripts compile to `dist/brainx/`                     |
+| `src/agents/workspace.ts` | Added `memory/MEMORY_GUIDELINES.md` to workspace template seeding (1 line)         |
+
+### Security
+
+- Env var regex captures **key names only** (e.g. `DATABASE_URL`), never values — prevents credential leakage into plaintext memory files.
+- Rate limiting regex requires context (`status 429`, `rate limited`) — prevents false positives from bare numeric matches.
+
+### Architecture
+
+Cron-based design: LCM's `session.reset.idleMinutes = 1576800` (3 years) means sessions never reset, `persistSessionContextOnReset` and `shouldRunMemoryFlush` are effectively dead code. Cron jobs are the only reliable periodic hook.
+
+### Tests
+
+3 suites, 63/63 passed: `paths` (14), `extract-facts` (26), `advisory-warnings` (23).
+
+---
+
 ## Comprehensive Cleanup & Security Hardening (2026-03-15)
 
 **Purpose:** Full audit and cleanup of all uncommitted changes (23 files). Removed ~185 lines of dead SupaSwarm code, hardened LCM plugin installation against shell injection, and made the Docker LCM prebake step resilient to npm registry failures.
@@ -258,10 +645,10 @@ Runtime
 
 | File                 | Change                                                                                                                                                                                                                                                   | Upstream Risk            |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `Dockerfile`         | Pre-bake `@martian-engineering/lossless-claw` from npm into `/app/prebaked-plugins/lossless-claw/` using `npm pack` + `cp -a` (handles dotfiles). Follows existing Honcho pre-bake pattern.                                                              | None — custom section    |
+| `Dockerfile`         | Pre-bake `@martian-engineering/lossless-claw` from npm into `/app/prebaked-plugins/lossless-claw/` using `npm pack` + `cp -a` (handles dotfiles).                                                                                                        | None — custom section    |
 | `enforce-config.mjs` | `enforceCore()`: sets `plugins.slots.contextEngine = "lossless-claw"`, `plugins.entries["lossless-claw"].enabled = true`, adds to `plugins.allow` if array exists. Sets `session.reset.mode = "idle"`, `idleMinutes = 1576800` (3 years).                | None — fully custom file |
 | `enforce-config.mjs` | **NEW** `enforceLCM()`: copies pre-baked plugin from `/app/prebaked-plugins/` to extensions dir on startup (skip if already installed). Sets `root:root` ownership for plugin scanner.                                                                   | None — fully custom file |
-| `enforce-config.mjs` | Added `lcm` CLI command + wired `enforceLCM()` into `all` command after `enforceHonchoFork()`. Updated header comment.                                                                                                                                   | None — fully custom file |
+| `enforce-config.mjs` | Added `lcm` CLI command + wired `enforceLCM()` into `all` command. Updated header comment.                                                                                                                                                               | None — fully custom file |
 | `enforce-config.mjs` | **Bug fix**: Added missing `statSync` to `node:fs` import — was used at line 2071 in `seedSubAgentCronJobs()` for symlink resolution but never imported. Would crash with `ReferenceError` on any deploy with symlinked sub-agent workspace directories. | None — fully custom file |
 
 ### Configuration Defaults
@@ -286,11 +673,10 @@ Runtime
 
 No conflicts with existing memory layers:
 
-| Layer                                                                      | Storage                            | Scope                       |
-| -------------------------------------------------------------------------- | ---------------------------------- | --------------------------- |
-| [**ByteRover**](https://byterover.dev) (`main.sqlite`)                     | Workspace file chunks + embeddings | Semantic recall of files    |
-| [**LCM**](https://github.com/martian-engineering/lossless-claw) (`lcm.db`) | Conversation message DAG           | Session continuity          |
-| [**Honcho**](https://github.com/plastic-labs/honcho) (disabled)            | Supabase                           | Cross-session user profiles |
+| Layer                                                                      | Storage                            | Scope                    |
+| -------------------------------------------------------------------------- | ---------------------------------- | ------------------------ |
+| [**ByteRover**](https://byterover.dev) (`main.sqlite`)                     | Workspace file chunks + embeddings | Semantic recall of files |
+| [**LCM**](https://github.com/martian-engineering/lossless-claw) (`lcm.db`) | Conversation message DAG           | Session continuity       |
 
 ### Upstream Sync Risk
 
@@ -395,7 +781,7 @@ enforce-config.mjs (runtime)
 
 ### Design Decisions
 
-- **Same pattern as Honcho** — follows the existing `prebaked-plugins/openclaw-honcho` pre-bake pattern in the Dockerfile.
+- **Established prebake pattern** — follows the `prebaked-plugins/` pre-bake pattern in the Dockerfile.
 - **Build-time install** — `npm pack` from registry + `npm install --omit=dev` ensures all dependencies are resolved at image build time. No network calls at container startup.
 - **Cleanup** — tar artifacts removed after extraction to avoid bloating the image layer.
 
@@ -955,18 +1341,18 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ### Server Changes (moltbotserver-source)
 
-| File                                               | Change                                                                                                                                                                      | Why                                                                                                                                       |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/agents/workspace.ts`                          | Added `resolveBusinessModeEnabled()` — reads `OPENCLAW_BUSINESS_MODE` + `OPENCLAW_BUSINESS_MODE_ENABLED` env vars                                                           | Consistent with human mode dual-env-var pattern                                                                                           |
-| `src/agents/workspace.ts`                          | Refactored `removeHumanModeSectionFromSoul()`, `removeBusinessModeSectionFromSoul()`, `stripHonchoConditionals()` into generic `stripConditionalBlock()` helper (−80 lines) | Three identical 37-line functions with only marker strings different                                                                      |
-| `src/agents/workspace.ts`                          | Added `copyDirectoryRecursive()` with `writeFileIfMissing` semantics + `.DS_Store` filtering                                                                                | Seed template directories without overwriting user edits                                                                                  |
-| `src/agents/workspace.ts`                          | Business mode seeding block: seeds `openclaw-business-v1.md` + copies `business/` docs when enabled                                                                         | Knowledge base seeded on first enable                                                                                                     |
-| `src/agents/workspace.ts`                          | Business mode deletion block: removes `business/` folder + guide when `OPENCLAW_BUSINESS_DELETE_FILES=true` and mode disabled                                               | Two-step disable: user can optionally delete all files                                                                                    |
-| `src/agents/workspace.ts`                          | Added `DEFAULT_BUSINESS_GUIDE_FILENAME` to `VALID_BOOTSTRAP_NAMES`, `WorkspaceBootstrapFileName`, and `loadWorkspaceBootstrapFiles()` extra context array                   | Business guide loaded into agent context when file exists                                                                                 |
-| `src/agents/system-prompt.ts`                      | Added `hasBusinessModeFiles` detection + 12-line "Business Mode (Active)" context injection                                                                                 | System prompt tells agent it's in partner mode and how to search knowledge base                                                           |
-| `docs/reference/templates/SOUL.md`                 | Added `<!-- if-business-mode -->` conditional block with "Business Partner Mode" section                                                                                    | Agents get SOUL.md business section when enabled, stripped when disabled                                                                  |
-| `docs/reference/templates/openclaw-business-v1.md` | **NEW** — 22KB guide merging v3.7 base + v6 inquisitive-partner improvements + SOUL.md principles                                                                           | Core business partner persona: diagnostic gate, instruction challenge, opposing views, conviction calibration, knowledge base integration |
-| `docs/reference/templates/business/`               | **NEW** — 64 organized knowledge documents across 8 categories                                                                                                              | strategy/, content/, copywriting/, operations/, lead-generation/, books/, feedback/, database/                                            |
+| File                                               | Change                                                                                                                                                    | Why                                                                                                                                       |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/agents/workspace.ts`                          | Added `resolveBusinessModeEnabled()` — reads `OPENCLAW_BUSINESS_MODE` + `OPENCLAW_BUSINESS_MODE_ENABLED` env vars                                         | Consistent with human mode dual-env-var pattern                                                                                           |
+| `src/agents/workspace.ts`                          | Refactored `removeHumanModeSectionFromSoul()`, `removeBusinessModeSectionFromSoul()` into generic `stripConditionalBlock()` helper (−80 lines)            | Three identical 37-line functions with only marker strings different                                                                      |
+| `src/agents/workspace.ts`                          | Added `copyDirectoryRecursive()` with `writeFileIfMissing` semantics + `.DS_Store` filtering                                                              | Seed template directories without overwriting user edits                                                                                  |
+| `src/agents/workspace.ts`                          | Business mode seeding block: seeds `openclaw-business-v1.md` + copies `business/` docs when enabled                                                       | Knowledge base seeded on first enable                                                                                                     |
+| `src/agents/workspace.ts`                          | Business mode deletion block: removes `business/` folder + guide when `OPENCLAW_BUSINESS_DELETE_FILES=true` and mode disabled                             | Two-step disable: user can optionally delete all files                                                                                    |
+| `src/agents/workspace.ts`                          | Added `DEFAULT_BUSINESS_GUIDE_FILENAME` to `VALID_BOOTSTRAP_NAMES`, `WorkspaceBootstrapFileName`, and `loadWorkspaceBootstrapFiles()` extra context array | Business guide loaded into agent context when file exists                                                                                 |
+| `src/agents/system-prompt.ts`                      | Added `hasBusinessModeFiles` detection + 12-line "Business Mode (Active)" context injection                                                               | System prompt tells agent it's in partner mode and how to search knowledge base                                                           |
+| `docs/reference/templates/SOUL.md`                 | Added `<!-- if-business-mode -->` conditional block with "Business Partner Mode" section                                                                  | Agents get SOUL.md business section when enabled, stripped when disabled                                                                  |
+| `docs/reference/templates/openclaw-business-v1.md` | **NEW** — 22KB guide merging v3.7 base + v6 inquisitive-partner improvements + SOUL.md principles                                                         | Core business partner persona: diagnostic gate, instruction challenge, opposing views, conviction calibration, knowledge base integration |
+| `docs/reference/templates/business/`               | **NEW** — 64 organized knowledge documents across 8 categories                                                                                            | strategy/, content/, copywriting/, operations/, lead-generation/, books/, feedback/, database/                                            |
 
 ### Dashboard Changes (moltbot-dashboard)
 
@@ -989,7 +1375,7 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ### Upstream Sync Risk
 
-**Low for `workspace.ts`** — business mode additions are in MoltBot-custom blocks. Generic `stripConditionalBlock()` refactor touches the existing honcho/human-mode strippers but is a clean consolidation.
+**Low for `workspace.ts`** — business mode additions are in MoltBot-custom blocks. Generic `stripConditionalBlock()` refactor touches the existing human-mode strippers but is a clean consolidation.
 **Low for `system-prompt.ts`** — 12-line addition in existing `buildProjectContextSection` after the human mode block.
 **None for all other files** — `SOUL.md` and `openclaw-business-v1.md` are custom templates. Dashboard files are fully custom.
 
@@ -1303,23 +1689,6 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ---
 
-## [Honcho](https://github.com/plastic-labs/honcho) Fork Bake-In (2026-03-01)
-
-**Purpose:** Replace the npm-installed [`@honcho-ai/openclaw-honcho`](https://github.com/plastic-labs/openclaw-honcho) plugin (by [Plastic Labs](https://plasticlabs.ai)) with a patched fork. The fork's `dist/` directory is cloned and baked into the Docker image, replacing the standard npm-installed version.
-
-### Changes
-
-| File                 | Change                                                                          | Why                                                 |
-| -------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `enforce-config.mjs` | Added `enforceHonchoFork()` — clones fork, copies `dist/` over installed plugin | Patched version fixes issues in the upstream plugin |
-| `Dockerfile`         | Bakes the patched fork into the Docker image build                              | Fork changes available at container start           |
-
-### Upstream Sync Risk
-
-**None.** Both files are fully custom.
-
----
-
 ## Gateway Self-Restart & Rate Limit Enforcement (2026-02-28)
 
 **Purpose:** Enable the gateway to self-restart inside Docker managed-platform containers (for config reloads that require a process restart), and enforce `gateway.auth.rateLimit` configuration.
@@ -1355,41 +1724,21 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 ---
 
-## [Honcho](https://github.com/plastic-labs/honcho) Pre-Baking & Gateway Browser Routing (2026-02-28)
+## Gateway Browser Routing & Extension Ownership Fix (2026-02-28)
 
-**Purpose:** Fix gateway crash loop caused by [Honcho](https://github.com/plastic-labs/honcho) plugin (by [Plastic Labs](https://plasticlabs.ai)) ownership issues and wire the per-agent browser proxy into the gateway HTTP/WS router so the dashboard can display and interact with agent browsers.
+**Purpose:** Wire the per-agent browser proxy into the gateway HTTP/WS router so the dashboard can display and interact with agent browsers, and fix extension folder ownership issues.
 
 ### Root Causes & Fixes
 
-#### 1. Honcho Plugin Ownership — Pre-Baked Into Docker Image
+#### 1. Extensions Re-Chown — Global `chown` Reset Root Ownership
 
-**Problem:** The Honcho plugin installed at runtime via `openclaw plugins install` created files owned by `uid=1000` (the `node` user). The OpenClaw plugin scanner (`src/plugins/discovery.ts` lines 123–128) rejects plugins not owned by `root` (uid=0) or the current process user. Since the gateway now runs as `root`, only `uid=0` ownership passes the check.
-
-**Root Cause:** Docker UID remapping. Even `chown root:root` inside a running container doesn't always produce `uid=0` when writing to mounted volumes. The only reliable way to get `root` ownership is during the Docker image build.
-
-| File         | Change                                                                                                                                  | Why                                                     |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `Dockerfile` | Added pre-bake section (lines 70–82): `npm pack` → extract → move to `/app/prebaked-plugins/openclaw-honcho` → `npm install --omit=dev` | Plugin files have `root` ownership from the build layer |
-
-#### 2. Entrypoint Ordering — Honcho Before Doctor
-
-**Problem:** `openclaw doctor` ran before the Honcho plugin was copied to disk, causing an immediate fatal error because `plugins.slots.memory = 'openclaw-honcho'` referenced a plugin that didn't exist yet.
-
-| File                   | Change                                                                                    | Why                                                                        |
-| ---------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `docker-entrypoint.sh` | Moved Honcho install/copy section before `openclaw doctor` (lines 560–660)                | Plugin must be on disk before validation                                   |
-| `docker-entrypoint.sh` | Prioritizes pre-baked plugin (`cp -a` from `/app/prebaked-plugins/`) over runtime install | Preserves root ownership; fallback to runtime install if pre-baked missing |
-| `docker-entrypoint.sh` | Sets `plugins.slots.memory = 'openclaw-honcho'` in config when `HONCHO_API_KEY` is set    | Gateway activates the plugin                                               |
-
-#### 3. Extensions Re-Chown — Global `chown` Reset Root Ownership
-
-**Problem:** Line 695 runs `chown -R node:node "$CONFIG_DIR"` to fix config file permissions. But `$CONFIG_DIR` includes `extensions/`, resetting the Honcho plugin from `uid=0` back to `uid=1000`. The plugin scanner then rejects it.
+**Problem:** Line 695 runs `chown -R node:node "$CONFIG_DIR"` to fix config file permissions. But `$CONFIG_DIR` includes `extensions/`, resetting plugin files from `uid=0` back to `uid=1000`. The plugin scanner then rejects them.
 
 | File                   | Change                                                                                     | Why                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------ |
 | `docker-entrypoint.sh` | Added `chown -R root:root "$CONFIG_DIR/extensions"` after the global chown (lines 696–700) | Restores root ownership specifically for plugins |
 
-#### 4. Sandbox Browser Handlers — Dead Code in Gateway Router
+#### 2. Sandbox Browser Handlers — Dead Code in Gateway Router
 
 **Problem:** `handleSandboxBrowserRequest` and `handleSandboxBrowserUpgrade` were defined and exported in `sandbox-browsers.ts` but **never imported or called** in `server-http.ts`. The gateway's HTTP router served the SPA HTML at `/api/sandbox-browsers` instead of the browser list JSON, and the WebSocket proxy for noVNC was unreachable.
 
@@ -1399,7 +1748,7 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 | `src/gateway/server-http.ts` | Inserted `handleSandboxBrowserRequest` in HTTP chain after `handleToolsInvokeHttpRequest`, before `handleSlackHttpRequest` | Route must be checked before the Control UI SPA catch-all                      |
 | `src/gateway/server-http.ts` | Inserted `handleSandboxBrowserUpgrade` in WebSocket upgrade chain before the general WS server                             | WebSocket upgrades for noVNC must be intercepted before the gateway WS handler |
 
-#### 5. noVNC Auth — Static Assets & WebSocket
+#### 3. noVNC Auth — Static Assets & WebSocket
 
 **Problem:** The sandbox browser proxy required gateway auth for **all** `/sbx-browser/` requests. noVNC loads CSS/JS/images as sub-resources in an iframe — these requests don't carry the auth token. Additionally, noVNC builds a bare `wss://host/path` WebSocket URL with no auth token or query params.
 
@@ -1416,7 +1765,6 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 | System                              | Status                        |
 | ----------------------------------- | ----------------------------- |
 | Gateway                             | Stable, all providers running |
-| Honcho memory plugin                | Loaded, initialized, ready    |
 | `/api/sandbox-browsers`             | Returns JSON (requires auth)  |
 | Static assets (`app/ui.js`, images) | HTTP 200 (no auth required)   |
 | `vnc.html` without token            | HTTP 401 (auth required)      |
@@ -1426,7 +1774,7 @@ dead env var refs, false ESLint suppression). The function signature is preserve
 
 **Low for `server-http.ts`** — the import and two insertion points touch upstream code but are small additions.
 **None for `sandbox-browsers.ts`** — fully custom file.
-**None for `Dockerfile` and `docker-entrypoint.sh`** — fully custom files.
+**None for `docker-entrypoint.sh`** — fully custom file.
 
 ---
 
@@ -1570,29 +1918,6 @@ node /app/enforce-config.mjs cron-seed
 
 ---
 
-## Honcho Memory Plugin Auto-Install (2026-02-27)
-
-**Purpose:** Automatically install the `@honcho-ai/openclaw-honcho` plugin at container startup when `HONCHO_API_KEY` is set. Previously, Honcho integration was lost during upstream rebase — the OPERATIONS.md documented Honcho tools and the conditional stripping logic in `workspace.ts` worked, but the actual plugin that provides the tools (`honcho_context`, `honcho_search`, `honcho_recall`, `honcho_analyze`) was never installed.
-
-### Changes
-
-| File                   | Change                                                                                                         | Why                                                                 |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `docker-entrypoint.sh` | Added Honcho plugin auto-install section: checks `HONCHO_API_KEY`, installs plugin if missing, enforces config | Fresh deployments automatically get Honcho when API key is provided |
-
-### How It Works
-
-1. Entrypoint checks if `HONCHO_API_KEY` env var is set
-2. If plugin dir (`$CONFIG_DIR/extensions/openclaw-honcho/`) doesn't exist → runs `openclaw plugins install @honcho-ai/openclaw-honcho`
-3. Always patches `openclaw.json` with current API key in `plugins.entries.openclaw-honcho.config` (handles key rotation)
-4. All failures are non-fatal — gateway starts without Honcho if install fails
-
-### Upstream Sync Risk
-
-**None.** `docker-entrypoint.sh` is fully custom.
-
----
-
 ## Architect-First Reinforcement, Memory Seeding & Sub-Agent Heartbeats (2026-02-27)
 
 **Purpose:** Deeply embed the principle of "think like an architect" (plan before acting, ask clarifying questions) throughout all agent-facing surfaces, seed structured memory files for all agents including sub-agents at workspace bootstrap, and enable heartbeat functionality for sub-agents.
@@ -1715,7 +2040,7 @@ node /app/enforce-config.mjs cron-seed
 
 ## Human Voice System Restoration (2026-02-26)
 
-**Purpose:** Restore three customizations lost during the v2026.2.23 upstream rebase merge. The merge correctly preserved the Honcho conditional logic but lost the human voice equivalents.
+**Purpose:** Restore three customizations lost during the v2026.2.23 upstream rebase merge.
 
 ### What Was Lost and Restored
 
@@ -1784,14 +2109,14 @@ Safe because: x11vnc binds to `-localhost` (Docker-internal only), Caddy gates `
 
 ### Files Fixed
 
-| File                                    | Duplicates Removed                                                                                                        | Lines Saved     |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `src/security/audit-extra.sync.ts`      | 4 functions (`hasConfiguredDockerConfig`, `normalizeNodeCommand`, `listKnownNodeCommands`, `looksLikeNodeCommandPattern`) | 55              |
-| `src/agents/workspace.ts`               | 2 variables (`workspaceTemplateCache`, `gitAvailabilityPromise`) + 1 function (`loadExtraBootstrapFiles`)                 | 70              |
-| `src/config/io.ts`                      | 3 functions (`resolveConfigAuditLogPath`, `resolveConfigWriteSuspiciousReasons`, `appendConfigWriteAuditRecord`)          | 49              |
-| `src/agents/models-config.providers.ts` | 1 function (`discoverVllmModels`)                                                                                         | 53              |
-| `src/agents/workspace.ts`               | Added missing `resolveHonchoEnabled()` + `stripHonchoConditionals()` (referenced but never defined after rebase)          | +47 (added)     |
-| `src/agents/system-prompt.test.ts`      | Updated owner line format (`Owner numbers:` → `Authorized senders:`) + Skills section assertion                           | 3 lines changed |
+| File                                    | Duplicates Removed                                                                                                             | Lines Saved                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| `src/security/audit-extra.sync.ts`      | 4 functions (`hasConfiguredDockerConfig`, `normalizeNodeCommand`, `listKnownNodeCommands`, `looksLikeNodeCommandPattern`)      | 55                         |
+| `src/agents/workspace.ts`               | 2 variables (`workspaceTemplateCache`, `gitAvailabilityPromise`) + 1 function (`loadExtraBootstrapFiles`)                      | 70                         |
+| `src/config/io.ts`                      | 3 functions (`resolveConfigAuditLogPath`, `resolveConfigWriteSuspiciousReasons`, `appendConfigWriteAuditRecord`)               | 49                         |
+| `src/agents/models-config.providers.ts` | 1 function (`discoverVllmModels`)                                                                                              | 53                         |
+| `src/agents/workspace.ts`               | Added missing `resolveHonchoEnabled()` + `stripHonchoConditionals()` (referenced but never defined after rebase) — now removed | +47 (added, later removed) |
+| `src/agents/system-prompt.test.ts`      | Updated owner line format (`Owner numbers:` → `Authorized senders:`) + Skills section assertion                                | 3 lines changed            |
 
 ### Impact
 
@@ -2401,12 +2726,12 @@ if (opts?.agentId && opts.agentId !== "main") {
 
 ### Files Modified
 
-| File                                           | Change                                                                                     | Why                                                        |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| `src/agents/workspace.ts`                      | Added `resolveHumanModeEnabled()` and `resolveHonchoEnabled()` helpers                     | Runtime checks for human mode and Honcho plugin state      |
-| `src/agents/workspace.ts`                      | Added Honcho conditional markers (`HONCHO_DISABLED_START/END`, `HONCHO_ENABLED_START/END`) | Workspace docs can include/exclude Honcho-specific content |
-| `src/agents/workspace.ts`                      | Added `stripHonchoConditionals()` and `removeHumanModeSectionFromSoul()`                   | Processes template conditionals at bootstrap               |
-| `src/commands/onboard-interactive.e2e.test.ts` | **NEW** — E2E test for onboarding flow                                                     | Validates onboard command works end-to-end                 |
+| File                                           | Change                                                                  | Why                                                      |
+| ---------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------- |
+| `src/agents/workspace.ts`                      | Added `resolveHumanModeEnabled()` helper (Honcho helpers later removed) | Runtime checks for human mode                            |
+| `src/agents/workspace.ts`                      | Added conditional markers for template processing                       | Workspace docs can include/exclude mode-specific content |
+| `src/agents/workspace.ts`                      | Added `removeHumanModeSectionFromSoul()` and conditional stripping      | Processes template conditionals at bootstrap             |
+| `src/commands/onboard-interactive.e2e.test.ts` | **NEW** — E2E test for onboarding flow                                  | Validates onboard command works end-to-end               |
 
 ---
 

@@ -8,6 +8,10 @@ import {
   countMissPatterns,
   extractExistingCriticalRules,
   promoteMissPatterns,
+  parseEvidenceCounters,
+  correlateHitMissWithRules,
+  updateEvidenceCounters,
+  flagProblematicRules,
 } from "./diary-archive.js";
 
 // ---------------------------------------------------------------------------
@@ -345,7 +349,7 @@ describe("promoteMissPatterns", () => {
     // Verify IDENTITY.md was updated
     const updatedIdentity = await fs.readFile(path.join(tmpDir, "IDENTITY.md"), "utf-8");
     expect(updatedIdentity).toContain("CRITICAL Rules");
-    expect(updatedIdentity).toContain("CRITICAL:");
+    expect(updatedIdentity).toContain("CRITICAL [0H/0M]:");
     expect(updatedIdentity).toContain("verify api health");
   });
 
@@ -378,9 +382,9 @@ describe("promoteMissPatterns", () => {
 
   it("appends to existing CRITICAL Rules section", async () => {
     const selfReview = `
-[2026-03-01] MISS: x — FIX: Check file existence before reading it
-[2026-03-02] MISS: x — FIX: Check file existence before reading it
-[2026-03-03] MISS: x — FIX: Check file existence before reading it
+MISS: x — FIX: Check file existence before reading it
+MISS: x — FIX: Check file existence before reading it
+MISS: x — FIX: Check file existence before reading it
 `;
     await fs.writeFile(path.join(tmpDir, "memory", "self-review.md"), selfReview);
 
@@ -393,6 +397,7 @@ describe("promoteMissPatterns", () => {
     const updatedIdentity = await fs.readFile(path.join(tmpDir, "IDENTITY.md"), "utf-8");
     expect(updatedIdentity).toContain("Existing rule about something");
     expect(updatedIdentity).toContain("file existence");
+    expect(updatedIdentity).toContain("[0H/0M]");
   });
 
   it("no-ops when self-review.md is missing", async () => {
@@ -425,6 +430,176 @@ MISS: x — FIX: Always verify the API health status before calling
     const result = await promoteMissPatterns(tmpDir, 3);
     // Should detect similarity and skip
     expect(result.promoted).toBe(0);
+  });
+
+  it("also skips substantially similar existing rules with evidence counters", async () => {
+    const selfReview = `
+MISS: x — FIX: Always verify the API health status before calling
+MISS: x — FIX: Always verify the API health status before calling
+MISS: x — FIX: Always verify the API health status before calling
+`;
+    await fs.writeFile(path.join(tmpDir, "memory", "self-review.md"), selfReview);
+
+    // Existing rule has evidence counters
+    const identity = `# IDENTITY\n\n## CRITICAL Rules\n\n- **CRITICAL [3H/1M]:** Always verify API health before calling endpoints\n`;
+    await fs.writeFile(path.join(tmpDir, "IDENTITY.md"), identity);
+
+    const result = await promoteMissPatterns(tmpDir, 3);
+    expect(result.promoted).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Evidence counter tests
+// ---------------------------------------------------------------------------
+
+describe("parseEvidenceCounters", () => {
+  it("parses valid counters", () => {
+    const result = parseEvidenceCounters("- **CRITICAL [5H/2M]:** Some rule");
+    expect(result).toEqual({ hits: 5, misses: 2 });
+  });
+
+  it("parses zero counters", () => {
+    const result = parseEvidenceCounters("- **CRITICAL [0H/0M]:** Some rule");
+    expect(result).toEqual({ hits: 0, misses: 0 });
+  });
+
+  it("returns null for rules without counters", () => {
+    const result = parseEvidenceCounters("- **CRITICAL:** Some rule");
+    expect(result).toBeNull();
+  });
+
+  it("returns null for empty string", () => {
+    const result = parseEvidenceCounters("");
+    expect(result).toBeNull();
+  });
+});
+
+describe("correlateHitMissWithRules", () => {
+  it("matches HIT entries to CRITICAL rules by word overlap", () => {
+    const selfReview = `
+[2026-03-10] HIT: Verified API health before making the call. KEEP: good practice.
+`;
+    const rules = new Set(["always verify api health before calling"]);
+    const deltas = correlateHitMissWithRules(selfReview, rules);
+
+    expect(deltas.get("always verify api health before calling")).toEqual({
+      hits: 1,
+      misses: 0,
+    });
+  });
+
+  it("matches MISS entries to CRITICAL rules", () => {
+    const selfReview = `
+[2026-03-10] MISS: Forgot to verify API health before calling. FIX: Check next time.
+`;
+    const rules = new Set(["always verify api health before calling"]);
+    const deltas = correlateHitMissWithRules(selfReview, rules);
+
+    expect(deltas.get("always verify api health before calling")).toEqual({
+      hits: 0,
+      misses: 1,
+    });
+  });
+
+  it("accumulates multiple hits and misses", () => {
+    const selfReview = `
+HIT: Verified API health. KEEP: always do this.
+MISS: Forgot API health verification. FIX: Check first.
+HIT: API health check passed. KEEP: great.
+`;
+    const rules = new Set(["always verify api health before calling"]);
+    const deltas = correlateHitMissWithRules(selfReview, rules);
+
+    const delta = deltas.get("always verify api health before calling");
+    expect(delta).toBeDefined();
+    expect(delta!.hits).toBe(2);
+    expect(delta!.misses).toBe(1);
+  });
+
+  it("returns empty map when no rules match", () => {
+    const selfReview = "HIT: Good formatting in responses. KEEP: yes.";
+    const rules = new Set(["always verify api health before calling"]);
+    const deltas = correlateHitMissWithRules(selfReview, rules);
+    expect(deltas.size).toBe(0);
+  });
+
+  it("returns empty map for empty rules set", () => {
+    const selfReview = "HIT: Something good.";
+    const deltas = correlateHitMissWithRules(selfReview, new Set());
+    expect(deltas.size).toBe(0);
+  });
+});
+
+describe("updateEvidenceCounters", () => {
+  it("increments counters on matching rules", () => {
+    const identity = `## CRITICAL Rules\n\n- **CRITICAL [2H/1M]:** Always verify API health before calling\n`;
+    const deltas = new Map([["always verify api health before calling", { hits: 1, misses: 0 }]]);
+
+    const updated = updateEvidenceCounters(identity, deltas);
+    expect(updated).toContain("[3H/1M]");
+  });
+
+  it("increments miss counter", () => {
+    const identity = `- **CRITICAL [2H/1M]:** Always verify API health before calling\n`;
+    const deltas = new Map([["always verify api health before calling", { hits: 0, misses: 2 }]]);
+
+    const updated = updateEvidenceCounters(identity, deltas);
+    expect(updated).toContain("[2H/3M]");
+  });
+
+  it("leaves rules without counters unchanged", () => {
+    const identity = `- **CRITICAL:** Some old rule without counters\n`;
+    const deltas = new Map([["some old rule without counters", { hits: 1, misses: 0 }]]);
+
+    const updated = updateEvidenceCounters(identity, deltas);
+    expect(updated).toBe(identity);
+  });
+
+  it("returns original when no deltas provided", () => {
+    const identity = `- **CRITICAL [0H/0M]:** Some rule\n`;
+    const updated = updateEvidenceCounters(identity, new Map());
+    expect(updated).toBe(identity);
+  });
+});
+
+describe("flagProblematicRules", () => {
+  it("flags rules where misses >= hits with 3+ observations", () => {
+    const identity = `
+## CRITICAL Rules
+
+- **CRITICAL [1H/3M]:** Always verify API health before calling
+- **CRITICAL [5H/1M]:** Check file existence before reading
+`;
+    const flagged = flagProblematicRules(identity);
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0].text).toContain("verify API health");
+    expect(flagged[0].hits).toBe(1);
+    expect(flagged[0].misses).toBe(3);
+  });
+
+  it("skips rules with fewer than minObservations", () => {
+    const identity = `- **CRITICAL [0H/2M]:** Something with only 2 observations\n`;
+    const flagged = flagProblematicRules(identity, 3);
+    expect(flagged).toHaveLength(0);
+  });
+
+  it("flags rules where hits equal misses", () => {
+    const identity = `- **CRITICAL [2H/2M]:** Borderline rule\n`;
+    const flagged = flagProblematicRules(identity, 3);
+    expect(flagged).toHaveLength(1);
+  });
+
+  it("returns empty for rules without counters", () => {
+    const identity = `- **CRITICAL:** Old rule without counters\n`;
+    const flagged = flagProblematicRules(identity);
+    expect(flagged).toHaveLength(0);
+  });
+
+  it("returns empty for healthy rules", () => {
+    const identity = `- **CRITICAL [5H/1M]:** Well-performing rule\n`;
+    const flagged = flagProblematicRules(identity);
+    expect(flagged).toHaveLength(0);
   });
 });
 

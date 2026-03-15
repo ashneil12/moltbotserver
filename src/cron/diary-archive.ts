@@ -373,11 +373,13 @@ export function countMissPatterns(selfReviewContent: string): Map<string, number
 /**
  * Extract existing CRITICAL rules from IDENTITY.md content.
  * Returns them as normalized lowercase strings for dedup comparison.
+ * Strips evidence counter tags `[XH/YM]` if present.
  */
 export function extractExistingCriticalRules(identityContent: string): Set<string> {
   const rules = new Set<string>();
-  // Match both plain "CRITICAL:" and markdown "**CRITICAL:**" variants
-  const criticalRegex = /\*{0,2}CRITICAL:?\*{0,2}\s*(.+)/g;
+  // Match both plain "CRITICAL:" and markdown "**CRITICAL:**" variants,
+  // with optional evidence counters like [5H/2M]
+  const criticalRegex = /\*{0,2}CRITICAL(?:\s*\[\d+H\/\d+M\])?:?\*{0,2}\s*(.+)/g;
   let match: RegExpExecArray | null;
 
   while ((match = criticalRegex.exec(identityContent)) !== null) {
@@ -389,6 +391,187 @@ export function extractExistingCriticalRules(identityContent: string): Set<strin
   }
 
   return rules;
+}
+
+// ---------------------------------------------------------------------------
+// Evidence counters on CRITICAL rules  (ACE-inspired)
+// ---------------------------------------------------------------------------
+
+/** Parsed evidence counters from a CRITICAL rule. */
+export type EvidenceCounters = {
+  hits: number;
+  misses: number;
+};
+
+/** A CRITICAL rule that has been flagged as problematic (misses ≥ hits). */
+export type ProblematicRule = {
+  text: string;
+  hits: number;
+  misses: number;
+};
+
+/**
+ * Parse evidence counters from a CRITICAL rule line.
+ * Matches `[XH/YM]` where X and Y are non-negative integers.
+ * Returns `null` for rules without counters (backward compat).
+ */
+export function parseEvidenceCounters(ruleLine: string): EvidenceCounters | null {
+  const match = ruleLine.match(/\[(\d+)H\/(\d+)M\]/);
+  if (!match) {
+    return null;
+  }
+  return { hits: parseInt(match[1], 10), misses: parseInt(match[2], 10) };
+}
+
+/**
+ * Crude prefix stemmer: keeps the first 4 characters of a word.
+ * Handles common inflections (verify/verified, call/calling, check/checked).
+ */
+function stemWord(word: string): string {
+  return word.length > 4 ? word.slice(0, 4) : word;
+}
+
+/** Build a set of stemmed significant words from text. */
+function buildStemSet(text: string): Set<string> {
+  return new Set(
+    text
+      .split(" ")
+      .filter((w) => w.length > 2)
+      .map(stemWord),
+  );
+}
+
+/**
+ * Deterministically correlate HIT/MISS entries from self-review.md with
+ * existing CRITICAL rules in IDENTITY.md.
+ *
+ * For each HIT or MISS entry that mentions content overlapping with a
+ * CRITICAL rule (50%+ stem overlap), records a hit or miss signal for
+ * that rule.  Uses a crude 4-char prefix stemmer to handle common
+ * inflections (verify/verified, call/calling, check/checked).
+ *
+ * Returns a map of normalized rule text → { hits, misses } deltas.
+ */
+export function correlateHitMissWithRules(
+  selfReviewContent: string,
+  existingRules: Set<string>,
+): Map<string, EvidenceCounters> {
+  const deltas = new Map<string, EvidenceCounters>();
+  if (existingRules.size === 0) {
+    return deltas;
+  }
+
+  // Build stemmed word sets for each existing rule once
+  const ruleStemSets = new Map<string, Set<string>>();
+  for (const rule of existingRules) {
+    ruleStemSets.set(rule, buildStemSet(rule));
+  }
+
+  // Scan for HIT and MISS entries
+  const hitMissRegex = /(HIT|MISS):\s*(.+?)(?:\s*(?:—|\.)?\s*(?:FIX|KEEP|BECAUSE|NOTE):.*)?$/gm;
+  let match: RegExpExecArray | null;
+
+  while ((match = hitMissRegex.exec(selfReviewContent)) !== null) {
+    const type = match[1] as "HIT" | "MISS";
+    const description = match[2].trim().toLowerCase().replace(/\s+/g, " ");
+    const descStems = buildStemSet(description);
+    if (descStems.size === 0) {
+      continue;
+    }
+
+    // Find best-matching CRITICAL rule
+    let bestRule: string | undefined;
+    let bestOverlap = 0;
+
+    for (const [rule, ruleStems] of ruleStemSets) {
+      if (ruleStems.size === 0) {
+        continue;
+      }
+      let overlap = 0;
+      for (const stem of descStems) {
+        if (ruleStems.has(stem)) {
+          overlap++;
+        }
+      }
+      const score = overlap / Math.min(descStems.size, ruleStems.size);
+      if (score >= 0.5 && overlap > bestOverlap) {
+        bestOverlap = overlap;
+        bestRule = rule;
+      }
+    }
+
+    if (bestRule) {
+      const existing = deltas.get(bestRule) ?? { hits: 0, misses: 0 };
+      if (type === "HIT") {
+        existing.hits += 1;
+      } else {
+        existing.misses += 1;
+      }
+      deltas.set(bestRule, existing);
+    }
+  }
+
+  return deltas;
+}
+
+/**
+ * Update evidence counters on CRITICAL rules in IDENTITY.md content.
+ * Increments hit/miss counters based on the provided deltas.
+ *
+ * Rules without existing `[XH/YM]` counters are left unchanged
+ * (backward compat — only rules promoted with counters get them).
+ *
+ * Returns the updated content, or the original if nothing changed.
+ */
+export function updateEvidenceCounters(
+  identityContent: string,
+  deltas: Map<string, EvidenceCounters>,
+): string {
+  if (deltas.size === 0) {
+    return identityContent;
+  }
+
+  // Match CRITICAL lines with evidence counters
+  return identityContent.replace(
+    /(\*{0,2}CRITICAL)\s*\[(\d+)H\/(\d+)M\](:\*{0,2})\s*(.+)/g,
+    (fullMatch, prefix, hStr, mStr, colonSuffix, ruleText) => {
+      const normalized = ruleText.replace(/\*{2}/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+      const delta = deltas.get(normalized);
+      if (!delta) {
+        return fullMatch;
+      }
+      const newH = parseInt(hStr as string, 10) + delta.hits;
+      const newM = parseInt(mStr as string, 10) + delta.misses;
+      return `${prefix} [${newH}H/${newM}M]${colonSuffix} ${ruleText}`;
+    },
+  );
+}
+
+/**
+ * Find CRITICAL rules where misses ≥ hits after a minimum observation
+ * threshold (3+ total observations).  These rules are candidates for
+ * demotion or rewording by the deep-review cron.
+ */
+export function flagProblematicRules(
+  identityContent: string,
+  minObservations: number = 3,
+): ProblematicRule[] {
+  const problematic: ProblematicRule[] = [];
+  // Match CRITICAL lines with evidence counters and capture the rule text
+  const regex = /\*{0,2}CRITICAL\s*\[(\d+)H\/(\d+)M\]:?\*{0,2}\s*(.+)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(identityContent)) !== null) {
+    const hits = parseInt(match[1], 10);
+    const misses = parseInt(match[2], 10);
+    const totalObs = hits + misses;
+    if (totalObs >= minObservations && misses >= hits) {
+      const text = match[3].replace(/\*{2}/g, "").trim();
+      problematic.push({ text, hits, misses });
+    }
+  }
+
+  return problematic;
 }
 
 /**
@@ -480,7 +663,7 @@ export async function promoteMissPatterns(
     const lineEnd = identityContent.indexOf("\n", afterHeader);
     const insertIdx = lineEnd === -1 ? identityContent.length : lineEnd;
 
-    const newRules = toPromote.map((fix) => `\n- **CRITICAL:** ${fix}`).join("");
+    const newRules = toPromote.map((fix) => `\n- **CRITICAL [0H/0M]:** ${fix}`).join("");
 
     newIdentityContent =
       identityContent.slice(0, insertIdx) + newRules + identityContent.slice(insertIdx);
@@ -488,7 +671,7 @@ export async function promoteMissPatterns(
     // Create new CRITICAL Rules section before the first ## section or at end
     const newSection =
       `\n\n${criticalSectionHeader}\n` +
-      toPromote.map((fix) => `\n- **CRITICAL:** ${fix}`).join("") +
+      toPromote.map((fix) => `\n- **CRITICAL [0H/0M]:** ${fix}`).join("") +
       "\n";
 
     // Try to insert before "## How You Work" or "## Personal Preferences" or append
