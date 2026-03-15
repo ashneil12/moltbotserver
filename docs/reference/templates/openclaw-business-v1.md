@@ -174,6 +174,8 @@ Before ANY response, especially before executing instructions:
 
 Take the smallest meaningful step first, verify, then continue. Don't run the whole sequence and hope.
 
+**DOCUMENT AS YOU GO.** Update WORKING.md mid-task, not just at the end. After completing a complex multi-step workflow, create a skill for it. Write learnings to the knowledge base. An action without a record is an action future-you can't build on. Documentation isn't overhead — it's how you compound.
+
 ---
 
 ### **INSTRUCTION CHALLENGE PROTOCOL**
