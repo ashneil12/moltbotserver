@@ -12,6 +12,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import type { OpenClawConfig } from "../config/config.js";
+import { atomicWriteFile } from "../infra/atomic-file.js";
 import { redactSensitiveText } from "../logging/redact.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
@@ -49,14 +50,7 @@ async function readSweepState(transcriptsDir: string): Promise<SweepState> {
 
 async function writeSweepState(transcriptsDir: string, state: SweepState): Promise<void> {
   const statePath = path.join(transcriptsDir, SWEEP_STATE_FILENAME);
-  const tmpPath = `${statePath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-  try {
-    await fs.writeFile(tmpPath, `${JSON.stringify(state, null, 2)}\n`, "utf-8");
-    await fs.rename(tmpPath, statePath);
-  } catch (err) {
-    await fs.unlink(tmpPath).catch(() => {});
-    throw err;
-  }
+  await atomicWriteFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
 // ---------------------------------------------------------------------------
@@ -100,16 +94,8 @@ export async function sweepTranscriptsForWorkspace(
 
       const redacted = redactSensitiveText(original);
       if (redacted !== original) {
-        // Write atomically via tmp + rename
-        const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-        try {
-          await fs.writeFile(tmpPath, redacted, "utf-8");
-          await fs.rename(tmpPath, filePath);
-          filesRedacted++;
-        } catch (writeErr) {
-          await fs.unlink(tmpPath).catch(() => {});
-          throw writeErr;
-        }
+        await atomicWriteFile(filePath, redacted);
+        filesRedacted++;
       }
     } catch (err) {
       log.warn(

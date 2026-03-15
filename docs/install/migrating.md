@@ -1,8 +1,10 @@
 ---
-summary: "Move (migrate) a OpenClaw install from one machine to another"
+summary: "Move (migrate) a OpenClaw install from one machine to another, or switch from another OpenClaw fork"
 read_when:
   - You are moving OpenClaw to a new laptop/server
   - You want to preserve sessions, auth, and channel logins (WhatsApp, etc.)
+  - You are switching from another OpenClaw fork
+  - You want to import a backup from a different OpenClaw installation
 title: "Migration Guide"
 ---
 
@@ -190,3 +192,81 @@ On the new machine, confirm:
 - [Doctor](/gateway/doctor)
 - [Gateway troubleshooting](/gateway/troubleshooting)
 - [Where does OpenClaw store its data?](/help/faq#where-does-openclaw-store-its-data)
+- [Backup CLI reference](/cli/backup)
+
+---
+
+## Coming from another OpenClaw fork
+
+If you're switching from upstream `openclaw/openclaw` or another fork, you can migrate your setup using the **backup import** flow — no manual file copying required.
+
+### What transfers
+
+A backup archive from any OpenClaw fork with `schemaVersion: 1` includes:
+
+- **Config** (`openclaw.json`) — gateway settings, model config, channel setup
+- **State** — session history, agent state, cron jobs
+- **Credentials** — OAuth tokens, API keys, WhatsApp session
+- **Workspace** — SOUL.md, MEMORY.md, USER.md, skills, memory files
+
+### Step 1 — Create a backup on the old fork
+
+On the machine running the other fork:
+
+```bash
+openclaw backup create --verify
+```
+
+This generates a timestamped `.tar.gz` archive with an embedded manifest.
+
+> **Tip:** Use `--verify` to confirm the archive is intact before transferring it. The archive is self-contained — it includes everything needed to restore your setup.
+
+### Step 2 — Import via the Dashboard
+
+1. Open the **Dashboard** → navigate to your instance
+2. Go to the **OpenClaw Backups** section
+3. Click **Import Backup** and upload the `.tar.gz` file
+4. The system validates the manifest and stores the archive
+
+### Step 3 — Restore the backup
+
+1. In the backup list, find the newly imported archive (labelled "Imported")
+2. Click **Restore** → confirm
+3. **Rebuild** or **restart** your instance
+
+On the next boot, the entrypoint extracts the backup and normalizes the config (model settings, gateway binding, security enforcements).
+
+### Step 4 — Verify
+
+After the instance restarts:
+
+- Check that channels are connected (Telegram, Discord, etc.)
+- Verify your workspace files are present (memory, skills)
+- Open the Control UI and confirm sessions loaded
+
+> **Note:** If the imported config has fields from a different fork version, `enforce-config` and `openclaw doctor` automatically normalize them on boot. You don't need to manually fix the config in most cases.
+
+## Cross-fork compatibility notes
+
+### Fully compatible
+
+| Data                                                  | Notes                                       |
+| ----------------------------------------------------- | ------------------------------------------- |
+| Workspace files (SOUL.md, MEMORY.md, USER.md, skills) | Standard markdown — works across all forks  |
+| Session history                                       | Same SQLite schema across forks             |
+| OAuth credentials                                     | Stored in the same `credentials/` structure |
+| Channel state (WhatsApp, Telegram)                    | Same provider format                        |
+
+### May need attention
+
+| Data                   | Risk   | What happens                                                                                           |
+| ---------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `openclaw.json` config | Low    | Unknown keys are silently dropped by Zod; missing required keys get defaults applied                   |
+| Cron job store         | Low    | Format differences may reset custom schedules — they'll be re-seeded with defaults                     |
+| Plugin config          | Medium | If the source fork had plugins not available on this fork, those entries generate warnings (non-fatal) |
+| Custom extensions      | Low    | Extensions in `$STATE_DIR/extensions/` transfer, but must be root-owned                                |
+
+### Won't work
+
+- **Non-OpenClaw platforms** (e.g. Hermes Agent, Claude Desktop) use completely different file layouts and cannot be imported via backup. A dedicated migration tool would be needed.
+- **Backups from forks with `schemaVersion` > 1** — the import API rejects archives with unrecognized schema versions.

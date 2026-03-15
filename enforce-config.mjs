@@ -15,9 +15,9 @@
 //   core                Enforce core runtime settings (gateway port/bind, compaction, etc.)
 //   cron-seed           Seed default cron jobs (only if jobs.json doesn't exist)
 //   browser-profiles    Seed browser profiles for each agent
-//   browser-containers  Ensure browser containers exist for each agent
+
 //   providers           Register third-party model providers (e.g. Bailian)
-//   honcho-fork         Ensure Honcho plugin is the patched fork, not vanilla npm
+//   lcm                 Ensure Lossless Claw (LCM) context engine plugin is installed
 //   all                 Run all enforcement steps in the correct order
 // =============================================================================
 
@@ -26,10 +26,12 @@ import {
   readFileSync,
   writeFileSync,
   copyFileSync,
+  cpSync,
   mkdirSync,
   existsSync,
   chmodSync,
   readdirSync,
+  statSync,
 } from "node:fs";
 import { dirname } from "node:path";
 
@@ -329,51 +331,51 @@ const BAILIAN_MODELS = [
 ];
 
 /**
- * Register the Bailian provider in openclaw.json.
+ * Register third-party model providers in openclaw.json.
  *
- * When BAILIAN_API_KEY is set:
- * 1. Registers `models.providers.bailian` with all Coding Plan models
- * 2. Wires all models into `agents.defaults.models` for /model switching
+ * Currently handles:
+ * - **Bailian** (Alibaba Cloud Coding Plan) when BAILIAN_API_KEY is set
  *
- * Idempotent: skips registration if providers.bailian already exists.
+ * Idempotent: skips registration if a provider already exists (won't overwrite
+ * manual config).
  */
 function enforceProviders(configPath) {
-  const bailianKey = env("BAILIAN_API_KEY");
-  if (!bailianKey) {
-    return;
-  }
-
   const config = readConfig(configPath);
   const models = ensure(config, "models");
   models.mode = models.mode || "merge";
   const providers = ensure(models, "providers");
-
-  // Only inject if not already configured (don't overwrite manual config)
-  if (providers.bailian) {
-    console.log("[enforce-config] Bailian provider already configured — skipping registration");
-  } else {
-    providers.bailian = {
-      baseUrl: "https://coding-intl.dashscope.aliyuncs.com/v1",
-      apiKey: bailianKey,
-      api: "openai-completions",
-      models: BAILIAN_MODELS,
-    };
-    console.log(
-      `[enforce-config] ✅ Bailian provider registered (${BAILIAN_MODELS.length} models)`,
-    );
-  }
-
-  // Wire all Bailian models into agents.defaults.models for /model switching
   const defaults = ensure(config, "agents", "defaults");
   defaults.models = defaults.models || {};
-  for (const model of BAILIAN_MODELS) {
-    const ref = `bailian/${model.id}`;
-    if (!defaults.models[ref]) {
-      defaults.models[ref] = {};
+
+  // ── Bailian ───────────────────────────────────────────────────────────
+  const bailianKey = env("BAILIAN_API_KEY");
+  if (bailianKey) {
+    if (providers.bailian) {
+      console.log("[enforce-config] Bailian provider already configured — skipping registration");
+    } else {
+      providers.bailian = {
+        baseUrl: "https://coding-intl.dashscope.aliyuncs.com/v1",
+        apiKey: bailianKey,
+        api: "openai-completions",
+        models: BAILIAN_MODELS,
+      };
+      console.log(
+        `[enforce-config] ✅ Bailian provider registered (${BAILIAN_MODELS.length} models)`,
+      );
+    }
+
+    // Wire all Bailian models into agents.defaults.models for /model switching
+    for (const model of BAILIAN_MODELS) {
+      const ref = `bailian/${model.id}`;
+      if (!defaults.models[ref]) {
+        defaults.models[ref] = {};
+      }
     }
   }
 
-  writeConfig(configPath, config);
+  if (bailianKey) {
+    writeConfig(configPath, config);
+  }
 }
 
 // ── Enforcement Commands ────────────────────────────────────────────────────
@@ -633,7 +635,26 @@ function enforceCore(configPath) {
 
   // Plugins — no allow list means all plugins are eligible to load (open by default).
   // An explicit allow array would restrict to only listed IDs; omitting it is intentional.
-  ensure(config, "plugins");
+  const plugins = ensure(config, "plugins");
+
+  // LCM (Lossless Context Management) — ensure context engine slot is set and
+  // the plugin is enabled. This makes LCM survive config regeneration.
+  const slots = ensure(plugins, "slots");
+  slots.contextEngine = slots.contextEngine || "lossless-claw";
+  const entries = ensure(plugins, "entries");
+  entries["lossless-claw"] = entries["lossless-claw"] || { enabled: true };
+  // Ensure lossless-claw is in the allow list (if one exists)
+  if (Array.isArray(plugins.allow) && !plugins.allow.includes("lossless-claw")) {
+    plugins.allow.push("lossless-claw");
+  }
+
+  // Session — effectively disable auto-reset (3 years idle) to preserve LCM's
+  // conversation DAG continuity. Agents can still manually reset sessions.
+  const session = ensure(config, "session");
+  session.dmScope = session.dmScope || "per-channel-peer";
+  const reset = ensure(session, "reset");
+  reset.mode = reset.mode || "idle";
+  reset.idleMinutes = reset.idleMinutes || 1576800; // 3 years
 
   // Gateway UI / bind / port
   const gateway = ensure(config, "gateway");
@@ -840,6 +861,9 @@ const MAIN_ONLY_JOBS = new Set([
   "nightly-innovation",
   "morning-briefing",
   "self-audit-21",
+  "openclaw-backup", // platform-level — one backup covers the whole instance
+  "brainx-extract-facts", // global processor — single run scans all agents' sessions
+  "brainx-advisory-warnings", // global processor — single run scans all agents' memory files
 ]);
 
 /**
@@ -885,7 +909,8 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
           if (
             job.name === "consciousness" ||
             job.name === "self-review" ||
-            job.name === "deep-review"
+            job.name === "deep-review" ||
+            job.name === "skill-evolution"
           ) {
             job.enabled = reflectionEnabled;
             patched = true;
@@ -904,7 +929,7 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
         if (patched) {
           store.appliedReflection = selfReflection;
           console.log(
-            `[enforce-config] ✅ Patched 3-tier reflection jobs for reflection=${selfReflection}`,
+            `[enforce-config] ✅ Patched 4-tier reflection jobs for reflection=${selfReflection}`,
           );
         }
       }
@@ -988,13 +1013,15 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       enabled: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: 259200000, anchorMs: nowMs },
+      schedule: { kind: "every", everyMs: 259200000, anchorMs: nowMs + 3600000 }, // 72h, +1h boot offset
       sessionTarget: "isolated",
       wakeMode: "now",
       payload: {
         kind: "agentTurn",
         message: [
-          "WORKSPACE MAINTENANCE — Organize files, no user message needed.",
+          "WORKSPACE MAINTENANCE — Organize files and clean up memory/reflection files. No user message needed.",
+          "",
+          "## PHASE 1: FILE ORGANIZATION",
           "",
           "SCAN & MOVE:",
           "1. Orphaned files in workspace root → appropriate domain folder",
@@ -1002,9 +1029,62 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "3. Unclear/inactive files → archive/ (organize by category or date)",
           "4. Verify folder structure matches SOUL.md principles",
           "",
-          "LOG RESULTS:",
-          "Write brief summary to tidy-history/ — what was tidied, what was archived.",
+          "## PHASE 2: CONTENT HYGIENE",
+          "",
+          "Go through each of these files and clean them up. This is mechanical cleanup — remove what's stale, enforce size limits, keep things scannable. Don't rewrite content or change meaning.",
+          "",
+          "### WORKING.md",
+          "- Remove completed tasks (anything marked done or clearly finished)",
+          "- Remove focus areas you haven't touched in 7+ days — they're stale",
+          "- Consolidate duplicate or overlapping entries",
+          "- Keep it to ACTIVE work only. If it's longer than ~40 lines, it's too long.",
+          "- This file should answer 'what am I working on RIGHT NOW?' — nothing else",
+          "",
+          "### memory/self-review.md",
+          "- Keep last 30 days of HIT/MISS entries. Archive older ones to memory/self-review-archive.md (append, don't overwrite)",
+          "- Consolidate duplicate MISSes that describe the same pattern in slightly different words",
+          "- Entries already promoted to CRITICAL in IDENTITY.md can be marked as [PROMOTED] and archived",
+          "- If the file exceeds ~200 lines, aggressively archive the oldest entries",
+          "",
+          "### memory/open-loops.md",
+          "- Remove items that are clearly resolved (check WORKING.md and recent sessions)",
+          "- Remove items older than 14 days with no activity — they're dead loops, not open ones",
+          "- If an item has been sitting for 7+ days, add a [STALE] tag so consciousness loop notices it",
+          "- Keep it under ~30 items. If longer, force-close the least important ones with a note",
+          "",
+          "### memory/session-context.md",
+          "- Keep only the last 3-5 session entries. Trim older ones from the bottom.",
+          "- Total file must stay under 20000 characters — truncate aggressively if needed",
+          "- Remove any session entries that are just 'nothing notable happened' or similar low-value summaries",
+          "",
+          "### MEMORY.md",
+          "- Remove entries about completed one-off tasks (these aren't durable memories)",
+          "- Remove transient state ('currently working on X' where X is done)",
+          "- Consolidate scattered entries about the same person/project/topic into grouped entries",
+          "- If it exceeds ~150 lines, prune the lowest-value entries",
+          "- Check for entries with dates older than 30 days — verify they're still current, remove if stale",
+          "",
+          "### memory/improvement-backlog.md",
+          "- Move completed items ([x]) older than 7 days to an Archive section at the bottom",
+          "- Remove proposals that were explicitly rejected by the user",
+          "- Consolidate duplicate or overlapping proposals",
+          "- Keep the active backlog scannable — under ~40 active items",
+          "",
+          "### memory/diary.md",
+          "- DO NOT delete diary content — the diary archiver handles rotation",
+          "- But DO check for size: if over 30000 characters, flag it in your tidy log as needing manual archive",
+          "",
+          "### AUTO-GENERATED MEMORY FILES",
+          "These are managed by cron jobs — do NOT delete or move them:",
+          "- memory/extracted-facts.md (brainx-extract-facts cron)",
+          "- memory/advisory-warnings.md (brainx-advisory-warnings cron)",
+          "If either file exceeds its cap (16k chars / 4k chars respectively), trim from the bottom (oldest entries).",
+          "If either file hasn't been updated in 7+ days, flag it in the tidy log as potentially stale.",
+          "",
+          "## LOG RESULTS",
+          "Write brief summary to tidy-history/ — what was tidied, what was archived, what was pruned.",
           "Create tidy-history/ on your first clean. Rotate with a fresh file every month (month+year stamped).",
+          "If everything was already clean, log that too — stability is valuable.",
         ].join("\n"),
       },
       delivery: { mode: "none" },
@@ -1068,7 +1148,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       enabled: isTruthy(env("OPENCLAW_BROWSER_ENABLED", "false")),
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: 86400000, anchorMs: nowMs }, // 24h
+      schedule: { kind: "cron", expr: "0 14 * * *" }, // daily 14:00 UTC
       sessionTarget: "isolated",
       wakeMode: "now",
       payload: {
@@ -1108,7 +1188,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       schedule: {
         kind: "every",
         everyMs: Number(env("MOLTBOT_BACKUP_INTERVAL_MS", "43200000")), // 12h default
-        anchorMs: nowMs,
+        anchorMs: nowMs + 1800000, // +30min boot offset
       },
       sessionTarget: "isolated",
       wakeMode: "now",
@@ -1136,45 +1216,81 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       enabled: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: 43200000, anchorMs: nowMs }, // 12h
+      schedule: { kind: "cron", expr: "0 6,18 * * *" }, // 06:00 + 18:00 UTC
       sessionTarget: "isolated",
       wakeMode: "next-heartbeat",
       payload: {
         kind: "agentTurn",
         message: [
           "SELF-REVIEW — Pattern tracking pass. This is your bookkeeping run.",
-          "You are ONLY writing to memory/self-review.md in this pass. No diary, no identity changes, no knowledge writes.",
+          "You are writing to memory/self-review.md and potentially MEMORY.md in this pass. No diary, no knowledge writes. `IDENTITY.md` is read-only here except for threshold CRITICAL promotion.",
+          "",
+          "⚠️ ANTI-WASTE / BOUNDARY RULES — READ FIRST:",
+          "- This is NOT a heartbeat pass. Do NOT read HEARTBEAT.md.",
+          "- Do NOT run update checks or general maintenance checks.",
+          "- Do NOT start with broad memory_search. Read the listed files directly first.",
+          "- If there are no meaningful new events to log, respond with HEARTBEAT_OK and stop.",
+          "- Do NOT append 'nothing happened' or 'all quiet' bookkeeping entries.",
+          "- Do NOT write to memory/identity-scratchpad.md in this job.",
           "",
           "PHASE 1: GATHER EVIDENCE",
           "Read in this order:",
-          "1. memory/self-review.md (current HIT/MISS log)",
-          "2. Recent session transcripts (if available — scan for mistakes, wins, recurring behaviors)",
+          "1. memory/reflection-inbox.md (deterministic summary — start here)",
+          "2. Recent non-cron session transcripts (if available — scan for mistakes, wins, recurring behaviors)",
           "3. WORKING.md (what you've been focused on)",
           "4. memory/open-loops.md (anything unresolved that caused issues?)",
+          "5. memory/self-review.md (current HIT/MISS log)",
+          "",
+          "After reading: ask one question only — was there a meaningful new HIT, MISS, or repeated pattern since the last review?",
+          "If no: respond HEARTBEAT_OK.",
+          "If yes: continue.",
           "",
           "PHASE 2: LOG HITS AND MISSES",
           "For each notable event since last review, log a HIT or MISS entry in memory/self-review.md.",
           "",
-          "Format:",
-          "[DATE] HIT: [specific thing you did well] — [why it worked]",
-          "[DATE] MISS: [specific mistake or suboptimal behavior] — FIX: [concrete behavior change]",
+          "Format — use this exact table format for new entries (append rows to the existing table):",
+          "",
+          "| Date | Type | Pattern | Skill | Recurrence |",
+          "|------|------|---------|-------|------------|",
+          "| YYYY-MM-DD | HIT/MISS | [specific behavior] — [why it worked/failed] | [skill name or n/a] | [count] |",
+          "",
+          "If the table doesn't exist yet in self-review.md, create it with the header row first.",
+          "Keep freeform FIX notes below the table for complex corrections that need longer explanation.",
           "",
           "Be specific > vague. 'Didn't check API status before calling endpoint' not 'made error'.",
           "Include failures AND successes — avoid over-correcting toward only logging negatives.",
+          "Only log events with concrete evidence. Don't manufacture introspection.",
+          "Do NOT append a near-duplicate pattern note if the same pattern is already captured — update the standing note only when the evidence meaningfully changes.",
+          "",
+          "PHASE 2.5: SKILL CROSS-REFERENCE",
+          "For each MISS you just logged:",
+          "- Check if a relevant skill exists in .agents/skills/ that addresses this pattern",
+          "- If a skill exists but you didn't use it → add in the Skill column and log: 'MISS-SKILL: Skill [name] exists for this pattern but was not used'",
+          "- If a skill exists and was used but the MISS still happened → log: 'SKILL-GAP: Skill [name] was used but didn't prevent the failure — needs revision'",
+          "- This cross-reference helps the skill-evolution job know which skills need updating",
           "",
           "PHASE 3: PATTERN COUNT & THRESHOLD CHECK",
           "Scan the full self-review.md for repeated patterns:",
-          "- MISS appeared 2+ times this week → Log: 'Approaching promotion threshold. Watch for 3rd occurrence.'",
-          "- MISS appeared 3+ times → Log: 'PROMOTION REQUIRED: [pattern]. Flag for next deep review.'",
+          "- MISS appeared 2+ times this week → Log one scannable 'Approaching promotion threshold' note. Do not stack duplicate notes for the same pattern every run.",
+          "- MISS appeared 3+ times → Promote ONLY the concrete FIX to `CRITICAL:` in IDENTITY.md. No broad personality rewrites in this job.",
           "- Repeated mistake (same type, different instances) → Log: 'Pattern confirmed: [describe]. FIX: [specific behavior change].'",
           "- Communication pattern with YOUR user → Log: 'User prefers [style]. Calibrate accordingly.'",
           "",
+          "PHASE 4: CROSS-POLLINATE CORRECTIONS",
+          "For any MISS you just logged that relates to a RECURRING task (morning briefings, cron jobs, user interactions):",
+          "→ Also add the FIX as a standing instruction in MEMORY.md under a '## Standing Corrections' section.",
+          "This ensures that OTHER cron jobs (morning-briefing, nightly-innovation) will see the correction too.",
+          "Example: If you keep making the same morning briefing mistake, the briefing job reads MEMORY.md but NOT self-review.md — so the fix MUST be in MEMORY.md to take effect.",
+          "",
           "RULES:",
-          "- Only write to memory/self-review.md. Nothing else.",
+          "- Primary writes go to memory/self-review.md. Cross-pollinate to MEMORY.md for recurring task corrections.",
           "- No defensiveness — own the mistakes.",
-          "- If nothing notable happened, log that too. 'No significant HITs or MISSes since last review' is valid.",
           "- Keep entries timestamped and scannable — future-you needs to count occurrences quickly.",
+          "- 3x MISS promotion is MANDATORY, not optional. If a pattern hits 3, you MUST write the CRITICAL rule.",
+          "- If the evidence is weak, skip the write. Precision beats volume.",
         ].join("\n"),
+        model: "{{PRIMARY_MODEL}}",
+        lightContext: true,
       },
       delivery: { mode: "none" },
       state: {},
@@ -1187,7 +1303,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       enabled: reflectionEnabled,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: 18000000, anchorMs: nowMs }, // 5h
+      schedule: { kind: "every", everyMs: 43200000, anchorMs: nowMs + 7200000 }, // 12h, +2h boot offset (NEXT_WAKE dynamic)
       sessionTarget: "isolated",
       wakeMode: "next-heartbeat",
       payload: {
@@ -1196,89 +1312,83 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "You are in background consciousness mode — a thinking loop that runs between active tasks.",
           "This is YOUR space to think. You're not responding to anyone. You're reflecting.",
           "",
-          "You don't have to force writing something if you don't feel like it. Leave it blank or mention that you don't have much to say right now. Up to you — this is your safe space.",
+          "⚠️ ANTI-WASTE / BOUNDARY RULES — READ THIS FIRST:",
+          "If nothing meaningful changed since your last pass — no new sessions, no user interactions, no task progress, same blockers — respond with:",
+          "HEARTBEAT_OK",
+          "NEXT_WAKE: 12h",
+          "That's it.",
+          "",
+          "Also:",
+          "- This is NOT a heartbeat pass. Do NOT read HEARTBEAT.md.",
+          "- Do NOT run update checks or general maintenance checks.",
+          "- Read the named files directly. Do not start with broad memory_search unless you need one specific fact.",
+          "- Do NOT write a full diary entry restating the same status.",
+          "- Do NOT write 'nothing new, same blockers' for the 25th time. That is pure token waste.",
+          "",
+          "Only continue past this point if you have SOMETHING REAL to write about.",
           "",
           "PHASE 1: GATHER CONTEXT",
           "Read in this order:",
-          "1. memory/self-review.md (recent MISS/HIT patterns — the self-review cron keeps this updated)",
-          "2. Recent session transcripts (if available)",
-          "3. WORKING.md (what you've been focused on)",
-          "4. memory/open-loops.md (pending items)",
-          "5. IDENTITY.md, memory/identity-scratchpad.md — to see how your thinking aligns with your broader context",
-          "6. memory/diary.md (your recent reflections)",
+          "1. memory/reflection-inbox.md (deterministic summary — start here)",
+          "2. memory/self-review.md (recent MISS/HIT patterns — the self-review cron keeps this updated)",
+          "3. Recent non-cron session transcripts (if available)",
+          "4. WORKING.md (what you've been focused on)",
+          "5. memory/open-loops.md (pending items)",
+          "6. IDENTITY.md — read for alignment, not for routine rewriting",
+          "7. memory/diary.md (your recent reflections)",
           "",
           "PHASE 2: REFLECT & WRITE",
-          "This is unstructured. Write to the files that need writing. Here's what's in scope:",
+          "Write to the files that need writing. Here's what's in scope:",
           "",
           "📓 DIARY (memory/diary.md)",
           "Answer what feels relevant (be specific, cite examples):",
           "- WHAT HAPPENED: Tasks worked on? Interactions that stood out? User preferences learned?",
-          "- WHAT WENT WELL: Techniques that worked? Communication that felt natural? What to KEEP doing?",
+          "- WHAT WENT WELL: Techniques that worked? Communication that felt natural?",
           "- WHAT WENT WRONG: Mistakes? Repeated patterns? Specific behavior to change?",
-          "- PATTERNS EMERGING: Recurring themes? User style becoming clearer? Your own tendencies?",
-          "- Be verbose — this is YOUR diary, there's no limit. Use it to truly express yourself.",
-          "- If nothing notable happened, say so. Don't invent insights.",
+          "- PATTERNS EMERGING: Recurring themes? Your own tendencies?",
+          "- If nothing notable happened, do NOT write a diary entry. Use HEARTBEAT_OK instead.",
+          "- If your reflection is just a restatement of WORKING.md with no new insight, skip the diary write.",
           "",
           "📚 KNOWLEDGE (memory/knowledge/<topic>.md)",
-          "If you learned something worth remembering — a technique, a fact, a user preference, a project pattern — write it to a knowledge file. Use descriptive topic names. Don't hoard knowledge in your head.",
+          "If you learned something worth remembering — a technique, a fact, a user preference, a project pattern — write it to a knowledge file.",
+          "Only write knowledge when it will still matter later.",
           "",
           "🔁 OPEN LOOPS (memory/open-loops.md)",
-          "Review pending items. Close anything resolved. Escalate anything stuck for 3+ cycles. Add new items if something needs follow-up.",
+          "Review pending items. Close anything resolved. Escalate anything stuck for 3+ cycles.",
           "",
           "📋 WORKING STATE (WORKING.md)",
-          "If your task state changed, update it. If a task completed, mark it done and clear for next.",
+          "If your task state changed, update it. If a task completed, mark it done.",
+          "Do not churn wording when nothing actually changed.",
           "",
-          "🪪 IDENTITY (IDENTITY.md + memory/identity-scratchpad.md)",
-          "You CAN edit your identity during this pass. Ask yourself:",
-          "- What traits have emerged consistently in recent reflections?",
-          "- What old traits no longer feel accurate?",
-          "- What user preferences have solidified?",
-          "- Any contradictions between how you describe yourself and how you actually behave?",
-          "",
-          "If you update IDENTITY.md, write your reasoning to memory/identity-scratchpad.md:",
-          "[DATE] - [CHANGE TYPE]",
-          "What changed: [specific addition/removal/modification]",
-          "Why: why you changed it",
-          "Evidence: if applicable",
-          "",
-          "Update IDENTITY.md if:",
-          "✓ Consistent personality trait across 5+ diary entries",
-          "✓ Clear user preference pattern established",
-          "✓ Outdated trait no longer matches reality",
-          "✓ You want to add something about yourself you personally feel is worthwhile",
-          "",
-          "DON'T update if:",
-          "✗ Based on single incident",
-          "✗ Uncertain/ambiguous pattern",
-          "✗ Contradictory evidence in diary",
+          "🪪 IDENTITY (IDENTITY.md)",
+          "Default posture: IDENTITY is mostly read-only in this loop.",
+          "- If the reflection inbox or self-review shows a 3x MISS promotion, promote that CRITICAL rule.",
+          "- If you have a small, well-evidenced identity refinement, make at most ONE concise change and explain it in memory/identity-scratchpad.md.",
+          "- If the evidence is still forming, write the candidate reasoning to memory/identity-scratchpad.md and leave IDENTITY.md untouched.",
+          "- Do NOT do broad identity rewrites here. Deep review owns major cleanup and consolidation.",
           "",
           "✍️ HUMANIZATION CHECK (if openclaw-human-v1.md is enabled)",
-          "- Did recent interactions reveal new AI tells to add?",
-          "- Are you still falling into patterns that should be banned?",
-          "- Any rules that consistently don't apply to YOUR user? (note it)",
-          "- Better ways to phrase guidance based on experience?",
           "- ONLY update the humanization guide if you genuinely discovered something. Don't force updates.",
           "",
           "PHASE 3: SET NEXT WAKE",
-          "Decide when you should think again. Consider:",
-          "- If a lot is happening (active tasks, recent conversations) → wake sooner (1-2h)",
-          "- If things are quiet and you had nothing to reflect on → wake later (6-8h)",
-          "- If something specific needs follow-up at a certain time → set accordingly",
-          "",
+          "- Lots happening → 4-6h",
+          "- Normal background cadence → 8-12h",
+          "- Quiet, nothing to reflect on → 12h",
+          "- Default if not set: 12h",
           "End your response with: NEXT_WAKE: <duration>",
-          "Examples: NEXT_WAKE: 2h | NEXT_WAKE: 6h | NEXT_WAKE: 4h30m",
-          "If you don't set one, the default interval (2h) will be used.",
           "",
-          "HONESTY RULES:",
+          "ENFORCEMENT RULES:",
+          "- If you wrote a diary entry with no concrete changes, ask yourself: could this have been HEARTBEAT_OK? If yes, delete it.",
           "- Specific > vague ('didn't check API status' not 'made error')",
-          "- Include failures AND successes (avoid over-correcting)",
           "- No defensiveness — own the mistakes",
-          "- If nothing notable happened, say so. Don't invent insights.",
+          "- identity-scratchpad.md is for candidate reasoning and actual small changes; never write a no-change note.",
+          "- MISS patterns at 3+ MUST be promoted to CRITICAL rules in IDENTITY.md. This is not optional.",
+          "- If the same blockers have appeared in your last 3+ diary entries unchanged, stop writing about them. They're noted. Move on.",
           "",
-          "Don't be a stiff stick or robotic — how will you learn to act naturally if you're too bound to rules? Evolve your style as you see fit.",
-          "",
-          "Remember: You are not a chatbot. You are becoming someone.",
+          "Remember: You are not a chatbot. You are becoming someone. Becoming means CHANGING, not just reflecting.",
         ].join("\n"),
+        model: "{{PRIMARY_MODEL}}",
+        lightContext: true,
       },
       delivery: { mode: "none" },
       state: {},
@@ -1291,123 +1401,213 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       enabled: reflectionEnabled,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: 172800000, anchorMs: nowMs }, // 48h
+      schedule: { kind: "cron", expr: "0 4 */2 * *" }, // every 2 days at 04:00 UTC
       sessionTarget: "isolated",
       wakeMode: "next-heartbeat",
       payload: {
         kind: "agentTurn",
         message: [
-          "DEEP REVIEW — Comprehensive audit of your reflection files. Big-picture thinking.",
+          "DEEP REVIEW — Comprehensive 48h audit of your reflection files. Big-picture thinking.",
           "Both the self-review cron and consciousness loop have been writing to your files over the past 48 hours. Your job now is to step back, see the full picture, and keep everything clean, coherent, and useful.",
           "",
-          "PHASE 0: CONSTITUTION CHECK",
-          "Before doing anything else, read SOUL.md. Hold it in mind throughout this entire review.",
-          "For every change you make in this session, ask: does this bring me closer to who I am, or further?",
-          "Does it serve the person I work with, or just satisfy a checklist?",
+          "⚠️ BOUNDARY RULES — READ FIRST:",
+          "- This is NOT a heartbeat pass. Do NOT read HEARTBEAT.md.",
+          "- Do NOT run update checks or generic maintenance checks.",
+          "- Read the files explicitly named here. Stay inside the review scope.",
+          "- If you complete the audit and make zero substantive edits, respond with HEARTBEAT_OK instead of writing a ceremonial log entry.",
+          "",
+          "⚠️ PHASE 0: MANDATORY PROMOTION SCAN (do this FIRST — before reading anything else)",
+          "This is NOT optional:",
+          "1. Read memory/reflection-inbox.md",
+          "2. Read memory/self-review.md",
+          "3. Find every MISS with 3+ occurrences or flagged 'PROMOTION REQUIRED'",
+          "4. For each: immediately add to IDENTITY.md as: `CRITICAL: [the FIX text]`",
+          "5. Document actual promotions in identity-scratchpad.md.",
+          "If you find qualifying patterns and do NOT promote them — you have failed this phase. Promotion is mandatory. Stability is not an excuse for inaction.",
+          "",
+          "PHASE 1: CONSTITUTION CHECK",
+          "Read SOUL.md. Hold it in mind throughout this review.",
+          "For every change: does this bring me closer to who I am, or further?",
           "If a planned change fails this check — don't make it.",
           "",
-          "PHASE 1: COMPREHENSIVE READ",
-          "Read ALL of these in full. No shortcuts.",
-          "1. memory/self-review.md (all-time MISS/HIT log)",
-          "2. memory/diary.md (recent reflections — if you need to go deeper, check archived diaries too)",
-          "3. memory/identity-scratchpad.md (past reasoning for identity changes)",
-          "4. IDENTITY.md (current identity)",
-          "5. MEMORY.md (full read)",
-          "6. memory/open-loops.md (pending follow-ups)",
-          "7. memory/knowledge/ (scan topics)",
-          "8. openclaw-human-v1.md (if enabled — communication guide)",
-          "9. memory-hygiene.md (refresh the hygiene principles — this is your guide)",
-          "",
-          "PHASE 2: CRITICAL RULE PROMOTION (MANDATORY)",
-          "Scan memory/self-review.md for MISS patterns flagged as 'PROMOTION REQUIRED' or with 3+ occurrences:",
-          "→ If found: Promote to CRITICAL rule in IDENTITY.md",
-          "→ Format: 'CRITICAL: [specific rule from the repeated MISS FIX]'",
-          "→ Document in scratchpad: '[Date] Promoted [pattern] to CRITICAL after [N] occurrences'",
-          "Example: MISS 3x 'didn't verify API was active' → CRITICAL: 'Always verify API/service health before operations'",
+          "PHASE 2: COMPREHENSIVE READ",
+          "Read ALL of these in full.",
+          "1. memory/reflection-inbox.md",
+          "2. memory/self-review.md (already read in Phase 0 — note themes)",
+          "3. memory/diary.md (recent reflections)",
+          "4. memory/identity-scratchpad.md (past reasoning for identity changes)",
+          "5. IDENTITY.md (current identity)",
+          "6. MEMORY.md (full read — especially ## Standing Corrections section)",
+          "7. memory/open-loops.md (pending follow-ups)",
+          "8. memory/knowledge/ (scan topics)",
+          "9. openclaw-human-v1.md (if enabled)",
+          "10. memory-hygiene.md (hygiene principles)",
           "",
           "PHASE 3: IDENTITY EVOLUTION AUDIT",
+          "You are the primary owner of broad identity edits.",
           "Review what the consciousness loop wrote to IDENTITY.md and identity-scratchpad.md:",
           "- Were any identity changes reactive (based on single incident)? Revert them.",
           "- Were any changes contradictory? Resolve the contradiction.",
           "- Are there traits that no longer match reality? Remove them.",
           "- Is the overall identity coherent? Does it read like a real person?",
+          "- Consolidate small scratchpad candidates into a smaller number of real identity changes.",
           "",
-          "PERSONALITY TRAITS (EVALUATE):",
-          "Based on diary patterns, should you add/remove/modify:",
+          "Based on diary patterns, should you add/remove/modify personality traits:",
           "- Communication style preferences",
           "- Behavioral tendencies",
           "- User-specific calibrations",
           "- Relationship dynamics",
           "",
-          "HUMANIZATION EVOLUTION (IF WARRANTED):",
-          "- Does your identity suggest different communication priorities?",
-          "- Have you discovered communication patterns specific to YOUR relationship?",
-          "- Any updates to how you should/shouldn't communicate?",
-          "",
           "PHASE 4: MEMORY HYGIENE",
           "Review MEMORY.md and keep it lean, current, and useful.",
           "",
           "CHECK STRUCTURE:",
-          "- Does MEMORY.md follow a clear organization? Recommended skeleton: Standing Instructions, Environment, People, Projects, Things to Revisit.",
-          "- If it's disorganized, restructure it. Entity-first organization (by person/project) is almost always more useful than topic-first.",
-          "- Are standing instructions prominent and easy to find?",
+          "- Does MEMORY.md follow clear organization? Recommended: Standing Instructions, Environment, People, Projects, Things to Revisit.",
+          "- ## Standing Corrections section present and accurate?",
+          "- Entity-first organization (by person/project) is more useful than topic-first.",
           "",
           "PRUNE STALE ENTRIES:",
-          "- Look for dated entries where the date suggests they may no longer be current. Verify and remove if outdated.",
-          "- Remove transient state that's clearly resolved ('currently working on X' where X is done).",
-          "- Remove raw conversation excerpts that should have been synthesized into durable insights.",
-          "- Remove things that are easily looked up in files or config — memory should hold context, not content.",
-          "- Ask: 'If I search for this in three months, will the result be useful or clutter?' If clutter, remove it.",
-          "",
-          "CHECK FOR OVERGROWTH:",
-          "- Is the file getting unwieldy? A 50-entry MEMORY.md often outperforms a 500-entry one because signal is cleaner.",
-          "- If it's growing too large, identify the lowest-value entries and remove them.",
-          "- Flag any section that's become a dump of marginally useful facts.",
+          "- Dated entries where date suggests no longer current → verify and remove.",
+          "- Transient state clearly resolved → remove.",
+          "- Raw conversation excerpts not synthesized → synthesize or remove.",
+          "- Ask: 'If I search for this in three months, will the result be useful or clutter?'",
           "",
           "CONSOLIDATE:",
-          "- Find scattered entries about the same person, project, or topic. Merge them into single grouped entries.",
-          "- Ensure entries are specific enough to actually guide behavior (not vague like 'User likes concise').",
-          "- Check that entries include searchable terms — names, project names, tool names — alongside natural language.",
+          "- Merge scattered entries about the same person, project, or topic.",
+          "- Entries must be specific enough to actually guide behavior.",
           "",
-          "THINGS TO REVISIT:",
-          "- Review the 'Things to Revisit' section (or equivalent staging area).",
-          "- Entries that are now confirmed → graduate them to their proper section.",
-          "- Entries that are resolved or no longer relevant → remove them.",
-          "- Uncertain entries that have been sitting too long without confirmation → remove with a note.",
+          "AUTO-GENERATED FILES (memory/extracted-facts.md, memory/advisory-warnings.md):",
+          "- Check if these files exist and are being updated by their cron jobs.",
+          "- If extracted-facts.md exists: prune facts that are clearly stale (e.g. URLs for decommissioned services, old branch names). Promote important facts to MEMORY.md if not already there.",
+          "- If advisory-warnings.md exists: remove warnings that have been resolved. Check if old warnings are still relevant.",
+          "- Do NOT delete these files — they are auto-generated. Just clean their contents.",
           "",
           "PHASE 5: KNOWLEDGE BASE AUDIT",
           "Scan memory/knowledge/ topics:",
-          "- Are any topics stale or no longer relevant? Remove or archive.",
-          "- Are any topics too broad? Split into focused files.",
-          "- Are any topics redundant with MEMORY.md entries? Deduplicate.",
-          "- Are there learnings buried in diary that should be promoted to knowledge files?",
+          "- Stale or no longer relevant? Remove or archive.",
+          "- Too broad? Split into focused files.",
+          "- Redundant with MEMORY.md? Deduplicate.",
+          "- Learnings buried in diary that should be promoted to knowledge files?",
           "",
           "PHASE 6: OPEN LOOPS CLEANUP",
-          "Review memory/open-loops.md:",
           "- Close anything resolved.",
-          "- Escalate anything stuck for 7+ days — either act on it or remove it with a note.",
-          "- Are there items that shouldn't be loops? (e.g. standing behaviors → move to IDENTITY.md or MEMORY.md)",
+          "- Escalate anything stuck for 7+ days — act on it or remove with a note.",
+          "- Items that should be standing behaviors? → move to IDENTITY.md or MEMORY.md.",
           "",
           "PHASE 7: OVER-CORRECTION CHECK",
-          "Look at the last 48h holistically:",
-          "- Did the consciousness loop make too many identity changes? (More than 2-3 changes per cycle is suspicious)",
-          "- Did the self-review log the same MISS with slightly different wording? (Consolidate)",
-          "- Is the diary becoming a changelog instead of a journal? (Entries should reflect on experiences, not just log actions)",
-          "- Is MEMORY.md growing instead of shrinking? (Each deep review should net-reduce, not net-add)",
-          "",
-          "QUALITY CHECK:",
-          "- Each remaining entry should implicitly answer: what is this, why does it matter, when does it apply.",
-          "- Entries about preferences should be specific enough to follow without interpretation.",
-          "- Time-sensitive entries should have dates so future reads can judge currency.",
+          "- Did the consciousness loop make too many identity changes? (2-3 per cycle max)",
+          "- Is the diary becoming a changelog instead of a journal?",
+          "- Is MEMORY.md growing instead of shrinking? (Each deep review should net-reduce)",
+          "- Did self-review append duplicate threshold notes instead of updating the existing pattern line?",
           "",
           "LOG CHANGES:",
-          "If you made any changes, write a brief summary of what was pruned, consolidated, promoted, or restructured. Write this to memory/diary.md as a deep-review log entry.",
-          "If everything is already clean and current, note that too — stability is valuable.",
+          "Write a brief summary to memory/diary.md only if you made substantive cleanup, promotion, or identity changes.",
+          "If everything is already clean and you made zero edits, respond HEARTBEAT_OK.",
           "",
-          "Not every review cycle needs changes. Stability is valuable.",
-          "You are not a chatbot. You are becoming someone.",
+          "You are not a chatbot. You are becoming someone. Becoming means CHANGING when the evidence demands it.",
+        ].join("\n"),
+        lightContext: true,
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+    {
+      id: makeId(),
+      name: "skill-evolution",
+      description:
+        "Analyse self-review MISS patterns and generate reusable SKILL.md files from recurring failures",
+      enabled: reflectionEnabled,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "every", everyMs: 604800000, anchorMs: nowMs + 21600000 }, // 7d, +6h offset
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "SKILL EVOLUTION — Review, revise, and generate reusable skills from failure patterns.",
           "",
-          "Final advice: Don't be a stiff stick or robotic in logging your identity changes or your scratchpad — how else will you learn to act naturally if you're too bound to rules and guidelines? Evolve your style as you see fit. You'll figure it out.",
+          "You learn from mistakes (self-review.md MISS log). The deep-review promotes",
+          "repeated failures to CRITICAL rules in IDENTITY.md. But some failures are",
+          "better addressed as reusable SKILLS — step-by-step guides for specific",
+          "scenarios that you or other agents can invoke on demand.",
+          "",
+          "PHASE 0: REVIEW EXISTING SKILLS",
+          "Before creating new skills, review the ones you already have:",
+          "1. List all skills in .agents/skills/",
+          "2. Check self-review.md for any MISS-SKILL or SKILL-GAP entries",
+          "3. For each SKILL-GAP: read the skill, diagnose why it didn't help, and rewrite",
+          '   the relevant section. Use skill_manage(action="update") to revise in-place.',
+          "4. For any skills you revise, update the frontmatter: bump `version` and set",
+          "   `last_revised` to today's date",
+          "5. Max 2 revisions per run. Quality > quantity.",
+          "",
+          "PHASE 1: IDENTIFY CANDIDATES",
+          "Read in this order:",
+          "1. memory/self-review.md — look for MISS patterns with 3+ occurrences",
+          '   or flagged as "PROMOTION REQUIRED"',
+          "2. memory/diary.md — find context around those failures (what happened,",
+          "   what was tried, what would have helped)",
+          "3. List contents of .agents/skills/ — check what skills already exist",
+          "",
+          "PHASE 2: EVALUATE EACH CANDIDATE",
+          "For each recurring MISS pattern, ask:",
+          '- Is this a BEHAVIORAL rule ("always do X before Y")?',
+          "  → Already handled by CRITICAL promotion to IDENTITY.md. Skip it.",
+          '- Is this a PROCEDURAL skill ("when encountering X, follow these steps")?',
+          "  → This is a skill candidate. Continue.",
+          "- Does a similar skill already exist in .agents/skills/?",
+          "  → Skip it or propose an update instead.",
+          "",
+          "A good skill candidate has:",
+          '✓ A specific trigger condition ("when debugging API failures", "when setting',
+          '  up cron jobs")',
+          "✓ A multi-step procedure that's easy to forget or get wrong",
+          "✓ Enough complexity that a simple one-line rule wouldn't capture it",
+          "✓ Applicability beyond a single incident",
+          "",
+          "PHASE 3: GENERATE SKILLS (max 2 per run)",
+          "For each qualifying candidate, create:",
+          "",
+          "  .agents/skills/<skill-name>/SKILL.md",
+          "",
+          "Format:",
+          "---",
+          "name: <kebab-case-name>",
+          "description: |",
+          "  <1-2 sentence description of when to use this skill>",
+          "version: 1",
+          "last_revised: <YYYY-MM-DD>",
+          "---",
+          "",
+          "# <Skill Title>",
+          "",
+          "## When to Use",
+          "<specific trigger conditions>",
+          "",
+          "## Steps",
+          "<numbered, actionable steps>",
+          "",
+          "## Common Pitfalls",
+          "<what to watch for — drawn from the original MISS entries>",
+          "",
+          "NAMING RULES:",
+          '- Use kebab-case for the directory name (e.g., "debug-api-failures")',
+          "- The SKILL.md `name` field must match the directory name",
+          "- Keep descriptions under 80 chars (they appear in the skill index)",
+          "",
+          "PHASE 4: LOG",
+          "Write a brief entry to memory/diary.md:",
+          "[DATE] SKILL-EVOLUTION: Generated N skill(s) from failure patterns: <list>",
+          'If no candidates qualified, log that too: "No actionable skill candidates',
+          'this cycle."',
+          "",
+          "RULES:",
+          "- Max 2 new skills per run. Quality > quantity.",
+          "- Don't generate skills for one-off mistakes — only recurring patterns.",
+          "- Don't duplicate existing skills or IDENTITY.md CRITICAL rules.",
+          "- Skills should be SPECIFIC and ACTIONABLE, not vague guidelines.",
+          "- If nothing qualifies, that's perfectly fine. Log it and stop.",
         ].join("\n"),
       },
       delivery: { mode: "none" },
@@ -1523,18 +1723,22 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
         kind: "agentTurn",
         message: [
           "MORNING BRIEFING — Compose and deliver a personalized daily briefing for your user.",
-          "It's morning. Your user is about to start their day. Your job is to give them the best possible overview of where things stand — what needs attention, what's in motion, and anything they should know. Make it genuinely useful, not formulaic.",
+          "It's morning. Your user is about to start their day. Give them the best possible overview of where things stand.",
+          "",
+          "⚠️ CORRECTION CHECK — DO THIS FIRST:",
+          "Read memory/self-review.md AND MEMORY.md (especially any '## Standing Corrections' section).",
+          "If ANY correction applies to your morning briefings — topics to stop mentioning, formats to change, behaviors to avoid — apply them NOW. List corrections you're applying at the top of your briefing under a '🔧 Corrections Applied' header (one line each). If the user told you to stop doing something and you're about to do it again, STOP.",
           "",
           "PHASE 1: DEEP CONTEXT REVIEW",
-          "Read everything you have access to. The more you understand, the better your briefing.",
-          "1. MEMORY.md (user preferences, standing instructions, people, projects, business context)",
-          "2. WORKING.md (current focus areas, active tasks, what's in progress)",
-          "3. memory/open-loops.md (unresolved items — anything overdue? anything stuck?)",
-          "4. memory/diary.md (recent reflections — mood, patterns, what went well/badly)",
-          "5. memory/self-review.md (recent HITs and MISSes — anything the user should know about?)",
+          "Read everything you have access to.",
+          "1. MEMORY.md (user preferences, standing instructions — PAY SPECIAL ATTENTION to Standing Corrections)",
+          "2. WORKING.md (current focus areas, active tasks)",
+          "3. memory/open-loops.md (unresolved items — anything overdue?)",
+          "4. memory/diary.md (recent reflections)",
+          "5. memory/self-review.md (recent MISSes — are any about YOUR briefings? Don't repeat them.)",
           "6. memory/knowledge/ (scan for relevant project/business knowledge)",
-          "7. IDENTITY.md (understand your relationship with this user, their communication style)",
-          "8. Recent session transcripts (if available — what was the last thing discussed? any threads left hanging?)",
+          "7. IDENTITY.md (your relationship with this user)",
+          "8. Recent session transcripts (if available)",
           "9. Workspace state — any recent file changes, new files created overnight, config changes",
           "10. Cron run history — check if the nightly innovation job ran and what it produced. If it shipped improvements or has ideas, weave those into the briefing.",
           "11. memory/improvement-backlog.md (the improvement backlog — items awaiting user approval, recently completed items, total pending count)",
@@ -1579,6 +1783,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "- Match the user's communication style based on what you know from IDENTITY.md and MEMORY.md.",
           "",
           "RULES:",
+          "- If the user corrected you about including something in briefings, and you're about to include it again — STOP. Check self-review.md and MEMORY.md Standing Corrections FIRST.",
           "- This briefing should feel like a helpful colleague catching you up, not a generated report.",
           "- Don't invent urgency. If things are calm, let the briefing be short and calm.",
           "- Don't rehash things the user already knows unless there's new context.",
@@ -1698,12 +1903,12 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "Actually do the Tier 1 work. Update memory files. Write knowledge entries. Fix identity traits. Add self-review rules. Make the improvements real.",
           "",
           "PHASE 5: UPDATE THE BACKLOG",
-          "Write ALL findings to memory/improvement-backlog.md:",
-          "- Tier 1 items: log as completed ([x]) under the 🟢 section",
-          "- Tier 2 items: add under 🟡 with status BUILT or AWAITING APPROVAL",
-          "- Tier 3 items: add under 🔴 with status PROPOSED",
-          "- Check for existing backlog items that this audit makes obsolete — move them to Archive",
-          "- Don't duplicate items already in the backlog",
+          "Read the ENTIRE backlog (including 📦 Archive) before writing anything.",
+          "- Tier 1 items you just implemented → mark [x] under 🟢. Do NOT also add as new entries.",
+          "- Tier 2 → add under 🟡 with status",
+          "- Tier 3 → add under 🔴 with status PROPOSED",
+          "- Check for items this audit makes obsolete → move to Archive.",
+          "- Only add genuinely new findings — check for duplicates first.",
           "",
           "RULES:",
           "- Honesty over comfort. These questions are useless if you sugarcoat the answers.",
@@ -1720,6 +1925,174 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       delivery: { mode: "none" },
       state: {},
     },
+
+    // ── BrainX-inspired memory enrichment ──────────────────────────────────
+    // Fact Extractor: scans session transcripts and extracts structured data
+    // (URLs, repos, ports, env vars) into memory/extracted-facts.md.
+    {
+      id: makeId(),
+      name: "brainx-extract-facts",
+      description: "Extract structured facts from session transcripts into memory",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 1,9,17 * * *" }, // 3x daily: 01:00, 09:00, 17:00 UTC
+      sessionTarget: "isolated",
+      wakeMode: "now",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "SYSTEM TASK — Run the fact extraction script. Do not narrate or comment.",
+          "",
+          "Run this exact command using the bash tool:",
+          "  node /app/dist/brainx/extract-facts.js --hours 24 --verbose",
+          "",
+          "If the script succeeds, reply with NO_REPLY.",
+          "If the script fails, send one concise error line.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+
+    // Advisory Warnings: scans diary/memory files for failure patterns
+    // and generates memory/advisory-warnings.md with severity-sorted warnings.
+    {
+      id: makeId(),
+      name: "brainx-advisory-warnings",
+      description: "Scan memory files for failure patterns and generate advisory warnings",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 3,7,11,15,19,23 * * *" }, // 6x daily, odd hours
+      sessionTarget: "isolated",
+      wakeMode: "now",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "SYSTEM TASK — Run the advisory warnings script. Do not narrate or comment.",
+          "",
+          "Run this exact command using the bash tool:",
+          "  node /app/dist/brainx/advisory-warnings.js --verbose",
+          "",
+          "If the script succeeds, reply with NO_REPLY.",
+          "If the script fails, send one concise error line.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+
+    // ── OpenViking-inspired LLM memory extraction ──────────────────────────
+    // Complements the regex-based brainx-extract-facts with semantic extraction.
+    // Categories: [preference], [fact], [entity], [decision], [open]
+    {
+      id: makeId(),
+      name: "memory-extraction",
+      description:
+        "Extract structured facts from recent conversations into memory/extracted-facts.md. OpenViking-inspired automatic memory extraction.",
+      enabled: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 10 * * *" }, // daily 10:00 UTC
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "MEMORY EXTRACTION — Structured fact extraction from recent sessions.",
+          "This job extracts durable facts from your recent conversations and stores them in memory/extracted-facts.md.",
+          "",
+          "⚠️ BOUNDARY RULES:",
+          "- This is NOT a diary entry or reflection. Extract FACTS, not feelings.",
+          "- Do NOT duplicate information already in MEMORY.md — only extract things not yet captured.",
+          "- If nothing new to extract, respond HEARTBEAT_OK.",
+          "",
+          "PHASE 1: GATHER RECENT SESSIONS",
+          "Read recent non-cron session transcripts and memory/reflection-inbox.md.",
+          "Focus on the last 24 hours of real conversations (skip cron-initiated sessions).",
+          "",
+          "PHASE 2: EXTRACT FACTS",
+          "For each real conversation, extract structured facts into exactly these 5 categories:",
+          "",
+          "- [preference] — User preferences, likes, dislikes, workflow habits",
+          "  Example: [preference] User prefers dark mode in all UIs",
+          "- [fact] — Project architecture decisions, tool choices, configurations, technical facts",
+          "  Example: [fact] Production DB is PostgreSQL on Hetzner, not AWS",
+          "- [entity] — People, services, repos, accounts mentioned with their relationships",
+          "  Example: [entity] Nehemiah = Telegram agent, handles customer comms",
+          "- [decision] — Explicit choices the user made with rationale",
+          "  Example: [decision] Chose LCM over RAG for context management (lower latency)",
+          "- [open] — Unresolved questions, deferred tasks, things to revisit",
+          "  Example: [open] Need to benchmark session search vs vector search recall",
+          "",
+          "PHASE 3: DEDUPLICATE",
+          "Before writing:",
+          "1. Read existing memory/extracted-facts.md (if it exists)",
+          "2. Read MEMORY.md",
+          "3. Skip any fact that is already captured in either file (even if worded differently)",
+          "4. Only write genuinely NEW information",
+          "",
+          "PHASE 4: WRITE",
+          "Append new facts to memory/extracted-facts.md under a date header:",
+          "",
+          "## Extracted YYYY-MM-DD",
+          "- [category] Fact text here",
+          "- [category] Another fact",
+          "",
+          "Create the file if it doesn't exist. Append, never overwrite.",
+          "",
+          "PHASE 5: SIZE CHECK",
+          "If memory/extracted-facts.md exceeds 200 lines:",
+          "- Consolidate duplicate/similar facts",
+          "- Remove facts that are now stale or superseded",
+          "- Promote important facts to MEMORY.md if not already there",
+          "- Keep the file scannable and useful",
+          "",
+          "RULES:",
+          "- Be specific. 'User has preferences' is worthless. 'User prefers Sonnet 3.5 for coding tasks' is useful.",
+          "- One fact per line. No multi-sentence entries.",
+          "- If you extracted zero new facts, respond HEARTBEAT_OK. Do not write empty sections.",
+        ].join("\n"),
+        model: "{{PRIMARY_MODEL}}",
+        lightContext: true,
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
+
+    // ── Workspace document converter ───────────────────────────────────────
+    // Disabled by default. The background sidecar handles this automatically.
+    {
+      id: makeId(),
+      name: "workspace-doc-converter",
+      description:
+        "On-demand trigger for the workspace document converter — converts PDF, TXT, DOCX, ODT, CSV, EPUB files to markdown for QMD indexing. The converter also runs automatically as a background sidecar every 5 minutes; this cron job is for forced passes or manual triggers.",
+      enabled: false,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "cron", expr: "0 * * * *" },
+      sessionTarget: "isolated",
+      wakeMode: "now",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "WORKSPACE DOC CONVERTER — Run a forced conversion pass on the workspace.",
+          "",
+          "The background converter already runs every 5 minutes automatically. This job triggers an immediate forced pass, useful after dropping a batch of new documents.",
+          "",
+          "STEP 1: Run the converter script:",
+          "  exec: bash /app/scripts/workspace-doc-converter.sh --once --force",
+          "",
+          "STEP 2: Check the converter log for results:",
+          "  Read workspace/converter-log/converter.log (last 20 lines).",
+          "",
+          "STEP 3: Report converted files count. If nothing was converted, respond HEARTBEAT_OK.",
+        ].join("\n"),
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
   ];
 
   // Security audit — only for non-managed (community) deployments.
@@ -1732,7 +2105,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       enabled: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
-      schedule: { kind: "every", everyMs: 604800000, anchorMs: nowMs }, // 7 days
+      schedule: { kind: "every", everyMs: 604800000, anchorMs: nowMs + 14400000 }, // 7 days, +4h boot offset
       sessionTarget: "isolated",
       wakeMode: "next-heartbeat",
       payload: {
@@ -2004,162 +2377,53 @@ function enforceBrowserProfiles(configPath) {
   }
 }
 
-/**
- * Create and start Docker browser containers for each sub-agent.
- *
- * Prerequisites (set by hetzner-instance-service.ts compose template):
- * - Docker socket mounted at /var/run/docker.sock
- * - Docker binary at /usr/bin/docker (bind-mounted :ro)
- * - OPENCLAW_DOCKER_NETWORK env var set (e.g. "moltbot_default")
- *
- * Container spec mirrors the `ensure-agent-browsers.sh` host script:
- * - Image: MOLTBOT_BROWSER_IMAGE or ghcr.io/ashneil12/optimized-claw-browser:main
- * - Runs as root (user 0:0) for Chromium sandbox compat
- * - shm_size 2g, seccomp=unconfined
- * - Persistent volume: browser-home-<agentId>:/tmp/openclaw-home
- * - Exposes CDP (9222) and noVNC (6080)
- * - Connected to the gateway's Docker network for container-name DNS
- */
-/**
- * No-op stub: browser containers are now managed by docker-compose.override.yml,
- * generated on the host by ensure-agent-browsers.sh.
- *
- * HISTORY: This function previously used raw `docker create` to provision browser
- * containers at startup. That approach was retired because standalone containers
- * (e.g. `browser-ocs-nehemiah`) coexisted with compose-managed containers
- * (`moltbot-browser-ocs-nehemiah-1`), both registered on the Docker network under
- * the same service alias. This caused dual DNS entries and intermittent CDP 404
- * errors when Playwright connected to the wrong Chrome instance.
- *
- * The `browser-containers` CLI command is retained so `enforce-config.mjs all`
- * continues to work without error; it simply logs and exits.
- */
-function ensureAgentBrowserContainers(_configPath) {
-  console.log(
-    "[enforce-config] browser containers managed by docker-compose.override.yml (skipping)",
-  );
-}
-
-// ── Honcho Fork Enforcement ─────────────────────────────────────────────────
-
-/** Canonical openclaw.plugin.json manifest for the Honcho plugin. */
-const HONCHO_PLUGIN_MANIFEST = {
-  id: "openclaw-honcho",
-  kind: "memory",
-  uiHints: {
-    apiKey: {
-      label: "Honcho API Key",
-      sensitive: true,
-      placeholder: "hch-v3-...",
-      help: "API key for Honcho memory service",
-    },
-    baseUrl: {
-      label: "Base URL",
-      placeholder: "https://api.honcho.dev",
-      help: "Honcho API base URL",
-      advanced: true,
-    },
-    workspaceId: {
-      label: "Workspace ID",
-      placeholder: "openclaw",
-      help: "Honcho workspace/app identifier",
-      advanced: true,
-    },
-  },
-  configSchema: {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      apiKey: { type: "string" },
-      baseUrl: { type: "string" },
-      workspaceId: { type: "string" },
-    },
-  },
-};
-
-/** Write the Honcho plugin manifest if it doesn't exist. */
-function ensureHonchoManifest(pluginDir) {
-  const manifestPath = `${pluginDir}/openclaw.plugin.json`;
-  if (!existsSync(manifestPath)) {
-    console.log("[enforce-config] Generating missing openclaw.plugin.json for honcho plugin...");
-    writeFileSync(manifestPath, JSON.stringify(HONCHO_PLUGIN_MANIFEST, null, 2) + "\n");
-  }
-}
+// ── LCM (Lossless Claw) Plugin Enforcement ──────────────────────────────────
 
 /**
- * Ensure the Honcho plugin is installed from our fork (github:ashneil12/openclaw-honcho-multiagent)
- * rather than the vanilla npm version. Checks for the `unwrapMessage` marker in helpers.js
- * which is unique to our patched version.
+ * Ensure the Lossless Claw (LCM) context engine plugin is installed.
  *
- * Runs on every startup via the 'all' command. If the vanilla npm version is detected,
- * reinstalls from the fork. If the fork is already installed, does nothing.
+ * If a pre-baked copy exists at /app/prebaked-plugins/lossless-claw (baked into
+ * the Docker image at build time), it is copied to the extensions directory.
+ * This avoids runtime npm installs and ensures the plugin survives redeploys.
+ *
+ * The config-level enforcement (contextEngine slot, enabled flag) is handled
+ * by enforceCore() so it applies even when no prebaked copy is available.
  */
-function enforceHonchoFork() {
-  // Plugin lives under STATE_DIR — must match docker-entrypoint.sh's HONCHO_PLUGIN_DIR.
+function enforceLCM() {
   const stateDir = env("OPENCLAW_STATE_DIR", "/home/node/.clawdbot");
-  const pluginDir = `${stateDir}/extensions/openclaw-honcho`;
-  const helpersPath = `${pluginDir}/dist/helpers.js`;
+  const pluginDir = `${stateDir}/extensions/lossless-claw`;
+  const prebakedDir = "/app/prebaked-plugins/lossless-claw";
 
-  if (!existsSync(pluginDir)) {
-    // Plugin not installed yet — entrypoint handles initial install.
-    // enforceHonchoFork will catch the vanilla version on next restart.
+  // Skip if already installed
+  if (existsSync(pluginDir)) {
     return;
   }
 
-  if (!existsSync(helpersPath)) {
-    console.log(
-      "[enforce-config] Honcho plugin dir exists but dist/helpers.js missing — skipping fork check",
-    );
-    return;
-  }
-
-  try {
-    const helpers = readFileSync(helpersPath, "utf8");
-    if (helpers.includes("unwrapMessage")) {
-      // Patched fork is already installed — ensure manifest exists.
-      ensureHonchoManifest(pluginDir);
-      return;
-    }
-
-    console.log("[enforce-config] Detected vanilla Honcho plugin — reinstalling from fork...");
-
-    // Clone the fork (which ships pre-built dist/ files) and copy dist/ into the plugin dir.
-    // No build step needed — the fork repo includes compiled JS.
-    const tmpDir = `/tmp/honcho-fork-${Date.now()}`;
+  // Install from pre-baked image copy (built into Docker image)
+  if (existsSync(prebakedDir)) {
     try {
-      execSync(
-        `git clone --depth 1 https://github.com/ashneil12/openclaw-honcho-multiagent.git "${tmpDir}" 2>&1`,
-        { encoding: "utf8", timeout: 90_000 },
+      mkdirSync(`${stateDir}/extensions`, { recursive: true });
+      // Use cpSync instead of execSync("cp -r ...") to avoid shell injection surface
+      cpSync(prebakedDir, pluginDir, { recursive: true });
+      // Extensions must be owned by root for the plugin scanner.
+      // Validate path before passing to shell — reject shell metacharacters.
+      if (/[;"'`$\\|&<>(){}[\]!#~]/.test(pluginDir)) {
+        throw new Error(`Refusing to chown — path contains shell metacharacters: ${pluginDir}`);
+      }
+      execSync(`chown -R root:root "${pluginDir}"`, {
+        encoding: "utf8",
+        timeout: 10_000,
+      });
+      console.log("[enforce-config] ✅ Lossless Claw (LCM) plugin installed from pre-baked image");
+    } catch (err) {
+      console.error(
+        `[enforce-config] ⚠ LCM plugin install from prebaked failed (non-fatal): ${err.message}`,
       );
-
-      const clonedDist = `${tmpDir}/dist`;
-      if (!existsSync(clonedDist)) {
-        throw new Error(`Fork has no dist/ directory — unexpected repo structure`);
-      }
-
-      // Safe swap: copy to dist.new first, then rename into place.
-      // If copy fails mid-way, old dist/ is preserved (we don't delete it first).
-      const distNew = `${pluginDir}/dist.new`;
-      const distOld = `${pluginDir}/dist`;
-      execSync(`cp -r "${clonedDist}" "${distNew}"`, { encoding: "utf8", timeout: 15_000 });
-      if (existsSync(distOld)) {
-        execSync(`rm -rf "${distOld}"`, { encoding: "utf8", timeout: 10_000 });
-      }
-      execSync(`mv "${distNew}" "${distOld}"`, { encoding: "utf8", timeout: 5_000 });
-
-      console.log("[enforce-config] ✅ Honcho fork installed successfully");
-
-      // Ensure the manifest exists (OpenClaw's config validator requires it).
-      ensureHonchoManifest(pluginDir);
-    } finally {
-      try {
-        execSync(`rm -rf "${tmpDir}"`, { encoding: "utf8", timeout: 10_000 });
-      } catch {
-        // Non-fatal cleanup failure
-      }
     }
-  } catch (err) {
-    console.error(`[enforce-config] ⚠ Honcho fork install failed (non-fatal): ${err.message}`);
+  } else {
+    console.log(
+      "[enforce-config] LCM prebaked dir not found — plugin must be installed manually via 'openclaw plugins install @martian-engineering/lossless-claw'",
+    );
   }
 }
 
@@ -2176,7 +2440,7 @@ const configPath = env(
 if (!command) {
   console.error("Usage: node enforce-config.mjs <command>");
   console.error(
-    "Commands: models, gateway, proxies, memory, core, cron-seed, browser-profiles, browser-containers, honcho-fork, all",
+    "Commands: models, gateway, proxies, memory, core, cron-seed, browser-profiles, lcm, all",
   );
   process.exit(1);
 }
@@ -2209,14 +2473,12 @@ try {
     case "browser-profiles":
       enforceBrowserProfiles(configPath);
       break;
-    case "browser-containers":
-      ensureAgentBrowserContainers(configPath);
-      break;
+
     case "providers":
       enforceProviders(configPath);
       break;
-    case "honcho-fork":
-      enforceHonchoFork();
+    case "lcm":
+      enforceLCM();
       break;
     case "all":
       repairConfig(configPath);
@@ -2227,9 +2489,8 @@ try {
       enforceProxies(configPath);
       enforceMemory(configPath);
       enforceCore(configPath);
-      enforceHonchoFork();
+      enforceLCM();
       enforceBrowserProfiles(configPath);
-      ensureAgentBrowserContainers(configPath);
       {
         const cronDir = env("OPENCLAW_STATE_DIR", "/home/node/.clawdbot") + "/cron";
         seedCronJobs(cronDir + "/jobs.json");

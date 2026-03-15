@@ -18,7 +18,11 @@
 
 import fs from "node:fs";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
-import { cleanUserContent, isMeaningfulUserContent } from "./noise-patterns.js";
+import {
+  cleanUserContent,
+  isCronPromptMessage,
+  isMeaningfulUserContent,
+} from "./noise-patterns.js";
 
 const log = createSubsystemLogger("trajectory-compressor");
 
@@ -34,9 +38,18 @@ const log = createSubsystemLogger("trajectory-compressor");
  * loops produce turns where every user message is either empty, a system
  * injection, or a bare `HEARTBEAT_OK`. Those sessions should not be recorded
  * in session-context.md at all.
+ *
+ * Cron prompts are checked against the raw (pre-clean) content because
+ * `cleanUserContent` strips the identifying first line, leaving the body
+ * of the cron prompt which may look like meaningful text.
  */
 function hasRealHumanInteraction(turns: ParsedTurn[]): boolean {
-  return turns.some((turn) => turn.role === "user" && isMeaningfulUserContent(turn.content));
+  return turns.some(
+    (turn) =>
+      turn.role === "user" &&
+      !isCronPromptMessage(turn.rawContent ?? turn.content) &&
+      isMeaningfulUserContent(turn.content),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -68,6 +81,8 @@ export type CompressionConfig = {
 export type ParsedTurn = {
   role: string;
   content: string;
+  /** Raw content before noise stripping (user turns only). */
+  rawContent?: string;
   timestamp?: string;
   toolName?: string;
   toolCallId?: string;
@@ -174,7 +189,10 @@ function parseTranscript(transcriptPath: string): ParsedTurn[] {
 
     // Strip known system-injected noise from user messages at parse time.
     // This keeps all downstream consumers (intents, protected turns, etc.) clean.
+    // Preserve the raw content so cron prompt detection can check the original.
+    let rawContent: string | undefined;
     if (msg.role === "user") {
+      rawContent = text;
       text = cleanUserContent(text);
     }
 
@@ -184,6 +202,7 @@ function parseTranscript(transcriptPath: string): ParsedTurn[] {
     turns.push({
       role: msg.role,
       content: text,
+      rawContent,
       timestamp: entry.timestamp,
       toolName: toolCall?.name ?? msg.name,
       toolCallId: msg.tool_call_id ?? toolCall?.id,

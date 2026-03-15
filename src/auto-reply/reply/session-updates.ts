@@ -12,6 +12,7 @@ import {
 } from "../../infra/format-time/format-datetime.ts";
 import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { drainSystemEventEntries } from "../../infra/system-events.js";
+import { validateSessionPathFreshness } from "./session-freshness.js";
 
 /** Drain queued system events, format as `System:` lines, return the block (or undefined). */
 export async function drainFormattedSystemEvents(params: {
@@ -184,6 +185,15 @@ export async function ensureSkillSnapshot(params: {
   const shouldRefreshSnapshot =
     snapshotVersion > 0 && (nextEntry?.skillsSnapshot?.version ?? 0) < snapshotVersion;
 
+  // Guard 2: Session context freshness — detect stale workspace paths in long-lived sessions.
+  // When the workspace is missing or has changed, silently force a skill snapshot refresh
+  // so the agent doesn't operate with dead paths.
+  const freshness = validateSessionPathFreshness({
+    workspaceDir,
+    reportedWorkspaceDir: nextEntry?.systemPromptReport?.workspaceDir,
+  });
+  const shouldForceRefresh = shouldRefreshSnapshot || !freshness.fresh;
+
   if (isFirstTurnInSession && sessionStore && sessionKey) {
     const current = nextEntry ??
       sessionStore[sessionKey] ?? {
@@ -191,7 +201,7 @@ export async function ensureSkillSnapshot(params: {
         updatedAt: Date.now(),
       };
     const skillSnapshot =
-      isFirstTurnInSession || !current.skillsSnapshot || shouldRefreshSnapshot
+      isFirstTurnInSession || !current.skillsSnapshot || shouldForceRefresh
         ? buildWorkspaceSkillSnapshot(workspaceDir, {
             config: cfg,
             skillFilter,
@@ -210,7 +220,7 @@ export async function ensureSkillSnapshot(params: {
     systemSent = true;
   }
 
-  const skillsSnapshot = shouldRefreshSnapshot
+  const skillsSnapshot = shouldForceRefresh
     ? buildWorkspaceSkillSnapshot(workspaceDir, {
         config: cfg,
         skillFilter,
@@ -231,7 +241,7 @@ export async function ensureSkillSnapshot(params: {
     sessionStore &&
     sessionKey &&
     !isFirstTurnInSession &&
-    (!nextEntry?.skillsSnapshot || shouldRefreshSnapshot)
+    (!nextEntry?.skillsSnapshot || shouldForceRefresh)
   ) {
     const current = nextEntry ?? {
       sessionId: sessionId ?? crypto.randomUUID(),

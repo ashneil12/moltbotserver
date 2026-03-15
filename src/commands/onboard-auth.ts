@@ -43,8 +43,6 @@ export {
   applyModelStudioConfigCn,
   applyModelStudioProviderConfig,
   applyModelStudioProviderConfigCn,
-  applySupaSwarmConfig,
-  applySupaSwarmProviderConfig,
   KILOCODE_BASE_URL,
 } from "./onboard-auth.config-core.js";
 export {
@@ -102,7 +100,6 @@ export {
   XAI_DEFAULT_MODEL_REF,
   MODELSTUDIO_DEFAULT_MODEL_REF,
 } from "./onboard-auth.credentials.js";
-export { setSupaSwarmConfig, SUPASWARM_DEFAULT_MODEL_REF } from "./onboard-auth.credentials.js";
 export {
   buildKilocodeModelDefinition,
   buildMinimaxApiModelDefinition,
@@ -133,6 +130,4 @@ export {
   ZAI_CODING_GLOBAL_BASE_URL,
   ZAI_CN_BASE_URL,
   ZAI_GLOBAL_BASE_URL,
-  buildSupaSwarmModelDefinition,
-  SUPASWARM_DEFAULT_MODEL_ID,
 } from "./onboard-auth.models.js";

@@ -888,7 +888,7 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
     });
   }
 
-  // On the OCS managed platform, plugins like openclaw-honcho are prebaked into
+  // On the OCS managed platform, prebaked plugins are installed into
   // the image without install records. This is intentional and safe — skip the
   // provenance warning to avoid noise for operators. Self-hosted users still see it.
   if (env.OPENCLAW_MANAGED_PLATFORM !== "1") {

@@ -28,7 +28,6 @@ type OnboardProviderAuthOptionKey = keyof Pick<
   | "modelstudioApiKey"
   | "volcengineApiKey"
   | "byteplusApiKey"
-  | "supaswarmApiKey"
 >;
 
 export type OnboardProviderAuthFlag = {
@@ -222,12 +221,5 @@ export const ONBOARD_PROVIDER_AUTH_FLAGS: ReadonlyArray<OnboardProviderAuthFlag>
     cliFlag: "--byteplus-api-key",
     cliOption: "--byteplus-api-key <key>",
     description: "BytePlus API key",
-  },
-  {
-    optionKey: "supaswarmApiKey",
-    authChoice: "supaswarm-api-key",
-    cliFlag: "--supaswarm-api-key",
-    cliOption: "--supaswarm-api-key <key>",
-    description: "SupaSwarm API key",
   },
 ];

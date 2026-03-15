@@ -641,9 +641,35 @@ if [ "${OPENCLAW_QMD_ENABLED:-false}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-f
 fi
 
 # =============================================================================
+# BACKUP RESTORE: Apply a previously stored OpenClaw backup on first boot
+#
+# When MOLTBOT_RESTORE_BACKUP_KEY is set (e.g. after a user imports a backup
+# from the dashboard), we download the archive from Supabase Storage and
+# extract the config before the gateway starts. A marker file prevents the
+# restore from running again on subsequent boots.
+#
+# IMPORTANT: This runs BEFORE enforce-config so that the restored config is
+# properly normalized (model enforcement, gateway settings, doctor fixes).
+# Cross-fork backups may have incompatible fields — enforce-config handles it.
+#
+# Remove MOLTBOT_RESTORE_BACKUP_KEY from the instance env vars after confirming
+# the restore was successful to prevent accidental re-application.
+# =============================================================================
+if [ -n "${MOLTBOT_RESTORE_BACKUP_KEY:-}" ]; then
+  RESTORE_SCRIPT="/home/node/scripts/restore-from-backup.sh"
+  if [ -f "$RESTORE_SCRIPT" ]; then
+    echo "[entrypoint] MOLTBOT_RESTORE_BACKUP_KEY set — running restore..."
+    bash "$RESTORE_SCRIPT" 2>&1 || echo "[entrypoint] WARNING: restore failed (non-fatal, continuing with existing config)"
+  else
+    echo "[entrypoint] WARNING: restore-from-backup.sh not found at $RESTORE_SCRIPT — skipping"
+  fi
+fi
+
+# =============================================================================
 # ENFORCE CONFIG: Apply all enforcement settings on top of inline config
 # This is the final configuration layer — model normalization, compaction,
 # loop detection, memory search, gateway binding, and cron job seeding.
+# Runs AFTER backup restore so restored configs get properly normalized.
 # =============================================================================
 ENFORCE_CONFIG_SCRIPT="/app/enforce-config.mjs"
 if [ -f "$ENFORCE_CONFIG_SCRIPT" ] && [ -s "$CONFIG_FILE" ]; then
@@ -664,27 +690,6 @@ if [ -f "$ENFORCE_CONFIG_SCRIPT" ] && [ -s "$CONFIG_FILE" ]; then
     echo "[entrypoint] enforce-config completed"
   else
     echo "[entrypoint] WARNING: enforce-config failed (non-fatal, continuing)"
-  fi
-fi
-
-# =============================================================================
-# BACKUP RESTORE: Apply a previously stored OpenClaw backup on first boot
-#
-# When MOLTBOT_RESTORE_BACKUP_KEY is set (e.g. after a user imports a backup
-# from the dashboard), we download the archive from Supabase Storage and
-# extract the config before the gateway starts. A marker file prevents the
-# restore from running again on subsequent boots.
-#
-# Remove MOLTBOT_RESTORE_BACKUP_KEY from the instance env vars after confirming
-# the restore was successful to prevent accidental re-application.
-# =============================================================================
-if [ -n "${MOLTBOT_RESTORE_BACKUP_KEY:-}" ]; then
-  RESTORE_SCRIPT="/home/node/scripts/restore-from-backup.sh"
-  if [ -f "$RESTORE_SCRIPT" ]; then
-    echo "[entrypoint] MOLTBOT_RESTORE_BACKUP_KEY set — running restore..."
-    bash "$RESTORE_SCRIPT" 2>&1 || echo "[entrypoint] WARNING: restore failed (non-fatal, continuing with existing config)"
-  else
-    echo "[entrypoint] WARNING: restore-from-backup.sh not found at $RESTORE_SCRIPT — skipping"
   fi
 fi
 

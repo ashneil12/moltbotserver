@@ -185,4 +185,32 @@ describe("persistSessionContextOnReset", () => {
     const filePath = path.join(workspaceDir, "memory", SESSION_CONTEXT_FILENAME);
     expect(fs.existsSync(filePath)).toBe(false);
   });
+
+  it("does not persist context for cron-only sessions", () => {
+    const cronPrompt = [
+      "Pre-reset memory flush.",
+      "The daily session reset will happen in ~20 minutes — store any durable memories now.",
+      "## 1. Daily memory log",
+      "Write to memory/YYYY-MM-DD.md; create memory/ if needed.",
+    ].join("\n");
+
+    const transcriptPath = writeTranscript([
+      { type: "session", timestamp: "2026-03-01T03:40:00.000Z" },
+      {
+        type: "message",
+        timestamp: "2026-03-01T03:40:01.000Z",
+        message: { role: "user", content: cronPrompt },
+      },
+      {
+        type: "message",
+        timestamp: "2026-03-01T03:40:30.000Z",
+        message: { role: "assistant", content: "Saving daily memory log now." },
+      },
+    ]);
+
+    persistSessionContextOnReset({ transcriptPath, workspaceDir });
+
+    const filePath = path.join(workspaceDir, "memory", SESSION_CONTEXT_FILENAME);
+    expect(fs.existsSync(filePath)).toBe(false);
+  });
 });

@@ -128,10 +128,6 @@ If the user approves:
 
 Tell the user what you changed and remind them they can edit the files anytime.
 
-## Honcho Integration
-
-If Honcho is available (check if `HONCHO_API_KEY` environment variable is set), you can also feed the extracted user insights into Honcho's context for enhanced cross-session reasoning. This is optional and should not block the import if Honcho is unavailable.
-
 ## Important Notes
 
 ### Where to Write Personality

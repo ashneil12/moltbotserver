@@ -5,6 +5,118 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Comprehensive Codebase Cleanup — DRY, Tests & Code Quality (2026-03-15)
+
+**Purpose:** Extract shared utilities, eliminate boilerplate, fix dead code, add missing test coverage, and improve SQLite resource management.
+
+### Phase 1: Shared File Utility Extraction (DRY)
+
+| File                                              | Change                                                                                                                                                                                              | Risk                     |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `src/infra/atomic-file.ts`                        | **[NEW]** Shared module: `atomicWriteFile()` (tmp+rename with auto-mkdir, best-effort cleanup), `readTextFileIfExists()` (ENOENT→undefined), `writeTextFileIfChanged()` (diff-check + atomic write) | None — new file          |
+| `src/cron/diary-archive.ts`                       | Replaced 3 inline atomic-write blocks with `atomicWriteFile()` (overflow write, identity write, state write) — **~30 lines removed**                                                                | Low — identical behavior |
+| `src/cron/isolated-agent/reflection-artifacts.ts` | Replaced local `readTextFileIfExists`, `writeTextFileIfChanged`, `writeOptionalFile` with imports from shared module — **~30 lines removed**                                                        | Low — identical behavior |
+| `src/agents/workspace.ts`                         | Replaced `writeWorkspaceOnboardingState` inline atomic-write with `atomicWriteFile()` — **~10 lines removed**                                                                                       | Low — identical behavior |
+| `src/cron/transcript-sweep.ts`                    | Replaced 2 inline atomic-write blocks with `atomicWriteFile()` (state write, redaction write) — **~15 lines removed**. Fixed `filesRedacted++` counter that was inside old atomic block.            | Low — bug fix + DRY      |
+
+### Phase 2: Code Quality & Performance
+
+| File                                      | Change                                                                                                                                                                                                                                          | Risk                              |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `src/auto-reply/reply/tool-stats.ts`      | Extracted `ToolStatsRow` type + `mapToolStatsRow()` helper — DRY'd row mapping in `getToolStats()` and `getTopTools()` (**~40 lines removed**). Added `closeAll()` static method for SQLite connection cleanup at process shutdown.             | Low — DRY + resource management   |
+| `src/agents/tools/session-search-tool.ts` | **Bug fix:** `role_filter` parameter was parsed but discarded (`_roleFilter`). Now parsed into a `Set<string>` and applied as post-filter on search results. Exported `truncateAroundMatches`, `expandQuery`, `mergeSearchResults` for testing. | Low — was a no-op, now functional |
+| `src/auto-reply/reply/session-search.ts`  | Added `closeAll()` static method to `SessionSearchIndex` for SQLite connection cleanup                                                                                                                                                          | Low — additive                    |
+
+### Phase 3: New Test Coverage
+
+| File                                             | Tests    | Coverage Target                                                                                                                     |
+| ------------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `src/infra/atomic-file.test.ts`                  | 10 tests | `atomicWriteFile`, `readTextFileIfExists`, `writeTextFileIfChanged` — happy paths, error cases, idempotency                         |
+| `src/infra/ephemeral-path.test.ts`               | 14 tests | `parseMountInfoLine` (valid/invalid/various fs types), `isEphemeralPath` (/tmp, /var/tmp, macOS /private/tmp, non-ephemeral)        |
+| `src/auto-reply/reply/session-freshness.test.ts` | 7 tests  | `validateSessionPathFreshness` — exists, missing, file-not-dir, mismatch, multi-reason                                              |
+| `src/agents/tools/session-search-tool.test.ts`   | 14 tests | `truncateAroundMatches` (centering, markers), `expandQuery` (empty, short, boolean passthrough), `mergeSearchResults` (dedup, rank) |
+| `src/auto-reply/reply/tool-stats.test.ts`        | 10 tests | `ToolStatsIndex` — open/cache, record single/batch, upsert, topTools limit, agent isolation, closeAll                               |
+
+---
+
+## Backup Restore Hardening & Cross-Fork Migration Docs (2026-03-15)
+
+**Purpose:** Harden the backup import → restore pipeline for cross-fork migration reliability, document the migration path for users switching from other OpenClaw forks, and clean up code quality issues in the restore script.
+
+### Entrypoint Reordering (Critical Bug Fix)
+
+| File                   | Change                                                                                                                                                                                                                        | Risk                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `docker-entrypoint.sh` | Moved backup restore block **before** `enforce-config.mjs` execution. Previously, restored configs bypassed model enforcement, gateway binding, and security normalization — causing potential crashes on cross-fork imports. | Low — block order change only, no logic modified |
+
+### Restore Script Hardening
+
+| File                             | Change                                                                                                                                                                | Risk                  |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `scripts/restore-from-backup.sh` | **JSON validation:** Post-restore check validates `openclaw.json` is parseable JSON; renames invalid files to `.pre-restore-invalid` so entrypoint generates defaults | None — additive guard |
+| `scripts/restore-from-backup.sh` | **RESTORE_KEY sanitization:** Rejects keys containing `../`, `;`, `&`, `\|` to prevent path traversal / command injection                                             | None — additive guard |
+| `scripts/restore-from-backup.sh` | **Import dedup:** Moved `import shutil` to top of Python block (was duplicated 3x inside loop body)                                                                   | None — cosmetic       |
+| `scripts/restore-from-backup.sh` | **Dead variable cleanup:** Removed unused bash `RESTORED_COUNT`/`SKIPPED_COUNT` vars; stats now tracked inside Python block with summary line                         | None — cosmetic       |
+
+### Cross-Fork Migration Documentation
+
+| File                        | Change                                                                                                                          | Risk             |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `docs/install/migrating.md` | Added "Coming from another OpenClaw fork" section: 4-step guide (backup create → dashboard import → restore → verify)           | None — docs only |
+| `docs/install/migrating.md` | Added "Cross-fork compatibility notes" section: compatibility matrix (fully compatible / needs attention / won't work)          | None — docs only |
+| `docs/install/migrating.md` | Fixed admonition syntax: converted `:::tip`/`:::note` to standard `> **Tip:**`/`> **Note:**` to match codebase docs conventions | None — docs only |
+| `docs/install/migrating.md` | Updated frontmatter `summary` and `read_when` to reflect cross-fork migration scope                                             | None — docs only |
+
+### Upstream Sync Risk
+
+**Low for `docker-entrypoint.sh`** — block order change within custom section, no upstream code modified.
+**None for `scripts/restore-from-backup.sh`** — fully custom file.
+**None for `docs/install/migrating.md`** — fully custom additions to existing doc.
+
+---
+
+## Autoresearch-Inspired Stability Features (2026-03-15)
+
+**Purpose:** Six targeted improvements to agent stability and self-improvement, inspired by patterns in [karpathy/autoresearch](https://github.com/karpathy/autoresearch) (by [Andrej Karpathy](https://github.com/karpathy)). Autoresearch's `if math.isnan(loss): exit(1)` circuit-breaker pattern and structured experiment logging directly informed the Session Health Sentinel and Structured Learning Log. The skill revision loop mirrors autoresearch's iterative prompt refinement approach.
+
+### Prompt-Level Enhancements (Phase A)
+
+| #   | Feature                     | File                          | Change                                                                                                                                                                                               |
+| --- | --------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ---- | ------- | ----- | ---------- | --- |
+| 1   | **Near-Miss Review**        | `src/agents/system-prompt.ts` | Added `session_search` instruction to Autonomous Problem-Solving — agents review past sessions for similar problems before escalating                                                                |
+| 2   | **Skill Quality Scoring**   | `enforce-config.mjs`          | New **Phase 2.5: SKILL CROSS-REFERENCE** in self-review cron — cross-references MISSes with existing skills, logs `MISS-SKILL` or `SKILL-GAP` entries                                                |
+| 3   | **Skill Revision Loop**     | `enforce-config.mjs`          | New **Phase 0: REVIEW EXISTING SKILLS** in skill-evolution cron — reviews existing skills, diagnoses SKILL-GAP entries, revises in-place. Introduced `version` and `last_revised` frontmatter fields |
+| 4   | **Structured Learning Log** | `enforce-config.mjs`          | Self-review cron output format changed from freeform text to markdown table: `                                                                                                                       | Date | Type | Pattern | Skill | Recurrence | `   |
+
+### Code-Level Enhancements (Phase B)
+
+| #   | Feature                     | Files                                                                                                                                    | Change                                                                                                                                                                                                                                                                                                                                                     |
+| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5   | **Crash Taxonomy**          | `pi-embedded-helpers/types.ts`, `pi-embedded-helpers.ts`, `failover-error.ts`                                                            | New `FailoverFixability` type (`retry` / `adapt` / `abandon`). `resolveFixability()` maps each `FailoverReason` to its fixability class. Auto-populated `fixability` property on all `FailoverError` instances. Backward-compatible.                                                                                                                       |
+| 6   | **Session Health Sentinel** | `session-health.ts` (NEW), `session-health-integration.ts` (NEW), `session-health.test.ts` (NEW), `sessions/types.ts`, `agent-runner.ts` | Circuit breaker detecting cascading failures. Pure-function state management (`createHealthState`, `recordSuccess`, `recordError`), degradation detection (`isSessionDegraded`, `detectRepeatedPattern`), recovery hint injection (`buildRecoveryHint`). Wired into `agent-runner.ts` at 3 points: success (resets), error (records), exception (records). |
+
+### Bug Fix During Cleanup
+
+| Fix                                    | File                | Detail                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `detectRepeatedPattern` false positive | `session-health.ts` | Original `reduceRight` counted ALL buffer occurrences of the last error, not just consecutive trailing ones. `[timeout, rate_limit, timeout, timeout]` would falsely report a pattern (3 total) despite only 2 being consecutive. Fixed with explicit reverse loop that breaks on first mismatch. Regression test added. |
+
+### Tests
+
+- ✅ `session-health.test.ts`: 18/18 passed (including regression test for the `detectRepeatedPattern` fix)
+- ✅ TypeScript compilation: zero new errors
+
+### Upstream Sync Risk
+
+**None for new files** — `session-health.ts`, `session-health-integration.ts`, `session-health.test.ts` are fully custom.
+**Low for `agent-runner.ts`** — 4 additive lines (import + 3 function calls) at existing success/error/exception boundaries.
+**Low for `sessions/types.ts`** — single optional `healthState` field added to `SessionEntry`.
+**None for `enforce-config.mjs`** — fully custom file.
+**Low for `system-prompt.ts`** — single line added to existing custom section.
+**Low for `failover-error.ts`** — additive property + function, all existing behavior preserved.
+
+---
+
 ## ACE-Inspired Stability Features (2026-03-15)
 
 **Purpose:** Close two remaining gaps in the OpenClaw reflection pipeline, inspired by the [ACE Platform](https://github.com/DannyMac180/ace-platform) (by [Danny McAteer](https://github.com/DannyMac180)). ACE tracks `helpful`/`harmful` counters on all playbook bullets and keeps structured outcome logs. OpenClaw lacked post-promotion effectiveness tracking on CRITICAL rules and structured auditing of identity modifications.

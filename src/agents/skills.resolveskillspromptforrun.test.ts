@@ -47,6 +47,7 @@ describe("resolveSkillsPromptForRun", () => {
     const prompt = resolveSkillsPromptForRun({
       entries: [entry],
       workspaceDir: "/tmp/openclaw",
+      config: { skills: { progressiveDisclosure: false } },
     });
     expect(prompt).toContain("<available_skills>");
     expect(prompt).toContain("/app/skills/demo-skill/SKILL.md");

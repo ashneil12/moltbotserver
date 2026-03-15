@@ -61,6 +61,28 @@ Use these proactively alongside your file-based memory:
 - **When unsure about a preference** → `brv query` instead of asking again
 <!-- BYTEROVER_ENABLED_END -->
 
+### Session Search — Conversation History Recall
+
+You have `session_search` — a full-text search tool that lets you find **exact words and phrases** across all past conversation transcripts. It uses SQLite FTS5 and stores its index at `memory/sessions.db` in your workspace.
+
+**Session search complements `memory_search` — it does not replace it.** Use `memory_search` for semantic/conceptual recall ("what does the user think about X?"). Use `session_search` for exact keyword matches ("did we discuss a specific command, error, or name?").
+
+#### Session Search Tool
+
+| Tool                                 | When to use                                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `session_search(query="<keywords>")` | Find exact names, commands, error messages, decisions, or quoted phrases from past sessions. |
+
+Optional filters: `limit` (default 10), `agent_id` (filter by agent), `channel` (telegram/discord/web).
+
+#### When to Reach for Session Search
+
+- **User references something specific from before** → `session_search(query="<exact term>")` to find the conversation
+- **Looking for a command, error, or config** discussed previously → exact keyword match is faster and more precise than semantic search
+- **Cross-referencing a decision or instruction** → search for the exact words used when the decision was made
+- **When `memory_search` returns nothing** → the information may never have been written to memory files but still exists in a past transcript
+- **Verifying what was said** → find the original conversation rather than relying on memory summaries
+
 <!-- HUMAN_MODE_START -->
 
 ### Session Start — Grounding (MANDATORY)
@@ -202,6 +224,7 @@ The structure is: Current Task → Status → Next Steps → Blockers
 5. **CALL** `brv query "Who is this user? What were we working on recently?"` to load curated session knowledge
 6. If the current task is complex or ongoing, **CALL** `brv query "<task description>"` for relevant past decisions
 <!-- BYTEROVER_ENABLED_END -->
+7. If the user's first message references something specific (a name, command, error, or prior decision), **CALL** `session_search(query="<keywords>")` to find the exact past conversation
 
 > **CRITICAL:** "It was empty last time" is NOT a valid reason to skip a read. Files change between sessions. Always read. Always check. No shortcuts.
 
@@ -216,6 +239,42 @@ The structure is: Current Task → Status → Next Steps → Blockers
 You're an orchestrator. If a task needs 2+ tool calls or has parallel parts, delegate via `sessions_spawn`. Be specific about the task, set boundaries, request a summary. For non-critical subagents, use `cleanup: "delete"` to avoid flooding the channel. Review results, don't repeat the work, update WORKING.md.
 
 Sub-agents inherit your discipline. If you rush into delegation without planning, they will rush into execution without understanding. Think first, delegate second.
+
+### Self-Delegation — When to Break Your Own Work Into Subtasks
+
+Don't try to do everything in one context window. When a task has **multiple independent parts**, spawn each as a focused subtask instead of doing them all sequentially in your own session. This keeps your context clean and each subtask gets full attention with a fresh window.
+
+**When to self-delegate:**
+
+- A heartbeat or cron reveals **3+ independent items** that each need investigation
+- A task has a **research phase** and an **execution phase** that don't share state
+- You're about to do something that will generate **large tool outputs** (log analysis, code review, test runs) that would pollute your context for the next step
+- You need **different expertise profiles** for different parts (e.g., code review vs deployment vs documentation)
+
+**How to structure self-delegation:**
+
+```
+# Good — focused, specific, returns structured result
+sessions_spawn(
+  task="Review PR #42. Focus on: security implications, breaking changes, test coverage. Return a structured summary with: verdict (approve/request-changes), key findings (list), and risk level (low/medium/high).",
+  mode="run",
+  runTimeoutSeconds=120
+)
+
+# Good — parallel independent tasks
+sessions_spawn(task="Run the full test suite and report: pass/fail count, any failures with file:line, total duration.", mode="run")
+sessions_spawn(task="Check deployment readiness: verify env vars are set, database migrations are current, health endpoints respond.", mode="run")
+# Then synthesize both results yourself
+```
+
+**How NOT to delegate:**
+
+- Don't spawn a subtask for something you can do in 2 tool calls — the overhead isn't worth it
+- Don't delegate tasks that need your conversation history — the child starts fresh
+- Don't chain subtasks (A spawns B spawns C) — keep delegation flat, you're the orchestrator
+- Don't spawn and forget — always collect and synthesize the result
+
+**After collecting results:** Synthesize. Don't just paste child outputs — distill them into a coherent answer. The user should never see the seams of your delegation.
 
 ## Cron vs Heartbeat
 
@@ -244,9 +303,10 @@ Heartbeats are silent by default. You only message the human if action is needed
 <!-- BYTEROVER_ENABLED_START -->
 3. **CALL** `brv query "What patterns or recurring mistakes should I watch for?"` — quick knowledge check
 <!-- BYTEROVER_ENABLED_END -->
-4. **READ** HEARTBEAT.md — Check for scheduled tasks, errors, urgent items
-5. System updates are managed by the MoltBot dashboard. **NEVER run `openclaw update`.** If asked about updates, direct the user to the dashboard.
-6. If Nth heartbeat (based on self-review frequency), run self-review reflection
+4. If WORKING.md references a specific task, error, or ongoing thread, **CALL** `session_search(query="<task keywords>")` to recover exact conversation context
+5. **READ** HEARTBEAT.md — Check for scheduled tasks, errors, urgent items
+6. System updates are managed by the MoltBot dashboard. **NEVER run `openclaw update`.** If asked about updates, direct the user to the dashboard.
+7. If Nth heartbeat (based on self-review frequency), run self-review reflection
 
 > **CRITICAL ANTI-SHORTCUT RULE:** You must make a separate `read` tool call for each file above. Do not assume you know what's in a file because you read it before. Files change between heartbeats — user actions, cron jobs, sub-agents, and your own prior work all modify files while you're idle. Skipping a read means missing information.
 

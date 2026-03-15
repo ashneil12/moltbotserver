@@ -140,10 +140,28 @@ export function resolveSessionStoreEntry(params: {
       continue;
     }
     legacyKeySet.add(candidateKey);
-    const candidateUpdatedAt = candidateEntry?.updatedAt ?? 0;
-    if (!existing || candidateUpdatedAt > existingUpdatedAt) {
+    // Guard 3: Prefer entries with the most recent createdAt (when available)
+    // over most recently updated. This ensures session unification picks the
+    // freshest context, not the most heavily used stale one.
+    //
+    // When only one entry has createdAt, prefer the one WITH it — it was
+    // created under the new guard system and is more likely fresh.
+    // Fall back to updatedAt only when both have or both lack createdAt.
+    const candidateCreatedAt = candidateEntry?.createdAt;
+    const existingCreatedAt = existing?.createdAt;
+    let preferCandidate: boolean;
+    if (candidateCreatedAt && existingCreatedAt) {
+      preferCandidate = candidateCreatedAt > existingCreatedAt;
+    } else if (candidateCreatedAt && !existingCreatedAt) {
+      preferCandidate = true; // candidate is newer system, prefer it
+    } else if (!candidateCreatedAt && existingCreatedAt) {
+      preferCandidate = false; // existing is newer system, keep it
+    } else {
+      preferCandidate = (candidateEntry?.updatedAt ?? 0) > existingUpdatedAt;
+    }
+    if (!existing || preferCandidate) {
       existing = candidateEntry;
-      existingUpdatedAt = candidateUpdatedAt;
+      existingUpdatedAt = candidateEntry?.updatedAt ?? 0;
     }
   }
   return {
@@ -789,7 +807,9 @@ export async function recordSessionMetaFromInbound(params: {
         ? // Inbound metadata updates must not refresh activity timestamps;
           // idle reset evaluation relies on updatedAt from actual session turns.
           mergeSessionEntryPreserveActivity(existing, patch)
-        : mergeSessionEntry(existing, patch);
+        : // Guard 3: Set createdAt on new entries so session unification
+          // can distinguish old entries from newly created ones.
+          mergeSessionEntry(existing, { ...patch, createdAt: Date.now() });
       store[resolved.normalizedKey] = next;
       for (const legacyKey of resolved.legacyKeys) {
         delete store[legacyKey];

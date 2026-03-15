@@ -2,13 +2,40 @@ import syncFs from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { atomicWriteFile } from "../infra/atomic-file.js";
 import { openBoundaryFile } from "../infra/boundary-file-read.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { rebuildKnowledgeIndex } from "../memory/knowledge-index.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
+import { scanAndLog } from "../security/scan-and-log.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveWorkspaceTemplateDir } from "./workspace-templates.js";
+
+const workspaceSecurityLog = createSubsystemLogger("workspace-security");
+
+/**
+ * Scan workspace content for prompt injection before it enters the system prompt.
+ * Quarantined content gets wrapped with ACIP boundary markers so the agent treats
+ * it as untrusted. Fail-open: if the scanner crashes, content passes through unchanged.
+ */
+function scanWorkspaceContent(content: string, fileName: string, filePath: string): string {
+  const scanResult = scanAndLog(content, {
+    source: "workspace_context",
+    sender: fileName,
+    eventName: "security.workspace_context_scan",
+    extraData: { file: fileName, path: filePath },
+  });
+  if (scanResult?.quarantined) {
+    workspaceSecurityLog.warn(
+      `Workspace file quarantined: ${fileName} (riskScore=${scanResult.riskScore}, ` +
+        `findings=${scanResult.findings.map((f) => f.description).join(", ")})`,
+    );
+    return scanResult.sanitizedContent;
+  }
+  return content;
+}
 
 export function resolveDefaultAgentWorkspaceDir(
   env: NodeJS.ProcessEnv = process.env,
@@ -42,14 +69,6 @@ const DEFAULT_BUSINESS_DOCS_DIRNAME = "business";
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;
-
-/**
- * Check if Honcho integration is enabled (HONCHO_API_KEY is set).
- * Used during workspace bootstrapping to strip conditional markers.
- */
-function resolveHonchoEnabled(): boolean {
-  return Boolean(process.env.HONCHO_API_KEY?.trim());
-}
 
 /**
  * Check if human voice mode is enabled.
@@ -163,14 +182,6 @@ async function removeBusinessModeSectionFromSoul(
     "<!-- end-business-mode -->",
     businessModeEnabled,
   );
-}
-
-/**
- * Strip `<!-- if-honcho -->` / `<!-- end-honcho -->` conditional blocks
- * from a workspace file based on whether Honcho is enabled.
- */
-async function stripHonchoConditionals(filePath: string, honchoEnabled: boolean): Promise<void> {
-  await stripConditionalBlock(filePath, "<!-- if-honcho -->", "<!-- end-honcho -->", honchoEnabled);
 }
 
 /**
@@ -442,16 +453,8 @@ async function writeWorkspaceOnboardingState(
   statePath: string,
   state: WorkspaceOnboardingState,
 ): Promise<void> {
-  await fs.mkdir(path.dirname(statePath), { recursive: true });
   const payload = `${JSON.stringify(state, null, 2)}\n`;
-  const tmpPath = `${statePath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-  try {
-    await fs.writeFile(tmpPath, payload, { encoding: "utf-8" });
-    await fs.rename(tmpPath, statePath);
-  } catch (err) {
-    await fs.unlink(tmpPath).catch(() => {});
-    throw err;
-  }
+  await atomicWriteFile(statePath, payload);
 }
 
 async function hasGitRepo(dir: string): Promise<boolean> {
@@ -547,11 +550,6 @@ export async function ensureAgentWorkspace(params?: {
   await writeFileIfMissing(userPath, userTemplate);
   await writeFileIfMissing(heartbeatPath, heartbeatTemplate);
 
-  // Honcho memory: strip conditional markers based on HONCHO_API_KEY
-  const honchoEnabled = resolveHonchoEnabled();
-  await stripHonchoConditionals(soulPath, honchoEnabled);
-  await stripHonchoConditionals(agentsPath, honchoEnabled);
-
   // Human voice mode: strip conditional markers based on OPENCLAW_HUMAN_MODE
   const humanModeEnabled = resolveHumanModeEnabled();
   await removeHumanModeSectionFromSoul(soulPath, humanModeEnabled);
@@ -597,7 +595,6 @@ export async function ensureAgentWorkspace(params?: {
       await fs.chmod(soulPath, 0o644).catch(() => {});
       await fs.writeFile(soulPath, soulTemplate, "utf-8");
       // Re-apply conditional stripping to the freshly restored template
-      await stripHonchoConditionals(soulPath, honchoEnabled);
       await removeHumanModeSectionFromSoul(soulPath, humanModeEnabled);
       await removeBusinessModeSectionFromSoul(soulPath, false);
       markState({ soulOverride: undefined });
@@ -672,6 +669,7 @@ export async function ensureAgentWorkspace(params?: {
     "memory/open-loops.md",
     "memory/identity-scratchpad.md",
     "memory/reflection-inbox.md",
+    "memory/MEMORY_GUIDELINES.md",
   ];
   for (const relPath of memoryTemplateFiles) {
     const templateContent = await loadTemplate(relPath);
@@ -842,6 +840,28 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     // Optional — session context may not exist yet
   }
 
+  // BrainX enrichment: extracted facts and advisory warnings (written by cron scripts).
+  const extractedFactsPath = path.join(resolvedDir, "memory", "extracted-facts.md");
+  try {
+    await fs.access(extractedFactsPath);
+    entries.push({
+      name: "extracted-facts.md" as WorkspaceBootstrapFileName,
+      filePath: extractedFactsPath,
+    });
+  } catch {
+    // Optional — created by brainx-extract-facts cron
+  }
+  const advisoryWarningsPath = path.join(resolvedDir, "memory", "advisory-warnings.md");
+  try {
+    await fs.access(advisoryWarningsPath);
+    entries.push({
+      name: "advisory-warnings.md" as WorkspaceBootstrapFileName,
+      filePath: advisoryWarningsPath,
+    });
+  } catch {
+    // Optional — created by brainx-advisory-warnings cron
+  }
+
   // Knowledge index: rebuild before loading so the index is fresh.
   const knowledgeIndexPath = path.join(
     resolvedDir,
@@ -868,7 +888,7 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
       result.push({
         name: entry.name,
         path: entry.filePath,
-        content: loaded.content,
+        content: scanWorkspaceContent(loaded.content, entry.name, entry.filePath),
         missing: false,
       });
     } else {
@@ -956,7 +976,7 @@ export async function loadExtraBootstrapFilesWithDiagnostics(
       files.push({
         name: baseName as WorkspaceBootstrapFileName,
         path: filePath,
-        content: loaded.content,
+        content: scanWorkspaceContent(loaded.content, baseName, filePath),
         missing: false,
       });
       continue;

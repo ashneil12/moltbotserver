@@ -15,6 +15,7 @@ import {
   resolveSessionTranscriptsDirForAgent,
   resolveStorePath,
 } from "../config/sessions.js";
+import { isEphemeralPath } from "../infra/ephemeral-path.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import { note } from "../terminal/note.js";
@@ -505,6 +506,27 @@ export async function noteStateIntegrity(
   }
   if (linuxSdBackedStateDir) {
     warnings.push(formatLinuxSdBackedStateDirWarning(displayStateDir, linuxSdBackedStateDir));
+  }
+
+  // Ephemeral path detection — warn if critical paths are under /tmp, tmpfs, or ramfs.
+  // Data stored in ephemeral locations will be lost on restart.
+  const ephemeralChecks = [
+    { label: "State directory", path: stateDir, display: displayStateDir },
+    { label: "Sessions directory", path: sessionsDir, display: displaySessionsDir },
+    { label: "Session store", path: storePath, display: shortenHomePath(storePath) },
+  ] as const;
+  for (const check of ephemeralChecks) {
+    const ephemeral = isEphemeralPath(check.path);
+    if (ephemeral.ephemeral) {
+      warnings.push(
+        [
+          `- CRITICAL: ${check.label} is under ephemeral storage (${check.display}).`,
+          `  ${ephemeral.reason}`,
+          "- Data WILL be lost on restart. Move to a persistent path.",
+          `  Set: OPENCLAW_STATE_DIR=~/.openclaw ${formatCliCommand("openclaw doctor")}`,
+        ].join("\n"),
+      );
+    }
   }
 
   let stateDirExists = existsDir(stateDir);

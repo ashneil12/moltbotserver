@@ -83,9 +83,6 @@ import {
   MODELSTUDIO_CN_BASE_URL,
   MODELSTUDIO_GLOBAL_BASE_URL,
   MODELSTUDIO_DEFAULT_MODEL_REF,
-  buildSupaSwarmModelDefinition,
-  SUPASWARM_DEFAULT_MODEL_ID,
-  SUPASWARM_DEFAULT_MODEL_REF,
 } from "./onboard-auth.models.js";
 
 function mergeProviderModels<T extends { id: string }>(
@@ -672,46 +669,4 @@ export function applyModelStudioConfig(cfg: OpenClawConfig): OpenClawConfig {
 export function applyModelStudioConfigCn(cfg: OpenClawConfig): OpenClawConfig {
   const next = applyModelStudioProviderConfigCn(cfg);
   return applyAgentDefaultModelPrimary(next, MODELSTUDIO_DEFAULT_MODEL_REF);
-}
-
-// SupaSwarm — OpenAI-compatible swarm backend
-
-export function applySupaSwarmProviderConfig(
-  cfg: OpenClawConfig,
-  params?: { baseUrl?: string },
-): OpenClawConfig {
-  const baseUrl = params?.baseUrl;
-  if (!baseUrl) {
-    return cfg;
-  }
-
-  const models = { ...cfg.agents?.defaults?.models };
-  models[SUPASWARM_DEFAULT_MODEL_REF] = {
-    ...models[SUPASWARM_DEFAULT_MODEL_REF],
-    alias: models[SUPASWARM_DEFAULT_MODEL_REF]?.alias ?? "Swarm",
-  };
-
-  const defaultModels = [
-    buildSupaSwarmModelDefinition("swarm-auto"),
-    buildSupaSwarmModelDefinition("swarm-pulse"),
-    buildSupaSwarmModelDefinition("swarm-drive"),
-    buildSupaSwarmModelDefinition("swarm-overdrive"),
-  ];
-
-  return applyProviderConfigWithDefaultModels(cfg, {
-    agentModels: models,
-    providerId: "supaswarm",
-    api: "openai-completions",
-    baseUrl,
-    defaultModels,
-    defaultModelId: SUPASWARM_DEFAULT_MODEL_ID,
-  });
-}
-
-export function applySupaSwarmConfig(
-  cfg: OpenClawConfig,
-  params?: { baseUrl?: string },
-): OpenClawConfig {
-  const next = applySupaSwarmProviderConfig(cfg, params);
-  return applyAgentDefaultModelPrimary(next, SUPASWARM_DEFAULT_MODEL_REF);
 }

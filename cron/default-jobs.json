@@ -8,8 +8,8 @@
       "description": "Periodic workspace organization and cleanup",
       "enabled": true,
       "schedule": {
-        "kind": "cron",
-        "expr": "0 3 * * *"
+        "kind": "every",
+        "everyMs": 259200000
       },
       "sessionTarget": "isolated",
       "wakeMode": "now",
@@ -27,8 +27,8 @@
       "description": "Close stale browser tabs to prevent resource exhaustion",
       "enabled": true,
       "schedule": {
-        "kind": "every",
-        "everyMs": 86400000
+        "kind": "cron",
+        "expr": "0 14 * * *"
       },
       "sessionTarget": "isolated",
       "wakeMode": "now",
@@ -46,8 +46,8 @@
       "description": "Deterministic pattern tracker — log HITs and MISSes, count occurrences, flag promotion thresholds",
       "enabled": true,
       "schedule": {
-        "kind": "every",
-        "everyMs": 43200000
+        "kind": "cron",
+        "expr": "0 6,18 * * *"
       },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
@@ -68,7 +68,7 @@
       "enabled": true,
       "schedule": {
         "kind": "every",
-        "everyMs": 18000000
+        "everyMs": 43200000
       },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
@@ -88,8 +88,8 @@
       "description": "Comprehensive 48h audit — identity evolution, memory hygiene, knowledge pruning, over-correction check",
       "enabled": true,
       "schedule": {
-        "kind": "every",
-        "everyMs": 172800000
+        "kind": "cron",
+        "expr": "0 4 */2 * *"
       },
       "sessionTarget": "isolated",
       "wakeMode": "next-heartbeat",
@@ -218,6 +218,27 @@
       "payload": {
         "kind": "agentTurn",
         "message": "WORKSPACE DOC CONVERTER — Run a forced conversion pass on the workspace.\n\nThe background converter already runs every 5 minutes automatically. This job triggers an immediate forced pass, useful after dropping a batch of new documents.\n\nSTEP 1: Run the converter script:\n  exec: bash /app/scripts/workspace-doc-converter.sh --once --force\n\nSTEP 2: Check the converter log for results:\n  Read workspace/converter-log/converter.log (last 20 lines).\n\nSTEP 3: Report converted files count. If nothing was converted, respond HEARTBEAT_OK."
+      },
+      "delivery": {
+        "mode": "none"
+      }
+    },
+    {
+      "id": "memory-extraction",
+      "name": "Memory: Fact Extraction",
+      "description": "Extract structured facts from recent conversations into memory/extracted-facts.md. OpenViking-inspired automatic memory extraction.",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * *"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "MEMORY EXTRACTION — Structured fact extraction from recent sessions.\nThis job extracts durable facts from your recent conversations and stores them in memory/extracted-facts.md.\n\n⚠️ BOUNDARY RULES:\n- This is NOT a diary entry or reflection. Extract FACTS, not feelings.\n- Do NOT duplicate information already in MEMORY.md — only extract things not yet captured.\n- If nothing new to extract, respond HEARTBEAT_OK.\n\nPHASE 1: GATHER RECENT SESSIONS\nRead recent non-cron session transcripts and memory/reflection-inbox.md.\nFocus on the last 24 hours of real conversations (skip cron-initiated sessions).\n\nPHASE 2: EXTRACT FACTS\nFor each real conversation, extract structured facts into exactly these 5 categories:\n\n- [preference] — User preferences, likes, dislikes, workflow habits\n  Example: [preference] User prefers dark mode in all UIs\n- [fact] — Project architecture decisions, tool choices, configurations, technical facts\n  Example: [fact] Production DB is PostgreSQL on Hetzner, not AWS\n- [entity] — People, services, repos, accounts mentioned with their relationships\n  Example: [entity] Nehemiah = Telegram agent, handles customer comms\n- [decision] — Explicit choices the user made with rationale\n  Example: [decision] Chose LCM over RAG for context management (lower latency)\n- [open] — Unresolved questions, deferred tasks, things to revisit\n  Example: [open] Need to benchmark session search vs vector search recall\n\nPHASE 3: DEDUPLICATE\nBefore writing:\n1. Read existing memory/extracted-facts.md (if it exists)\n2. Read MEMORY.md\n3. Skip any fact that is already captured in either file (even if worded differently)\n4. Only write genuinely NEW information\n\nPHASE 4: WRITE\nAppend new facts to memory/extracted-facts.md under a date header:\n\n## Extracted YYYY-MM-DD\n- [category] Fact text here\n- [category] Another fact\n\nCreate the file if it doesn't exist. Append, never overwrite.\n\nPHASE 5: SIZE CHECK\nIf memory/extracted-facts.md exceeds 200 lines:\n- Consolidate duplicate/similar facts\n- Remove facts that are now stale or superseded\n- Promote important facts to MEMORY.md if not already there\n- Keep the file scannable and useful\n\nRULES:\n- Be specific. 'User has preferences' is worthless. 'User prefers Sonnet 3.5 for coding tasks' is useful.\n- One fact per line. No multi-sentence entries.\n- If you extracted zero new facts, respond HEARTBEAT_OK. Do not write empty sections.",
+        "model": "{{PRIMARY_MODEL}}",
+        "lightContext": true
       },
       "delivery": {
         "mode": "none"

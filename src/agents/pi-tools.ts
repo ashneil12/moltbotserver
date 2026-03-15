@@ -269,6 +269,8 @@ export function createOpenClawCodingTools(options?: {
   senderIsOwner?: boolean;
   /** Callback invoked when sessions_yield tool is called. */
   onYield?: (message: string) => Promise<void> | void;
+  /** Resolved skills for progressive disclosure skill_view tool. */
+  resolvedSkills?: import("@mariozechner/pi-coding-agent").Skill[];
 }): AnyAgentTool[] {
   const execToolName = "exec";
   const sandbox = options?.sandbox?.enabled ? options.sandbox : undefined;
@@ -533,6 +535,7 @@ export function createOpenClawCodingTools(options?: {
       senderIsOwner: options?.senderIsOwner,
       sessionId: options?.sessionId,
       onYield: options?.onYield,
+      resolvedSkills: options?.resolvedSkills,
     }),
   ];
   const toolsForMemoryFlush =

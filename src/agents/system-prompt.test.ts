@@ -699,6 +699,42 @@ describe("buildAgentSystemPrompt", () => {
 
     expect(prompt).not.toContain("Browser downloads are automatic");
   });
+
+  it("includes autonomous problem-solving section in full prompts", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+    });
+
+    expect(prompt).toContain("## Autonomous Problem-Solving");
+    expect(prompt).toContain(
+      "When a tool, command, or approach fails, do NOT immediately report the failure to the user.",
+    );
+    expect(prompt).toContain("Exhaust alternatives");
+    expect(prompt).toContain("Creative workarounds");
+    expect(prompt).toContain("Only escalate");
+    expect(prompt).toContain("what you tried, why each approach failed");
+    expect(prompt).toContain("finding doors");
+  });
+
+  it("omits autonomous problem-solving section in minimal mode", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      promptMode: "minimal",
+    });
+
+    expect(prompt).not.toContain("## Autonomous Problem-Solving");
+    expect(prompt).not.toContain("Exhaust alternatives");
+  });
+
+  it("sharpened over-delivery wording distinguishes scope from effort", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+    });
+
+    expect(prompt).toContain("within the requested scope, be thorough and relentless");
+    expect(prompt).toContain("Exhaust every approach before reporting failure");
+    expect(prompt).not.toContain("Deliver exactly what was requested");
+  });
 });
 
 describe("buildSubagentSystemPrompt", () => {

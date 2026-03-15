@@ -507,5 +507,78 @@ describe("trajectory-compressor", () => {
         cleanupTranscript(transcript);
       }
     });
+
+    it("returns empty summary for pre-reset flush sessions", async () => {
+      const flushPrompt = [
+        "Pre-reset memory flush.",
+        "The daily session reset will happen in ~20 minutes — store any durable memories now.",
+        "",
+        "## 1. Daily memory log",
+        "Write to memory/YYYY-MM-DD.md; create memory/ if needed.",
+      ].join("\n");
+
+      const transcript = writeTranscript([
+        buildTranscriptLine("user", flushPrompt),
+        buildTranscriptLine("assistant", "I'll save my memories now."),
+      ]);
+      try {
+        const result = await compressTrajectory({ transcriptPath: transcript });
+        expect(result.summary).toBe("");
+      } finally {
+        cleanupTranscript(transcript);
+      }
+    });
+
+    it("returns empty summary for consciousness loop sessions", async () => {
+      const consciousnessPrompt = [
+        "You are in background consciousness mode — a thinking loop that runs between active tasks.",
+        "This is YOUR space to think.",
+      ].join("\n");
+
+      const transcript = writeTranscript([
+        buildTranscriptLine("user", consciousnessPrompt),
+        buildTranscriptLine("assistant", "HEARTBEAT_OK\nNEXT_WAKE: 6h"),
+      ]);
+      try {
+        const result = await compressTrajectory({ transcriptPath: transcript });
+        expect(result.summary).toBe("");
+      } finally {
+        cleanupTranscript(transcript);
+      }
+    });
+
+    it("returns empty summary for self-review cron sessions", async () => {
+      const selfReviewPrompt = [
+        "SELF-REVIEW — Pattern tracking pass. This is your bookkeeping run.",
+        "You are writing to memory/self-review.md.",
+      ].join("\n");
+
+      const transcript = writeTranscript([
+        buildTranscriptLine("user", selfReviewPrompt),
+        buildTranscriptLine("assistant", "Reviewing self-review.md now."),
+      ]);
+      try {
+        const result = await compressTrajectory({ transcriptPath: transcript });
+        expect(result.summary).toBe("");
+      } finally {
+        cleanupTranscript(transcript);
+      }
+    });
+
+    it("returns empty summary for morning briefing sessions", async () => {
+      const briefingPrompt =
+        "MORNING BRIEFING — Compose and deliver a personalized daily briefing for your user.";
+
+      const transcript = writeTranscript([
+        buildTranscriptLine("user", briefingPrompt),
+        buildTranscriptLine("assistant", "Good morning! Here's your update."),
+      ]);
+      try {
+        const result = await compressTrajectory({ transcriptPath: transcript });
+        expect(result.summary).toBe("");
+      } finally {
+        cleanupTranscript(transcript);
+      }
+    });
   });
 });

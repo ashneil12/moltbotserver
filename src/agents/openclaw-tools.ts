@@ -24,6 +24,7 @@ import { createSessionsSendTool } from "./tools/sessions-send-tool.js";
 import { createSessionsSpawnTool } from "./tools/sessions-spawn-tool.js";
 import { createSessionsYieldTool } from "./tools/sessions-yield-tool.js";
 import { createSkillManageTool } from "./tools/skill-manage-tool.js";
+import { createSkillViewTool } from "./tools/skill-view-tool.js";
 import { createSqlExecuteTool, createSqlQueryTool } from "./tools/sql-tool.js";
 import { createSubagentsTool } from "./tools/subagents-tool.js";
 import { createTtsTool } from "./tools/tts-tool.js";
@@ -83,6 +84,8 @@ export function createOpenClawTools(
     spawnWorkspaceDir?: string;
     /** Callback invoked when sessions_yield tool is called. */
     onYield?: (message: string) => Promise<void> | void;
+    /** Resolved skills for progressive disclosure skill_view tool. */
+    resolvedSkills?: import("@mariozechner/pi-coding-agent").Skill[];
   } & SpawnedToolContext,
 ): AnyAgentTool[] {
   const workspaceDir = resolveWorkspaceRoot(options?.workspaceDir);
@@ -241,14 +244,121 @@ export function createOpenClawTools(
   }
 
   // Session search — FTS5 keyword search across past conversations
+  // with Hermes-style LLM summarization of matching sessions
   const agentId = resolveSessionAgentId({
     sessionKey: options?.agentSessionKey,
     config: options?.config,
   });
+
+  // Build the summarize callback if we have a model config
+  let sessionSummarize:
+    | import("./tools/session-search-tool.js").SessionSummarizeCallback
+    | undefined;
+  if (options?.config) {
+    const cfg = options.config;
+    sessionSummarize = async (params) => {
+      try {
+        // Lazy import to avoid circular deps and loading cost when unused
+        const { completeSimple } = await import("@mariozechner/pi-ai");
+        const { resolveModel } = await import("./pi-embedded-runner/model.js");
+        const { getApiKeyForModel, requireApiKey } = await import("./model-auth.js");
+        const { resolveDefaultModelForAgent, buildModelAliasIndex, resolveModelRefFromString } =
+          await import("./model-selection.js");
+
+        // Resolve the session search model (from config or default)
+        const defaultRef = resolveDefaultModelForAgent({ cfg });
+        const sessionSearchModelStr = cfg.memory?.sessionSearchModel?.trim();
+        let modelRef = defaultRef;
+
+        if (sessionSearchModelStr) {
+          const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: defaultRef.provider });
+          const resolved = resolveModelRefFromString({
+            raw: sessionSearchModelStr,
+            defaultProvider: defaultRef.provider,
+            aliasIndex,
+          });
+          if (resolved) {
+            modelRef = resolved.ref;
+          }
+        }
+
+        const resolved = resolveModel(modelRef.provider, modelRef.model, undefined, cfg);
+        if (!resolved.model) {
+          return undefined;
+        }
+
+        const apiKey = requireApiKey(
+          await getApiKeyForModel({ model: resolved.model, cfg }),
+          modelRef.provider,
+        );
+
+        const systemPrompt =
+          "You are reviewing a past conversation transcript to help recall what happened. " +
+          "Summarize the conversation with a focus on the search topic. Include:\n" +
+          "1. What the user asked about or wanted to accomplish\n" +
+          "2. What actions were taken and what the outcomes were\n" +
+          "3. Key decisions, solutions found, or conclusions reached\n" +
+          "4. Any specific commands, files, URLs, or technical details that were important\n" +
+          "5. Anything left unresolved or notable\n\n" +
+          "Be thorough but concise. Preserve specific details (commands, paths, error messages) " +
+          "that would be useful to recall. Write in past tense as a factual recap.";
+
+        const userPrompt =
+          `Search topic: ${params.query}\n` +
+          `Session date: ${params.sessionMeta.startedAt ?? "unknown"}\n` +
+          (params.sessionMeta.channel ? `Session source: ${params.sessionMeta.channel}\n` : "") +
+          `\nCONVERSATION TRANSCRIPT:\n${params.sessionTranscript}\n\n` +
+          `Summarize this conversation with focus on: ${params.query}`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
+
+        try {
+          const res = await completeSimple(
+            resolved.model,
+            {
+              messages: [
+                {
+                  role: "user" as const,
+                  content: systemPrompt + "\n\n---\n\n" + userPrompt,
+                  timestamp: Date.now(),
+                },
+              ],
+            },
+            {
+              apiKey,
+              maxTokens: 4096,
+              temperature: 0.1,
+              signal: controller.signal,
+            },
+          );
+
+          const text = res.content
+            .filter((block: { type: string }) => block.type === "text")
+            .map((block: { type: string; text?: string }) =>
+              (block as { text: string }).text?.trim(),
+            )
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+
+          return text || undefined;
+        } finally {
+          clearTimeout(timeout);
+        }
+      } catch {
+        // Fail silently — tool falls back to raw results
+        return undefined;
+      }
+    };
+  }
+
   const sessionSearchTool = createSessionSearchTool({
     config: options?.config,
     agentId,
     isSubagent: Boolean(options?.agentSessionKey && options.agentSessionKey.includes(":spawned:")),
+    currentSessionId: options?.sessionId,
+    summarize: sessionSummarize,
   });
   if (sessionSearchTool) {
     tools.push(sessionSearchTool);
@@ -261,6 +371,12 @@ export function createOpenClawTools(
   });
   if (skillManageTool) {
     tools.push(skillManageTool);
+  }
+
+  // Skill view — progressive disclosure: agents load full SKILL.md on demand by name
+  const useProgressiveDisclosure = options?.config?.skills?.progressiveDisclosure !== false;
+  if (useProgressiveDisclosure && options?.resolvedSkills && options.resolvedSkills.length > 0) {
+    tools.push(createSkillViewTool({ resolvedSkills: options.resolvedSkills }));
   }
 
   const pluginTools = resolvePluginTools({

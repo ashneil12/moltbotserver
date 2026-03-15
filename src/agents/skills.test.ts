@@ -180,6 +180,7 @@ describe("buildWorkspaceSkillsPrompt", () => {
     const prompt = buildWorkspaceSkillsPrompt(workspaceDir, {
       managedSkillsDir: path.join(workspaceDir, ".managed"),
       bundledSkillsDir: bundledDir,
+      config: { skills: { progressiveDisclosure: false } },
     });
     expect(prompt).toContain("peekaboo");
     expect(prompt).toContain("Capture UI");
@@ -240,10 +241,33 @@ describe("buildWorkspaceSkillsPrompt", () => {
       body: "# Demo Skill\n",
     });
 
-    const prompt = buildWorkspaceSkillsPrompt(workspaceDir, resolveTestSkillDirs(workspaceDir));
+    const prompt = buildWorkspaceSkillsPrompt(workspaceDir, {
+      ...resolveTestSkillDirs(workspaceDir),
+      config: { skills: { progressiveDisclosure: false } },
+    });
     expect(prompt).toContain("demo-skill");
     expect(prompt).toContain("Does demo things");
     expect(prompt).toContain(path.join(skillDir, "SKILL.md"));
+  });
+
+  it("uses compact format when progressive disclosure is enabled (default)", async () => {
+    const workspaceDir = await makeWorkspace();
+    const skillDir = path.join(workspaceDir, "skills", "compact-skill");
+
+    await writeSkill({
+      dir: skillDir,
+      name: "compact-skill",
+      description: "A compact skill with progressive disclosure",
+      body: "# Compact Skill\n",
+    });
+
+    const prompt = buildWorkspaceSkillsPrompt(workspaceDir, resolveTestSkillDirs(workspaceDir));
+    expect(prompt).toContain("compact-skill");
+    expect(prompt).toContain("A compact skill with progressive disclosure");
+    expect(prompt).toContain("skill_view(name)");
+    expect(prompt).toContain("<available_skills>");
+    // Compact format should NOT contain file paths
+    expect(prompt).not.toContain("SKILL.md");
   });
 });
 

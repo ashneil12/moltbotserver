@@ -182,12 +182,6 @@ const AUTH_CHOICE_GROUP_DEFS: {
     choices: ["cloudflare-ai-gateway-api-key"],
   },
   {
-    value: "supaswarm",
-    label: "SupaSwarm",
-    hint: "OpenAI-compatible swarm backend",
-    choices: ["supaswarm-api-key"],
-  },
-  {
     value: "custom",
     label: "Custom Provider",
     hint: "Any OpenAI or Anthropic compatible endpoint",
@@ -318,11 +312,6 @@ const BASE_AUTH_CHOICE_OPTIONS: ReadonlyArray<AuthChoiceOption> = [
     value: "modelstudio-api-key",
     label: "Coding Plan API Key for Global/Intl (subscription)",
     hint: "Endpoint: coding-intl.dashscope.aliyuncs.com",
-  },
-  {
-    value: "supaswarm-api-key",
-    label: "SupaSwarm API key",
-    hint: "OpenAI-compatible swarm backend",
   },
   { value: "custom-api-key", label: "Custom Provider" },
 ];

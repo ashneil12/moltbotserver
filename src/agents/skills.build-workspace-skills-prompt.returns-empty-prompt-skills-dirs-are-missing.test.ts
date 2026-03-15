@@ -52,6 +52,7 @@ describe("buildWorkspaceSkillsPrompt", () => {
     const prompt = buildWorkspaceSkillsPrompt(workspaceDir, {
       managedSkillsDir: path.join(workspaceDir, ".managed"),
       bundledSkillsDir: bundledDir,
+      config: { skills: { progressiveDisclosure: false } },
     });
     expect(prompt).toContain("peekaboo");
     expect(prompt).toContain("Capture UI");
@@ -91,7 +92,7 @@ describe("buildWorkspaceSkillsPrompt", () => {
     const prompt = buildWorkspaceSkillsPrompt(workspaceDir, {
       bundledSkillsDir: bundledDir,
       managedSkillsDir: managedDir,
-      config: { skills: { load: { extraDirs: [extraDir] } } },
+      config: { skills: { progressiveDisclosure: false, load: { extraDirs: [extraDir] } } },
     });
 
     expect(prompt).toContain("Workspace version");
@@ -112,6 +113,7 @@ describe("buildWorkspaceSkillsPrompt", () => {
 
     const prompt = buildWorkspaceSkillsPrompt(workspaceDir, {
       managedSkillsDir: path.join(workspaceDir, ".managed"),
+      config: { skills: { progressiveDisclosure: false } },
     });
     expect(prompt).toContain("demo-skill");
     expect(prompt).toContain("Does demo things");

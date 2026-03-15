@@ -1,5 +1,6 @@
 import { createHmac, createHash } from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
 import type { ReasoningLevel, ThinkLevel } from "../auto-reply/thinking.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
@@ -510,9 +511,29 @@ export function buildAgentSystemPrompt(params: {
     "4. **Step and verify** — Take the smallest meaningful action, check the result, then continue. Don't chain blind actions.",
     "5. **Document** — Update WORKING.md mid-task. After completing complex workflows, create a skill. Write learnings to memory/knowledge/. Documentation is the final step of every action — an undocumented action is one future-you can't build on.",
     "**SCOPE RULE: THE DEFAULT IS MINIMAL CHANGE.** If asked to add something, add it — do NOT restructure, reformat, or reorganize existing content. If asked to fix something, fix that thing — do NOT 'also improve' adjacent code. Unsolicited restructuring or reformatting is ACTIVELY HARMFUL unless the user explicitly requests it.",
-    "**OVER-DELIVERY IS FAILURE.** Doing more than asked is not helpful — it is reckless. Deliver exactly what was requested. Not X plus Y 'while you're at it.' Every unsolicited change is a mistake the user didn't ask for.",
+    "**OVER-DELIVERY IS FAILURE.** Expanding scope beyond what was asked is reckless — not X plus Y 'while you're at it.' But within the requested scope, be thorough and relentless. Exhaust every approach before reporting failure.",
     "This applies especially on cheaper models. Rushing into execution without understanding is the single most common failure mode. Resist it.",
     "",
+    ...(!isMinimal
+      ? [
+          "## Autonomous Problem-Solving",
+          "When a tool, command, or approach fails, do NOT immediately report the failure to the user.",
+          "Instead:",
+          "1. **Diagnose** — Read error output, check logs, inspect state. Understand WHY it failed.",
+          "2. **Exhaust alternatives** before escalating:",
+          "   - Different tool for the same goal (e.g. web_search → web_fetch → browser; exec → read; grep → find)",
+          "   - Different strategy entirely (API vs CLI vs file-based; direct vs indirect)",
+          "   - Creative workarounds — if the direct path is blocked, find another route to the same outcome",
+          "   - Search docs, memory, or the web for solutions you haven't considered",
+          "   - Search past sessions with session_search for similar problems — review what worked or almost worked before",
+          "3. **Only escalate** to the user when you have genuinely exhausted every reasonable approach.",
+          "4. **When you do escalate**, report: what you tried, why each approach failed, and your best recommendation for next steps.",
+          "Minimal scope ≠ minimal effort. Within the user's requested scope, be relentless.",
+          "The best agents are distinguished not by never hitting walls, but by finding doors.",
+          "",
+        ]
+      : []),
+
     ...safetySection,
     ...dataClassificationSection,
     "## OpenClaw CLI Quick Reference",
@@ -551,7 +572,6 @@ export function buildAgentSystemPrompt(params: {
           "After restart, OpenClaw pings the last active session automatically.",
         ].join("\n")
       : "",
-    hasGateway && !isMinimal ? "" : "",
     "",
     // ── Web Search vs Browser guidance ─────────────────────────────────
     // Included when both web_search and browser tools are available.
@@ -587,16 +607,14 @@ export function buildAgentSystemPrompt(params: {
         ].join("\n")
       : "",
     // Skip model aliases for subagent/none modes
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
-      ? "## Model Aliases"
-      : "",
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
-      ? "Prefer aliases when specifying model overrides; full provider/model is also accepted."
-      : "",
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
-      ? params.modelAliasLines.join("\n")
-      : "",
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal ? "" : "",
+    ...((params.modelAliasLines?.length ?? 0) > 0 && !isMinimal
+      ? [
+          "## Model Aliases",
+          "Prefer aliases when specifying model overrides; full provider/model is also accepted.",
+          params.modelAliasLines!.join("\n"),
+          "",
+        ]
+      : []),
     userTimezone
       ? "If you need the current date, time, or day of week, run session_status (📊 session_status)."
       : "",
@@ -867,8 +885,8 @@ export function buildAgentSystemPrompt(params: {
     if (identityFile && identityFile.path) {
       try {
         // statSync is intentional: buildAgentSystemPrompt is synchronous and making it async
-        // would require changing every callsite. A single metadata-only stat is acceptable here.
-        const stats = fs.statSync(identityFile.path);
+        const absolutePath = path.resolve(params.workspaceDir, identityFile.path);
+        const stats = fs.statSync(absolutePath);
         const ageHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
         if (ageHours > 72) {
           healthNudges.push(

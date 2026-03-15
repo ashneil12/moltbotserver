@@ -60,20 +60,7 @@ of `fetch()` when a `Host` header override is needed. Modified `fetchChecked()` 
 
 **What**: Added `COPY scripts/cdp-host-proxy.py /usr/local/bin/openclaw-cdp-host-proxy`.
 
-### 6. `Dockerfile` — Honcho Plugin Pre-Bake
-
-**Why**: The Honcho plugin must have `root` (uid=0) ownership to pass the OpenClaw plugin
-scanner's ownership check. Runtime installation creates files as uid=1000 which Docker UID
-remapping prevents from being chowned to root. Pre-baking during the image build ensures
-correct ownership from the build layer.
-
-**What**: Added section at lines 70–82: `npm pack @honcho-ai/openclaw-honcho` → extract →
-move to `/app/prebaked-plugins/openclaw-honcho` → `npm install --omit=dev`. The entrypoint
-copies this with `cp -a` to the data volume, preserving root ownership.
-
-**How to verify**: `grep -c 'prebaked-plugins' Dockerfile`
-
-### 7. `src/gateway/server-http.ts` — Sandbox Browser Handler Wiring
+### 6. `src/gateway/server-http.ts` — Sandbox Browser Handler Wiring
 
 **Why**: `handleSandboxBrowserRequest` and `handleSandboxBrowserUpgrade` were defined in
 `sandbox-browsers.ts` but never imported or called. The gateway served SPA HTML at
@@ -87,7 +74,7 @@ unreachable via WebSocket.
 
 **How to verify**: `grep -c 'handleSandboxBrowserRequest' src/gateway/server-http.ts`
 
-### 8. `src/agents/openclaw-tools.ts` — Browser Tool Agent Routing
+### 7. `src/agents/openclaw-tools.ts` — Browser Tool Agent Routing
 
 **Why**: `createBrowserTool()` was called without `agentId`, so the auto-routing code at
 `browser-tool.ts:300` never fired. Agents always used the default `openclaw` profile (main
@@ -98,7 +85,7 @@ browser) instead of their dedicated container.
 
 **How to verify**: `grep -c 'agentId.*resolveSessionAgentId' src/agents/openclaw-tools.ts`
 
-### 9. `src/browser/server-context.ts` — Parallel Profile Listing
+### 8. `src/browser/server-context.ts` — Parallel Profile Listing
 
 **Why**: `listProfiles()` iterated all browser profiles serially, making CDP reachability checks
 one-by-one. With 7 remote profiles × ~500ms per check, total time exceeded the client-side
@@ -109,7 +96,7 @@ checks now run in parallel, reducing total time from O(n × timeout) to O(timeou
 
 **How to verify**: `grep -c 'Promise.all' src/browser/server-context.ts`
 
-### 10. `src/browser/client.ts` — Browser Profiles Timeout Bump
+### 9. `src/browser/client.ts` — Browser Profiles Timeout Bump
 
 **Why**: The `browserProfiles` client call used a 3000ms timeout that was too tight for 7
 remote profiles, even with parallel checks and potential network latency.

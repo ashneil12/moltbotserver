@@ -49,7 +49,6 @@ const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
   "volcengine-api-key": "volcengine",
   "byteplus-api-key": "byteplus",
   "qianfan-api-key": "qianfan",
-  "supaswarm-api-key": "supaswarm",
   "custom-api-key": "custom",
   vllm: "vllm",
 };

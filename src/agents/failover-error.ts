@@ -3,6 +3,7 @@ import {
   classifyFailoverReason,
   classifyFailoverReasonFromHttpStatus,
   isTimeoutErrorMessage,
+  type FailoverFixability,
   type FailoverReason,
 } from "./pi-embedded-helpers.js";
 
@@ -10,6 +11,7 @@ const ABORT_TIMEOUT_RE = /request was aborted|request aborted/i;
 
 export class FailoverError extends Error {
   readonly reason: FailoverReason;
+  readonly fixability: FailoverFixability;
   readonly provider?: string;
   readonly model?: string;
   readonly profileId?: string;
@@ -31,6 +33,7 @@ export class FailoverError extends Error {
     super(message, { cause: params.cause });
     this.name = "FailoverError";
     this.reason = params.reason;
+    this.fixability = resolveFixability(params.reason);
     this.provider = params.provider;
     this.model = params.model;
     this.profileId = params.profileId;
@@ -65,6 +68,30 @@ export function resolveFailoverStatus(reason: FailoverReason): number | undefine
       return 410; // Gone - session no longer exists
     default:
       return undefined;
+  }
+}
+
+/**
+ * Classifies how a failover error should be handled:
+ * - `retry`: Transient — same request will likely succeed on retry
+ * - `adapt`: Goal is achievable but needs a different approach
+ * - `abandon`: This operation is fundamentally broken, stop trying
+ */
+export function resolveFixability(reason: FailoverReason): FailoverFixability {
+  switch (reason) {
+    case "rate_limit":
+    case "timeout":
+    case "overloaded":
+      return "retry";
+    case "format":
+    case "session_expired":
+    case "unknown":
+    case "auth": // auth errors may be transient (token refresh) — worth adapting
+      return "adapt";
+    case "auth_permanent":
+    case "billing":
+    case "model_not_found":
+      return "abandon";
   }
 }
 

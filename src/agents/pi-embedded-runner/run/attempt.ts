@@ -1528,6 +1528,7 @@ export async function runEmbeddedAttempt(
             runAbortController.abort("sessions_yield");
             abortSessionForYield?.();
           },
+          resolvedSkills: params.skillsSnapshot?.resolvedSkills,
         });
     const toolsEnabled = supportsModelTools(params.model);
     const tools = sanitizeToolsForGoogle({

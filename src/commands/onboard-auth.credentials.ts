@@ -538,19 +538,3 @@ export async function setKilocodeApiKey(
     agentDir: resolveAuthAgentDir(agentDir),
   });
 }
-
-export { SUPASWARM_DEFAULT_MODEL_REF } from "./onboard-auth.models.js";
-
-export async function setSupaSwarmConfig(
-  baseUrl: string,
-  apiKey: SecretInput,
-  agentDir?: string,
-  options?: ApiKeyStorageOptions,
-) {
-  const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/, "");
-  upsertAuthProfile({
-    profileId: "supaswarm:default",
-    credential: buildApiKeyCredential("supaswarm", apiKey, { baseUrl: normalizedBaseUrl }, options),
-    agentDir: resolveAuthAgentDir(agentDir),
-  });
-}

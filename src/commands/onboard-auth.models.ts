@@ -326,37 +326,3 @@ export function buildModelStudioDefaultModelDefinition(): ModelDefinitionConfig 
     id: MODELSTUDIO_DEFAULT_MODEL_ID,
   });
 }
-
-// SupaSwarm — OpenAI-compatible swarm backend
-export const SUPASWARM_DEFAULT_MODEL_ID = "swarm-auto";
-export const SUPASWARM_DEFAULT_MODEL_REF = `supaswarm/${SUPASWARM_DEFAULT_MODEL_ID}`;
-export const SUPASWARM_DEFAULT_CONTEXT_WINDOW = 128000;
-export const SUPASWARM_DEFAULT_MAX_TOKENS = 8192;
-export const SUPASWARM_DEFAULT_COST = {
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-};
-
-const SUPASWARM_MODEL_CATALOG = {
-  "swarm-auto": { name: "Swarm Auto", description: "Planner picks gear automatically" },
-  "swarm-pulse": { name: "Swarm Pulse", description: "Fast, 2 agents" },
-  "swarm-drive": { name: "Swarm Drive", description: "Balanced, 4 agents" },
-  "swarm-overdrive": { name: "Swarm Overdrive", description: "Maximum, 6 agents" },
-} as const;
-
-type SupaSwarmCatalogId = keyof typeof SUPASWARM_MODEL_CATALOG;
-
-export function buildSupaSwarmModelDefinition(modelId: string): ModelDefinitionConfig {
-  const catalog = SUPASWARM_MODEL_CATALOG[modelId as SupaSwarmCatalogId];
-  return {
-    id: modelId,
-    name: catalog?.name ?? `Swarm ${modelId}`,
-    reasoning: false,
-    input: ["text"],
-    cost: SUPASWARM_DEFAULT_COST,
-    contextWindow: SUPASWARM_DEFAULT_CONTEXT_WINDOW,
-    maxTokens: SUPASWARM_DEFAULT_MAX_TOKENS,
-  };
-}

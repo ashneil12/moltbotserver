@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { OpenClawConfig } from "../../config/config.js";
 import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
+import { readTextFileIfExists, writeTextFileIfChanged } from "../../infra/atomic-file.js";
 import { isCronSessionKey } from "../../routing/session-key.js";
 import {
   correlateHitMissWithRules,
@@ -112,35 +113,6 @@ function normalizeWhitespace(value: string): string {
 
 function hashContent(value: string): string {
   return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-async function readTextFileIfExists(filePath: string): Promise<string | undefined> {
-  try {
-    return await fs.readFile(filePath, "utf-8");
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException | undefined)?.code;
-    if (code === "ENOENT") {
-      return undefined;
-    }
-    throw error;
-  }
-}
-
-async function writeTextFileIfChanged(filePath: string, next: string): Promise<boolean> {
-  const existing = await readTextFileIfExists(filePath);
-  if (existing === next) {
-    return false;
-  }
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-  try {
-    await fs.writeFile(tmpPath, next, "utf-8");
-    await fs.rename(tmpPath, filePath);
-  } catch (error) {
-    await fs.unlink(tmpPath).catch(() => {});
-    throw error;
-  }
-  return true;
 }
 
 async function writeOptionalFile(filePath: string, content: string | undefined): Promise<void> {

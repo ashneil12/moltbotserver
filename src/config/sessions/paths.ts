@@ -1,9 +1,39 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+// Ephemeral path detection — deduplicated so we only warn once per resolved path.
+import { isEphemeralPath } from "../../infra/ephemeral-path.js";
 import { expandHomePrefix, resolveRequiredHomeDir } from "../../infra/home-dir.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
 import { resolveStateDir } from "../paths.js";
+
+const pathsLog = createSubsystemLogger("sessions/paths");
+
+// Cap at 100 entries to prevent unbounded memory growth in long-running processes.
+// In practice there are very few unique store paths, but a runaway config loop
+// could theoretically generate many.
+const MAX_EPHEMERAL_WARNINGS = 100;
+const ephemeralPathWarnings = new Set<string>();
+
+function warnIfEphemeral(resolvedPath: string, context: string): void {
+  if (
+    ephemeralPathWarnings.has(resolvedPath) ||
+    ephemeralPathWarnings.size >= MAX_EPHEMERAL_WARNINGS
+  ) {
+    return;
+  }
+  const check = isEphemeralPath(resolvedPath);
+  if (!check.ephemeral) {
+    return;
+  }
+  ephemeralPathWarnings.add(resolvedPath);
+  pathsLog.warn(`${context} resolved to ephemeral path — data WILL be lost on restart`, {
+    resolvedPath,
+    reason: check.reason,
+    remediation: "Set OPENCLAW_STATE_DIR to a persistent path",
+  });
+}
 
 function resolveAgentSessionsDir(
   agentId?: string,
@@ -283,32 +313,37 @@ export function resolveStorePath(
   const agentId = normalizeAgentId(opts?.agentId ?? DEFAULT_AGENT_ID);
   const env = opts?.env ?? process.env;
   const homedir = () => resolveRequiredHomeDir(env, os.homedir);
+
+  let resolved: string;
   if (!store) {
-    return path.join(resolveAgentSessionsDir(agentId, env, homedir), "sessions.json");
-  }
-  if (store.includes("{agentId}")) {
+    resolved = path.join(resolveAgentSessionsDir(agentId, env, homedir), "sessions.json");
+  } else if (store.includes("{agentId}")) {
     const expanded = store.replaceAll("{agentId}", agentId);
     if (expanded.startsWith("~")) {
-      return path.resolve(
+      resolved = path.resolve(
         expandHomePrefix(expanded, {
           home: resolveRequiredHomeDir(env, homedir),
           env,
           homedir,
         }),
       );
+    } else {
+      resolved = path.resolve(expanded);
     }
-    return path.resolve(expanded);
-  }
-  if (store.startsWith("~")) {
-    return path.resolve(
+  } else if (store.startsWith("~")) {
+    resolved = path.resolve(
       expandHomePrefix(store, {
         home: resolveRequiredHomeDir(env, homedir),
         env,
         homedir,
       }),
     );
+  } else {
+    resolved = path.resolve(store);
   }
-  return path.resolve(store);
+
+  warnIfEphemeral(resolved, "Session store path");
+  return resolved;
 }
 
 export function resolveAgentsDirFromSessionStorePath(storePath: string): string | undefined {

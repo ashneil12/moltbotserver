@@ -54,6 +54,7 @@ import { resolveActiveRunQueueAction } from "./queue-policy.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
 import { createReplyMediaPathNormalizer } from "./reply-media-paths.js";
 import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-threading.js";
+import { onRunError, onRunSuccess } from "./session-health-integration.js";
 import { incrementRunCompactionCount, persistRunSessionUsage } from "./session-run-accounting.js";
 import { createTypingSignaler } from "./typing-mode.js";
 import type { TypingController } from "./typing.js";
@@ -369,6 +370,9 @@ export async function runReplyAgent(params: {
     });
 
     if (runOutcome.kind === "final") {
+      // Session health sentinel: record the error (extract reason from the payload text)
+      const errorText = runOutcome.payload.text ?? "unknown";
+      onRunError(activeSessionEntry, errorText);
       return finalizeWithFollowup(runOutcome.payload, queueKey, runFollowupTurn);
     }
 
@@ -477,6 +481,9 @@ export async function runReplyAgent(params: {
       systemPromptReport: runResult.meta?.systemPromptReport,
       cliSessionId,
     });
+
+    // Session health sentinel: successful run resets error counter
+    onRunSuccess(activeSessionEntry);
 
     // Drain any late tool/block deliveries before deciding there's "nothing to send".
     // Otherwise, a late typing trigger (e.g. from a tool callback) can outlive the run and
@@ -706,6 +713,9 @@ export async function runReplyAgent(params: {
       runFollowupTurn,
     );
   } catch (error) {
+    // Session health sentinel: record the exception
+    const errorReason = error instanceof Error ? error.message : String(error);
+    onRunError(activeSessionEntry, errorReason);
     // Keep the followup queue moving even when an unexpected exception escapes
     // the run path; the caller still receives the original error.
     finalizeWithFollowup(undefined, queueKey, runFollowupTurn);

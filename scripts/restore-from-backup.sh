@@ -38,6 +38,13 @@ if [ -z "$RESTORE_KEY" ]; then
   exit 0
 fi
 
+# Sanitize RESTORE_KEY — reject path traversal or unexpected characters.
+# Valid keys look like: {instance_id}/{timestamp}.tar.gz
+if echo "$RESTORE_KEY" | grep -qE '\.\.[\/]|[;&|]'; then
+  echo "[restore] ❌ RESTORE_KEY contains suspicious characters — aborting"
+  exit 1
+fi
+
 if [ -f "$RESTORE_MARKER" ]; then
   echo "[restore] Restore already completed (marker: $RESTORE_MARKER) — skipping"
   exit 0
@@ -130,11 +137,10 @@ echo "[restore] 📦 Payload root: $PAYLOAD_ROOT"
 # "credentials" → STATE_DIR/oauth-          (preserve credentials sub-paths)
 # "workspace"   → WORKSPACE_DIR/           (merge — workspace files)
 
-RESTORED_COUNT=0
-SKIPPED_COUNT=0
+# (asset stats are tracked inside the Python block below)
 
 python3 - <<PYEOF
-import json, os, sys
+import json, os, shutil, sys
 
 manifest = json.load(open('$MANIFEST_FILE'))
 assets = manifest.get('assets', [])
@@ -197,18 +203,21 @@ for asset in assets:
         print(f'[restore] ⚠️  Unknown asset kind: {kind!r} (source: {source_path}), skipping')
         continue
 
+restored = 0
+skipped = 0
+
 for (kind, src, dest, orig_src) in results:
     if kind == 'config':
         # Single file copy
         if os.path.isfile(src):
             os.makedirs(os.path.dirname(dest), exist_ok=True)
-            import shutil
             if os.path.exists(dest):
                 shutil.copy2(dest, dest + '.pre-restore')
                 print(f'[restore] 📦 Backed up existing {os.path.basename(dest)}')
             shutil.copy2(src, dest)
             os.chmod(dest, 0o600)
             print(f'[restore] ✅ config → {dest}')
+            restored += 1
         else:
             print(f'[restore] ⚠️  Config file not found in archive at: {src}')
     else:
@@ -216,7 +225,6 @@ for (kind, src, dest, orig_src) in results:
         # preserving relative structure. We treat the archive payload path as
         # the root of the asset tree and rsync-style copy into destination.
         if os.path.isdir(src):
-            import shutil
             os.makedirs(dest, exist_ok=True)
             for root_dir, dirs, files in os.walk(src):
                 rel = os.path.relpath(root_dir, src)
@@ -227,15 +235,19 @@ for (kind, src, dest, orig_src) in results:
                     dst_file = os.path.join(target_dir, fname)
                     shutil.copy2(src_file, dst_file)
             print(f'[restore] ✅ {kind} → {dest}')
+            restored += 1
         elif os.path.isfile(src):
             # Single file within a "directory" asset — copy directly into dest dir
             dest_file = os.path.join(dest, os.path.basename(src))
             os.makedirs(dest, exist_ok=True)
-            import shutil
             shutil.copy2(src, dest_file)
             print(f'[restore] ✅ {kind} (file) → {dest_file}')
+            restored += 1
         else:
             print(f'[restore] ⚠️  Asset source not found: {src} (kind={kind})')
+            skipped += 1
+
+print(f'[restore] 📊 Assets: {restored} restored, {skipped} skipped')
 
 PYEOF
 
@@ -258,9 +270,26 @@ if [ -d "$STATE_DIR/extensions" ]; then
   chown -R root:root "$STATE_DIR/extensions" 2>/dev/null || true
 fi
 
+# ── Post-restore config validation ────────────────────────────────────────────
+# If the restored openclaw.json is not valid JSON, the gateway will refuse to
+# start. Catch this early and rename the bad file so the entrypoint generates
+# a default config. Schema validation happens downstream via enforce-config /
+# openclaw doctor / loadConfig() — we only check JSON syntax here.
+CONFIG_FILE="${STATE_DIR}/openclaw.json"
+if [ -f "$CONFIG_FILE" ]; then
+  if python3 -c "import json; json.load(open('${CONFIG_FILE}'))" 2>/dev/null; then
+    echo "[restore] ✅ Restored openclaw.json is valid JSON"
+  else
+    echo "[restore] ⚠️  Restored openclaw.json is not valid JSON — renaming to .pre-restore-invalid"
+    echo "[restore]     The entrypoint will generate a default config instead."
+    mv "$CONFIG_FILE" "${CONFIG_FILE}.pre-restore-invalid"
+  fi
+fi
+
 # ── Write restore marker ──────────────────────────────────────────────────────
 touch "$RESTORE_MARKER"
 chmod 600 "$RESTORE_MARKER"
 echo "[restore] 🎉 Restore complete. Next container boot will use restored config."
 echo "[restore] 📌 Marker: $RESTORE_MARKER"
 echo "[restore] ⚠️  Clear MOLTBOT_RESTORE_BACKUP_KEY from instance env after confirming restore succeeded."
+

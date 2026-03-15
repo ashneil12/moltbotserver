@@ -44,4 +44,14 @@ export type SkillsConfig = {
   install?: SkillsInstallConfig;
   limits?: SkillsLimitsConfig;
   entries?: Record<string, SkillConfig>;
+  /**
+   * When true (default), the system prompt includes only skill names and
+   * descriptions in a compact format. The agent uses the `skill_view` tool
+   * to load full SKILL.md content on demand. This reduces prompt token
+   * usage by ~50-60% for the skills index.
+   *
+   * When false, the upstream XML format is used with file locations so the
+   * agent can use the generic `read` tool to load skill content.
+   */
+  progressiveDisclosure?: boolean;
 };

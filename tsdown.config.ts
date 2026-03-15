@@ -128,4 +128,12 @@ export default defineConfig([
   nodeBuildConfig({
     entry: ["src/hooks/bundled/*/handler.ts", "src/hooks/llm-slug-generator.ts"],
   }),
+  // BrainX standalone cron scripts — run as `node dist/brainx/*.js` at runtime.
+  nodeBuildConfig({
+    entry: {
+      "brainx/extract-facts": "src/brainx/extract-facts.ts",
+      "brainx/advisory-warnings": "src/brainx/advisory-warnings.ts",
+      "brainx/paths": "src/brainx/paths.ts",
+    },
+  }),
 ]);

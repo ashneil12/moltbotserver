@@ -24,6 +24,7 @@ import path from "node:path";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { resolveWorkspaceTemplateDir } from "../agents/workspace-templates.js";
 import type { OpenClawConfig } from "../config/config.js";
+import { atomicWriteFile } from "../infra/atomic-file.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
 const log = createSubsystemLogger("diary-archive");
@@ -278,25 +279,11 @@ export async function pruneMemoryFileIfNeeded(
   }
 
   const overflowContent = existingOverflow + coldEntries.join("\n") + "\n";
-  const tmpOverflow = `${overflowPath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-  try {
-    await fs.writeFile(tmpOverflow, overflowContent, "utf-8");
-    await fs.rename(tmpOverflow, overflowPath);
-  } catch (err) {
-    await fs.unlink(tmpOverflow).catch(() => {});
-    throw err;
-  }
+  await atomicWriteFile(overflowPath, overflowContent);
 
   // 5. Rewrite hot file: header + retained entries
   const hotContent = header + (header.endsWith("\n") ? "" : "\n") + hotEntries.join("\n") + "\n";
-  const tmpHot = `${filePath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-  try {
-    await fs.writeFile(tmpHot, hotContent, "utf-8");
-    await fs.rename(tmpHot, filePath);
-  } catch (err) {
-    await fs.unlink(tmpHot).catch(() => {});
-    throw err;
-  }
+  await atomicWriteFile(filePath, hotContent);
 
   result.pruned = true;
   result.entriesMoved = coldEntries.length;
@@ -688,14 +675,7 @@ export async function promoteMissPatterns(
   }
 
   // Atomic write
-  const tmpPath = `${identityPath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-  try {
-    await fs.writeFile(tmpPath, newIdentityContent, "utf-8");
-    await fs.rename(tmpPath, identityPath);
-  } catch (err) {
-    await fs.unlink(tmpPath).catch(() => {});
-    throw err;
-  }
+  await atomicWriteFile(identityPath, newIdentityContent);
 
   result.promoted = toPromote.length;
   result.promotedFixes = toPromote;
@@ -734,14 +714,7 @@ async function writeArchiveState(workspaceDir: string, state: DiaryArchiveState)
   const dir = path.join(workspaceDir, "memory");
   await fs.mkdir(dir, { recursive: true });
   const statePath = path.join(dir, ARCHIVE_STATE_FILENAME);
-  const tmpPath = `${statePath}.tmp-${process.pid}-${Date.now().toString(36)}`;
-  try {
-    await fs.writeFile(tmpPath, `${JSON.stringify(state, null, 2)}\n`, "utf-8");
-    await fs.rename(tmpPath, statePath);
-  } catch (err) {
-    await fs.unlink(tmpPath).catch(() => {});
-    throw err;
-  }
+  await atomicWriteFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
 // ---------------------------------------------------------------------------

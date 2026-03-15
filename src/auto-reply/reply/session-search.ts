@@ -15,6 +15,7 @@ import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { requireNodeSqlite } from "../../memory/sqlite.js";
+import { ToolStatsIndex } from "./tool-stats.js";
 
 const log = createSubsystemLogger("session-search");
 
@@ -40,6 +41,8 @@ export type SessionSearchResult = {
   channel?: string;
   /** FTS5 rank score (lower = more relevant) */
   rank: number;
+  /** Surrounding context messages (1 before + 1 after) when available */
+  context?: Array<{ role: string; content: string }>;
 };
 
 export type SessionSearchOptions = {
@@ -53,6 +56,10 @@ export type SessionSearchOptions = {
   after?: number;
   /** Only search messages before this timestamp (ms since epoch) */
   before?: number;
+  /** Exclude results from this session ID (the current session) */
+  excludeSessionId?: string;
+  /** Include surrounding context messages (1 before + 1 after) */
+  includeContext?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -78,6 +85,15 @@ const SCHEMA_SQL = `
     ON session_messages(agent_id);
   CREATE INDEX IF NOT EXISTS idx_session_messages_timestamp
     ON session_messages(timestamp);
+`;
+
+/**
+ * Migration: add hotness-scoring columns for OpenViking-style access tracking.
+ * Uses ALTER TABLE so existing DBs are upgraded transparently.
+ */
+const HOTNESS_MIGRATION_SQL = `
+  ALTER TABLE session_messages ADD COLUMN access_count INTEGER DEFAULT 0;
+  ALTER TABLE session_messages ADD COLUMN last_accessed REAL;
 `;
 
 const FTS_SQL = `
@@ -116,11 +132,13 @@ const INDEX_CACHE = new Map<string, SessionSearchIndex>();
 export class SessionSearchIndex {
   private db: DatabaseSync;
   private readonly dbPath: string;
+  private readonly workspaceDir: string;
   private ftsAvailable = false;
 
-  private constructor(dbPath: string, db: DatabaseSync) {
+  private constructor(dbPath: string, db: DatabaseSync, workspaceDir: string) {
     this.dbPath = dbPath;
     this.db = db;
+    this.workspaceDir = workspaceDir;
   }
 
   /**
@@ -152,7 +170,7 @@ export class SessionSearchIndex {
       return null;
     }
 
-    const instance = new SessionSearchIndex(dbPath, db);
+    const instance = new SessionSearchIndex(dbPath, db, workspaceDir);
     instance.initSchema();
     INDEX_CACHE.set(workspaceDir, instance);
     return instance;
@@ -164,6 +182,19 @@ export class SessionSearchIndex {
     } catch (err) {
       log.warn(`failed to create session search schema: ${String(err)}`);
       return;
+    }
+
+    // Migrate: add hotness columns if missing (idempotent)
+    for (const stmt of HOTNESS_MIGRATION_SQL.split(";")) {
+      const trimmed = stmt.trim();
+      if (!trimmed) {
+        continue;
+      }
+      try {
+        this.db.exec(trimmed);
+      } catch {
+        // Column already exists — expected on subsequent runs
+      }
     }
 
     try {
@@ -190,23 +221,34 @@ export class SessionSearchIndex {
     );
 
     let count = 0;
-    for (const msg of messages) {
-      if (!msg.content?.trim()) {
-        continue;
+    try {
+      this.db.exec("BEGIN");
+      for (const msg of messages) {
+        if (!msg.content?.trim()) {
+          continue;
+        }
+        try {
+          insert.run(
+            msg.sessionId,
+            msg.agentId,
+            msg.role,
+            msg.content,
+            msg.timestamp,
+            msg.channel ?? null,
+          );
+          count++;
+        } catch (err) {
+          log.warn(`failed to index message: ${String(err)}`);
+        }
       }
+      this.db.exec("COMMIT");
+    } catch (err) {
       try {
-        insert.run(
-          msg.sessionId,
-          msg.agentId,
-          msg.role,
-          msg.content,
-          msg.timestamp,
-          msg.channel ?? null,
-        );
-        count++;
-      } catch (err) {
-        log.warn(`failed to index message: ${String(err)}`);
+        this.db.exec("ROLLBACK");
+      } catch {
+        // Best effort rollback
       }
+      log.warn(`transaction failed during indexing: ${String(err)}`);
     }
 
     log.info(`indexed ${count} messages for session ${messages[0]?.sessionId}`);
@@ -236,8 +278,7 @@ export class SessionSearchIndex {
     limit: number,
     options?: SessionSearchOptions,
   ): SessionSearchResult[] {
-    // Clean query for FTS5: escape special characters, handle phrases
-    const ftsQuery = this.buildFtsQuery(query);
+    const ftsQuery = this.sanitizeFts5Query(query);
     if (!ftsQuery) {
       return [];
     }
@@ -261,22 +302,44 @@ export class SessionSearchIndex {
       conditions.push("timestamp < ?");
       params.push(options.before);
     }
+    if (options?.excludeSessionId) {
+      conditions.push("session_id != ?");
+      params.push(options.excludeSessionId);
+    }
 
     const whereClause = conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
 
+    // Hotness-blended scoring: FTS5 rank (negative, lower=better) is boosted
+    // by a hotness signal based on access frequency and recency.
+    // Formula: hotness = sigmoid(log1p(access_count)) × exp_decay(age_days, half_life=7)
+    // Final: rank + (-0.2 × hotness)  — negative because rank is negative-is-better.
+    //
+    // NOTE: FTS5 does NOT support table aliases in MATCH clauses, so we use a
+    // subquery for the FTS5 match, then JOIN with session_messages for hotness.
     const sql = `
       SELECT
-        session_id, agent_id, role, content, channel, timestamp,
-        rank
-      FROM session_messages_fts
-      WHERE session_messages_fts MATCH ? ${whereClause}
-      ORDER BY rank
-      LIMIT ?
+        fts.rowid, fts.session_id, fts.agent_id, fts.role, fts.content,
+        fts.channel, fts.timestamp, fts.rank,
+        COALESCE(m.access_count, 0) AS access_count,
+        m.last_accessed
+      FROM (
+        SELECT rowid, session_id, agent_id, role, content, channel, timestamp, rank
+        FROM session_messages_fts
+        WHERE session_messages_fts MATCH ? ${whereClause}
+        ORDER BY rank
+        LIMIT ?
+      ) fts
+      LEFT JOIN session_messages m ON m.id = fts.rowid
+      ORDER BY fts.rank + (CASE WHEN COALESCE(m.access_count, 0) > 0 AND m.last_accessed IS NOT NULL THEN
+        -0.2 * (1.0 / (1.0 + EXP(-1.0 * LOG(1 + m.access_count)))) *
+        EXP(-0.099 * MAX(0, julianday('now') - julianday(m.last_accessed / 1000.0, 'unixepoch')))
+      ELSE 0 END)
     `;
     params.push(limit);
 
     try {
       const rows = this.db.prepare(sql).all(...params) as Array<{
+        rowid: number;
         session_id: string;
         agent_id: string;
         role: string;
@@ -284,17 +347,51 @@ export class SessionSearchIndex {
         channel: string | null;
         timestamp: number;
         rank: number;
+        access_count: number;
+        last_accessed: number | null;
       }>;
 
-      return rows.map((row) => ({
-        sessionId: row.session_id,
-        agentId: row.agent_id,
-        role: row.role,
-        content: row.content,
-        timestamp: row.timestamp,
-        channel: row.channel ?? undefined,
-        rank: row.rank,
-      }));
+      // Track access for hotness scoring (fire-and-forget)
+      const rowids = rows.map((r) => r.rowid).filter(Boolean);
+      if (rowids.length > 0) {
+        this.recordAccess(rowids);
+      }
+
+      return rows.map((row) => {
+        const result: SessionSearchResult = {
+          sessionId: row.session_id,
+          agentId: row.agent_id,
+          role: row.role,
+          content: row.content,
+          timestamp: row.timestamp,
+          channel: row.channel ?? undefined,
+          rank: row.rank,
+        };
+
+        // Add surrounding context (1 message before + 1 after the match)
+        if (options?.includeContext && row.rowid) {
+          try {
+            const ctxRows = this.db
+              .prepare(
+                `SELECT role, content FROM session_messages
+                 WHERE session_id = ? AND id >= ? - 1 AND id <= ? + 1
+                 ORDER BY id`,
+              )
+              .all(row.session_id, row.rowid, row.rowid) as Array<{
+              role: string;
+              content: string;
+            }>;
+            result.context = ctxRows.map((r) => ({
+              role: r.role,
+              content: (r.content || "").slice(0, 200),
+            }));
+          } catch {
+            result.context = [];
+          }
+        }
+
+        return result;
+      });
     } catch (err) {
       log.warn(`FTS search failed: ${String(err)}`);
       return this.searchLike(query, limit, options);
@@ -324,6 +421,10 @@ export class SessionSearchIndex {
     if (options?.before) {
       conditions.push("timestamp < ?");
       params.push(options.before);
+    }
+    if (options?.excludeSessionId) {
+      conditions.push("session_id != ?");
+      params.push(options.excludeSessionId);
     }
 
     const sql = `
@@ -361,30 +462,38 @@ export class SessionSearchIndex {
   }
 
   /**
-   * Build an FTS5 query from a raw search string.
-   * Handles phrase queries (quoted), simple terms, and escaping.
+   * Sanitize user input for safe use in FTS5 MATCH queries.
+   *
+   * FTS5 has its own query syntax where characters like `"`, `(`, `)`,
+   * `+`, `*`, `{`, `}` and bare boolean operators (AND, OR, NOT) have
+   * special meaning. Passing raw user input directly to MATCH can cause
+   * sqlite3 OperationalError.
+   *
+   * Ported from NousResearch/hermes-agent hermes_state.py _sanitize_fts5_query.
    */
-  private buildFtsQuery(raw: string): string | null {
+  private sanitizeFts5Query(raw: string): string | null {
     const trimmed = raw.trim();
     if (!trimmed) {
       return null;
     }
 
-    // If already quoted, use as phrase query directly
-    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    // If already a valid quoted phrase, use directly
+    if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length > 2) {
       return trimmed;
     }
 
-    // Split into words and join with implicit AND
-    const words = trimmed.split(/\s+/).filter(Boolean);
-    if (words.length === 0) {
-      return null;
-    }
+    // Remove FTS5-special characters that are only meaningful as operators
+    let sanitized = trimmed.replace(/[+{}()"^]/g, " ");
 
-    // Escape special FTS5 characters
-    const escaped = words.map((w) => w.replace(/[*():"^]/g, (ch) => `"${ch}"`));
+    // Collapse repeated * (e.g. "***") into one, remove leading *
+    sanitized = sanitized.replace(/\*+/g, "*");
+    sanitized = sanitized.replace(/(^|\s)\*/g, "$1");
 
-    return escaped.join(" ");
+    // Remove dangling boolean operators at start/end
+    sanitized = sanitized.replace(/^(AND|OR|NOT)\b\s*/i, "").trim();
+    sanitized = sanitized.replace(/\s+(AND|OR|NOT)\s*$/i, "").trim();
+
+    return sanitized || null;
   }
 
   /**
@@ -408,6 +517,110 @@ export class SessionSearchIndex {
   }
 
   /**
+   * Load all messages for a given session, ordered by timestamp.
+   * Returns a formatted transcript string suitable for LLM summarization.
+   */
+  getSessionTranscript(sessionId: string): string {
+    try {
+      const rows = this.db
+        .prepare(
+          `SELECT role, content, timestamp FROM session_messages
+           WHERE session_id = ? ORDER BY timestamp, id`,
+        )
+        .all(sessionId) as Array<{ role: string; content: string; timestamp: number }>;
+
+      if (rows.length === 0) {
+        return "";
+      }
+
+      const parts: string[] = [];
+      for (const row of rows) {
+        const label =
+          row.role === "user"
+            ? "USER"
+            : row.role === "assistant"
+              ? "ASSISTANT"
+              : row.role.toUpperCase();
+        const content = row.content || "";
+        // Truncate very long tool outputs
+        if (label === "TOOL" && content.length > 500) {
+          parts.push(
+            `[${label}]: ${content.slice(0, 250)}\n...[truncated]...\n${content.slice(-250)}`,
+          );
+        } else {
+          parts.push(`[${label}]: ${content}`);
+        }
+      }
+      return parts.join("\n\n");
+    } catch (err) {
+      log.warn(`failed to load session transcript: ${String(err)}`);
+      return "";
+    }
+  }
+
+  /**
+   * Get the earliest timestamp for a session (session start time).
+   */
+  getSessionStartTime(sessionId: string): number | undefined {
+    try {
+      const row = this.db
+        .prepare(`SELECT MIN(timestamp) as started_at FROM session_messages WHERE session_id = ?`)
+        .get(sessionId) as { started_at: number | null } | undefined;
+      return row?.started_at ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Deduplicate search results, returning unique session IDs in relevance order.
+   * Limited to `maxSessions` to cap LLM summarization cost.
+   */
+  getUniqueSessionIds(
+    results: SessionSearchResult[],
+    maxSessions: number = 3,
+    excludeSessionId?: string,
+  ): string[] {
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const r of results) {
+      if (excludeSessionId && r.sessionId === excludeSessionId) {
+        continue;
+      }
+      if (!seen.has(r.sessionId)) {
+        seen.add(r.sessionId);
+        unique.push(r.sessionId);
+      }
+      if (unique.length >= maxSessions) {
+        break;
+      }
+    }
+    return unique;
+  }
+
+  /**
+   * Record access for hotness scoring.
+   * Increments access_count and sets last_accessed for matched rows.
+   */
+  private recordAccess(rowids: number[]): void {
+    if (rowids.length === 0) {
+      return;
+    }
+    try {
+      const placeholders = rowids.map(() => "?").join(", ");
+      this.db
+        .prepare(
+          `UPDATE session_messages
+           SET access_count = access_count + 1, last_accessed = ?
+           WHERE id IN (${placeholders})`,
+        )
+        .run(Date.now(), ...rowids);
+    } catch (err) {
+      log.debug(`failed to record access: ${String(err)}`);
+    }
+  }
+
+  /**
    * Close the database connection and remove from cache.
    */
   close(): void {
@@ -416,7 +629,7 @@ export class SessionSearchIndex {
     } catch {
       // Best effort
     }
-    INDEX_CACHE.delete([...INDEX_CACHE.entries()].find(([, v]) => v === this)?.[0] ?? "");
+    INDEX_CACHE.delete(this.workspaceDir);
   }
 
   /** Exposed for testing */
@@ -428,6 +641,21 @@ export class SessionSearchIndex {
    * Remove the cache entry for a workspace (for testing cleanup).
    */
   static clearCache(): void {
+    INDEX_CACHE.clear();
+  }
+
+  /**
+   * Close all cached instances and clear the cache.
+   * Call at process shutdown to prevent SQLite connection leaks.
+   */
+  static closeAll(): void {
+    for (const instance of INDEX_CACHE.values()) {
+      try {
+        instance.db.close();
+      } catch {
+        // Best effort
+      }
+    }
     INDEX_CACHE.clear();
   }
 }
@@ -460,6 +688,7 @@ function extractText(content: string | Array<{ type: string; text?: string }> | 
 
 /**
  * Index a session transcript into the session search database.
+ * Also records tool usage statistics for OpenViking-style tool learning.
  * Call this during session reset (alongside session context persistence).
  */
 export function indexTranscriptForSearch(params: {
@@ -483,6 +712,8 @@ export function indexTranscriptForSearch(params: {
   }
 
   const messages: SessionMessage[] = [];
+  const toolCalls: Array<{ toolName: string; success?: boolean }> = [];
+
   for (const line of content.split("\n")) {
     if (!line.trim()) {
       continue;
@@ -496,6 +727,38 @@ export function indexTranscriptForSearch(params: {
 
     if (entry.type !== "message" || !entry.message) {
       continue;
+    }
+
+    // Extract tool calls from assistant messages
+    if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+      for (const block of entry.message.content as Array<Record<string, unknown>>) {
+        if (
+          (block.type === "toolCall" || block.type === "tool_use" || block.type === "function") &&
+          typeof block.name === "string"
+        ) {
+          toolCalls.push({ toolName: block.name });
+        }
+      }
+    }
+
+    // Track tool result success/failure
+    const msgRecord = entry.message as Record<string, unknown>;
+    if (entry.message.role === "tool" && typeof msgRecord.name === "string") {
+      const toolName = msgRecord.name;
+      const text = extractText(entry.message.content).trim();
+      const textLower = text.toLowerCase();
+      const isError =
+        textLower.startsWith("error") ||
+        textLower.includes('"error"') ||
+        textLower.includes("failed:") ||
+        textLower.includes("exception:");
+      // Find the most recent unresolved tool call with this name and mark it
+      for (let i = toolCalls.length - 1; i >= 0; i--) {
+        if (toolCalls[i].toolName === toolName && toolCalls[i].success === undefined) {
+          toolCalls[i].success = !isError;
+          break;
+        }
+      }
     }
 
     const text = extractText(entry.message.content).trim();
@@ -522,5 +785,20 @@ export function indexTranscriptForSearch(params: {
 
   if (messages.length > 0) {
     index.indexMessages(messages);
+  }
+
+  // Record tool usage statistics (best-effort, sync)
+  if (toolCalls.length > 0) {
+    try {
+      const stats = ToolStatsIndex.open(params.workspaceDir);
+      if (stats) {
+        stats.recordToolCalls(
+          params.agentId,
+          toolCalls.map((tc) => ({ toolName: tc.toolName, success: tc.success ?? true })),
+        );
+      }
+    } catch (err) {
+      log.debug(`tool stats recording failed: ${String(err)}`);
+    }
   }
 }

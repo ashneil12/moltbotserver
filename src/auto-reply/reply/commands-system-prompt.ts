@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
@@ -12,8 +13,11 @@ import { buildAgentSystemPrompt } from "../../agents/system-prompt.js";
 import { buildToolSummaryMap } from "../../agents/tool-summaries.js";
 import { resolveBusinessModeEnabled, type WorkspaceBootstrapFile } from "../../agents/workspace.js";
 import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
 import type { HandleCommandsParams } from "./commands-types.js";
+
+const log = createSubsystemLogger("commands-system-prompt");
 
 export type CommandsSystemPromptBundle = {
   systemPrompt: string;
@@ -35,6 +39,14 @@ export async function resolveCommandsSystemPromptBundle(
     sessionId: params.sessionEntry?.sessionId,
   });
   const skillsSnapshot = (() => {
+    // Guard 2: Validate workspace exists before building skill snapshot.
+    // In long-lived sessions, the workspace may have moved or been deleted.
+    if (workspaceDir && !fs.existsSync(workspaceDir)) {
+      log.warn("workspace directory missing — using empty skill snapshot", {
+        workspaceDir,
+      });
+      return { prompt: "", skills: [], resolvedSkills: [] };
+    }
     try {
       return buildWorkspaceSkillSnapshot(workspaceDir, {
         config: params.cfg,

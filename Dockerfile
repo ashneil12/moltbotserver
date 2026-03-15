@@ -284,26 +284,24 @@ ENV NODE_ENV=production
 RUN chmod +x /app/docker-entrypoint.sh \
   && find /app/scripts -type f -name '*.sh' -exec chmod +x {} +
 
-# Pre-bake Honcho memory plugin into the image (patched fork).
-# Uses github:ashneil12/openclaw-honcho-multiagent instead of vanilla npm,
-# which includes fixes for user message capture, session key routing,
-# and OpenClaw message wrapper parsing.
-# Installing at build time (as root) ensures correct uid=0 ownership.
-# The entrypoint copies it to the data volume on startup, avoiding the
-# runtime npm install that creates files with uid=1000 (rejected by the
-# plugin scanner as "suspicious ownership").
-RUN mkdir -p /app/prebaked-plugins \
-  && cd /tmp \
-  && git clone --depth=1 https://github.com/ashneil12/openclaw-honcho-multiagent.git honcho-fork \
-  && mv honcho-fork /app/prebaked-plugins/openclaw-honcho \
-  && cd /app/prebaked-plugins/openclaw-honcho \
-  && npm install --omit=dev --ignore-scripts 2>/dev/null \
-  && if [ ! -f openclaw.plugin.json ]; then \
-  echo '{"id":"openclaw-honcho","kind":"memory","uiHints":{"apiKey":{"label":"Honcho API Key","sensitive":true,"placeholder":"hch-v3-...","help":"API key for Honcho memory service"},"baseUrl":{"label":"Base URL","placeholder":"https://api.honcho.dev","help":"Honcho API base URL","advanced":true},"workspaceId":{"label":"Workspace ID","placeholder":"openclaw","help":"Honcho workspace/app identifier","advanced":true}},"configSchema":{"type":"object","additionalProperties":false,"properties":{"apiKey":{"type":"string"},"baseUrl":{"type":"string"},"workspaceId":{"type":"string"}}}}' > openclaw.plugin.json; \
-  fi
 
-# Run entrypoint as root — the gateway process stays root for Docker socket access,
-# npm global installs, and Honcho plugin ownership (uid=0 required by plugin scanner).
+# Pre-bake Lossless Claw (LCM) context engine plugin into the image.
+# Provides DAG-based conversation memory — replaces default compaction with
+# persistent SQLite-backed summarization. Installed from npm registry.
+# The entrypoint copies it to the data volume on startup and enforce-config
+# ensures the contextEngine slot is set.
+RUN mkdir -p /app/prebaked-plugins/lossless-claw \
+  && cd /tmp \
+  && ( npm pack @martian-engineering/lossless-claw 2>/dev/null \
+    && tar xzf martian-engineering-lossless-claw-*.tgz \
+    && cp -a package/. /app/prebaked-plugins/lossless-claw/ \
+    && cd /app/prebaked-plugins/lossless-claw \
+    && npm install --omit=dev --ignore-scripts 2>/dev/null \
+    && rm -rf /tmp/martian-engineering-lossless-claw-*.tgz /tmp/package \
+    || echo "[Dockerfile] LCM prebake: package not available — skipping (non-fatal)" )
+
+# Run entrypoint as root — the gateway process stays root for Docker socket access
+# and npm global installs.
 USER root
 
 # Our custom entrypoint handles config generation, onboarding, model

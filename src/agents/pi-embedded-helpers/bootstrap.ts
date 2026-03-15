@@ -95,13 +95,21 @@ const DIARY_HEAD_RATIO = 0.3;
 const DIARY_TAIL_RATIO = 0.6;
 const DIARY_BASENAME = "diary.md";
 
-// WORKING.md / open-loops / knowledge index: cap at ~4k chars each.
-export const WORKING_MAX_CHARS = 4_000;
+// WORKING.md: 12k chars — agents need substantial working-state context.
+export const WORKING_MAX_CHARS = 12_000;
 const WORKING_BASENAME = "WORKING.md";
+
+// open-loops / knowledge index: cap at ~4k chars each.
 export const OPEN_LOOPS_MAX_CHARS = 4_000;
 const OPEN_LOOPS_BASENAME = "open-loops.md";
 export const KNOWLEDGE_INDEX_MAX_CHARS = 4_000;
 const KNOWLEDGE_INDEX_BASENAME = "_index.md";
+
+// BrainX enrichment files: caps match the script-side limits.
+export const EXTRACTED_FACTS_MAX_CHARS = 16_000;
+const EXTRACTED_FACTS_BASENAME = "extracted-facts.md";
+export const ADVISORY_WARNINGS_MAX_CHARS = 4_000;
+const ADVISORY_WARNINGS_BASENAME = "advisory-warnings.md";
 
 type TrimBootstrapResult = {
   content: string;
@@ -262,6 +270,9 @@ export function buildBootstrapContextFiles(
     let fileMaxChars: number;
     let trimOpts: { headRatio?: number; tailRatio?: number } | undefined;
 
+    const isExtractedFacts = file.name.endsWith(EXTRACTED_FACTS_BASENAME);
+    const isAdvisoryWarnings = file.name.endsWith(ADVISORY_WARNINGS_BASENAME);
+
     if (isDiary) {
       fileMaxChars = Math.max(1, Math.min(DIARY_MAX_CHARS, remainingTotalChars));
       trimOpts = { headRatio: DIARY_HEAD_RATIO, tailRatio: DIARY_TAIL_RATIO };
@@ -271,6 +282,10 @@ export function buildBootstrapContextFiles(
       fileMaxChars = Math.max(1, Math.min(OPEN_LOOPS_MAX_CHARS, remainingTotalChars));
     } else if (isKnowledgeIndex) {
       fileMaxChars = Math.max(1, Math.min(KNOWLEDGE_INDEX_MAX_CHARS, remainingTotalChars));
+    } else if (isExtractedFacts) {
+      fileMaxChars = Math.max(1, Math.min(EXTRACTED_FACTS_MAX_CHARS, remainingTotalChars));
+    } else if (isAdvisoryWarnings) {
+      fileMaxChars = Math.max(1, Math.min(ADVISORY_WARNINGS_MAX_CHARS, remainingTotalChars));
     } else {
       fileMaxChars = Math.max(1, Math.min(maxChars, remainingTotalChars));
     }
@@ -279,9 +294,15 @@ export function buildBootstrapContextFiles(
     if (!contentWithinBudget) {
       continue;
     }
-    // Only warn for files without a known built-in per-file cap; diary/WORKING/open-loops/knowledge-index
-    // truncation is by design and the warning is just noise for those.
-    const hasBuiltInCap = isDiary || isWorking || isOpenLoops || isKnowledgeIndex;
+    // Only warn for files without a known built-in per-file cap; truncation
+    // is by design for these and the warning is just noise.
+    const hasBuiltInCap =
+      isDiary ||
+      isWorking ||
+      isOpenLoops ||
+      isKnowledgeIndex ||
+      isExtractedFacts ||
+      isAdvisoryWarnings;
     if (
       !hasBuiltInCap &&
       (trimmed.truncated || contentWithinBudget.length < trimmed.content.length)

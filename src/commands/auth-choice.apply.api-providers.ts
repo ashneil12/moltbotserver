@@ -21,16 +21,12 @@ import {
   applyAuthProfileConfig,
   applyCloudflareAiGatewayConfig,
   applyCloudflareAiGatewayProviderConfig,
-  applySupaSwarmConfig,
-  applySupaSwarmProviderConfig,
   applyZaiConfig,
   applyZaiProviderConfig,
   CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
   setCloudflareAiGatewayConfig,
   setGeminiApiKey,
-  setSupaSwarmConfig,
   setZaiApiKey,
-  SUPASWARM_DEFAULT_MODEL_REF,
   ZAI_DEFAULT_MODEL_REF,
 } from "./onboard-auth.js";
 import type { AuthChoice } from "./onboard-types.js";
@@ -56,7 +52,6 @@ const API_KEY_TOKEN_PROVIDER_AUTH_CHOICE: Record<string, AuthChoice> = {
   "opencode-go": "opencode-go",
   kilocode: "kilocode-api-key",
   qianfan: "qianfan-api-key",
-  supaswarm: "supaswarm-api-key",
 };
 
 const ZAI_AUTH_CHOICE_ENDPOINT: Partial<
@@ -321,49 +316,6 @@ export async function applyAuthChoiceApiProviders(
 
   if (authChoice === "huggingface-api-key") {
     return applyAuthChoiceHuggingface({ ...params, authChoice });
-  }
-
-  if (authChoice === "supaswarm-api-key") {
-    let baseUrl = process.env.SUPASWARM_BASE_URL?.trim() ?? "";
-
-    if (!baseUrl) {
-      const value = await params.prompter.text({
-        message: "Enter SupaSwarm Base URL (e.g. http://localhost:8000, no trailing /v1)",
-        validate: (val) => (String(val ?? "").trim() ? undefined : "Base URL is required"),
-      });
-      baseUrl = String(value ?? "").trim();
-    }
-
-    await ensureApiKeyFromOptionEnvOrPrompt({
-      token: params.opts?.token,
-      tokenProvider: "supaswarm",
-      secretInputMode: requestedSecretInputMode,
-      config: nextConfig,
-      expectedProviders: ["supaswarm"],
-      provider: "supaswarm",
-      envLabel: "SUPASWARM_API_KEY",
-      promptMessage: "Enter SupaSwarm API key",
-      normalize: normalizeApiKeyInput,
-      validate: validateApiKeyInput,
-      prompter: params.prompter,
-      setCredential: async (apiKey, mode) =>
-        setSupaSwarmConfig(baseUrl, apiKey, params.agentDir, {
-          secretInputMode: mode,
-        }),
-    });
-
-    nextConfig = applyAuthProfileConfig(nextConfig, {
-      profileId: "supaswarm:default",
-      provider: "supaswarm",
-      mode: "api_key",
-    });
-    await applyProviderDefaultModel({
-      defaultModel: SUPASWARM_DEFAULT_MODEL_REF,
-      applyDefaultConfig: (cfg) => applySupaSwarmConfig(cfg, { baseUrl }),
-      applyProviderConfig: (cfg) => applySupaSwarmProviderConfig(cfg, { baseUrl }),
-      noteDefault: SUPASWARM_DEFAULT_MODEL_REF,
-    });
-    return { config: nextConfig, agentModelOverride };
   }
 
   return null;

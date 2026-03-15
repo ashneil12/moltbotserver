@@ -8,6 +8,15 @@ export type MemoryConfig = {
   backend?: MemoryBackend;
   citations?: MemoryCitationsMode;
   qmd?: MemoryQmdConfig;
+  /**
+   * Model to use for session_search result summarization (provider/model format).
+   * Uses a cheap/fast model to summarize matching past sessions into focused recaps
+   * instead of returning raw message fragments.
+   *
+   * Examples: "google/gemini-2.5-flash-lite", "openai/gpt-4.1-mini"
+   * Default: the agent's default model if not specified.
+   */
+  sessionSearchModel?: string;
 };
 
 export type MemoryQmdConfig = {

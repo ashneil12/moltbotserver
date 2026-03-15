@@ -526,6 +526,44 @@ function loadSkillEntries(
   return skillEntries;
 }
 
+const COMPACT_DESCRIPTION_MAX_CHARS = 80;
+
+/**
+ * Compact skills prompt format for progressive disclosure.
+ *
+ * Instead of the upstream XML with `<name>`, `<description>`, `<location>` per skill,
+ * this produces a minimal text index:
+ *   - skill-name: Brief description (≤80 chars)
+ *
+ * The agent uses `skill_view(name)` to load full content on demand.
+ * Saves ~50-60% of prompt tokens vs the XML format.
+ */
+function formatSkillsCompactPrompt(skills: Skill[]): string {
+  if (skills.length === 0) {
+    return "";
+  }
+
+  const lines: string[] = [];
+  for (const skill of skills) {
+    let desc = skill.description.trim();
+    if (desc.length > COMPACT_DESCRIPTION_MAX_CHARS) {
+      desc = desc.slice(0, COMPACT_DESCRIPTION_MAX_CHARS - 3) + "...";
+    }
+    lines.push(`- ${skill.name}: ${desc}`);
+  }
+
+  return [
+    "## Skills",
+    "Before replying, scan the skills below. If one clearly matches your task,",
+    "load it with skill_view(name) and follow its instructions.",
+    "If none match, proceed normally without loading a skill.",
+    "",
+    "<available_skills>",
+    ...lines,
+    "</available_skills>",
+  ].join("\n");
+}
+
 function applySkillsPromptLimits(params: { skills: Skill[]; config?: OpenClawConfig }): {
   skillsForPrompt: Skill[];
   truncated: boolean;
@@ -627,13 +665,17 @@ function resolveWorkspaceSkillPromptState(
   const truncationNote = truncated
     ? `⚠️ Skills truncated: included ${skillsForPrompt.length} of ${resolvedSkills.length}. Run \`openclaw skills check\` to audit.`
     : "";
-  const prompt = [
-    remoteNote,
-    truncationNote,
-    formatSkillsForPrompt(compactSkillPaths(skillsForPrompt)),
-  ]
-    .filter(Boolean)
-    .join("\n");
+
+  // Progressive disclosure: compact index + skill_view tool.
+  // Default: true (save tokens). Set skills.progressiveDisclosure: false to
+  // revert to upstream XML format with file locations.
+  const useProgressiveDisclosure = opts?.config?.skills?.progressiveDisclosure !== false;
+
+  const skillsBlock = useProgressiveDisclosure
+    ? formatSkillsCompactPrompt(skillsForPrompt)
+    : formatSkillsForPrompt(compactSkillPaths(skillsForPrompt));
+
+  const prompt = [remoteNote, truncationNote, skillsBlock].filter(Boolean).join("\n");
   return { eligible, prompt, resolvedSkills };
 }
 

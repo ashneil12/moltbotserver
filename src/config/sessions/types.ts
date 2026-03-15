@@ -74,6 +74,8 @@ export type SessionEntry = {
   /** Timestamp (ms) when lastHeartbeatText was delivered. */
   lastHeartbeatSentAt?: number;
   sessionId: string;
+  /** Epoch ms when this entry was first created. Used for session unification to prefer newer contexts. */
+  createdAt?: number;
   updatedAt: number;
   sessionFile?: string;
   /** Parent session key that spawned this session (used for sandbox session-tool scoping). */
@@ -173,6 +175,12 @@ export type SessionEntry = {
   skillsSnapshot?: SessionSkillSnapshot;
   systemPromptReport?: SessionSystemPromptReport;
   acp?: SessionAcpMeta;
+  /** Session Health Sentinel state — tracks consecutive errors for circuit-breaking. */
+  healthState?: {
+    consecutiveErrors: number;
+    lastErrorAt?: number;
+    errorReasons: string[];
+  };
 };
 
 function normalizeRuntimeField(value: string | undefined): string | undefined {

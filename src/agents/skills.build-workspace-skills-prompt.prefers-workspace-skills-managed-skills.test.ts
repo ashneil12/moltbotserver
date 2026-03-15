@@ -57,6 +57,7 @@ describe("buildWorkspaceSkillsPrompt", () => {
     const prompt = buildWorkspaceSkillsPrompt(workspaceDir, {
       managedSkillsDir: managedDir,
       bundledSkillsDir: bundledDir,
+      config: { skills: { progressiveDisclosure: false } },
     });
 
     expect(prompt).toContain("Workspace version");
