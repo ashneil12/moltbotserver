@@ -146,6 +146,50 @@ Some jobs are **main-agent only** (`MAIN_ONLY_JOBS`) — sub-agents get the core
 | `openclaw-backup`            | Every 12h                         | Automatic config backup to Supabase Storage (managed platform only, disabled by default)                                                                                |
 | `workspace-doc-converter`    | Hourly (disabled by default)      | Converts PDF/DOCX/ODT/CSV/EPUB files to markdown for QMD indexing — the background sidecar handles this automatically, cron is for forced passes                        |
 
+#### 🔍 Reflection Jobs
+
+**`self-review`** — The pattern tracker. Twice daily, this job reads the reflection inbox, recent session transcripts, and WORKING.md to identify concrete behaviors worth logging. It writes HIT (things that went well) and MISS (mistakes, missed opportunities) entries to `memory/self-review.md` in a structured table format with dates, recurrence counts, and associated skills. When a MISS pattern hits 3+ occurrences, it's **mandatory** to promote the fix to a CRITICAL rule in `IDENTITY.md`. Also cross-references against existing skills — if a skill exists but wasn't used, it logs a `MISS-SKILL` entry; if it was used but didn't help, a `SKILL-GAP` entry.
+
+**`consciousness`** — The natural reflection loop. This is the agent's "thinking time" — diary writes, knowledge updates, identity evolution, and open-loop review. Unlike the mechanical `self-review`, consciousness is more free-form: the agent reflects on what happened, what patterns are emerging, and what it's becoming. It dynamically adjusts its own wake interval via `NEXT_WAKE` (4h when lots is happening, 12h when quiet). Writes to `diary.md`, `knowledge/`, `open-loops.md`, and optionally `IDENTITY.md`. Has strict anti-waste rules — if nothing meaningful changed, it responds `HEARTBEAT_OK` instead of churning.
+
+**`deep-review`** — The comprehensive 48-hour audit. Every 2 days, this job reads everything — IDENTITY.md, MEMORY.md, all knowledge files, self-review patterns, diary entries, session transcripts. It consolidates identity rules (merging duplicates, removing contradictions), prunes knowledge files, checks for over-correction (when a FIX for one problem creates a new one), and validates semantic consistency across the agent's entire self-model. This is where major identity evolution happens.
+
+**`self-audit-21`** — The weekly strategic self-assessment. 21 questions across 7 categories (capabilities, assumptions, pattern recognition, context gaps, self-improvement, strategy, meta). Forces the agent to surface insights it would never generate unprompted — blind spots about the user, underutilized knowledge, compounding investments, workflow automations. Findings are triaged into 3 tiers: 🟢 auto-implement, 🟡 build-then-approve, 🔴 propose-only, and fed into the improvement backlog.
+
+**`skill-evolution`** — The weekly skill generator. Reviews self-review MISS patterns with 3+ occurrences and determines whether each is a behavioral rule (→ IDENTITY.md) or a procedural skill (→ new `SKILL.md`). Also reviews existing skills flagged with `SKILL-GAP` entries and rewrites sections that didn't prevent failures. Max 2 new skills or revisions per run.
+
+#### 🛠️ Building & Delivery Jobs
+
+**`nightly-innovation`** — The overnight building session (2 AM). A 5-phase autonomous cycle: gather context → decide what to build → build it → update the backlog → log results. Priority order: approved backlog items first, then user requests, then recurring failure fixes, then self-motivated projects. Has strict anti-busywork rules — if nothing needs building, it stops. Can create one-shot follow-up cron jobs for multi-step work. Never takes irreversible actions without approval.
+
+**`morning-briefing`** — The daily personalized summary (8 AM), delivered directly to the user's chat channel. Reviews all 11 context sources (MEMORY.md, WORKING.md, open-loops, diary, self-review, knowledge base, IDENTITY.md, recent sessions, workspace state, cron run history, improvement backlog). Adapts tone to the user's communication style. Applies standing corrections from previous feedback. On Mondays, includes the weekly self-audit findings. Correction-aware — if the user told the agent to stop mentioning something, it checks before including it.
+
+#### 🧠 Memory Enrichment Jobs
+
+**`brainx-extract-facts`** — Regex-based fact extraction running 3× daily. Scans session transcripts for structured data patterns (URLs, GitHub repos, port numbers, environment variables, service names, API endpoints) and writes them to `memory/extracted-facts.md`. Fast and deterministic — runs a Node.js script, not an LLM call. Caps at 16K characters.
+
+**`brainx-advisory-warnings`** — Failure pattern scanner running 6× daily at odd hours. Scans diary and memory files for warning patterns (deployment failures, dangerous commands, authentication errors, resource exhaustion signals) and generates severity-sorted warnings in `memory/advisory-warnings.md`. Also deterministic — script-based, not LLM. Caps at 4K characters.
+
+**`memory-extraction`** — LLM-powered semantic extraction running daily at 10:00 UTC. Complements the regex-based BrainX jobs with deeper understanding. Reads recent non-cron session transcripts and extracts facts into 5 structured categories: `[preference]`, `[fact]`, `[entity]`, `[decision]`, `[open]`. Deduplicates against both existing `extracted-facts.md` and `MEMORY.md` before writing. Consolidates and prunes when the file exceeds 200 lines.
+
+#### 🧹 Maintenance Jobs
+
+**`auto-tidy`** — Workspace cleanup running every 72 hours. Two phases: (1) file organization — orphaned files sorted into domain folders, stale/duplicates cleaned up, archive structure maintained; (2) content hygiene — mechanical cleanup of WORKING.md (40 line cap), self-review.md (30-day retention), open-loops.md (14-day stale detection), session-context.md (20K char cap), MEMORY.md (150 line cap), improvement backlog (archive completed items), and BrainX files. Results logged to `tidy-history/`.
+
+**`diary-post-archive`** — Runs every 14 days after the deterministic diary archiver rotates `diary.md`. Reads the archived diary in full, then writes a synthesized continuity summary into the new diary — key themes, important decisions, ongoing threads, relationship developments, cognitive trajectory. Also does a final promotion scan (IDENTITY.md, humanization guide, self-review patterns) before finishing.
+
+**`browser-cleanup`** — Daily tab management (14:00 UTC, enabled only when browser containers are active). Lists all open tabs, keeps actively-used ones, closes completed task tabs, old search results, error pages, and `about:blank`. Target: 0-3 open tabs.
+
+**`workspace-doc-converter`** — On-demand document conversion (disabled by default, background sidecar handles this). Converts PDF, DOCX, ODT, CSV, and EPUB files in the workspace to markdown for QMD indexing. The cron job exists for forced passes after dropping a batch of new documents.
+
+#### 🏥 Platform & Health Jobs
+
+**`healthcheck-update-status`** — Weekly check (Monday 07:00) for OpenClaw updates. Runs `openclaw update status` and reports if an update is available. Uses the lightweight `haiku` model.
+
+**`healthcheck-security-audit`** — Weekly deployment security audit (community deployments only, skipped on managed platform). Runs 6 checks: SearXNG exposure, sandbox leaks, gateway authentication, resource warnings, credential hygiene, and Docker configuration.
+
+**`openclaw-backup`** — Automatic config backup every 12 hours to Supabase Storage (managed platform only, disabled by default for self-hosters). Runs `backup-upload.sh` silently.
+
 > [!TIP]
 > Reflection intensity is controlled by `OPENCLAW_SELF_REFLECTION` (default: `normal`). Set to `off` to disable `consciousness`, `self-review`, `deep-review`, and `skill-evolution` while keeping all other jobs active.
 
