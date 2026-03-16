@@ -42,6 +42,19 @@ Optimized Claw is a better fit than stock upstream if you are:
 
 ---
 
+## Minimum Requirements
+
+| Resource | Minimum                                                       |
+| -------- | ------------------------------------------------------------- |
+| RAM      | 8 GB                                                          |
+| CPU      | 4 cores                                                       |
+| Disk     | 20 GB (Docker images + workspace data)                        |
+| OS       | Linux (Ubuntu 22.04+), macOS 13+, Windows 11 (Docker Desktop) |
+
+This is a full-featured fork with a deep memory stack, browser containers, search/scraping sidecars, and autonomous cron jobs — it's the opposite of a micro-fork. Budget accordingly.
+
+---
+
 ## What's Different from Upstream OpenClaw?
 
 ### 🔒 Security
@@ -61,7 +74,7 @@ Optimized Claw is a better fit than stock upstream if you are:
 
 | Feature                          | Description                                                                                                                                                                                                                                                                |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Structured Agent Workspaces      | Each agent gets a purpose-built directory layout (`memory/`, `knowledge/`, `skills/`, `diary.md`, `open-loops.md`, `IDENTITY.md`, etc.) seeded automatically at creation — no manual setup required                                                                        |
+| Structured Agent Workspaces      | Each agent gets a purpose-built directory layout (`memory/`, `knowledge/`, `skills/`, `docs/`, `downloads/`, `diary.md`, `open-loops.md`, `IDENTITY.md`, etc.) seeded automatically at creation — no manual setup required                                                 |
 | **Full Tool Profile by Default** | All agents default to `tools.profile = "full"` — no arbitrary tool restrictions. The previous `"coding"` profile silently blocked browser, canvas, nodes, and agents_list. This is enforced on every gateway restart, so stale narrow profiles are automatically corrected |
 | Per-Agent Browser Containers     | Each agent gets a dedicated browser sandbox via Docker, not a shared browser                                                                                                                                                                                               |
 | Per-Agent OAuth                  | Removed credential inheritance — agents use only their own OAuth tokens                                                                                                                                                                                                    |
@@ -69,7 +82,7 @@ Optimized Claw is a better fit than stock upstream if you are:
 | Pre-Seeded Cron Jobs             | 12+ default cron jobs (reflection, maintenance, briefings, innovation, audits, memory extraction, skill evolution) automatically seeded per agent with `MAIN_ONLY_JOBS` filtering for sub-agents                                                                           |
 | Browser-Only Sandbox Mode        | `browser-only` sandbox mode for agents that need browser access without full containers                                                                                                                                                                                    |
 | Agent Browser Routing            | `createBrowserTool()` passes `agentId` so agents route to their own containers                                                                                                                                                                                             |
-| Per-Agent CLI Onboarding         | `--agent` and `--sync-all` flags for scoped credential setup                                                                                                                                                                                                               |
+| Per-Agent CLI Onboarding         | `--agent` and `--sync-all` flags for scoped credential setup _(upstream feature)_                                                                                                                                                                                          |
 | Self-Delegation Guidance         | Agents taught when and how to break their own work into focused subtasks via `sessions_spawn`, keeping context clean across independent workstreams                                                                                                                        |
 
 ### 🧠 Consciousness & Memory
@@ -78,11 +91,12 @@ This fork has a significantly deeper memory stack than upstream. Rather than tre
 
 **How context carryover works:**
 
-1. When a session resets, `session-context-summary.ts` runs trajectory compression: the first/last turns of the conversation are preserved verbatim, and the middle is compressed into key decisions, tool usage, and user intents. This gets written to `memory/session-context.md` and is loaded automatically on the next session boot.
-2. Every session is indexed into an FTS5 SQLite database (`memory/sessions.db`) so the `session_search` tool can do fast keyword lookup across all past conversations — complementing the embedding-based `memory_search`.
-3. The 3-tier reflection system runs entirely autonomously: self-review (06:00 + 18:00 UTC), consciousness loop (every 12h), and deep review (every 2 days at 04:00 UTC). These are not just prompts — they write structured entries to `memory/self-review.md`, `diary.md`, and the improvement backlog, which feed back into future heartbeats.
+1. **Lossless Claw (LCM)** is the foundation — it replaces the default sliding-window compaction with a DAG-based SQLite-backed persistent summarization system. Sessions effectively never reset (3-year idle timeout). Context is preserved as a graph of summaries, not thrown away.
+2. On top of LCM, `session-context-summary.ts` runs trajectory compression: the first/last turns are preserved verbatim, the middle is compressed into key decisions, tool usage, and user intents. This gets written to `memory/session-context.md` and loaded on the next session boot.
+3. Every session is indexed into an FTS5 SQLite database (`memory/sessions.db`) so the `session_search` tool can do fast keyword lookup across all past conversations — complementing the embedding-based `memory_search`.
+4. The 3-tier reflection system runs entirely autonomously: self-review (06:00 + 18:00 UTC), consciousness loop (every 12h), and deep review (every 2 days at 04:00 UTC). These are not just prompts — they write structured entries to `memory/self-review.md`, `diary.md`, and the improvement backlog, which feed back into future heartbeats.
 
-The result: agents remember what they did, learn from their patterns, and carry their state forward even after compactions.
+The result: agents remember what they did, learn from their patterns, and carry their state forward without losing context.
 
 | Feature                       | Description                                                                                                                                                                                                                                                                                                                                              |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,7 +117,6 @@ The result: agents remember what they did, learn from their patterns, and carry 
 | Improvement Backlog           | Structured backlog system for self-generated improvement proposals with tiered triage (auto-implement / build-then-approve / propose-only)                                                                                                                                                                                                               |
 | Nightly Innovation            | 5-phase autonomous building cron (2 AM) with backlog integration — agents build improvements overnight                                                                                                                                                                                                                                                   |
 | Morning Briefing              | Personalized daily summary (8 AM) with backlog surfacing, correction-awareness, and Standing Corrections from `MEMORY.md`                                                                                                                                                                                                                                |
-| Weekly Self-Audit             | 21-question strategic audit feeding the improvement backlog                                                                                                                                                                                                                                                                                              |
 | Diary Archival & Continuity   | Automatic diary rotation with continuity summaries across archive boundaries                                                                                                                                                                                                                                                                             |
 | Auto-Tidy                     | Scheduled workspace cleanup — prunes stale entries from MEMORY.md, open-loops, self-review, session-context, backlog, and BrainX files                                                                                                                                                                                                                   |
 
