@@ -1,64 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { HealthSummary, ChannelHealthSummary } from "../commands/health.js";
-import type { HealthCheckReport, CheckResult } from "./diagnostics-toolkit.js";
-import type { SentinelDeps } from "./health-sentinel-types.js";
+import {
+  createMockHealthSummary,
+  createMockSystemReport,
+  createMockDeps,
+} from "./health-sentinel-test-helpers.js";
 import {
   runSentinelCheck,
   classifyHealthIssues,
   resetRateLimitStateForTest,
 } from "./health-sentinel.js";
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Mock Factories
-// ═══════════════════════════════════════════════════════════════════════════
-
-function createMockHealthSummary(
-  channels: Record<string, Partial<ChannelHealthSummary>> = {},
-): HealthSummary {
-  return {
-    ok: true,
-    ts: Date.now(),
-    durationMs: 100,
-    channels: channels as Record<string, ChannelHealthSummary>,
-    channelOrder: Object.keys(channels),
-    channelLabels: {},
-    heartbeatSeconds: 30,
-    defaultAgentId: "default",
-    agents: [],
-    sessions: { path: "/tmp/sessions", count: 0, recent: [] },
-  };
-}
-
-function createMockSystemReport(checks: Array<Partial<CheckResult>> = []): HealthCheckReport {
-  const fullChecks: CheckResult[] = checks.map((c) => ({
-    name: c.name ?? "unknown",
-    status: c.status ?? "pass",
-    detail: c.detail ?? "",
-    ...c,
-  }));
-  const pass = fullChecks.filter((c) => c.status === "pass").length;
-  const fail = fullChecks.filter((c) => c.status === "fail").length;
-  const warn = fullChecks.filter((c) => c.status === "warn").length;
-  const skip = fullChecks.filter((c) => c.status === "skip").length;
-  return {
-    timestamp: new Date().toISOString(),
-    healthy: fullChecks.every((c) => c.status === "pass" || c.status === "skip"),
-    summary: { pass, fail, warn, skip },
-    checks: fullChecks,
-  };
-}
-
-function createMockDeps(overrides?: Partial<SentinelDeps>): SentinelDeps {
-  return {
-    getHealthSnapshot: vi.fn(async () => createMockHealthSummary()),
-    runHealthCheck: vi.fn(async () => createMockSystemReport()),
-    enqueueSystemEvent: vi.fn(),
-    requestHeartbeatNow: vi.fn(),
-    resolveMainSessionKey: vi.fn(() => "main"),
-    nowMs: () => Date.now(),
-    ...overrides,
-  };
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Tests
