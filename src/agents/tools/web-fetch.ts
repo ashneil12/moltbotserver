@@ -45,6 +45,17 @@ const DEFAULT_ERROR_MAX_BYTES = 64_000;
 const DEFAULT_FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
 const DEFAULT_FIRECRAWL_MAX_AGE_MS = 172_800_000;
 const DEFAULT_SCRAPLING_TIMEOUT_SECONDS = 30;
+
+/**
+ * Minimum character count for Readability-extracted content to be considered
+ * useful.  JS-heavy SPAs often serve a minimal HTML shell (e.g. `<div id="root">`)
+ * that Readability can technically parse — yielding 100-200 chars of navigation
+ * boilerplate — but the real content only appears after JavaScript execution.
+ * When the extracted text falls below this threshold we treat it as a failed
+ * extraction and fall through to Scrapling (StealthyFetcher) which runs a real
+ * browser.
+ */
+const MIN_READABILITY_CONTENT_LENGTH = 200;
 const DEFAULT_FETCH_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
@@ -739,11 +750,22 @@ async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string
           url: finalUrl,
           extractMode: params.extractMode,
         });
-        if (readable?.text) {
+        const readableLength = readable?.text?.length ?? 0;
+        if (readable?.text && readableLength >= MIN_READABILITY_CONTENT_LENGTH) {
           text = readable.text;
           title = readable.title;
           extractor = "readability";
         } else {
+          // Readability returned nothing or too little content — likely a
+          // JS-heavy SPA.  Fall through to Scrapling (StealthyFetcher) which
+          // executes JavaScript, then Firecrawl as a last resort.
+          if (readableLength > 0) {
+            logDebug(
+              `[web-fetch] Readability returned only ${readableLength} chars ` +
+                `(threshold: ${MIN_READABILITY_CONTENT_LENGTH}), falling back ` +
+                `to Scrapling/Firecrawl (${redactUrlForDebugLog(finalUrl)})`,
+            );
+          }
           const scraplingOrFirecrawl = await tryScraplingOrFirecrawlFallback({
             ...params,
             url: finalUrl,
@@ -752,6 +774,17 @@ async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string
             text = scraplingOrFirecrawl.text;
             title = scraplingOrFirecrawl.title;
             extractor = scraplingOrFirecrawl.extractor;
+          } else if (readable?.text) {
+            // Scrapling and Firecrawl both unavailable/failed — use the
+            // low-quality Readability result as a last resort rather than
+            // returning nothing at all.
+            text = readable.text;
+            title = readable.title;
+            extractor = "readability";
+            logDebug(
+              `[web-fetch] Scrapling/Firecrawl unavailable, using low-quality ` +
+                `Readability result (${readableLength} chars) for ${redactUrlForDebugLog(finalUrl)}`,
+            );
           } else {
             throw new Error(
               "Web fetch extraction failed: Readability, Scrapling, and Firecrawl returned no content.",

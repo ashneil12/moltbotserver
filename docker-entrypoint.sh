@@ -589,9 +589,9 @@ fi
 # qmd is a local-first markdown search sidecar (BM25 + vectors + reranking).
 # It is NOT bundled in the base image — must be installed via bun at runtime
 # until a Dockerfile rebuild bakes it in permanently.
-# Gated on OPENCLAW_QMD_ENABLED so instances that don't use qmd pay no cost.
+# Enabled by default. Set OPENCLAW_QMD_ENABLED=false to disable.
 # =============================================================================
-if [ "${OPENCLAW_QMD_ENABLED:-false}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-false}" = "1" ]; then
+if [ "${OPENCLAW_QMD_ENABLED:-true}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-true}" = "1" ]; then
   if command -v qmd &>/dev/null; then
     echo "[entrypoint] qmd already available: $(qmd --version 2>&1 | head -1)"
   else

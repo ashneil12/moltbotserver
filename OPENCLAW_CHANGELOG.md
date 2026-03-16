@@ -5,6 +5,119 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Server Context & Session Updates Tests (2026-03-16)
+
+**Purpose:** Cover the parallel profile listing system and session event formatting — key custom patches with zero prior test coverage.
+
+### New Test Files
+
+| File                                           | Tests | What It Covers                                                                                                                                                                               |
+| ---------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/browser/server-context.test.ts`           | 16    | `listKnownProfileNames` (config/runtime merge, dedup), `createBrowserRouteContext` (state null, profile resolution, defaults), parallel `Promise.all` listing, SSRF/navigation error mapping |
+| `src/auto-reply/reply/session-updates.test.ts` | 19    | System event formatting/filtering (heartbeat, periodic, Node compaction), multiline prefix, channel summary, compaction counter, token tracking after compaction                             |
+
+### Files Changed
+
+| File                                           | Change                        | Sync Risk        |
+| ---------------------------------------------- | ----------------------------- | ---------------- |
+| `src/browser/server-context.test.ts`           | **[NEW]** 16 tests            | None — test file |
+| `src/auto-reply/reply/session-updates.test.ts` | **[NEW]** 19 tests            | None — test file |
+| `.agent/workflows/verify-sync.md`              | Added to Gate 4 (~520+ tests) | None — workflow  |
+
+---
+
+## Browser Download & Control Service Tests (2026-03-16)
+
+**Purpose:** Cover the per-agent download routing pipeline and browser service lifecycle — the chain that ensures each agent's browser downloads land in their own workspace, not the shared one.
+
+### New Test Files
+
+| File                                              | Tests | What It Covers                                                                                                                          |
+| ------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/browser/download-workspace-registry.test.ts` | 31    | Registry CRUD/isolation, URL normalization, filename sanitization (path traversal, control chars, overflow), auto-download timestamping |
+| `src/browser/control-service.test.ts`             | 16    | Service startup/shutdown lifecycle, per-agent workspace registration, auth handling, cleanup on stop                                    |
+
+### Files Changed
+
+| File                                              | Change                        | Sync Risk        |
+| ------------------------------------------------- | ----------------------------- | ---------------- |
+| `src/browser/download-workspace-registry.test.ts` | **[NEW]** 31 tests            | None — test file |
+| `src/browser/control-service.test.ts`             | **[NEW]** 16 tests            | None — test file |
+| `.agent/workflows/verify-sync.md`                 | Added to Gate 4 (~490+ tests) | None — workflow  |
+
+---
+
+## Per-Agent Browser Routing Tests (2026-03-16)
+
+**Purpose:** Fill the critical test gap around per-agent browser routing — the most breakable path during upstream syncs. Previously, the `agentId` injection in `openclaw-tools.ts` and profile override in `browser-tool.ts` had zero test coverage.
+
+### New Test File
+
+| File                                                  | Tests | What It Covers                                                                                                                                                        |
+| ----------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/agents/tools/browser-tool.agent-routing.test.ts` | 40    | Per-agent profile override, all-action routing, host-only protection, sandbox interaction, tab tracking, tool creation, error handling, config edge cases, node proxy |
+
+### Test Categories
+
+- **Profile override** (7): agentId injection → profile="dan" instead of "openclaw"
+- **All-action routing** (8): status/start/stop/open/navigate/snapshot/act/close/console
+- **Host-only protection** (4): user/chrome-relay profiles never overridden
+- **Sandbox interaction** (2): profile override independent of base URL resolution
+- **Tab tracking** (2): tabs tracked under agent's session key + profile
+- **Tool creation** (5): description hints, name, label
+- **Error handling** (6): unknown actions, missing params, policy violations
+- **Edge cases** (5): empty config, null browser, dynamic config reload
+- **Node proxy** (1): agent profile passes through to node.invoke
+
+### Files Changed
+
+| File                                                  | Change                               | Sync Risk            |
+| ----------------------------------------------------- | ------------------------------------ | -------------------- |
+| `src/agents/tools/browser-tool.agent-routing.test.ts` | **[NEW]** 40 per-agent routing tests | None — test file     |
+| `.agent/workflows/verify-sync.md`                     | Added to Gate 4 test list            | None — workflow      |
+| `OPENCLAW_CHANGELOG.md`                               | This entry                           | None — documentation |
+
+---
+
+## Post-Sync Stabilization Methodology (2026-03-16)
+
+**Purpose:** Fill the gap between upstream sync conflict resolution and deploy. Previously, the only verification after a rebase was `npm run build` — type errors were caught but behavioral regressions were not detected until post-deploy smoke testing on a live VM.
+
+### New Workflow: `/verify-sync`
+
+4-gate automated verification that runs **after conflict resolution, before push**:
+
+| Gate                            | What It Checks                                                                        | Catches                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **1. Conflict Marker Sweep**    | Scans `.ts`, `.json`, `.md`, `.sh`, `.yml`, `.mjs` for leftover `<<<<<<<` markers     | Incomplete conflict resolution                |
+| **2. Local Patch Verification** | ~65 grep checks across browser, security, memory, session, cron, and infrastructure   | Silently overwritten local modifications      |
+| **3. TypeScript Build**         | `npm install && npm run build`                                                        | Type-level breakage from upstream API changes |
+| **4. Custom Test Suites**       | ~400+ tests across 29 test files (security, sentinel, session, memory, cron, browser) | Behavioral regressions in custom features     |
+
+### Expanded `LOCAL_PATCHES.md`
+
+Expanded from 9 entries (CDP/browser patches only) to 35 entries organized by category:
+
+- **Browser** (12): CDP host fix, parallel profiles, browser sweep, auto-downloads, agent routing
+- **Security** (5): AgentGuard secret redaction, event journal, deployment audit, workspace scanning
+- **Memory & Search** (8): workspace source, QMD retry, source boost, SearXNG, Scrapling
+- **Sessions** (4): ephemeral path guard, session freshness, createdAt, typing TTL
+- **Cron & Reflection** (3): NEXT_WAKE, evidence counters, reflection change-log
+- **Infrastructure** (6): managed platform guards, tool profile, LCM, CLI tooling, heartbeat, Telegram timeout
+- **Agent Behavior** (3): autonomous problem-solving, exhaust-before-escalating, IDENTITY.md fix
+
+Added a complete copy-paste verification script at the top of `LOCAL_PATCHES.md` that can be piped to bash for quick manual checks.
+
+### Files Changed
+
+| File                              | Change                                                  | Sync Risk            |
+| --------------------------------- | ------------------------------------------------------- | -------------------- |
+| `.agent/workflows/verify-sync.md` | **[NEW]** 4-gate verification workflow                  | None — workflow file |
+| `LOCAL_PATCHES.md`                | Expanded from 9 → 35 entries, added verification script | None — documentation |
+| `OPENCLAW_CHANGELOG.md`           | This entry                                              | None — documentation |
+
+---
+
 ## SearXNG Engine Selection & Deploy Wizard Integration (2026-03-16)
 
 **Purpose:** Full-stack UI for selecting which [SearXNG](https://github.com/searxng/searxng) search engines an agent uses, plus SearXNG as the default search provider in the deploy wizard. Also includes a cache key mutation fix and rendering optimizations.
