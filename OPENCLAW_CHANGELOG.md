@@ -93,7 +93,7 @@ Sidecar probes are **warnings by default** — SearXNG/Scrapling are enhancement
 
 ## AgentGuard — Secret Redaction, Security Event Journal & OC Deployment Audit (2026-03-16)
 
-**Purpose:** Three-part safety and observability system for agent outputs. Philosophy: **"observe and redact, never restrict"** — agents maintain full tool/command access, but sensitive data is intercepted before reaching channels, all security-relevant events are logged for auditing, and deployment configurations are proactively checked for misconfigurations. Inspired by [SkillGuard](https://github.com/ziwenxu/openclaw-skills) (by [Ziwen Xu](https://github.com/ziwenxu)).
+**Purpose:** Three-part safety and observability system for agent outputs. Philosophy: **"observe and redact, never restrict"** — agents maintain full tool/command access, but sensitive data is intercepted before reaching channels, all security-relevant events are logged for auditing, and deployment configurations are proactively checked for misconfigurations. Inspired by SkillGuard (by [Ziwen Xu](https://github.com/ziwenxu)).
 
 ### Feature 1 — Secret Redaction (data-classification.ts)
 
@@ -236,7 +236,7 @@ Docker compose changes require manual merge. Source file changes (`web-search.ts
 
 ## Security Skills — Prompt Guard & ClawScan (2026-03-16)
 
-**Purpose:** Two documentation-only skills that teach agents to use OpenClaw's existing security infrastructure for prompt injection defense and workspace vulnerability scanning. Inspired by [SkillGuard](https://github.com/ziwenxu/openclaw-skills) (by [Ziwen Xu](https://github.com/ziwenxu)). AgentGuard runtime components (output redaction, command blocklist, audit trail) deferred for separate implementation.
+**Purpose:** Two documentation-only skills that teach agents to use OpenClaw's existing security infrastructure for prompt injection defense and workspace vulnerability scanning. Inspired by SkillGuard (by [Ziwen Xu](https://github.com/ziwenxu)). AgentGuard runtime components (output redaction, command blocklist, audit trail) deferred for separate implementation.
 
 ### New Files
 
