@@ -164,6 +164,8 @@ export interface DoctorProbes {
   checkEphemeralPaths?: () => CheckResult[];
   /** Check if the state directory exists */
   checkStateDirExists?: () => CheckResult;
+  /** Check Docker sidecar services (SearXNG, Scrapling) — async because it uses fetch */
+  checkSidecarHealth?: () => Promise<CheckResult[]>;
 }
 
 export interface WeeklyProbes {

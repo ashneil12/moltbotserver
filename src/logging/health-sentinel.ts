@@ -270,6 +270,28 @@ function classifySystemCheck(check: CheckResult): ClassifiedIssue | null {
     };
   }
 
+  // Sidecar services (SearXNG, Scrapling) — warnings by default since agents
+  // have fallback providers. Only escalate after consecutive failures.
+  if (check.name === "sidecar.searxng" || check.name === "sidecar.scrapling") {
+    const serviceName = check.name === "sidecar.searxng" ? "SearXNG" : "Scrapling";
+    const consecutiveFailures = rateLimitState.issueConsecutiveFailures.get(key) ?? 0;
+    if (consecutiveFailures >= 3) {
+      return {
+        key,
+        classification: "needs-agent",
+        summary: `${serviceName} sidecar persistently unreachable (${consecutiveFailures + 1} consecutive failures): ${check.detail}`,
+        suggestedAction: `Check if the ${serviceName} Docker container is running. Try \`docker compose restart ${check.name.replace("sidecar.", "")}\`.`,
+        source: check,
+      };
+    }
+    return {
+      key,
+      classification: "warning",
+      summary: `${serviceName} sidecar unhealthy: ${check.detail}`,
+      source: check,
+    };
+  }
+
   // Unknown check type — classify based on actual status
   return {
     key,
@@ -537,6 +559,14 @@ export async function runSentinelCheck(deps: SentinelDeps): Promise<SentinelRepo
         systemReport.checks.push(...ephemeralChecks);
       } catch (err) {
         log.warn?.(`doctor probe (ephemeral paths) failed: ${String(err)}`);
+      }
+    }
+    if (deps.doctorProbes.checkSidecarHealth) {
+      try {
+        const sidecarChecks = await deps.doctorProbes.checkSidecarHealth();
+        systemReport.checks.push(...sidecarChecks);
+      } catch (err) {
+        log.warn?.(`doctor probe (sidecar health) failed: ${String(err)}`);
       }
     }
   }

@@ -564,6 +564,81 @@ export function startDiagnosticHeartbeat(config?: OpenClawConfig) {
                   }
                   return checks;
                 },
+                checkSidecarHealth: async () => {
+                  const checks: import("./diagnostics-toolkit.js").CheckResult[] = [];
+                  const SIDECAR_TIMEOUT_MS = 5_000;
+
+                  const sidecars: Array<{
+                    name: string;
+                    envVar: string;
+                    healthPath: string;
+                  }> = [
+                    {
+                      name: "sidecar.searxng",
+                      envVar: "SEARXNG_BASE_URL",
+                      healthPath: "/healthz",
+                    },
+                    {
+                      name: "sidecar.scrapling",
+                      envVar: "SCRAPLING_BASE_URL",
+                      healthPath: "/health",
+                    },
+                  ];
+
+                  for (const sidecar of sidecars) {
+                    const baseUrl = process.env[sidecar.envVar]?.trim();
+                    if (!baseUrl) {
+                      checks.push({
+                        name: sidecar.name,
+                        status: "skip",
+                        detail: `${sidecar.envVar} not set — sidecar not deployed`,
+                      });
+                      continue;
+                    }
+
+                    const start = Date.now();
+                    const url = `${baseUrl.replace(/\/+$/, "")}${sidecar.healthPath}`;
+                    try {
+                      const controller = new AbortController();
+                      const timeout = setTimeout(() => controller.abort(), SIDECAR_TIMEOUT_MS);
+                      const res = await fetch(url, {
+                        signal: controller.signal,
+                      });
+                      clearTimeout(timeout);
+
+                      const durationMs = Date.now() - start;
+                      if (res.ok) {
+                        checks.push({
+                          name: sidecar.name,
+                          status: "pass",
+                          detail: `Healthy (${res.status}, ${durationMs}ms)`,
+                          durationMs,
+                        });
+                      } else {
+                        checks.push({
+                          name: sidecar.name,
+                          status: "fail",
+                          detail: `Unhealthy (HTTP ${res.status}, ${durationMs}ms)`,
+                          durationMs,
+                        });
+                      }
+                    } catch (err) {
+                      const durationMs = Date.now() - start;
+                      const message = err instanceof Error ? err.message : String(err);
+                      const isTimeout = message.includes("abort") || message.includes("timeout");
+                      checks.push({
+                        name: sidecar.name,
+                        status: "fail",
+                        detail: isTimeout
+                          ? `Timed out after ${SIDECAR_TIMEOUT_MS}ms`
+                          : `Unreachable: ${message}`,
+                        durationMs,
+                      });
+                    }
+                  }
+
+                  return checks;
+                },
               },
               weeklyProbes: {
                 checkBackupFreshness: () => {

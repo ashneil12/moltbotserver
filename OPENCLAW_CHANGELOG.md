@@ -5,6 +5,94 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Health Sentinel — SearXNG & Scrapling Sidecar Probes (2026-03-16)
+
+**Purpose:** Connect SearXNG and Scrapling Docker sidecars to the existing Health Sentinel monitoring system. Probes hit each service's `/health` endpoint every ~30 minutes and report status via the standard `CheckResult` pipeline.
+
+| File                                           | Change                                                                                                                                                                                                                                                | Upstream Risk                             |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `src/logging/health-sentinel-types.ts`         | Added `checkSidecarHealth?: () => Promise<CheckResult[]>` to `DoctorProbes` interface — first async probe                                                                                                                                             | Low — additive                            |
+| `src/logging/health-sentinel.ts`               | Added sidecar classification: `sidecar.searxng`/`sidecar.scrapling` failures → `"warning"` (non-critical, agents have fallbacks). After 3+ consecutive failures → `"needs-agent"`. Wired async probe into orchestrator alongside sync doctor probes.  | Low — additive to classification          |
+| `src/logging/diagnostic.ts`                    | Implemented `checkSidecarHealth` probe in `doctorProbes` block: reads `SEARXNG_BASE_URL`/`SCRAPLING_BASE_URL` env vars, fetches `/healthz` and `/health` with 5s timeout, returns structured `CheckResult[]`. Skips services without configured URLs. | Low — runs inside existing heartbeat loop |
+| `src/logging/health-sentinel-sidecars.test.ts` | **[NEW]** 7 unit tests: classification (warning/pass/skip), orchestrator integration, error resilience, non-escalation verification                                                                                                                   | None — test                               |
+
+### Design Decision
+
+Sidecar probes are **warnings by default** — SearXNG/Scrapling are enhancements, not critical services. Agents fall back to Brave/Firecrawl when sidecars are down. Only after 3+ consecutive failures does the sentinel escalate to `needs-agent`, indicating a persistent Docker issue worth investigating.
+
+---
+
+## AgentGuard — Secret Redaction, Security Event Journal & OC Deployment Audit (2026-03-16)
+
+**Purpose:** Three-part safety and observability system for agent outputs. Philosophy: **"observe and redact, never restrict"** — agents maintain full tool/command access, but sensitive data is intercepted before reaching channels, all security-relevant events are logged for auditing, and deployment configurations are proactively checked for misconfigurations. Inspired by [SkillGuard](https://github.com/ziwenxu/openclaw-skills) (by [Ziwen Xu](https://github.com/ziwenxu)).
+
+### Feature 1 — Secret Redaction (data-classification.ts)
+
+14 regex patterns detect developer secrets (API keys, tokens, connection strings, PEM keys) in agent output. Redaction runs inline in the reply normalization pipeline — before channel delivery, after all other text sanitization. Patterns cover: OpenAI, GitHub (PAT + OAuth/App), Slack, Stripe, Google, AWS, Telegram, Discord, Groq/Perplexity/npm/Anthropic, database connection strings, Bearer tokens, and PEM private keys.
+
+| File                                                      | Change                                                                                                                                                                                                                                                                          | Upstream Risk                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `src/security/data-classification.ts`                     | Added `SecretPattern` interface with precomputed `globalRegex` property. 14 `SECRET_PATTERNS` entries. `redactSecrets()` returns redacted text + detected pattern names. `containsSecrets()` boolean check. Also optimized existing `PiiPattern` with precomputed `globalRegex` | Medium — modified upstream file |
+| `src/auto-reply/reply/normalize-reply.ts`                 | Integrated `redactSecrets()` after `sanitizeUserFacingText()` — detects secrets, replaces with `[SECRET-REDACTED]`/`[CONNECTION-REDACTED]`/`[TOKEN-REDACTED]`/`[PRIVATE-KEY-REDACTED]`, logs event via security journal                                                         | Low — 2 imports + 10 lines      |
+| `src/security/data-classification.redact-secrets.test.ts` | **[NEW]** 46 tests: individual pattern matching, no false positives on partial matches, `redactSecrets()` multi-pattern replacement, `containsSecrets()` detection                                                                                                              | None — test                     |
+
+### Feature 2 — Security Event Journal (security-event-journal.ts)
+
+Lightweight, append-only log for security-relevant events. Fire-and-forget API — never blocks the caller, never throws. Events go to `security.<type>.jsonl` via the existing `EventLogger` infrastructure. Supports 4 event types: `secret_redacted`, `content_quarantined`, `injection_detected`, `audit_finding`. Console-level `logWarn` for `secret_redacted` events gives immediate visibility.
+
+| File                                          | Change                                                                                                                                                             | Upstream Risk |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `src/security/security-event-journal.ts`      | **[NEW]** Eager singleton logger (mirrors `scan-and-log.ts` pattern). `logSecurityEvent()` (fire-and-forget), `querySecurityEvents()` (filter by type/since/limit) | None — new    |
+| `src/security/security-event-journal.test.ts` | **[NEW]** 8 tests: event logging, warn-level console output for secret_redacted, query filtering, graceful fallback when logger unavailable                        | None — test   |
+
+### Feature 3 — OC Deployment Audit Checks
+
+5 new audit checks integrated into the existing `runSecurityAudit()` pipeline. These are specific to OpenClaw multi-agent deployments and check for common deployment misconfigurations.
+
+| Check ID                          | Severity   | What It Detects                                                                              |
+| --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- |
+| `oc.searxng_provider_no_url`      | `warn`     | SearXNG provider configured but `SEARXNG_BASE_URL` not set                                   |
+| `oc.searxng_exposure`             | `warn`     | SearXNG bound to public host or non-standard port (unauthenticated metasearch proxy exposed) |
+| `oc.scrapling_high_concurrency`   | `warn`     | `SCRAPLING_MAX_CONCURRENCY > 10` — each Playwright session uses ~150-250MB RAM               |
+| `oc.browser_sandbox_network_leak` | `warn`     | `sandbox.mode=all` + `browser.docker.networkMode=host` — sandbox boundary weakened           |
+| `oc.gateway_bind_no_auth`         | `critical` | Gateway bound to network interface with `auth.mode=none` — any host can send agent commands  |
+| `oc.agent_count_resource_warning` | `info`     | 8+ agents with browser + sandbox enabled — high RAM usage expected                           |
+
+| File                                             | Change                                                                                                                                                                                                        | Upstream Risk                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `src/security/audit-extra.sync.ts`               | Added 5 collector functions: `collectSearxngExposureFindings`, `collectScraplingResourceFindings`, `collectBrowserSandboxAlignmentFindings`, `collectGatewayBindCorsFindings`, `collectAgentResourceFindings` | Low — additive in custom section |
+| `src/security/audit-extra.ts`                    | Re-exported 5 new collector functions from `audit-extra.sync.ts`                                                                                                                                              | Low — re-export additions        |
+| `src/security/audit.ts`                          | Integrated 5 new checks into `runSecurityAudit()` pipeline under "OC Deployment checks" block                                                                                                                 | Low — 5 additive `findings.push` |
+| `src/security/audit-extra.oc-deployment.test.ts` | **[NEW]** 19 tests: all 6 check IDs, positive/negative cases, edge cases (default ports, Docker hostnames, mixed configs)                                                                                     | None — test                      |
+
+### Performance Optimization
+
+| File                                  | Change                                                                                                                                                                                                                                                                                    | Category    |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/security/data-classification.ts` | Precomputed `globalRegex` property on both `PiiPattern` and `SecretPattern` interfaces. `redactPII()` and `redactSecrets()` now use precomputed variants instead of constructing `new RegExp(pattern.regex, 'g')` on every call. Added `lastIndex` resets to prevent stateful regex bugs. | Performance |
+
+### Bug Fix
+
+| Fix                                      | File                               | Detail                                                                                                                                            |
+| ---------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dead-code path in SearXNG exposure check | `src/security/audit-extra.sync.ts` | `!searxngUrl` check was after an early return, making it unreachable. Reordered to check provider config first, then early-return on missing URL. |
+
+### Tests
+
+- ✅ `data-classification.redact-secrets.test.ts`: 46/46 passed
+- ✅ `security-event-journal.test.ts`: 8/8 passed
+- ✅ `audit-extra.oc-deployment.test.ts`: 19/19 passed
+- ✅ Total: 73/73 new tests passed
+
+### Upstream Sync Risk
+
+**None for new files** — 4 new source files + 3 test files, fully custom.
+**Low for `normalize-reply.ts`** — 2 imports + 10-line conditional block after existing sanitization call.
+**Low for `audit.ts`** — 5 `findings.push()` lines in additive block after existing checks.
+**Medium for `data-classification.ts`** — `globalRegex` property added to pattern interfaces + function-level optimizations. Merge may need manual intervention if upstream modifies `PII_PATTERNS` or `redactPII`.
+
+---
+
 ## SearXNG Search Provider & Scrapling Stealth Scraping Backend (2026-03-16)
 
 **Purpose:** Self-hosted search and stealth scraping sidecars that ship with every deployment. [SearXNG](https://github.com/searxng/searxng) provides free, API-key-free metasearch (aggregates 70+ engines). [Scrapling](https://github.com/D4Vinci/Scrapling) (by [D4Vinci](https://github.com/D4Vinci)) provides anti-bot-bypass stealth scraping via Playwright with real browser fingerprints. Both run as shared Docker services — all agents hit the same instances, with Scrapling's concurrency defaulting to 5 concurrent sessions.
