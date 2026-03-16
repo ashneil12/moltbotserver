@@ -20,8 +20,11 @@ import {
 import { normalizeTrustedSafeBinDirs } from "../infra/exec-safe-bin-trust.js";
 import { collectChannelSecurityFindings } from "./audit-channel.js";
 import {
+  collectAgentResourceFindings,
   collectAttackSurfaceSummaryFindings,
+  collectBrowserSandboxAlignmentFindings,
   collectExposureMatrixFindings,
+  collectGatewayBindCorsFindings,
   collectGatewayHttpNoAuthFindings,
   collectGatewayHttpSessionKeyOverrideFindings,
   collectHooksHardeningFindings,
@@ -37,6 +40,8 @@ import {
   collectSandboxDangerousConfigFindings,
   collectSandboxDockerNoopFindings,
   collectPluginsTrustFindings,
+  collectScraplingResourceFindings,
+  collectSearxngExposureFindings,
   collectSecretsInConfigFindings,
   collectPluginsCodeSafetyFindings,
   collectStateDeepFilesystemFindings,
@@ -1167,6 +1172,13 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
   findings.push(...collectSmallModelRiskFindings({ cfg, env }));
   findings.push(...collectExposureMatrixFindings(cfg));
   findings.push(...collectLikelyMultiUserSetupFindings(cfg));
+
+  // OC Deployment checks
+  findings.push(...collectSearxngExposureFindings(cfg, env));
+  findings.push(...collectScraplingResourceFindings(env));
+  findings.push(...collectBrowserSandboxAlignmentFindings(cfg));
+  findings.push(...collectGatewayBindCorsFindings(cfg, env));
+  findings.push(...collectAgentResourceFindings(cfg));
 
   if (context.includeFilesystem) {
     findings.push(

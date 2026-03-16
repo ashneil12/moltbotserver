@@ -1,4 +1,6 @@
 import { sanitizeUserFacingText } from "../../agents/pi-embedded-helpers.js";
+import { redactSecrets } from "../../security/data-classification.js";
+import { logSecurityEvent } from "../../security/security-event-journal.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
 import {
   HEARTBEAT_TOKEN,
@@ -80,6 +82,17 @@ export function normalizeReplyPayload(
 
   if (text) {
     text = sanitizeUserFacingText(text, { errorContext: Boolean(payload.isError) });
+
+    // AgentGuard: redact developer secrets from output before channel delivery
+    const secretResult = redactSecrets(text);
+    if (secretResult.redactedPatterns.length > 0) {
+      text = secretResult.text;
+      logSecurityEvent({
+        type: "secret_redacted",
+        patterns: secretResult.redactedPatterns,
+        source: "normalize-reply",
+      });
+    }
   }
   if (!text?.trim() && !hasMedia && !hasChannelData) {
     opts.onSkip?.("empty");

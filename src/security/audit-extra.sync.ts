@@ -1366,3 +1366,195 @@ export function collectLikelyMultiUserSetupFindings(cfg: OpenClawConfig): Securi
 
   return findings;
 }
+
+// --------------------------------------------------------------------------
+// OC Deployment Audit — deployment-specific checks for multi-agent setups
+// --------------------------------------------------------------------------
+
+/**
+ * Check SearXNG sidecar exposure. SearXNG should not be reachable from
+ * outside the Docker network — it has no auth.
+ */
+export function collectSearxngExposureFindings(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+  const searxngUrl = env.SEARXNG_BASE_URL ?? "";
+
+  // Check search provider explicitly set to searxng without the env var
+  const searchProvider = (cfg.tools?.web?.search as Record<string, unknown> | undefined)
+    ?.provider as string | undefined;
+  if (searchProvider === "searxng" && !searxngUrl) {
+    findings.push({
+      checkId: "oc.searxng_provider_no_url",
+      severity: "warn",
+      title: "SearXNG provider configured but SEARXNG_BASE_URL not set",
+      detail:
+        'tools.web.search.provider is "searxng" but SEARXNG_BASE_URL is not set. Search will fall back to the default URL which may not be reachable.',
+      remediation:
+        "Set SEARXNG_BASE_URL in your environment (default: http://searxng:8080) or let auto-detection handle the provider.",
+    });
+  }
+
+  if (!searxngUrl) {
+    return findings;
+  }
+
+  // If the URL points to localhost/127.0.0.1 with a non-standard port, it's
+  // likely port-mapped. If it's a Docker internal hostname (e.g. "searxng"),
+  // that's fine — it's internal.
+  const isExternallyBound =
+    /^https?:\/\/(?:0\.0\.0\.0|localhost|127\.0\.0\.1):\d+/.test(searxngUrl) &&
+    !searxngUrl.includes(":8080");
+  const isPublicHost = /^https?:\/\/(?!\d+\.\d+\.\d+\.\d+|localhost|127\.|searxng|0\.0\.0\.0)/.test(
+    searxngUrl,
+  );
+
+  if (isExternallyBound || isPublicHost) {
+    findings.push({
+      checkId: "oc.searxng_exposure",
+      severity: "warn",
+      title: "SearXNG appears externally reachable",
+      detail: `SEARXNG_BASE_URL="${searxngUrl}" may expose an unauthenticated metasearch proxy to the network. SearXNG has no built-in auth.`,
+      remediation:
+        "Keep SearXNG on the internal Docker network (default: http://searxng:8080). If port-mapping is needed, restrict to loopback (127.0.0.1:8080:8080).",
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * Check Scrapling sidecar concurrency vs available resources.
+ * High concurrency with Playwright browsers can OOM small VMs.
+ */
+export function collectScraplingResourceFindings(
+  env: NodeJS.ProcessEnv = process.env,
+): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+  const scraplingUrl = env.SCRAPLING_BASE_URL ?? "";
+
+  if (!scraplingUrl) {
+    return findings;
+  }
+
+  const concurrency = parseInt(env.SCRAPLING_MAX_CONCURRENCY ?? "", 10);
+  if (!isNaN(concurrency) && concurrency > 10) {
+    findings.push({
+      checkId: "oc.scrapling_high_concurrency",
+      severity: "warn",
+      title: "Scrapling concurrency is high",
+      detail: `SCRAPLING_MAX_CONCURRENCY=${concurrency}. Each concurrent Playwright session uses ~150-250MB RAM. At ${concurrency} sessions, peak usage could reach ${Math.round(concurrency * 0.2)}GB.`,
+      remediation:
+        "For VMs with ≤4GB RAM, keep SCRAPLING_MAX_CONCURRENCY ≤ 5. Monitor memory usage during bursts.",
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * Check browser container isolation when sandbox mode is "all".
+ * If agents use sandbox=all but the browser container shares the host network,
+ * the sandbox boundary is weakened.
+ */
+export function collectBrowserSandboxAlignmentFindings(
+  cfg: OpenClawConfig,
+): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+
+  const defaultSandboxMode = cfg.agents?.defaults?.sandbox?.mode ?? "off";
+  const browserEnabled = cfg.browser?.enabled ?? true;
+
+  if (defaultSandboxMode !== "all" || !browserEnabled) {
+    return findings;
+  }
+
+  // Check if browser config has network_mode=host
+  const browserCfg = cfg.browser as Record<string, unknown> | undefined;
+  const browserDocker = browserCfg?.docker as Record<string, unknown> | undefined;
+  const networkMode = browserDocker?.networkMode ?? browserDocker?.network_mode;
+  if (networkMode === "host") {
+    findings.push({
+      checkId: "oc.browser_sandbox_network_leak",
+      severity: "warn",
+      title: "Browser container uses host network with sandbox=all",
+      detail:
+        "agents.defaults.sandbox.mode=all but browser.docker.networkMode=host. Sandboxed agents can reach host-local services through the browser container.",
+      remediation:
+        'Use a dedicated Docker network for browser containers or remove networkMode="host" from browser.docker.',
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * Check gateway bind vs CORS configuration for deployment mismatches.
+ * A gateway bound to 0.0.0.0 with no CORS restrictions is suspicious.
+ */
+export function collectGatewayBindCorsFindings(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+
+  const bind = typeof cfg.gateway?.bind === "string" ? cfg.gateway.bind : "loopback";
+  if (bind === "loopback") {
+    return findings;
+  }
+
+  // Gateway is remotely exposed — check auth
+  const tailscaleMode = cfg.gateway?.tailscale?.mode ?? "off";
+  const auth = resolveGatewayAuth({ authConfig: cfg.gateway?.auth, tailscaleMode, env });
+
+  if (auth.mode === "none") {
+    findings.push({
+      checkId: "oc.gateway_bind_no_auth",
+      severity: "critical",
+      title: "Gateway bound to network interface without authentication",
+      detail: `gateway.bind="${bind}" with auth.mode=none. Any host on the network can send agent commands.`,
+      remediation: "Set gateway.auth.mode to token/password, or restrict gateway.bind to loopback.",
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * Check agent count vs resource expectations.
+ * Many agents with browser containers can overwhelm small deployments.
+ */
+export function collectAgentResourceFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+
+  const agentCount = Array.isArray(cfg.agents?.list) ? cfg.agents.list.length : 0;
+  if (agentCount <= 5) {
+    return findings;
+  }
+
+  const browserEnabled = cfg.browser?.enabled ?? true;
+  const allHaveSandbox =
+    cfg.agents?.defaults?.sandbox?.mode === "all" ||
+    (cfg.agents?.list ?? []).every((a) => {
+      if (!a || typeof a !== "object") {
+        return true;
+      }
+      const sandbox = (a as Record<string, unknown>).sandbox as Record<string, unknown> | undefined;
+      return sandbox?.mode === "all" || sandbox?.mode === "non-main";
+    });
+
+  if (browserEnabled && allHaveSandbox && agentCount > 8) {
+    findings.push({
+      checkId: "oc.agent_count_resource_warning",
+      severity: "info",
+      title: `${agentCount} agents with browser + sandbox — high resource usage expected`,
+      detail: `${agentCount} agents configured, each potentially spawning a sandboxed Docker container + browser session. At peak this could require ${Math.round(agentCount * 0.5)}GB+ RAM.`,
+      remediation:
+        "Consider setting browser.enabled=false for agents that don't need web access, or use sandbox.mode=non-main to reduce container count.",
+    });
+  }
+
+  return findings;
+}

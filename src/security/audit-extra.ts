@@ -9,8 +9,11 @@
 
 // Sync collectors
 export {
+  collectAgentResourceFindings,
   collectAttackSurfaceSummaryFindings,
+  collectBrowserSandboxAlignmentFindings,
   collectExposureMatrixFindings,
+  collectGatewayBindCorsFindings,
   collectGatewayHttpNoAuthFindings,
   collectGatewayHttpSessionKeyOverrideFindings,
   collectHooksHardeningFindings,
@@ -21,6 +24,8 @@ export {
   collectNodeDenyCommandPatternFindings,
   collectSandboxDangerousConfigFindings,
   collectSandboxDockerNoopFindings,
+  collectScraplingResourceFindings,
+  collectSearxngExposureFindings,
   collectSecretsInConfigFindings,
   collectSmallModelRiskFindings,
   collectSyncedFolderFindings,
