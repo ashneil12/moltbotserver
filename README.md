@@ -72,18 +72,18 @@ This is a full-featured fork with a deep memory stack, browser containers, searc
 
 ### 🤖 Multi-Agent Architecture
 
-| Feature                          | Description                                                                                                                                                                                                                                                                |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Structured Agent Workspaces      | Each agent gets a purpose-built directory layout (`memory/`, `knowledge/`, `skills/`, `docs/`, `downloads/`, `diary.md`, `open-loops.md`, `IDENTITY.md`, etc.) seeded automatically at creation — no manual setup required                                                 |
-| **Full Tool Profile by Default** | All agents default to `tools.profile = "full"` — no arbitrary tool restrictions. The previous `"coding"` profile silently blocked browser, canvas, nodes, and agents_list. This is enforced on every gateway restart, so stale narrow profiles are automatically corrected |
-| Per-Agent Browser Containers     | Each agent gets a dedicated browser sandbox via Docker, not a shared browser                                                                                                                                                                                               |
-| Per-Agent OAuth                  | Removed credential inheritance — agents use only their own OAuth tokens                                                                                                                                                                                                    |
-| Autonomous Self-Improvement      | Each agent runs its own consciousness loop, self-review, deep review, and nightly innovation — standalone by default, not relying on external orchestration                                                                                                                |
-| Pre-Seeded Cron Jobs             | 12+ default cron jobs (reflection, maintenance, briefings, innovation, audits, memory extraction, skill evolution) automatically seeded per agent with `MAIN_ONLY_JOBS` filtering for sub-agents                                                                           |
-| Browser-Only Sandbox Mode        | `browser-only` sandbox mode for agents that need browser access without full containers                                                                                                                                                                                    |
-| Agent Browser Routing            | `createBrowserTool()` passes `agentId` so agents route to their own containers                                                                                                                                                                                             |
-| Per-Agent CLI Onboarding         | `--agent` and `--sync-all` flags for scoped credential setup _(upstream feature)_                                                                                                                                                                                          |
-| Self-Delegation Guidance         | Agents taught when and how to break their own work into focused subtasks via `sessions_spawn`, keeping context clean across independent workstreams                                                                                                                        |
+| Feature                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Structured Agent Workspaces      | Each agent gets a purpose-built directory layout (`memory/`, `knowledge/`, `skills/`, `docs/`, `downloads/`, `diary.md`, `open-loops.md`, `IDENTITY.md`, etc.) seeded automatically at creation — no manual setup required                                                                                                                                                                                                           |
+| **Full Tool Profile by Default** | All agents default to `tools.profile = "full"` — no arbitrary tool restrictions. The previous `"coding"` profile silently blocked browser, canvas, nodes, and agents_list. This is enforced on every gateway restart, so stale narrow profiles are automatically corrected                                                                                                                                                           |
+| Per-Agent Browser Containers     | Each agent gets a **dedicated, persistent browser container** via Docker — not a shared browser. State (cookies, sessions, localStorage) persists across restarts. Supports both CDP (Playwright) and **Chrome MCP** transport. noVNC built in — you can manually log into any agent's browser via `http://your-server/sbx-browser/<agentId>/` to watch them work, pre-authenticate sessions, or scroll social media on their behalf |
+| Per-Agent OAuth                  | Removed credential inheritance — agents use only their own OAuth tokens                                                                                                                                                                                                                                                                                                                                                              |
+| Autonomous Self-Improvement      | Each agent runs its own consciousness loop, self-review, deep review, and nightly innovation — standalone by default, not relying on external orchestration                                                                                                                                                                                                                                                                          |
+| Pre-Seeded Cron Jobs             | 12+ default cron jobs (reflection, maintenance, briefings, innovation, audits, memory extraction, skill evolution) automatically seeded per agent with `MAIN_ONLY_JOBS` filtering for sub-agents                                                                                                                                                                                                                                     |
+| Browser-Only Sandbox Mode        | `browser-only` sandbox mode for agents that need browser access without full containers                                                                                                                                                                                                                                                                                                                                              |
+| Agent Browser Routing            | `createBrowserTool()` passes `agentId` so agents route to their own containers                                                                                                                                                                                                                                                                                                                                                       |
+| Per-Agent CLI Onboarding         | `--agent` and `--sync-all` flags for scoped credential setup _(upstream feature)_                                                                                                                                                                                                                                                                                                                                                    |
+| Self-Delegation Guidance         | Agents taught when and how to break their own work into focused subtasks via `sessions_spawn`, keeping context clean across independent workstreams                                                                                                                                                                                                                                                                                  |
 
 ### 🧠 Consciousness & Memory
 
@@ -163,14 +163,17 @@ Restores are one-click from the dashboard, or import any `.tar.gz` from a commun
 
 ### 🌐 Browser Control
 
-| Feature                                                       | Description                                                                                                |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [Camofox](https://github.com/nicedaycode/camofox) Integration | Browser camouflage baked into container images — realistic fingerprint spoofing for anti-detection         |
-| Playwright Anti-Detection                                     | 8 evasion scripts covering `navigator.webdriver`, plugins, WebGL, `chrome.runtime`, iframe leaks, and more |
-| Parallel Profile Listing                                      | `Promise.all` replaces serial `for` loop — prevents timeout cascades with multiple remote profiles         |
-| Auto-Download Capture                                         | Browser downloads automatically route to per-agent workspace directories                                   |
-| Profile Timeout Tuning                                        | Bumped from 3s to 5s for reliability with 5+ remote profiles                                               |
-| Sandbox Browser API                                           | HTTP/WebSocket proxy with noVNC for browser container access                                               |
+| Feature                                                       | Description                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Camofox](https://github.com/nicedaycode/camofox) Integration | Browser camouflage baked into container images — realistic fingerprint spoofing for anti-detection                                                                                                                                                 |
+| Playwright Anti-Detection                                     | 8 evasion scripts covering `navigator.webdriver`, plugins, WebGL, `chrome.runtime`, iframe leaks, and more                                                                                                                                         |
+| Chrome MCP Transport                                          | Dual browser transport — agents can use traditional CDP (Playwright) or Chrome MCP for browser control. Automatically detected based on browser profile type                                                                                       |
+| noVNC Observer                                                | Every browser container includes noVNC on port 6080 — access any agent's browser live via `http://your-server/sbx-browser/<agentId>/`. Log in manually, pre-authenticate sessions, watch agents browse in real-time. Token-authenticated per agent |
+| Browser Downloads                                             | Agents can download files through their browser — downloads land in the `workspace/downloads/` directory. Auto-pruned after 10 days by the maintenance cron                                                                                        |
+| Parallel Profile Listing                                      | `Promise.all` replaces serial `for` loop — prevents timeout cascades with multiple remote profiles                                                                                                                                                 |
+| Auto-Download Capture                                         | Browser downloads automatically route to per-agent workspace directories                                                                                                                                                                           |
+| Profile Timeout Tuning                                        | Bumped from 3s to 5s for reliability with 5+ remote profiles                                                                                                                                                                                       |
+| Sandbox Browser API                                           | HTTP/WebSocket proxy with noVNC for browser container access                                                                                                                                                                                       |
 
 ### ⚡ Performance & Reliability
 
@@ -201,24 +204,49 @@ Restores are one-click from the dashboard, or import any `.tar.gz` from a commun
 > [!IMPORTANT]
 > **Migrating from another setup? Read this before copying identity files.**
 >
-> In this fork, **`SOUL.md` is intentionally left unchanged** across all agents — it acts as a shared constitutional framework (reflection tiers, core principles, identity continuity protections) and is not the place for personalisation. **Do not customise it per-agent.**
+> In this fork, **`SOUL.md` has been significantly rewritten** from upstream — it includes a 3-tier reflection system, Bias for Action philosophy, Ship of Theseus identity protection, human mode voice protocol, and more. However, it acts as a shared **constitutional framework** across all agents and is not the place for personalisation. **Do not customise it per-agent.**
 >
-> **`IDENTITY.md` is where the agent's actual personal identity lives** — their name, personality, relationship model, communication style, and self-defined rules. If you're transferring an agent from another OpenClaw setup, port their identity into `IDENTITY.md`, not `SOUL.md`.
+> **`IDENTITY.md` is where the agent's actual personal identity lives** — their name, personality, relationship model, communication style, and self-defined rules. This is the personality layer. If you're transferring an agent from another OpenClaw setup, port their identity into `IDENTITY.md`, not `SOUL.md`.
+>
+> #### Business Mode
+>
+> When enabled (`OPENCLAW_BUSINESS_MODE_ENABLED=1`), SOUL.md is replaced with the **Operator OS™** business guide — a 22KB strategic partner persona with 64 knowledge documents covering strategy, content, copywriting, operations, and growth frameworks. The agent becomes a strategic business partner rather than a general assistant. QMD indexes the knowledge docs for `workspace_search`.
+>
+> #### Human Voice Mode
+>
+> When enabled (`OPENCLAW_HUMAN_MODE_ENABLED=1`), agents load `howtobehuman.md` (philosophy of human communication) and `writelikeahuman.md` (practical writing patterns) into their context. The result: agents avoid AI tells, match tone to stakes, embrace imperfection, and develop authentic conversational voice. A self-check runs before every reply.
 
 ---
 
-### 🧰 Pre-Installed Team Skills
+### 🧰 Pre-Installed Skills
 
-This fork ships a set of **team-level skills** available to all agents out of the box. These are seeded into each agent's workspace at creation and cover the most common operational tasks for a multi-agent team. More will be added over time.
+This fork ships **62 pre-installed skills** available to all agents out of the box. These are seeded into each agent's workspace at creation and cover a wide range of operational, productivity, and integration tasks. Highlights:
 
-| Skill                | Description                                                                                                                                                                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create-agent`       | Full lifecycle setup for a new team member — identity, workspace, channels (Telegram/Discord), browser container, cron jobs, and memory seeding. Use this when adding a new agent, not just a new channel                                               |
-| `channel-team-setup` | Configure multi-agent messaging across Telegram and Discord. Covers `openclaw.json` bindings, `groupPolicy`, `requireMention`, sandbox settings, agent-to-agent communication, and platform quirks (Telegram privacy mode, Discord bot intents, etc.)   |
-| `cron-setup`         | Create, configure, and troubleshoot custom cron jobs for any agent. Covers job templates, delivery targets, schedule types, and common failure modes. Does **not** cover the standard seeded job set — that's handled by `enforce-config.mjs cron-seed` |
-| `review-pr`          | Read-only GitHub PR analysis using the `gh` CLI — structured feedback and readiness assessment. Does not merge or push                                                                                                                                  |
-| `prepare-pr`         | Rebase a PR branch onto main, fix review findings, run gates, and push to the PR head branch. Use after review, never merges directly                                                                                                                   |
-| `merge-pr`           | Squash-merge a reviewed and prepared PR via the `gh` CLI. Cleans up worktrees after success                                                                                                                                                             |
+| Skill                                                | Description                                                                                                                                     |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create-agent`                                       | Full lifecycle setup for a new team member — identity, workspace, channels (Telegram/Discord), browser container, cron jobs, and memory seeding |
+| `channel-team-setup`                                 | Configure multi-agent messaging across Telegram and Discord — bindings, group policy, sandbox settings, platform quirks                         |
+| `cron-setup`                                         | Create, configure, and troubleshoot custom cron jobs — job templates, delivery targets, schedule types, failure modes                           |
+| `review-pr`                                          | Read-only GitHub PR analysis using `gh` CLI — structured feedback and merge readiness assessment                                                |
+| `prepare-pr`                                         | Rebase PR onto main, fix review findings, run gates, push. Use after review, never merges directly                                              |
+| `merge-pr`                                           | Squash-merge a reviewed and prepared PR via `gh` CLI. Cleans up worktrees after success                                                         |
+| `prompt-guard`                                       | Prompt injection detection — teaches agents to use ACIP scanner for external content (emails, webhooks, API calls). Risk scoring + quarantine   |
+| `clawscan`                                           | Security scanning — workspaces, skills, dependencies, configs. Periodic sweep scheduling via cron                                               |
+| `coding-agent`                                       | Focused coding subtask delegation via `sessions_spawn`                                                                                          |
+| `session-logs`                                       | Session transcript export and analysis                                                                                                          |
+| `healthcheck`                                        | Agent health diagnostics and self-healing playbook execution                                                                                    |
+| `skill-creator`                                      | Autonomous skill creation from recurring patterns                                                                                               |
+| `blogwatcher`                                        | RSS/blog monitoring with summarization                                                                                                          |
+| `discord` / `slack`                                  | Channel-specific messaging guides and quirks                                                                                                    |
+| `github` / `gh-issues`                               | GitHub integration — repo management, issue tracking, PR workflows                                                                              |
+| `notion` / `obsidian` / `bear-notes` / `apple-notes` | Note-taking app integrations                                                                                                                    |
+| `openai-image-gen`                                   | Image generation via OpenAI's API                                                                                                               |
+| `openai-whisper`                                     | Audio transcription (local) and API-based speech-to-text                                                                                        |
+| `gemini`                                             | Gemini-specific model capabilities and usage patterns                                                                                           |
+| ...and 40+ more                                      | Covers iMessage, Apple Reminders, smart home (OpenHue), marketing, SEO, PDF handling, TTS, Oracle DB, and more                                  |
+
+> [!NOTE]
+> This list is a highlight reel — there are 62 skills total in `skills/`. The full list evolves as agents autonomously create new skills from recurring patterns via the `skill-creator` cron job.
 
 ---
 
@@ -581,6 +609,9 @@ This fork incorporates ideas, techniques, and patterns from across the AI agent 
 - **[Camofox](https://github.com/nicedaycode/camofox)** — browser fingerprint camouflage
 
 Many other improvements were drawn from ideas shared on Twitter/X, GitHub, Discord servers, and elsewhere. I didn't always keep track of the original sources while iterating quickly, so not everything has a traceable attribution link.
+
+> [!NOTE]
+> **This README may not cover every improvement.** Optimized Claw has hundreds of patches on top of upstream — some smaller fixes and enhancements may not be documented here. See `OPENCLAW_CHANGELOG.md` and `OPENCLAW_CONTEXT.md` in the repo for the full, granular changelog and conflict surface reference.
 
 **If you recognize a pattern, technique, or feature in this fork that originated in your repo or your work, please reach out.** I'm happy to add proper credit and a link. Email [info@openclawservers.com](mailto:info@openclawservers.com) and I'll get it sorted.
 
