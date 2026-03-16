@@ -21,7 +21,7 @@
 
 **Optimized Claw** is a production-hardened fork of [OpenClaw](https://github.com/openclaw/openclaw) — the open-source personal AI assistant. It tracks upstream closely but ships battle-tested fixes, multi-agent structure, security hardening, and infrastructure improvements needed to run OpenClaw reliably in production with multiple agents.
 
-Everything from upstream works as-is. Optimized Claw adds the layer on top: per-agent browser containers, autonomous consciousness loops, content security, a deep memory stack, session health monitoring, Docker reliability fixes, and tooling that makes multi-agent deployments actually stable.
+Everything from upstream works as-is. Optimized Claw adds the layer on top: per-agent browser containers, autonomous consciousness loops, content security, a deep memory stack, autonomous health monitoring with self-healing playbooks, bundled search and stealth scraping sidecars (SearXNG + Scrapling), Docker reliability fixes, and tooling that makes multi-agent deployments actually stable.
 
 If you want a single-agent personal assistant, upstream OpenClaw is great. If you want to run a **team of agents** on a server, keeping them secure, self-aware, and structured for multi-agent operation — this fork is for you.
 
@@ -46,13 +46,16 @@ Optimized Claw is a better fit than stock upstream if you are:
 
 ### 🔒 Security
 
-| Feature                    | Description                                                                                                                                                                                    |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [ACIP](ACIP_SECURITY.md)   | Advanced Cognitive Inoculation Prompt — baked into every agent. Defends against prompt injection, data exfiltration, and instruction manipulation across all external content and tool outputs |
-| Content Scanner            | Automatic content scanning with risk scoring on all external inputs (browser, web-fetch, cron). Scans everything agents touch from the outside world                                           |
-| Workspace Context Scanning | Bootstrap files (SOUL.md, IDENTITY.md, etc.) are scanned for prompt injection before entering the system prompt. Quarantined content is wrapped with ACIP boundary markers. Fail-open design   |
-| Data Classification        | Three-tier classification (Confidential / Internal / Public) with PII detection                                                                                                                |
-| Event Logger               | Structured JSONL event logging with PII redaction, log rotation, and queryable history                                                                                                         |
+| Feature                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [ACIP](ACIP_SECURITY.md)   | Advanced Cognitive Inoculation Prompt — baked into every agent. Defends against prompt injection, data exfiltration, and instruction manipulation across all external content and tool outputs                                                                                                                                                                                                                                       |
+| Content Scanner            | Automatic content scanning with risk scoring on all external inputs (browser, web-fetch, cron). Scans everything agents touch from the outside world                                                                                                                                                                                                                                                                                 |
+| Workspace Context Scanning | Bootstrap files (SOUL.md, IDENTITY.md, etc.) are scanned for prompt injection before entering the system prompt. Quarantined content is wrapped with ACIP boundary markers. Fail-open design                                                                                                                                                                                                                                         |
+| Data Classification        | Three-tier classification (Confidential / Internal / Public) with PII detection and precomputed regex patterns for performance                                                                                                                                                                                                                                                                                                       |
+| Event Logger               | Structured JSONL event logging with PII redaction, log rotation, and queryable history                                                                                                                                                                                                                                                                                                                                               |
+| AgentGuard                 | Inspired by [SkillGuard](https://github.com/ziwenxu/openclaw-skills) — three-part safety system: (1) secret redaction (14 regex patterns detect API keys, tokens, PEM keys in agent output — redacted before channel delivery), (2) security event journal (append-only JSONL for secret/injection/quarantine/audit events), (3) OC deployment audit (6 checks for SearXNG exposure, sandbox leaks, gateway auth, resource warnings) |
+| Prompt Guard Skill         | Teaches agents to detect and handle prompt injection using the existing ACIP scanner — risk scoring, quarantine handling, boundary markers                                                                                                                                                                                                                                                                                           |
+| ClawScan Skill             | Teaches agents to run comprehensive security sweeps across workspaces, skills, dependencies, and configurations using existing scanners and CLI tools                                                                                                                                                                                                                                                                                |
 
 ### 🤖 Multi-Agent Architecture
 
@@ -106,15 +109,18 @@ The result: agents remember what they did, learn from their patterns, and carry 
 
 ### 🛡️ Stability & Resilience
 
-| Feature                          | Description                                                                                                                                                                                                                                                                              |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session Health Sentinel          | [Autoresearch](https://github.com/karpathy/autoresearch)-inspired circuit breaker detecting cascading failures. Pure-function state management, degradation detection, and recovery hint injection. Wired into agent-runner at success/error/exception boundaries                        |
-| Crash Taxonomy                   | Every failover error is classified as `retry`, `adapt`, or `abandon` via `resolveFixability()`. Backward-compatible with existing `FailoverError` handling                                                                                                                               |
-| Post-Promotion Evidence Counters | [ACE Platform](https://github.com/DannyMac180/ace-platform)-inspired `[0H/0M]` hit/miss counters on promoted CRITICAL rules. Fully deterministic (prefix stemming, zero LLM calls). Rules where M ≥ H after 3+ observations are flagged for review                                       |
-| Identity Change-Log              | JSONL append log at `memory/reflection-change-log.jsonl` — tracks every identity file modification with timestamp, job ID, lines changed, promotions count. Auto-pruned at 200 entries                                                                                                   |
-| Stale Snapshot Prevention        | Three guards against ephemeral/stale data: (1) ephemeral path detection for `/tmp` and `tmpfs` mounts, (2) workspace freshness validation with auto-refresh, (3) session store `createdAt` tracking for deduplication — credit: [Brad Mills (@bradmillscan)](https://x.com/bradmillscan) |
-| Autonomous Problem-Solving       | Agents exhaust all alternative approaches before escalating. Layered at 4 levels: system prompt procedure, SOUL.md philosophy, IDENTITY.md behavior, OPERATIONS.md drift detection                                                                                                       |
-| Cron Schedule Redesign           | All cron jobs converted from unpredictable interval-based (`anchorMs: nowMs`) to fixed [croner](https://github.com/hexagon/croner) expressions or staggered anchors — eliminates the 10-job startup burst on boot                                                                        |
+| Feature                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Health Sentinel                  | Three-phase autonomous monitoring system running every ~30 min via the diagnostic heartbeat. **Tier 1:** deterministic playbook remediation (channel restart, disk cleanup, browser restart). **Tier 2:** structured escalation to the agent for AI-powered diagnosis. Configurable thresholds via `openclaw.json`, persistent rate-limit state, trend-aware history (JSONL), incident file writing, inbox summaries, and TTL-based auto-cleanup |
+| Sidecar Health Probes            | SearXNG and Scrapling Docker sidecars monitored via Health Sentinel — `/health` endpoint probes every ~30 min. Warnings by default (agents have fallback providers), escalation after 3+ consecutive failures                                                                                                                                                                                                                                    |
+| Browser Container Health Probes  | Sandbox browser Docker containers monitored via Health Sentinel — checks Docker state + CDP endpoint responsiveness. Unhealthy browsers auto-restarted via the browser-restart playbook. Single failure = auto-fixable, 3+ consecutive = escalated to agent                                                                                                                                                                                      |
+| Session Health Sentinel          | [Autoresearch](https://github.com/karpathy/autoresearch)-inspired circuit breaker detecting cascading failures. Pure-function state management, degradation detection, and recovery hint injection. Wired into agent-runner at success/error/exception boundaries                                                                                                                                                                                |
+| Crash Taxonomy                   | Every failover error is classified as `retry`, `adapt`, or `abandon` via `resolveFixability()`. Backward-compatible with existing `FailoverError` handling                                                                                                                                                                                                                                                                                       |
+| Post-Promotion Evidence Counters | [ACE Platform](https://github.com/DannyMac180/ace-platform)-inspired `[0H/0M]` hit/miss counters on promoted CRITICAL rules. Fully deterministic (prefix stemming, zero LLM calls). Rules where M ≥ H after 3+ observations are flagged for review                                                                                                                                                                                               |
+| Identity Change-Log              | JSONL append log at `memory/reflection-change-log.jsonl` — tracks every identity file modification with timestamp, job ID, lines changed, promotions count. Auto-pruned at 200 entries                                                                                                                                                                                                                                                           |
+| Stale Snapshot Prevention        | Three guards against ephemeral/stale data: (1) ephemeral path detection for `/tmp` and `tmpfs` mounts, (2) workspace freshness validation with auto-refresh, (3) session store `createdAt` tracking for deduplication — credit: [Brad Mills (@bradmillscan)](https://x.com/bradmillscan)                                                                                                                                                         |
+| Autonomous Problem-Solving       | Agents exhaust all alternative approaches before escalating. Layered at 4 levels: system prompt procedure, SOUL.md philosophy, IDENTITY.md behavior, OPERATIONS.md drift detection                                                                                                                                                                                                                                                               |
+| Cron Schedule Redesign           | All cron jobs converted from unpredictable interval-based (`anchorMs: nowMs`) to fixed [croner](https://github.com/hexagon/croner) expressions or staggered anchors — eliminates the 10-job startup burst on boot                                                                                                                                                                                                                                |
 
 ### 💾 Backup & Restore
 
@@ -130,14 +136,17 @@ Restores are one-click from the dashboard, or import any `.tar.gz` from a commun
 
 ### 🐳 Docker & Deployment
 
-| Feature                   | Description                                                                                                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| LCM Pre-Baked             | [Lossless Claw](https://github.com/martian-engineering/lossless-claw) plugin pre-installed in Docker image — no runtime `npm install` needed. Subshell fallback for build resilience |
-| CDP Host Header Fix       | `http.request()` workaround for Node.js `fetch()` silently dropping `Host` headers — without this, Docker hostnames fail                                                             |
-| Browser Startup Sweep     | Auto-updates stale browser containers on gateway boot                                                                                                                                |
-| Pre-Installed CLI Tooling | `ffmpeg`, `imagemagick`, `pandoc`, `yt-dlp`, `sqlite3`, `ripgrep`, and 15+ more tools baked into Docker image                                                                        |
-| Diagnostics Toolkit       | System health checks: PID file, port reachability, error rate, disk space                                                                                                            |
-| Document Converter        | Background sidecar converting `.pdf`, `.docx`, `.csv`, `.odt`, `.rtf`, `.epub` to markdown in agent workspaces                                                                       |
+| Feature                   | Description                                                                                                                                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| LCM Pre-Baked             | [Lossless Claw](https://github.com/martian-engineering/lossless-claw) plugin pre-installed in Docker image — no runtime `npm install` needed. Subshell fallback for build resilience                                                                                     |
+| SearXNG Sidecar           | [SearXNG](https://github.com/searxng/searxng) ships bundled — free, API-key-free metasearch aggregating 70+ engines. Engine selection UI in the dashboard with curated defaults. Auto-detected as search provider when `SEARXNG_BASE_URL` is set. 256MB memory limit     |
+| Scrapling Sidecar         | [Scrapling](https://github.com/D4Vinci/Scrapling) ships bundled — anti-bot-bypass stealth scraping via Playwright with real browser fingerprints. Integrated into `web_fetch` fallback chain (direct → Scrapling → Firecrawl). Semaphore-limited concurrency (default 5) |
+| Sidecar Auto-Provisioning | SearXNG and Scrapling Docker services auto-provisioned on every new deployment (Hetzner cloud-init) and kept up-to-date on existing instances via pull-update                                                                                                            |
+| CDP Host Header Fix       | `http.request()` workaround for Node.js `fetch()` silently dropping `Host` headers — without this, Docker hostnames fail                                                                                                                                                 |
+| Browser Startup Sweep     | Auto-updates stale browser containers on gateway boot                                                                                                                                                                                                                    |
+| Pre-Installed CLI Tooling | `ffmpeg`, `imagemagick`, `pandoc`, `yt-dlp`, `sqlite3`, `ripgrep`, and 15+ more tools baked into Docker image                                                                                                                                                            |
+| Diagnostics Toolkit       | System health checks: PID file, port reachability, error rate, disk space                                                                                                                                                                                                |
+| Document Converter        | Background sidecar converting `.pdf`, `.docx`, `.csv`, `.odt`, `.rtf`, `.epub` to markdown in agent workspaces                                                                                                                                                           |
 
 ### 🌐 Browser Control
 
@@ -152,14 +161,16 @@ Restores are one-click from the dashboard, or import any `.tar.gz` from a commun
 
 ### ⚡ Performance & Reliability
 
-| Feature                    | Description                                                                                                                                                                            |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shared File Utilities      | Crash-safe `atomicWriteFile()`, `readTextFileIfExists()`, `writeTextFileIfChanged()` extracted to shared `atomic-file.ts` — eliminates ~85 lines of duplicated patterns across 5 files |
-| Telegram Media Timeout     | 15s timeout on media downloads prevents hung downloads from blocking groups                                                                                                            |
-| Typing TTL Callback        | "⏳ Still thinking" feedback when LLM runs exceed the typing indicator TTL                                                                                                             |
-| Heartbeat Tuning           | Default interval changed from 30m to 1h to reduce unnecessary wakeups                                                                                                                  |
-| Exec Approval UX           | Long commands (e.g. multi-line heredocs) are height-capped and scrollable in the approval modal — buttons are always reachable within the timeout window                               |
-| Shell Injection Prevention | `enforceLCM()` uses `cpSync` + path validation instead of `execSync` with shell commands                                                                                               |
+| Feature                    | Description                                                                                                                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared File Utilities      | Crash-safe `atomicWriteFile()`, `readTextFileIfExists()`, `writeTextFileIfChanged()` extracted to shared `atomic-file.ts` — eliminates ~85 lines of duplicated patterns across 5 files                                |
+| Source-Aware Ranking       | [MiroFish](https://github.com/666ghj/MiroFish)-inspired 1.15× score multiplier for agent knowledge files (MEMORY.md, IDENTITY.md, diary) — ensures agent-written memory ranks higher than generic workspace documents |
+| Temporal Decay by Default  | Half-life–based recency boosting enabled by default (14-day half-life) — recent memory entries rank higher without configuration                                                                                      |
+| Telegram Media Timeout     | 15s timeout on media downloads prevents hung downloads from blocking groups                                                                                                                                           |
+| Typing TTL Callback        | "⏳ Still thinking" feedback when LLM runs exceed the typing indicator TTL                                                                                                                                            |
+| Heartbeat Tuning           | Default interval changed from 30m to 1h to reduce unnecessary wakeups                                                                                                                                                 |
+| Exec Approval UX           | Long commands (e.g. multi-line heredocs) are height-capped and scrollable in the approval modal — buttons are always reachable within the timeout window                                                              |
+| Shell Injection Prevention | `enforceLCM()` uses `cpSync` + path validation instead of `execSync` with shell commands                                                                                                                              |
 
 ### 🛠️ Agent Identity & Tooling
 
@@ -252,14 +263,51 @@ Install note: the public brand is **Optimized Claw**, but the command stays `ope
 
 ### Docker
 
+**Quick start:**
+
 ```bash
+git clone https://github.com/ashneil12/optimized-claw.git
+cd optimized-claw
+
+# Copy env template and set your API key
+cp .env.example .env
+# Edit .env — set at least one provider API key (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)
+
+# Use the pre-built image (no local build needed)
+echo 'OPENCLAW_IMAGE=ghcr.io/ashneil12/optimized-claw:main' >> .env
+
+# Set config/workspace paths
+echo 'OPENCLAW_CONFIG_DIR=./data/config' >> .env
+echo 'OPENCLAW_WORKSPACE_DIR=./data/workspace' >> .env
+
+# Start everything
 docker compose up -d
 ```
+
+The gateway is now at `http://localhost:18789`. Run `docker compose exec openclaw-cli openclaw` to interact.
+
+> [!IMPORTANT]
+> **A Gemini API key is strongly recommended.** The memory stack defaults to Gemini models — **Gemini Embed 2** for QMD memory embeddings, and **Flash Lite** for LCM conversation summarization and ByteRover knowledge curation. Get a free key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and add `GEMINI_API_KEY=AIza...` to your `.env`. Without it, memory search and summarization will fall back to your primary provider (if supported) or be unavailable. You can also swap embeddings to OpenAI (`text-embedding-3-small`) and summarization to `gpt-4o-mini` by configuring the providers in `openclaw.json`.
+
+All fork-specific features (QMD memory, SearXNG, Scrapling, cron jobs, ACIP security) are enabled automatically. To enable optional features, add them to your `.env`:
+
+```env
+# Per-agent browser containers
+OPENCLAW_BROWSER_ENABLED=1
+
+# ByteRover local knowledge curation (needs a free Gemini API key)
+BYTEROVER_GEMINI_KEY=AIza...
+
+# Business mode, human voice, etc. — see .env.example for full list
+```
+
+Then `docker compose restart openclaw-gateway`.
 
 Published images:
 
 - `ghcr.io/ashneil12/optimized-claw:main`
 - `ghcr.io/ashneil12/optimized-claw-browser:main`
+- `ghcr.io/ashneil12/optimized-claw-scrapling:latest`
 
 ### Browser Containers (Self-Hosted)
 
@@ -271,28 +319,98 @@ Per-agent browser containers are one of the core design principles of this fork 
 2. On every gateway restart, `enforce-config.mjs` auto-creates browser profiles in `openclaw.json` pointing each agent to their own `browser-<agentId>:9222` container — no manual config editing needed
 3. You control scaling: one shared container works for small teams; for full isolation, run one browser container per agent (the `create-agent` skill handles this automatically)
 
-**To enable browsers**, set the following environment variable in your `docker-compose.yml` or `.env`:
-
-```env
-OPENCLAW_BROWSER_ENABLED=1
-```
-
-Then add a browser service for each agent. Paste this prompt into any AI coding agent (Antigravity, Claude Code, Cursor, etc.) to wire it up:
-
-```
-I'm self-hosting Optimized Claw. My project has a docker-compose.yml.
-Please:
-1. Add a `browser` service using the image ghcr.io/ashneil12/optimized-claw-browser:main
-   with the correct ports (9222 for CDP) and a named volume for browser data
-2. Add OPENCLAW_BROWSER_ENABLED=1 and BROWSER_ENDPOINT_URL=http://browser:9222
-   to the main server service's environment
-3. Add `depends_on: [browser]` to the main server service so the browser
-   starts first
-4. Update .env.example with the new vars and comments explaining them
-```
+**To enable browsers**, add `OPENCLAW_BROWSER_ENABLED=1` to your `.env`, then paste the prompt below into any AI coding agent to wire it up.
 
 > [!NOTE]
 > When you add a new agent via the `create-agent` skill, a dedicated `browser-<agentId>` container is provisioned automatically on the next gateway restart — no manual steps. The browser tool is routed to that agent's container, not a shared one.
+
+### AI-Assisted Self-Hosting Setup
+
+If you want help deploying Optimized Claw — on a local machine (Mac mini, NUC, etc.), a cloud VPS (Hetzner, DigitalOcean, AWS, etc.), or migrating from upstream OpenClaw — paste the prompt below into any AI coding agent (**Antigravity, Claude Code, Cursor, Windsurf, etc.**). It covers everything: Docker, TLS, SSH, browser containers, migration, and environment config.
+
+<details>
+<summary><strong>📋 Click to expand — Self-Hosting Setup Prompt</strong></summary>
+
+```
+I want to self-host Optimized Claw (a production-hardened OpenClaw fork).
+The repo is: https://github.com/ashneil12/optimized-claw
+
+Please help me set up a fully working deployment. Here is my environment:
+- Platform: [Mac mini / Ubuntu VPS / Hetzner / DigitalOcean / AWS / other — fill in]
+- Already have Docker installed: [yes / no]
+- Already have an existing OpenClaw setup: [yes — migrating / no — fresh install]
+- AI provider: [OpenAI / Anthropic / Google Gemini / OpenRouter / other — fill in]
+
+Do the following:
+
+## 1. System Prerequisites
+- Install Docker and Docker Compose if not already installed
+- For VPS: Set up SSH key authentication (disable password login), configure UFW firewall
+  (allow only 22, 80, 443), install fail2ban
+- For Mac: Ensure Docker Desktop is running
+
+## 2. Clone and Configure
+- Clone the Optimized Claw repo
+- Copy .env.example to .env
+- Set OPENCLAW_IMAGE=ghcr.io/ashneil12/optimized-claw:main
+- Set OPENCLAW_CONFIG_DIR=./data/config and OPENCLAW_WORKSPACE_DIR=./data/workspace
+- Set the correct API key for my provider (OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, etc.)
+- Generate a strong gateway token: OPENCLAW_GATEWAY_TOKEN=$(openssl rand -hex 32)
+- IMPORTANT: Also set GEMINI_API_KEY (get a free key at https://aistudio.google.com/apikey).
+  Even if using a different primary provider, the memory stack defaults to Gemini:
+  Gemini Embed 2 for QMD embeddings, and Flash Lite for LCM summarization and ByteRover.
+  Without it, memory search and summarization won't work.
+  Alternative: configure OpenAI embeddings (text-embedding-3-small) and summarization
+  (gpt-4o-mini) manually in openclaw.json.
+
+## 3. Optional Features (enable if I requested them)
+- Browser containers: Add a `browser` service to docker-compose.yml using image
+  ghcr.io/ashneil12/optimized-claw-browser:main with ports 9222 (CDP) and 6080 (noVNC),
+  a named volume for browser data, and add OPENCLAW_BROWSER_ENABLED=1 to .env.
+  Add depends_on: [browser] to the gateway service.
+  For Docker socket access (sandbox browser management), mount /var/run/docker.sock
+  and /usr/bin/docker:ro to the gateway service.
+- ByteRover memory: Add BYTEROVER_GEMINI_KEY=<my-gemini-key> to .env
+  (get a free key at https://aistudio.google.com/apikey)
+- Business mode: Add OPENCLAW_BUSINESS_MODE_ENABLED=1 to .env
+- Human voice: Add OPENCLAW_HUMAN_MODE_ENABLED=1 to .env
+
+## 4. TLS / HTTPS (VPS only)
+- If I have a domain, set up Caddy as a reverse proxy with automatic HTTPS:
+  - Create a Caddyfile that proxies my domain to openclaw-gateway:18789
+  - Add a caddy service to docker-compose.yml with ports 80 and 443
+  - Point my domain's DNS A record to the server's IP
+
+## 5. Migration from Upstream OpenClaw (if applicable)
+- Back up my existing ~/.openclaw directory
+- Stop the existing OpenClaw gateway/daemon
+- The new fork uses the same ~/.openclaw config paths, so my existing config carries over
+- Start the new deployment — enforce-config.mjs will normalize the config on first boot
+- Run `docker compose exec openclaw-cli openclaw doctor` to verify everything is healthy
+- Verify patches survived: grep for httpRequestWithHostOverride in cdp.helpers.ts,
+  Promise.all in server-context.ts, tools.profile = "full" in enforce-config.mjs
+
+## 6. Start and Verify
+- Run docker compose up -d
+- Wait for the gateway to be healthy (check docker compose logs -f openclaw-gateway)
+- Confirm I can access the Control UI at http://localhost:18789 (or my domain)
+- Run docker compose exec openclaw-cli openclaw doctor to validate
+- Show me how to interact with the CLI: docker compose exec -it openclaw-cli openclaw
+
+## 7. Maintenance
+- Show me how to update: docker compose pull && docker compose up -d
+- Explain the .env file and which settings I can change
+- Warn me NOT to use upstream openclaw update commands or pull openclawai/openclaw images
+
+Do NOT use the upstream openclawai/openclaw Docker image — it is missing all of this fork's
+patches (multi-agent, browser containers, memory stack, security hardening, etc.).
+Only use ghcr.io/ashneil12/optimized-claw:main.
+```
+
+</details>
+
+> [!TIP]
+> **Don't want to manage infrastructure?** [OpenClaw Servers](https://openclawservers.com) offers 1-click managed hosting with automatic TLS, browser containers, OTA updates, backups, and a dashboard — all pre-configured. BYOK (Bring Your Own Key) supported.
 
 ---
 
@@ -411,10 +529,15 @@ These environment variables control features unique to Optimized Claw. Set them 
 
 | Variable                         | Default                     | Description                                                                                                                                                                            |
 | -------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OPENCLAW_QMD_ENABLED`           | `0`                         | Enable QMD as the primary memory backend (enforced on every restart). When enabled, sets hybrid vector+text search, 5m update intervals, and boot-time sync                            |
+| `OPENCLAW_QMD_ENABLED`           | `true`                      | QMD as the primary memory backend (enforced on every restart). Sets hybrid vector+text search, 5m update intervals, and boot-time sync. Set to `0` to disable                          |
 | `OPENCLAW_BUSINESS_MODE_ENABLED` | `0`                         | Enable Business Mode — transforms the agent into a strategic business partner with a 22KB guide and 64 knowledge documents across strategy, content, copywriting, operations, and more |
 | `OPENCLAW_HUMAN_MODE_ENABLED`    | `0`                         | Enable human voice mode — makes agent communication more natural and conversational                                                                                                    |
 | `OPENCLAW_BROWSER_ENABLED`       | `0`                         | Enable per-agent browser containers. When set, `browser` is added to every agent's effective tool allowlist regardless of profile                                                      |
+| `SEARXNG_BASE_URL`               | `http://searxng:8080`       | SearXNG metasearch instance URL — triggers auto-detection as search provider. Set automatically when using Docker                                                                      |
+| `SEARXNG_ENGINES`                | curated defaults            | Comma-separated list of SearXNG engine slugs to use (e.g. `google,bing,duckduckgo,wikipedia`). Configurable via the dashboard engine selection UI                                      |
+| `SCRAPLING_BASE_URL`             | `http://scrapling:8765`     | Scrapling stealth scraping service URL — auto-enables Scrapling in the `web_fetch` fallback chain. Set automatically when using Docker                                                 |
+| `SCRAPLING_STEALTH_CONCURRENCY`  | `5`                         | Max concurrent Scrapling stealth sessions (~150-250MB RAM each)                                                                                                                        |
+| `SCRAPLING_TIMEOUT`              | `30`                        | Default Scrapling timeout in seconds                                                                                                                                                   |
 | `MOLTBOT_BACKUP_ENABLED`         | —                           | Set to `true` to enable scheduled automatic backups. Requires `MOLTBOT_SUPABASE_URL`, `MOLTBOT_SUPABASE_SERVICE_ROLE_KEY`, and `MOLTBOT_INSTANCE_ID`                                   |
 | `MOLTBOT_LOCAL_BACKUP_DIR`       | `~/.clawdbot/local-backups` | Local directory for 14-day backup retention alongside cloud copies                                                                                                                     |
 | `LCM_FRESH_TAIL_COUNT`           | `20`                        | Messages to keep unsummarized in LCM context assembly                                                                                                                                  |
@@ -437,6 +560,10 @@ This fork incorporates ideas, techniques, and patterns from across the AI agent 
 - **[ACE Platform](https://github.com/DannyMac180/ace-platform)** by [Danny McAteer](https://github.com/DannyMac180) — post-promotion evidence counters and structured outcome logging
 - **[MetaClaw](https://github.com/aiming-lab/MetaClaw)** — failure-driven skill evolution via structured reflection
 - **[Hermes Agent](https://github.com/NousResearch/hermes-agent)** by NousResearch — progressive disclosure architecture for token-efficient skill indexing
+- **[SkillGuard](https://github.com/ziwenxu/openclaw-skills)** by [Ziwen Xu](https://github.com/ziwenxu) — AgentGuard secret redaction and security skills architecture
+- **[MiroFish](https://github.com/666ghj/MiroFish)** by [666ghj](https://github.com/666ghj) — source-aware ranking for memory search relevance
+- **[SearXNG](https://github.com/searxng/searxng)** — privacy-respecting metasearch engine (bundled sidecar)
+- **[Scrapling](https://github.com/D4Vinci/Scrapling)** by [D4Vinci](https://github.com/D4Vinci) — stealth scraping backend with anti-bot-bypass via Playwright
 - **[Brad Mills (@bradmillscan)](https://x.com/bradmillscan)** — stale snapshot prevention analysis and ephemeral path failure modes
 - **[Camofox](https://github.com/nicedaycode/camofox)** — browser fingerprint camouflage
 
