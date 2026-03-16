@@ -5,6 +5,34 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Sidecar Deployment Infrastructure (2026-03-16)
+
+**Purpose:** Integrate SearXNG and Scrapling into the Hetzner VM deployment lifecycle — provisioning, soft redeploy, and pull-update. Both sidecars are now deployed automatically with every new instance and kept up-to-date on existing ones.
+
+| Component           | Change                                                                                                                         | Location                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Cloud-init template | Added `searxng` (`searxng/searxng:latest`) + `scrapling` (`ghcr.io/ashneil12/optimized-claw-scrapling:latest`) to compose file | `moltbot-dashboard: hetzner-instance-service.ts` |
+| SearXNG settings    | `settings.yml` written inline during provisioning + `ensureSearxngSettings()` idempotent helper for existing instances         | `moltbot-dashboard: hetzner-instance-service.ts` |
+| Env vars            | `SEARXNG_BASE_URL=http://searxng:8080` + `SCRAPLING_BASE_URL=http://scrapling:8765` added to `.env` and compose                | `moltbot-dashboard: hetzner-instance-service.ts` |
+| Soft redeploy       | `docker compose up -d --force-recreate ... searxng scrapling`                                                                  | `moltbot-dashboard: hetzner-instance-service.ts` |
+| Pull update         | `docker compose pull ... searxng scrapling` + `up -d --force-recreate`                                                         | `moltbot-dashboard: hetzner-instance-service.ts` |
+| GHCR image          | Scrapling Docker image built + pushed to `ghcr.io/ashneil12/optimized-claw-scrapling:latest`                                   | Dockerfile.scrapling                             |
+
+---
+
+## Browser Container Health Probes + Auto-Restart Playbook (2026-03-16)
+
+**Purpose:** Monitor sandbox browser Docker containers via Health Sentinel. Probes check Docker state + CDP endpoint responsiveness. Unhealthy browsers are auto-restarted via the browser-restart playbook.
+
+| File                                       | Change                                                                                                                   | Upstream Risk                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| `src/logging/health-sentinel-types.ts`     | Added `checkBrowserHealth` to `DoctorProbes`, moved `RemediationContext` to playbooks                                    | Low — additive                   |
+| `src/logging/health-sentinel.ts`           | Browser classification: `auto-fixable` (single failure), `needs-agent` (3+ consecutive)                                  | Low — additive                   |
+| `src/logging/health-sentinel-playbooks.ts` | Browser restart playbook: `restartBrowserContainer` + `probeBrowserCdp` verify                                           | Low — additive                   |
+| `src/logging/diagnostic.ts`                | `checkBrowserHealth` probe (Docker inspect + CDP probe), `restartBrowserContainer`/`probeBrowserCdp` remediation context | Low — runs in existing heartbeat |
+
+---
+
 ## Health Sentinel — SearXNG & Scrapling Sidecar Probes (2026-03-16)
 
 **Purpose:** Connect SearXNG and Scrapling Docker sidecars to the existing Health Sentinel monitoring system. Probes hit each service's `/health` endpoint every ~30 minutes and report status via the standard `CheckResult` pipeline.
