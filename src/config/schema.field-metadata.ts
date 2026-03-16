@@ -428,9 +428,10 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.message.crossContext.marker.suffix":
     'Text suffix for cross-context markers (supports "{channel}").',
   "tools.message.broadcast.enabled": "Enable broadcast action (default: true).",
-  "tools.web.search.enabled": "Enable the web_search tool (requires a provider API key).",
+  "tools.web.search.enabled":
+    "Enable the web_search tool (requires a provider API key or SearXNG instance).",
   "tools.web.search.provider":
-    'Search provider ("tavily", "brave", "perplexity", "grok", "gemini", or "kimi").',
+    'Search provider ("brave", "gemini", "grok", "kimi", "perplexity", or "searxng").',
   "tools.web.search.apiKey": "Brave Search API key (fallback: BRAVE_API_KEY env var).",
   "tools.web.search.maxResults": "Default number of results to return (1-10).",
   "tools.web.search.timeoutSeconds": "Timeout in seconds for web_search requests.",
@@ -465,6 +466,15 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.web.fetch.firecrawl.maxAgeMs":
     "Firecrawl maxAge (ms) for cached results when supported by the API.",
   "tools.web.fetch.firecrawl.timeoutSeconds": "Timeout in seconds for Firecrawl requests.",
+  "tools.web.search.searxng.baseUrl":
+    "SearXNG instance base URL (fallback: SEARXNG_BASE_URL env var).",
+  "tools.web.fetch.scrapling.enabled":
+    "Enable Scrapling stealth scraping backend (default: true when SCRAPLING_BASE_URL is set).",
+  "tools.web.fetch.scrapling.baseUrl":
+    "Scrapling service base URL (fallback: SCRAPLING_BASE_URL env var).",
+  "tools.web.fetch.scrapling.timeoutSeconds": "Timeout in seconds for Scrapling requests.",
+  "tools.web.fetch.scrapling.stealth":
+    "Use stealth mode (Playwright + anti-bot bypass) by default.",
   "channels.slack.allowBots":
     "Allow bot-authored messages to trigger Slack replies (default: false).",
   "channels.slack.thread.historyScope":

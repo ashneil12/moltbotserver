@@ -44,6 +44,7 @@ const DEFAULT_ERROR_MAX_CHARS = 4_000;
 const DEFAULT_ERROR_MAX_BYTES = 64_000;
 const DEFAULT_FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
 const DEFAULT_FIRECRAWL_MAX_AGE_MS = 172_800_000;
+const DEFAULT_SCRAPLING_TIMEOUT_SECONDS = 30;
 const DEFAULT_FETCH_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
@@ -102,6 +103,58 @@ function resolveFetchReadabilityEnabled(fetch?: WebFetchConfig): boolean {
     return fetch.readability;
   }
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Scrapling config resolvers
+// ---------------------------------------------------------------------------
+
+type ScraplingFetchConfig =
+  | {
+      enabled?: boolean;
+      baseUrl?: string;
+      timeoutSeconds?: number;
+      stealth?: boolean;
+    }
+  | undefined;
+
+function resolveScraplingConfig(fetch?: WebFetchConfig): ScraplingFetchConfig {
+  if (!fetch || typeof fetch !== "object") {
+    return undefined;
+  }
+  const scrapling = "scrapling" in fetch ? fetch.scrapling : undefined;
+  if (!scrapling || typeof scrapling !== "object") {
+    return undefined;
+  }
+  return scrapling as ScraplingFetchConfig;
+}
+
+function resolveScraplingEnabled(params: {
+  scrapling?: ScraplingFetchConfig;
+  baseUrl?: string;
+}): boolean {
+  if (typeof params.scrapling?.enabled === "boolean") {
+    return params.scrapling.enabled;
+  }
+  // Auto-enable when base URL is available
+  return !!params.baseUrl;
+}
+
+function resolveScraplingBaseUrl(scrapling?: ScraplingFetchConfig): string | undefined {
+  const fromConfig = scrapling?.baseUrl?.trim();
+  const fromEnv = process.env.SCRAPLING_BASE_URL?.trim();
+  return fromConfig || fromEnv || undefined;
+}
+
+function resolveScraplingTimeoutSeconds(scrapling?: ScraplingFetchConfig): number {
+  return resolveTimeoutSeconds(scrapling?.timeoutSeconds, DEFAULT_SCRAPLING_TIMEOUT_SECONDS);
+}
+
+function resolveScraplingStealthDefault(scrapling?: ScraplingFetchConfig): boolean {
+  if (typeof scrapling?.stealth === "boolean") {
+    return scrapling.stealth;
+  }
+  return true; // default to stealth mode
 }
 
 function resolveFetchMaxCharsCap(fetch?: WebFetchConfig): number {
@@ -205,6 +258,65 @@ function resolveMaxChars(value: unknown, fallback: number, cap: number): number 
 function resolveMaxRedirects(value: unknown, fallback: number): number {
   const parsed = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   return Math.max(0, Math.floor(parsed));
+}
+
+// ---------------------------------------------------------------------------
+// Scrapling fetch
+// ---------------------------------------------------------------------------
+
+type ScraplingFetchResponse = {
+  url: string;
+  finalUrl?: string;
+  status: number;
+  title?: string;
+  text: string;
+  extractor: string;
+  tookMs?: number;
+  stealth?: boolean;
+};
+
+export async function fetchScraplingContent(params: {
+  url: string;
+  baseUrl: string;
+  timeoutSeconds: number;
+  stealth: boolean;
+  extractMode: ExtractMode;
+}): Promise<{ text: string; title?: string; finalUrl?: string; status?: number }> {
+  // baseUrl is a trusted internal Docker hostname (e.g. http://scrapling:8765),
+  // not user-supplied — no SSRF concern here.
+  const endpoint = `${params.baseUrl.replace(/\/+$/, "")}/fetch`;
+
+  // The Scrapling server adds its own padding on top of the requested timeout
+  // (5s for basic, 10s for stealth). The client-side AbortSignal must exceed
+  // the server's total timeout to avoid premature client-side aborts.
+  const clientTimeoutMs = (params.timeoutSeconds + 15) * 1000;
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url: params.url,
+      mode: params.extractMode,
+      stealth: params.stealth,
+      timeout: params.timeoutSeconds,
+    }),
+    signal: withTimeout(undefined, clientTimeoutMs),
+  });
+
+  if (!res.ok) {
+    const detailResult = await readResponseText(res, { maxBytes: 64_000 });
+    throw new Error(
+      `Scrapling fetch error (${res.status}): ${detailResult.text || res.statusText}`,
+    );
+  }
+
+  const data = (await res.json()) as ScraplingFetchResponse;
+  return {
+    text: data.text ?? "",
+    title: data.title,
+    finalUrl: data.finalUrl,
+    status: data.status,
+  };
 }
 
 function looksLikeHtml(value: string): boolean {
@@ -457,6 +569,10 @@ type WebFetchRuntimeParams = FirecrawlRuntimeParams & {
   cacheTtlMs: number;
   userAgent: string;
   readabilityEnabled: boolean;
+  scraplingEnabled: boolean;
+  scraplingBaseUrl?: string;
+  scraplingTimeoutSeconds: number;
+  scraplingStealthDefault: boolean;
 };
 
 function toFirecrawlContentParams(
@@ -561,7 +677,7 @@ async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string
     if (error instanceof SsrFBlockedError) {
       throw error;
     }
-    const payload = await maybeFetchFirecrawlWebFetchPayload({
+    const payload = await maybeScraplingOrFirecrawlFallback({
       ...params,
       urlToFetch: finalUrl,
       finalUrlFallback: finalUrl,
@@ -577,7 +693,7 @@ async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string
 
   try {
     if (!res.ok) {
-      const payload = await maybeFetchFirecrawlWebFetchPayload({
+      const payload = await maybeScraplingOrFirecrawlFallback({
         ...params,
         urlToFetch: params.url,
         finalUrlFallback: finalUrl,
@@ -628,14 +744,17 @@ async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string
           title = readable.title;
           extractor = "readability";
         } else {
-          const firecrawl = await tryFirecrawlFallback({ ...params, url: finalUrl });
-          if (firecrawl) {
-            text = firecrawl.text;
-            title = firecrawl.title;
-            extractor = "firecrawl";
+          const scraplingOrFirecrawl = await tryScraplingOrFirecrawlFallback({
+            ...params,
+            url: finalUrl,
+          });
+          if (scraplingOrFirecrawl) {
+            text = scraplingOrFirecrawl.text;
+            title = scraplingOrFirecrawl.title;
+            extractor = scraplingOrFirecrawl.extractor;
           } else {
             throw new Error(
-              "Web fetch extraction failed: Readability and Firecrawl returned no content.",
+              "Web fetch extraction failed: Readability, Scrapling, and Firecrawl returned no content.",
             );
           }
         }
@@ -703,6 +822,99 @@ async function tryFirecrawlFallback(
   }
 }
 
+/**
+ * Try Scrapling stealth scraping fallback, then Firecrawl.
+ * Returns result with extractor name, or null if both fail.
+ */
+async function tryScraplingOrFirecrawlFallback(
+  params: WebFetchRuntimeParams & { url: string },
+): Promise<{ text: string; title?: string; extractor: string } | null> {
+  // Try Scrapling first
+  if (params.scraplingEnabled && params.scraplingBaseUrl) {
+    try {
+      const result = await fetchScraplingContent({
+        url: params.url,
+        baseUrl: params.scraplingBaseUrl,
+        timeoutSeconds: params.scraplingTimeoutSeconds,
+        stealth: params.scraplingStealthDefault,
+        extractMode: params.extractMode,
+      });
+      if (result.text) {
+        return { text: result.text, title: result.title, extractor: "scrapling" };
+      }
+    } catch (e) {
+      logDebug(
+        `[web-fetch] Scrapling fallback failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+  // Then try Firecrawl
+  const firecrawl = await tryFirecrawlFallback(params);
+  if (firecrawl) {
+    return { text: firecrawl.text, title: firecrawl.title, extractor: "firecrawl" };
+  }
+  return null;
+}
+
+/**
+ * Build a full web_fetch payload from a Scrapling or Firecrawl fallback on
+ * network-error / non-2xx paths.
+ */
+async function maybeScraplingOrFirecrawlFallback(
+  params: WebFetchRuntimeParams & {
+    urlToFetch: string;
+    finalUrlFallback: string;
+    statusFallback: number;
+    cacheKey: string;
+    tookMs: number;
+  },
+): Promise<Record<string, unknown> | null> {
+  // Try Scrapling first
+  if (params.scraplingEnabled && params.scraplingBaseUrl) {
+    try {
+      const result = await fetchScraplingContent({
+        url: params.urlToFetch,
+        baseUrl: params.scraplingBaseUrl,
+        timeoutSeconds: params.scraplingTimeoutSeconds,
+        stealth: params.scraplingStealthDefault,
+        extractMode: params.extractMode,
+      });
+      if (result.text) {
+        const wrapped = wrapWebFetchContent(result.text, params.maxChars);
+        const wrappedTitle = result.title ? wrapWebFetchField(result.title) : undefined;
+        const payload = {
+          url: params.url,
+          finalUrl: result.finalUrl || params.finalUrlFallback,
+          status: result.status ?? params.statusFallback,
+          title: wrappedTitle,
+          extractMode: params.extractMode,
+          extractor: "scrapling",
+          externalContent: {
+            untrusted: true,
+            source: "web_fetch",
+            wrapped: true,
+          },
+          truncated: wrapped.truncated,
+          length: wrapped.wrappedLength,
+          rawLength: wrapped.rawLength,
+          wrappedLength: wrapped.wrappedLength,
+          fetchedAt: new Date().toISOString(),
+          tookMs: params.tookMs,
+          text: wrapped.text,
+        };
+        writeCache(FETCH_CACHE, params.cacheKey, payload, params.cacheTtlMs);
+        return payload;
+      }
+    } catch (e) {
+      logDebug(
+        `[web-fetch] Scrapling fallback failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+  // Then try Firecrawl
+  return maybeFetchFirecrawlWebFetchPayload(params);
+}
+
 function resolveFirecrawlEndpoint(baseUrl: string): string {
   const trimmed = baseUrl.trim();
   if (!trimmed) {
@@ -746,6 +958,17 @@ export function createWebFetchTool(options?: {
     firecrawl?.timeoutSeconds ?? fetch?.timeoutSeconds,
     DEFAULT_TIMEOUT_SECONDS,
   );
+
+  // Scrapling stealth scraping backend
+  const scraplingConfig = resolveScraplingConfig(fetch);
+  const scraplingBaseUrl = resolveScraplingBaseUrl(scraplingConfig);
+  const scraplingEnabled = resolveScraplingEnabled({
+    scrapling: scraplingConfig,
+    baseUrl: scraplingBaseUrl,
+  });
+  const scraplingTimeoutSeconds = resolveScraplingTimeoutSeconds(scraplingConfig);
+  const scraplingStealthDefault = resolveScraplingStealthDefault(scraplingConfig);
+
   const userAgent =
     (fetch && "userAgent" in fetch && typeof fetch.userAgent === "string" && fetch.userAgent) ||
     DEFAULT_FETCH_USER_AGENT;
@@ -784,6 +1007,10 @@ export function createWebFetchTool(options?: {
         firecrawlProxy: "auto",
         firecrawlStoreInCache: true,
         firecrawlTimeoutSeconds,
+        scraplingEnabled,
+        scraplingBaseUrl,
+        scraplingTimeoutSeconds,
+        scraplingStealthDefault,
       });
       return jsonResult(result);
     },

@@ -5,6 +5,95 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## SearXNG Search Provider & Scrapling Stealth Scraping Backend (2026-03-16)
+
+**Purpose:** Self-hosted search and stealth scraping sidecars that ship with every deployment. [SearXNG](https://github.com/searxng/searxng) provides free, API-key-free metasearch (aggregates 70+ engines). [Scrapling](https://github.com/D4Vinci/Scrapling) (by [D4Vinci](https://github.com/D4Vinci)) provides anti-bot-bypass stealth scraping via Playwright with real browser fingerprints. Both run as shared Docker services — all agents hit the same instances, with Scrapling's concurrency defaulting to 5 concurrent sessions.
+
+### Feature 1 — SearXNG Search Provider
+
+New `"searxng"` search provider with auto-detection. When `SEARXNG_BASE_URL` is set (default: `http://searxng:8080`), SearXNG is auto-detected as the provider. API-key providers (Brave, Gemini, etc.) take priority in auto-detection when both are available. Explicit `provider: "searxng"` overrides all auto-detection.
+
+| File                                            | Change                                                                                                                                                                                                                                                                                        | Upstream Risk                   |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `src/agents/tools/web-search.ts`                | Added `"searxng"` to `SEARCH_PROVIDERS`, `DEFAULT_SEARXNG_BASE_URL`, `runSearxngSearch()` function (JSON API with `format=json`), SearXNG branch in main search dispatcher, SearXNG auto-detection in `resolveSearchProvider()` (fallback after API-key providers), `resolveSearxngBaseUrl()` | Medium — modified upstream file |
+| `src/config/types.tools.ts`                     | Added `"searxng"` to `provider` union, `searxng?: { baseUrl?: string }` config block                                                                                                                                                                                                          | Low — adds to existing type     |
+| `src/config/schema.help.ts`                     | Help text for `tools.web.search.provider` updated with `"searxng"`, new `tools.web.search.searxng.baseUrl` entry                                                                                                                                                                              | Low — help text only            |
+| `src/config/schema.field-metadata.ts`           | Field metadata for `tools.web.search.provider` updated, new `tools.web.search.searxng.baseUrl` entry                                                                                                                                                                                          | Low — metadata only             |
+| `src/config/schema.labels.ts`                   | New `"tools.web.search.searxng.baseUrl": "SearXNG Base URL"` label                                                                                                                                                                                                                            | Low — label only                |
+| `src/config/config.web-search-provider.test.ts` | **[NEW]** Tests: SearXNG config validation (2), auto-detection (3), config resolution (4)                                                                                                                                                                                                     | None — test                     |
+
+### Feature 2 — Scrapling Stealth Scraping Backend
+
+Scrapling exposed as an HTTP microservice (`/scrape` endpoint) and integrated into the `web_fetch` fallback chain: direct fetch → Scrapling stealth → Firecrawl. Auto-enabled when `SCRAPLING_BASE_URL` is set (default: `http://scrapling:8765`). Configurable stealth mode, timeout, and concurrency.
+
+| File                                  | Change                                                                                                                                                                                                                                                                                                               | Upstream Risk                   |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `scripts/scrapling-server.py`         | **[NEW]** FastAPI wrapper exposing Scrapling as HTTP microservice. Endpoints: `GET /health`, `POST /scrape` (accepts `url`, `stealth`, `timeout`). Semaphore-based concurrency limiting (default 5, configurable via `SCRAPLING_STEALTH_CONCURRENCY`). Returns `{ url, html, status_code, content_length }`.         | None — new                      |
+| `Dockerfile.scrapling`                | **[NEW]** Python 3.12-slim image with `scrapling[all]`, `fastapi`, `uvicorn`. Installs `camoufox` browsers. Port 8765.                                                                                                                                                                                               | None — new                      |
+| `searxng/settings.yml`                | **[NEW]** SearXNG configuration — JSON format enabled, autocomplete via DuckDuckGo, engines configured.                                                                                                                                                                                                              | None — new                      |
+| `src/agents/tools/web-fetch.ts`       | Added `ScraplingFetchConfig` type, resolver functions (`resolveScraplingConfig`, `resolveScraplingEnabled`, `resolveScraplingBaseUrl`, `resolveScraplingTimeoutSeconds`, `resolveScraplingStealthDefault`), `fetchScraplingContent()` (POST to `/scrape`), fallback chain updated to: direct → Scrapling → Firecrawl | Medium — modified upstream file |
+| `src/config/types.tools.ts`           | Added `scrapling?: { enabled?, baseUrl?, timeoutSeconds?, stealth? }` config block under `tools.web.fetch`                                                                                                                                                                                                           | Low — adds to existing type     |
+| `src/config/schema.help.ts`           | Help text for 4 new `tools.web.fetch.scrapling.*` entries                                                                                                                                                                                                                                                            | Low — help text only            |
+| `src/config/schema.field-metadata.ts` | Field metadata for 4 new `tools.web.fetch.scrapling.*` entries                                                                                                                                                                                                                                                       | Low — metadata only             |
+| `src/config/schema.labels.ts`         | Labels for 4 new `tools.web.fetch.scrapling.*` entries                                                                                                                                                                                                                                                               | Low — label only                |
+
+### Docker Infrastructure
+
+| File                 | Change                                                                                                                                                                                                                                                                                                                  | Upstream Risk                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `docker-compose.yml` | Added `SEARXNG_BASE_URL` and `SCRAPLING_BASE_URL` env vars to main `openclaw` service. Added `searxng` service (official image, port 8080, `./searxng` volume mount, 256MB mem limit, healthcheck). Added `scrapling` service (local build, port 8765, 512MB mem limit, healthcheck, configurable concurrency/timeout). | Medium — modified upstream file |
+
+### System Prompt Update
+
+| File                          | Change                                                                                                                                                                                                    | Upstream Risk               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `src/agents/system-prompt.ts` | Web Search Strategy guidance updated: `web_fetch` described with "built-in stealth scraping fallback for bot-protected sites" — agents prefer `web_fetch` over browser escalation for bot-blocked content | Low — text change in prompt |
+
+### Environment Variables
+
+| Variable                        | Default                 | Purpose                                        |
+| ------------------------------- | ----------------------- | ---------------------------------------------- |
+| `SEARXNG_BASE_URL`              | `http://searxng:8080`   | SearXNG instance URL (triggers auto-detection) |
+| `SCRAPLING_BASE_URL`            | `http://scrapling:8765` | Scrapling service URL (auto-enables backend)   |
+| `SCRAPLING_STEALTH_CONCURRENCY` | `5`                     | Max concurrent stealth sessions                |
+| `SCRAPLING_TIMEOUT`             | `30`                    | Default timeout in seconds                     |
+
+### Upstream Sync Risk
+
+Docker compose changes require manual merge. Source file changes (`web-search.ts`, `web-fetch.ts`) are additions to existing provider lists and fallback chains — medium conflict risk. Config schema changes are low risk (additive). New files (`scrapling-server.py`, `Dockerfile.scrapling`, `searxng/settings.yml`) have no upstream conflict.
+
+### Comprehensive Cleanup (post-implementation audit)
+
+| File                                            | Change                                                                                                                                                                                                                                                                                                                                                                                                                              | Category                       |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `scripts/scrapling-server.py`                   | Replaced deprecated `asyncio.get_event_loop()` → `asyncio.get_running_loop()`. Extracted duplicate page extraction into shared `_extract_page_content()` helper (DRY). Added `MAX_TIMEOUT = 120` hard ceiling to prevent resource exhaustion. Added Pydantic `field_validator` to clamp timeout input. Improved error logging with `exc_info=True` + request metadata. Added success logging with timing/status. Added credit link. | Security, Performance, Quality |
+| `Dockerfile.scrapling`                          | Added non-root user (`scrapling:scrapling`) — container no longer runs as root. Added credits label.                                                                                                                                                                                                                                                                                                                                | Security                       |
+| `searxng/settings.yml`                          | Added comment explaining `secret_key` auto-generation. Restricted HTTP method to `GET`. Added credit link.                                                                                                                                                                                                                                                                                                                          | Security, Docs                 |
+| `docker-compose.yml`                            | Added `mem_limit: 256m` on `searxng` service and `mem_limit: 512m` on `scrapling` service to prevent unbounded memory growth from headless browser instances.                                                                                                                                                                                                                                                                       | Performance, Security          |
+| `src/agents/tools/web-fetch.ts`                 | Fixed timeout race condition in `fetchScraplingContent()`: client-side `AbortSignal` now uses `(timeoutSeconds + 15) * 1000` instead of `timeoutSeconds * 1000` — Scrapling server adds 5-10s padding, so client was aborting before server could finish stealth fetches. Added SSRF safety comment.                                                                                                                                | Bug fix, Security              |
+| `src/commands/onboard-search.ts`                | Added `"searxng"` to `SearchProvider` type union. Added SearXNG entry to `SEARCH_PROVIDER_OPTIONS` (keyless, auto-detected). Added `"searxng"` case to `rawKeyValue()` and `applySearchKey()`. Fixes TypeScript build errors.                                                                                                                                                                                                       | Bug fix                        |
+| `src/wizard/onboarding.finalize.ts`             | Added keyless provider handling: SearXNG is treated as always-configured (no API key needed). Shows "No API key required" instead of the "no key found" warning.                                                                                                                                                                                                                                                                    | Bug fix                        |
+| `src/config/config.web-search-provider.test.ts` | Removed duplicate test case ("auto-detects kimi" was copy-pasted). Removed duplicate env cleanup lines in `beforeEach`.                                                                                                                                                                                                                                                                                                             | Quality                        |
+
+---
+
+## Security Skills — Prompt Guard & ClawScan (2026-03-16)
+
+**Purpose:** Two documentation-only skills that teach agents to use OpenClaw's existing security infrastructure for prompt injection defense and workspace vulnerability scanning. Inspired by [SkillGuard](https://github.com/ziwenxu/openclaw-skills) (by [Ziwen Xu](https://github.com/ziwenxu)). AgentGuard runtime components (output redaction, command blocklist, audit trail) deferred for separate implementation.
+
+### New Files
+
+| File                           | Purpose                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `skills/prompt-guard/SKILL.md` | Teaches agents to detect and handle prompt injection using the existing ACIP scanner (`content-scanner.ts`). Covers: source identification (email/webhook/API/browser), risk scoring interpretation, quarantine handling, boundary marker usage, and scanning integration points. Decision tree: safe → process, ambiguous → wrap with boundaries, dangerous → quarantine + notify.       |
+| `skills/clawscan/SKILL.md`     | Teaches agents to run comprehensive security sweeps across workspaces, installed skills, dependencies, and configurations. Uses existing `skill-scanner.ts` (7 detection rules), `openclaw security audit` CLI, and npm/pip auditing. Includes 5-step full sweep workflow, finding severity handling, periodic scanning schedules via cron, and integration with the `healthcheck` skill. |
+
+### Upstream Sync Risk
+
+**None** — both are new files in `skills/` that don't exist upstream.
+
+---
+
 ## Memory Search Enhancements — Source-Aware Ranking & Temporal Decay Defaults (2026-03-15)
 
 **Purpose:** Improve memory search relevance by prioritizing agent-specific knowledge files and boosting recent information. Inspired by graph-RAG relevance patterns seen in [MiroFish](https://github.com/666ghj/MiroFish) (by [666ghj](https://github.com/666ghj)).

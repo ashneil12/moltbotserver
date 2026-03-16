@@ -1,0 +1,47 @@
+FROM python:3.12-slim
+
+LABEL maintainer="openclaw" \
+      description="Scrapling HTTP fetch service for OpenClaw web scraping" \
+      credits="Scrapling by D4Vinci — https://github.com/D4Vinci/Scrapling"
+
+# Install system deps for Playwright (StealthyFetcher) and build tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      wget \
+      libnss3 \
+      libatk-bridge2.0-0 \
+      libdrm2 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxrandr2 \
+      libgbm1 \
+      libasound2 \
+      libpango-1.0-0 \
+      libcairo2 \
+      libxshmfence1 \
+      fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+      "scrapling[all]" \
+      fastapi \
+      "uvicorn[standard]"
+
+# Install Playwright browsers for StealthyFetcher
+RUN python -m playwright install chromium
+
+# Create non-root user for the service
+RUN groupadd -r scrapling && useradd -r -g scrapling -d /app -s /sbin/nologin scrapling
+
+# Copy server script
+COPY scripts/scrapling-server.py /app/server.py
+
+WORKDIR /app
+RUN chown -R scrapling:scrapling /app
+
+USER scrapling
+EXPOSE 8765
+
+# Run with multiple workers for concurrent request handling
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8765", "--workers", "2"]

@@ -14,6 +14,9 @@ services:
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
       TZ: ${OPENCLAW_TZ:-UTC}
+      ## Self-hosted search & scraping sidecars (SearXNG + Scrapling)
+      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://searxng:8080}
+      SCRAPLING_BASE_URL: ${SCRAPLING_BASE_URL:-http://scrapling:8765}
     volumes:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
@@ -65,3 +68,47 @@ services:
     entrypoint: [ "node", "dist/index.js" ]
     depends_on:
       - openclaw-gateway
+
+  ## ---------------------------------------------------------------------------
+  ## Self-hosted search & scraping sidecars
+  ## ---------------------------------------------------------------------------
+
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    mem_limit: 256m
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  scrapling:
+    build:
+      context: .
+      dockerfile: Dockerfile.scrapling
+    container_name: scrapling
+    environment:
+      SCRAPLING_STEALTH_CONCURRENCY: ${SCRAPLING_STEALTH_CONCURRENCY:-5}
+      SCRAPLING_TIMEOUT: ${SCRAPLING_TIMEOUT:-30}
+    cap_drop:
+      - ALL
+    mem_limit: 512m
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8765/health')" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+

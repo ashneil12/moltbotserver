@@ -491,14 +491,18 @@ export async function finalizeOnboardingWizard(
     const storedKey = resolveExistingKey(nextConfig, webSearchProvider);
     const keyConfigured = hasExistingKey(nextConfig, webSearchProvider);
     const envAvailable = entry ? hasKeyInEnv(entry) : false;
-    const hasKey = keyConfigured || envAvailable;
-    const keySource = storedKey
-      ? "API key: stored in config."
-      : keyConfigured
-        ? "API key: configured via secret reference."
-        : envAvailable
-          ? `API key: provided via ${entry?.envKeys.join(" / ")} env var.`
-          : undefined;
+    // SearXNG is keyless (free, self-hosted) — treat it as always configured
+    const isKeylessProvider = webSearchProvider === "searxng";
+    const hasKey = isKeylessProvider || keyConfigured || envAvailable;
+    const keySource = isKeylessProvider
+      ? "No API key required (self-hosted metasearch engine)."
+      : storedKey
+        ? "API key: stored in config."
+        : keyConfigured
+          ? "API key: configured via secret reference."
+          : envAvailable
+            ? `API key: provided via ${entry?.envKeys.join(" / ")} env var.`
+            : undefined;
     if (webSearchEnabled !== false && hasKey) {
       await prompter.note(
         [

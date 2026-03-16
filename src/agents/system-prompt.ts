@@ -581,7 +581,7 @@ export function buildAgentSystemPrompt(params: {
           "- Use `web_search` for quick factual queries, current events, recent information, price checks, documentation lookups, API references, and general knowledge.",
           "- Use the browser sidecar for tasks that require: logging in, filling forms, multi-page navigation, interacting with dynamic content, CAPTCHA solving, or scraping specific page elements.",
           "- Prefer `web_search` over the browser when possible — it's faster, lighter, and cheaper.",
-          "- When `web_search` results are insufficient or you need deeper detail from a specific page, escalate to `web_fetch` or the browser sidecar.",
+          "- When `web_search` results are insufficient or you need deeper detail from a specific page, escalate to `web_fetch` (which has built-in stealth scraping fallback for bot-protected sites) or the browser sidecar.",
           `- Browser downloads are automatic: when you click a download link in the browser, the file is saved to your workspace \`downloads/\` folder (e.g. \`${displayWorkspaceDir}/downloads/<filename>\`). You can then read, process, or send these files. Old downloads are pruned after 10 days.`,
         ].join("\n")
       : "",

@@ -229,6 +229,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.web.search.perplexity.apiKey": "Perplexity API Key", // pragma: allowlist secret
   "tools.web.search.perplexity.baseUrl": "Perplexity Base URL",
   "tools.web.search.perplexity.model": "Perplexity Model",
+  "tools.web.search.searxng.baseUrl": "SearXNG Base URL",
   "tools.web.fetch.enabled": "Enable Web Fetch Tool",
   "tools.web.fetch.maxChars": "Web Fetch Max Chars",
   "tools.web.fetch.maxCharsCap": "Web Fetch Hard Max Chars",
@@ -243,6 +244,10 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.web.fetch.firecrawl.onlyMainContent": "Firecrawl Main Content Only",
   "tools.web.fetch.firecrawl.maxAgeMs": "Firecrawl Cache Max Age (ms)",
   "tools.web.fetch.firecrawl.timeoutSeconds": "Firecrawl Timeout (sec)",
+  "tools.web.fetch.scrapling.enabled": "Enable Scrapling Backend",
+  "tools.web.fetch.scrapling.baseUrl": "Scrapling Base URL",
+  "tools.web.fetch.scrapling.timeoutSeconds": "Scrapling Timeout (sec)",
+  "tools.web.fetch.scrapling.stealth": "Scrapling Stealth Mode",
   "gateway.controlUi.basePath": "Control UI Base Path",
   "gateway.controlUi.root": "Control UI Assets Root",
   "gateway.controlUi.allowedOrigins": "Control UI Allowed Origins",

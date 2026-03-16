@@ -457,8 +457,8 @@ export type ToolsConfig = {
     search?: {
       /** Enable web search tool (default: true when API key is present). */
       enabled?: boolean;
-      /** Search provider ("brave", "gemini", "grok", "kimi", or "perplexity"). */
-      provider?: "brave" | "gemini" | "grok" | "kimi" | "perplexity";
+      /** Search provider ("brave", "gemini", "grok", "kimi", "perplexity", or "searxng"). */
+      provider?: "brave" | "gemini" | "grok" | "kimi" | "perplexity" | "searxng";
       /** Brave Search API key (optional; defaults to BRAVE_API_KEY env var). */
       apiKey?: SecretInput;
       /** Default search results count (1-10). */
@@ -506,6 +506,11 @@ export type ToolsConfig = {
         /** @deprecated Legacy Sonar/OpenRouter field. Ignored by Search API. */
         model?: string;
       };
+      /** SearXNG-specific configuration (used when provider="searxng"). */
+      searxng?: {
+        /** SearXNG instance base URL (defaults to SEARXNG_BASE_URL env var). */
+        baseUrl?: string;
+      };
     };
     fetch?: {
       /** Enable web fetch tool (default: true). */
@@ -524,6 +529,17 @@ export type ToolsConfig = {
       userAgent?: string;
       /** Use Readability to extract main content (default: true). */
       readability?: boolean;
+      /** Scrapling stealth scraping backend (self-hosted, anti-bot bypass). */
+      scrapling?: {
+        /** Enable Scrapling backend (default: true when SCRAPLING_BASE_URL is set). */
+        enabled?: boolean;
+        /** Scrapling service base URL (defaults to SCRAPLING_BASE_URL env var). */
+        baseUrl?: string;
+        /** Timeout in seconds for Scrapling requests. */
+        timeoutSeconds?: number;
+        /** Use stealth mode (Playwright + anti-bot bypass) by default. */
+        stealth?: boolean;
+      };
       firecrawl?: {
         /** Enable Firecrawl fallback (default: true when apiKey is set). */
         enabled?: boolean;
