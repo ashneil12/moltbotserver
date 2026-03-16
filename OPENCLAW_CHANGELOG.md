@@ -5,6 +5,19 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Codebase Cleanup Audit (2026-03-16)
+
+**Purpose:** Comprehensive audit and refactoring of all recently modified files. No TODOs, no console.log leaks, no `any` types found across the sentinel module.
+
+| Change                              | Detail                                                                                                                                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Test DRY refactor**               | Extracted `health-sentinel-test-helpers.ts` with shared `createMockDeps` / `createMockHealthSummary` / `createMockSystemReport` factories. Removed ~120 lines of duplication across 3 test files.  |
+| **Sidecar `depends_on` fix**        | Removed `searxng`/`scrapling` from gateway's `depends_on` in compose template — sidecars are optional, gateway has fallback providers. Prevents provisioning failures if sidecar image pull fails. |
+| **Background sidecar provisioning** | Added parallel background sidecar pull to cloud-init boot sequence so SearXNG/Scrapling images download concurrently with browser pull, not blocking gateway startup.                              |
+| **Unused import cleanup**           | Removed leftover `ChannelHealthSummary` and `CheckResult` type imports from `health-sentinel.test.ts` after mock factory extraction.                                                               |
+
+---
+
 ## Sidecar Deployment Infrastructure (2026-03-16)
 
 **Purpose:** Integrate SearXNG and Scrapling into the Hetzner VM deployment lifecycle — provisioning, soft redeploy, and pull-update. Both sidecars are now deployed automatically with every new instance and kept up-to-date on existing ones.
