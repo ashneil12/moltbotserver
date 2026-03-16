@@ -203,7 +203,6 @@ describe("sanitizeAutoDownloadFilename", () => {
 
   it("produces unique names on sequential calls", () => {
     // Mock Date.now to ensure different timestamps
-    const _original = Date.now;
     let counter = 1000000000000;
     vi.spyOn(Date, "now").mockImplementation(() => counter++);
 

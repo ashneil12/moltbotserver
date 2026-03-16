@@ -5,6 +5,34 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Comprehensive Cleanup Audit (2026-03-16)
+
+**Purpose:** Full codebase audit of all custom files, new test coverage for untested modules, unused variable removal, and `/update-openclaw` workflow rewrite.
+
+### New Test Files
+
+| File                                          | Tests | What It Covers                                                                                                                                                  |
+| --------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/auto-reply/reply/noise-patterns.test.ts` | 41    | NOISE_LINE_PATTERNS (6 patterns), CRON_PROMPT_PATTERNS (17 patterns), `cleanUserContent` edge cases, `isCronPromptMessage`, `isMeaningfulUserContent` threshold |
+| `src/security/scan-and-log.test.ts`           | 10    | Benign passthrough, prompt injection detection, quarantine+warning logging, event logging, boundary markers, error resilience, sync-only mode                   |
+
+### Cleanup Changes
+
+| File                                              | Change                                                  | Sync Risk        |
+| ------------------------------------------------- | ------------------------------------------------------- | ---------------- |
+| `src/auto-reply/reply/noise-patterns.test.ts`     | **[NEW]** 41 tests                                      | None — test file |
+| `src/security/scan-and-log.test.ts`               | **[NEW]** 10 tests                                      | None — test file |
+| `src/browser/download-workspace-registry.test.ts` | Removed unused `_original` variable                     | None — test file |
+| `.agent/workflows/update-openclaw.md`             | Rewritten: merge-first, security warnings, cross-checks | None — workflow  |
+| `.agent/workflows/verify-sync.md`                 | Added 2 new test files to Gate 4 (~570+ tests)          | None — workflow  |
+
+### Source Audit (No Changes Needed)
+
+Reviewed 11 source files for refactoring, performance, and security issues — all clean:
+`download-workspace-registry.ts`, `control-service.ts`, `server-context.ts`, `session-updates.ts`, `browser-tool.ts`, `content-scanner.ts`, `session-freshness.ts`, `system-events.ts`, `noise-patterns.ts`, `scan-and-log.ts`, `stealth-scripts.ts`
+
+---
+
 ## Server Context & Session Updates Tests (2026-03-16)
 
 **Purpose:** Cover the parallel profile listing system and session event formatting — key custom patches with zero prior test coverage.
