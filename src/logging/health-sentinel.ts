@@ -292,6 +292,29 @@ function classifySystemCheck(check: CheckResult): ClassifiedIssue | null {
     };
   }
 
+  // Sandbox browser containers — auto-fixable (can be restarted), but
+  // escalate to agent after consecutive failures.
+  if (check.name.startsWith("sandbox.browser.")) {
+    const containerName = check.name.slice("sandbox.browser.".length);
+    const consecutiveFailures = rateLimitState.issueConsecutiveFailures.get(key) ?? 0;
+    if (consecutiveFailures >= 3) {
+      return {
+        key,
+        classification: "needs-agent",
+        summary: `Browser container ${containerName} persistently unhealthy (${consecutiveFailures + 1} consecutive failures): ${check.detail}`,
+        suggestedAction: `The browser container "${containerName}" has failed multiple restart attempts. Check if Docker daemon is healthy, the browser image exists, or the container needs to be recreated. Try \`docker rm -f ${containerName}\` and let the gateway recreate it.`,
+        source: check,
+      };
+    }
+    return {
+      key,
+      classification: "auto-fixable",
+      summary: `Browser container ${containerName} unhealthy: ${check.detail}`,
+      suggestedAction: `Restart the browser container: docker restart ${containerName}`,
+      source: check,
+    };
+  }
+
   // Unknown check type — classify based on actual status
   return {
     key,
@@ -567,6 +590,14 @@ export async function runSentinelCheck(deps: SentinelDeps): Promise<SentinelRepo
         systemReport.checks.push(...sidecarChecks);
       } catch (err) {
         log.warn?.(`doctor probe (sidecar health) failed: ${String(err)}`);
+      }
+    }
+    if (deps.doctorProbes.checkBrowserHealth) {
+      try {
+        const browserChecks = await deps.doctorProbes.checkBrowserHealth();
+        systemReport.checks.push(...browserChecks);
+      } catch (err) {
+        log.warn?.(`doctor probe (browser health) failed: ${String(err)}`);
       }
     }
   }

@@ -166,6 +166,8 @@ export interface DoctorProbes {
   checkStateDirExists?: () => CheckResult;
   /** Check Docker sidecar services (SearXNG, Scrapling) — async because it uses fetch */
   checkSidecarHealth?: () => Promise<CheckResult[]>;
+  /** Check sandbox browser containers (Docker state + CDP probe) — async */
+  checkBrowserHealth?: () => Promise<CheckResult[]>;
 }
 
 export interface WeeklyProbes {

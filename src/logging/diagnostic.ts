@@ -539,6 +539,31 @@ export function startDiagnosticHeartbeat(config?: OpenClawConfig) {
                     return 0;
                   }
                 },
+                restartBrowserContainer: async (containerName: string) => {
+                  const { execDockerRaw } = await import("../agents/sandbox/docker.js");
+                  const result = await execDockerRaw(["restart", "--time", "10", containerName], {
+                    allowFailure: true,
+                  });
+                  if (result.code !== 0) {
+                    throw new Error(
+                      `docker restart failed (code ${result.code}): ${result.stderr.toString("utf8").trim()}`,
+                    );
+                  }
+                },
+                probeBrowserCdp: async (cdpPort: number) => {
+                  const CDP_VERIFY_TIMEOUT_MS = 5_000;
+                  try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), CDP_VERIFY_TIMEOUT_MS);
+                    const res = await fetch(`http://127.0.0.1:${cdpPort}/json/version`, {
+                      signal: controller.signal,
+                    });
+                    clearTimeout(timeout);
+                    return res.ok;
+                  } catch {
+                    return false;
+                  }
+                },
               },
               doctorProbes: {
                 checkStateDirExists: () => {
@@ -635,6 +660,104 @@ export function startDiagnosticHeartbeat(config?: OpenClawConfig) {
                         durationMs,
                       });
                     }
+                  }
+
+                  return checks;
+                },
+                checkBrowserHealth: async () => {
+                  const checks: import("./diagnostics-toolkit.js").CheckResult[] = [];
+                  const CDP_PROBE_TIMEOUT_MS = 5_000;
+
+                  try {
+                    const { readBrowserRegistry } = await import("../agents/sandbox/registry.js");
+                    const { execDockerRaw } = await import("../agents/sandbox/docker.js");
+                    const registry = await readBrowserRegistry();
+
+                    if (registry.entries.length === 0) {
+                      // No browser containers registered — skip silently
+                      return checks;
+                    }
+
+                    for (const entry of registry.entries) {
+                      const start = Date.now();
+                      const containerName = entry.containerName;
+                      const cdpPort = entry.cdpPort;
+
+                      // 1. Check Docker container state
+                      try {
+                        const result = await execDockerRaw(
+                          ["inspect", "-f", "{{.State.Running}}", containerName],
+                          { allowFailure: true },
+                        );
+                        const running =
+                          result.code === 0 && result.stdout.toString("utf8").trim() === "true";
+
+                        if (!running) {
+                          const durationMs = Date.now() - start;
+                          const exists = result.code === 0;
+                          checks.push({
+                            name: `sandbox.browser.${containerName}`,
+                            status: "fail",
+                            detail: exists
+                              ? `Container exists but not running. CDP port ${cdpPort}`
+                              : `Container not found. CDP port ${cdpPort}`,
+                            durationMs,
+                          });
+                          continue;
+                        }
+                      } catch (err) {
+                        const durationMs = Date.now() - start;
+                        checks.push({
+                          name: `sandbox.browser.${containerName}`,
+                          status: "fail",
+                          detail: `Docker inspect failed: ${err instanceof Error ? err.message : String(err)}. CDP port ${cdpPort}`,
+                          durationMs,
+                        });
+                        continue;
+                      }
+
+                      // 2. Probe CDP endpoint
+                      try {
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), CDP_PROBE_TIMEOUT_MS);
+                        const cdpUrl = `http://127.0.0.1:${cdpPort}/json/version`;
+                        const res = await fetch(cdpUrl, {
+                          signal: controller.signal,
+                        });
+                        clearTimeout(timeout);
+
+                        const durationMs = Date.now() - start;
+                        if (res.ok) {
+                          checks.push({
+                            name: `sandbox.browser.${containerName}`,
+                            status: "pass",
+                            detail: `Healthy (CDP port ${cdpPort}, ${durationMs}ms)`,
+                            durationMs,
+                          });
+                        } else {
+                          checks.push({
+                            name: `sandbox.browser.${containerName}`,
+                            status: "fail",
+                            detail: `CDP port ${cdpPort} returned HTTP ${res.status} (${durationMs}ms)`,
+                            durationMs,
+                          });
+                        }
+                      } catch (err) {
+                        const durationMs = Date.now() - start;
+                        const message = err instanceof Error ? err.message : String(err);
+                        const isTimeout = message.includes("abort") || message.includes("timeout");
+                        checks.push({
+                          name: `sandbox.browser.${containerName}`,
+                          status: "fail",
+                          detail: isTimeout
+                            ? `CDP port ${cdpPort} timed out after ${CDP_PROBE_TIMEOUT_MS}ms`
+                            : `CDP port ${cdpPort} unreachable: ${message}`,
+                          durationMs,
+                        });
+                      }
+                    }
+                  } catch (err) {
+                    diag.debug(`browser health probe setup failed: ${String(err)}`);
                   }
 
                   return checks;

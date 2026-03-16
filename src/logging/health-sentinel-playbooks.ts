@@ -33,6 +33,10 @@ export interface RemediationContext {
   rotateEventLogs: (baseDir: string) => { rotated: string[]; deleted: string[] };
   /** Check log directory size in MB. */
   checkDiskSpaceMB: (dir: string) => number;
+  /** Restart a sandbox browser Docker container. */
+  restartBrowserContainer?: (containerName: string) => Promise<void>;
+  /** Probe a browser container's CDP endpoint. Returns true if responsive. */
+  probeBrowserCdp?: (cdpPort: number) => Promise<boolean>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -187,12 +191,133 @@ export function createDiskCleanupPlaybook(ctx: RemediationContext): RemediationP
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Browser Container Restart Playbook
+// ═══════════════════════════════════════════════════════════════════════════
+
+const BROWSER_ISSUE_KEY_PREFIX = "system:sandbox.browser.";
+
+/**
+ * Docker container names: 1–63 chars, `[a-zA-Z0-9][a-zA-Z0-9_.-]*`.
+ * Validate to prevent command injection via crafted issue keys.
+ */
+const DOCKER_CONTAINER_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$/;
+
+function isBrowserContainerIssue(issue: ClassifiedIssue): boolean {
+  return issue.key.startsWith(BROWSER_ISSUE_KEY_PREFIX);
+}
+
+/**
+ * Extract the container name from a browser issue key like
+ * "system:sandbox.browser.browser-dan". Returns null if the key
+ * is malformed or the container name fails Docker name validation.
+ */
+function extractBrowserContainerName(issue: ClassifiedIssue): string | null {
+  if (!issue.key.startsWith(BROWSER_ISSUE_KEY_PREFIX)) {
+    return null;
+  }
+  const name = issue.key.slice(BROWSER_ISSUE_KEY_PREFIX.length);
+  if (!name || !DOCKER_CONTAINER_NAME_RE.test(name)) {
+    return null;
+  }
+  return name;
+}
+
+/** Extract the CDP port from the issue detail string (e.g. "CDP port 49221 unreachable"). */
+function extractCdpPortFromDetail(detail: string): number | null {
+  const match = detail.match(/CDP port (\d+)/);
+  if (!match?.[1]) {
+    return null;
+  }
+  const port = Number.parseInt(match[1], 10);
+  return Number.isFinite(port) && port > 0 && port <= 65535 ? port : null;
+}
+
+export function createBrowserRestartPlaybook(ctx: RemediationContext): RemediationPlaybook {
+  return {
+    id: "browser-container-restart",
+
+    matches(issue) {
+      return (
+        isBrowserContainerIssue(issue) &&
+        issue.classification === "auto-fixable" &&
+        ctx.restartBrowserContainer !== undefined
+      );
+    },
+
+    async remediate(issue): Promise<RemediationAttempt> {
+      const start = Date.now();
+      const containerName = extractBrowserContainerName(issue);
+      if (!containerName || !ctx.restartBrowserContainer) {
+        return {
+          issueKey: issue.key,
+          playbook: "browser-container-restart",
+          status: "skipped",
+          error: containerName ? "no restart handler" : "cannot extract container name",
+          durationMs: Date.now() - start,
+        };
+      }
+
+      log.info?.(
+        `attempting browser container restart: ${containerName} (reason: ${issue.summary})`,
+      );
+
+      try {
+        await ctx.restartBrowserContainer(containerName);
+        log.info?.(`browser container restart succeeded: ${containerName}`);
+        return {
+          issueKey: issue.key,
+          playbook: "browser-container-restart",
+          status: "success",
+          durationMs: Date.now() - start,
+        };
+      } catch (err) {
+        const error = String(err);
+        log.warn?.(`browser container restart failed: ${containerName} — ${error}`);
+        return {
+          issueKey: issue.key,
+          playbook: "browser-container-restart",
+          status: "failed",
+          error,
+          durationMs: Date.now() - start,
+        };
+      }
+    },
+
+    async verify(issue): Promise<boolean> {
+      if (!ctx.probeBrowserCdp) {
+        return false;
+      }
+      // Extract CDP port from the issue detail
+      const detail =
+        "detail" in issue.source && typeof issue.source.detail === "string"
+          ? issue.source.detail
+          : issue.summary;
+      const cdpPort = extractCdpPortFromDetail(detail);
+      if (!cdpPort) {
+        return false;
+      }
+      // Wait for browser to restart
+      await new Promise((resolve) => setTimeout(resolve, 8_000));
+      try {
+        return await ctx.probeBrowserCdp(cdpPort);
+      } catch {
+        return false;
+      }
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Playbook Registry
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Build the full playbook registry with injected context. */
 export function buildPlaybooks(ctx: RemediationContext): RemediationPlaybook[] {
-  return [createChannelRestartPlaybook(ctx), createDiskCleanupPlaybook(ctx)];
+  return [
+    createChannelRestartPlaybook(ctx),
+    createDiskCleanupPlaybook(ctx),
+    createBrowserRestartPlaybook(ctx),
+  ];
 }
 
 /** Find the first playbook that matches the given issue. */
