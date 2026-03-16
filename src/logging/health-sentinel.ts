@@ -280,7 +280,7 @@ function classifySystemCheck(check: CheckResult): ClassifiedIssue | null {
         key,
         classification: "needs-agent",
         summary: `${serviceName} sidecar persistently unreachable (${consecutiveFailures + 1} consecutive failures): ${check.detail}`,
-        suggestedAction: `Check if the ${serviceName} Docker container is running. Try \`docker compose restart ${check.name.replace("sidecar.", "")}\`.`,
+        suggestedAction: `Notify the operator: the ${serviceName} Docker container may need restarting. Suggest running \`docker compose restart ${check.name.replace("sidecar.", "")}\` on the host.`,
         source: check,
       };
     }

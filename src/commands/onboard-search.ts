@@ -268,6 +268,11 @@ export async function setupSearch(
     return preserveDisabledState(config, result);
   }
 
+  // Keyless providers (e.g. SearXNG) — no key to prompt for, just set provider
+  if (entry.envKeys.length === 0) {
+    return preserveDisabledState(config, applyProviderOnly(config, choice));
+  }
+
   const useSecretRefMode = opts?.secretInputMode === "ref"; // pragma: allowlist secret
   if (useSecretRefMode) {
     if (keyConfigured) {
