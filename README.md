@@ -619,6 +619,12 @@ Many other improvements were drawn from ideas shared on Twitter/X, GitHub, Disco
 - [OpenClaw Docs](https://docs.openclaw.ai) — documentation (applies to this fork)
 - [OpenClaw Servers](https://openclawservers.com) — managed hosting
 
+---
+
+## Found a Bug?
+
+**Please report it.** I'm actively working to make Optimized Claw the most stable and useful OpenClaw fork out there, and bug reports help me get there faster. Open an [issue on GitHub](https://github.com/ashneil12/optimized-claw/issues) or email [info@openclawservers.com](mailto:info@openclawservers.com) — no report is too small.
+
 ## License
 
 [MIT](LICENSE) — same as upstream OpenClaw.
