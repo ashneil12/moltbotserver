@@ -562,7 +562,7 @@ function resolveSearchApiKey(search?: WebSearchConfig): string | undefined {
   return fromConfig || fromEnv || undefined;
 }
 
-type SearxngConfig = { baseUrl?: string };
+type SearxngConfig = { baseUrl?: string; engines?: string[] };
 
 function resolveSearxngConfig(search?: WebSearchConfig): SearxngConfig {
   if (!search || typeof search !== "object") {
@@ -579,6 +579,25 @@ function resolveSearxngBaseUrl(config?: SearxngConfig): string | undefined {
   const fromConfig = config?.baseUrl?.trim();
   const fromEnv = process.env.SEARXNG_BASE_URL?.trim();
   return fromConfig || fromEnv || undefined;
+}
+
+/**
+ * Resolve which SearXNG engines to query.
+ * Priority: config → SEARXNG_ENGINES env var → undefined (use server defaults).
+ * The env var is a comma-separated list, e.g. "google,duckduckgo,wikipedia".
+ */
+function resolveSearxngEngines(config?: SearxngConfig): string[] | undefined {
+  if (config?.engines && Array.isArray(config.engines) && config.engines.length > 0) {
+    return config.engines;
+  }
+  const fromEnv = process.env.SEARXNG_ENGINES?.trim();
+  if (fromEnv) {
+    return fromEnv
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean);
+  }
+  return undefined;
 }
 
 function missingSearchKeyPayload(provider: (typeof SEARCH_PROVIDERS)[number]) {
@@ -1636,6 +1655,7 @@ async function runWebSearch(params: {
   kimiModel?: string;
   braveMode?: "web" | "llm-context";
   searxngBaseUrl?: string;
+  searxngEngines?: string[];
 }): Promise<Record<string, unknown>> {
   const effectiveBraveMode = params.braveMode ?? "web";
   const providerSpecificKey =
@@ -1648,10 +1668,13 @@ async function runWebSearch(params: {
           : params.provider === "kimi"
             ? `${params.kimiBaseUrl ?? DEFAULT_KIMI_BASE_URL}:${params.kimiModel ?? DEFAULT_KIMI_MODEL}`
             : "";
+  const searxngEnginesKey = params.searxngEngines?.length
+    ? params.searxngEngines.slice().toSorted().join(",")
+    : "default";
   const cacheKey = normalizeCacheKey(
     params.provider === "brave" && effectiveBraveMode === "llm-context"
       ? `${params.provider}:llm-context:${params.query}:${params.country || "default"}:${params.search_lang || params.language || "default"}:${params.freshness || "default"}`
-      : `${params.provider}:${effectiveBraveMode}:${params.query}:${params.count}:${params.country || "default"}:${params.search_lang || params.language || "default"}:${params.ui_lang || "default"}:${params.freshness || "default"}:${params.dateAfter || "default"}:${params.dateBefore || "default"}:${params.searchDomainFilter?.join(",") || "default"}:${params.maxTokens || "default"}:${params.maxTokensPerPage || "default"}:${providerSpecificKey}`,
+      : `${params.provider}:${effectiveBraveMode}:${params.query}:${params.count}:${params.country || "default"}:${params.search_lang || params.language || "default"}:${params.ui_lang || "default"}:${params.freshness || "default"}:${params.dateAfter || "default"}:${params.dateBefore || "default"}:${params.searchDomainFilter?.join(",") || "default"}:${params.maxTokens || "default"}:${params.maxTokensPerPage || "default"}:${providerSpecificKey}:${searxngEnginesKey}`,
   );
   const cached = readCache(SEARCH_CACHE, cacheKey);
   if (cached) {
@@ -1669,6 +1692,7 @@ async function runWebSearch(params: {
       baseUrl: searxngBaseUrl,
       timeoutSeconds: params.timeoutSeconds,
       language: params.language,
+      engines: params.searxngEngines,
     });
 
     const payload = {
@@ -1975,6 +1999,7 @@ async function runSearxngSearch(params: {
   baseUrl: string;
   timeoutSeconds: number;
   language?: string;
+  engines?: string[];
 }): Promise<
   Array<{ title: string; url: string; description: string; engine?: string; published?: string }>
 > {
@@ -1984,6 +2009,9 @@ async function runSearxngSearch(params: {
   url.searchParams.set("format", "json");
   if (params.language) {
     url.searchParams.set("language", params.language);
+  }
+  if (params.engines && params.engines.length > 0) {
+    url.searchParams.set("engines", params.engines.join(","));
   }
 
   return withTrustedWebSearchEndpoint(
@@ -2324,6 +2352,7 @@ export function createWebSearchTool(options?: {
         kimiModel: resolveKimiModel(kimiConfig),
         braveMode,
         searxngBaseUrl: resolveSearxngBaseUrl(searxngConfig),
+        searxngEngines: resolveSearxngEngines(searxngConfig),
       });
       return jsonResult(result);
     },
@@ -2359,4 +2388,5 @@ export const __testing = {
   mapBraveLlmContextResults,
   resolveSearxngBaseUrl,
   resolveSearxngConfig,
+  resolveSearxngEngines,
 } as const;

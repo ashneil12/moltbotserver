@@ -5,6 +5,34 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## SearXNG Engine Selection & Deploy Wizard Integration (2026-03-16)
+
+**Purpose:** Full-stack UI for selecting which [SearXNG](https://github.com/searxng/searxng) search engines an agent uses, plus SearXNG as the default search provider in the deploy wizard. Also includes a cache key mutation fix and rendering optimizations.
+
+### Dashboard — `moltbot-dashboard`
+
+| File                                                             | Change                                                                                                                                                                                                                                                                                                                                                            | Sync Risk                  |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `src/app/dashboard/console/components/SearxngEngineSelector.tsx` | **[NEW]** Engine selection component — groups 70+ SearXNG engines by category (General, Images, Videos, News, etc.), curated defaults (Google, Bing, DuckDuckGo, Wikipedia, etc.), select-all-curated / clear-all actions. `useMemo`-memoized category grouping and `useCallback`-memoized toggle/selectAll/clearAll callbacks to prevent unnecessary re-renders. | None — fully custom        |
+| `src/components/instances/InlineDeployCard.tsx`                  | Added `"searxng"` as third search provider option — pill button, no API key required, description explaining keyless operation. **SearXNG is now the default selection** since it ships bundled. Advanced section background color and description text updated to accommodate.                                                                                   | Low — fully custom file    |
+| `src/app/dashboard/console/components/ConfigurationTab.tsx`      | SearXNG engine selector wired into the configuration tab — renders `SearxngEngineSelector` when search provider is `"searxng"`. Persists selected engines via existing settings API.                                                                                                                                                                              | Low — modified custom file |
+| `src/app/dashboard/instances/components/SettingsModal.tsx`       | Mirrors `ConfigurationTab` SearXNG wiring for the settings modal variant.                                                                                                                                                                                                                                                                                         | Low — modified custom file |
+| `src/app/api/instances/[id]/settings/route.ts`                   | GET/PATCH handlers accept `searxngEngines` field (string array). Emitted as `SEARXNG_ENGINES` env var via `instance-env.ts`.                                                                                                                                                                                                                                      | Low — modified custom file |
+| `src/lib/services/instance-env.ts`                               | `SEARXNG_ENGINES` env var emission — joins selected engine slugs as comma-separated string.                                                                                                                                                                                                                                                                       | Low — modified custom file |
+| `src/app/dashboard/instances/actions.ts`                         | `searxngEngines` field persisted alongside other instance settings.                                                                                                                                                                                                                                                                                               | Low — modified custom file |
+
+### Source — `moltbotserver-source`
+
+| File                             | Change                                                                                                                                                                                                                                                                                            | Sync Risk                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `src/agents/tools/web-search.ts` | **Bug fix:** Cache key generation used `params.searxngEngines.sort()` which **mutates the caller's array**. Changed to `params.searxngEngines.slice().sort()` to create a sorted copy. Also added `resolveSearxngEngines()` — reads `SEARXNG_ENGINES` env var and falls back to curated defaults. | Medium — modified upstream file |
+
+### Upstream Sync Risk
+
+**Low–Medium.** The dashboard files are fully custom (no upstream equivalents). The `web-search.ts` fix is a 1-line change (`slice().sort()` instead of `.sort()`) in a custom code block, easily re-applied if upstream modifies surrounding logic.
+
+---
+
 ## Codebase Cleanup Audit (2026-03-16)
 
 **Purpose:** Comprehensive audit and refactoring of all recently modified files. No TODOs, no console.log leaks, no `any` types found across the sentinel module.
