@@ -263,7 +263,7 @@ Restores are one-click from the dashboard, or import any `.tar.gz` from a commun
 
 ### 🧪 Testing & Quality Assurance
 
-This fork ships with **623+ custom tests** across **37 test files** covering every major subsystem — all additive to upstream's test suite. These run as part of the 4-gate `/verify-sync` workflow after every upstream merge.
+This fork ships with **623+ custom tests** across **37 test files** covering every major subsystem — all additive to upstream's test suite. Every upstream merge is verified against the full custom suite before shipping.
 
 | Area                | Tests | What's Covered                                                                                                           |
 | ------------------- | ----: | ------------------------------------------------------------------------------------------------------------------------ |
@@ -276,20 +276,6 @@ This fork ships with **623+ custom tests** across **37 test files** covering eve
 | **Cron**            |   ~20 | Timer next-wake scheduling, pre-reset flush                                                                              |
 | **Config & Models** |   ~25 | Web search provider selection, Sansa model config                                                                        |
 | **Tools**           |   ~47 | SQL tool, session search tool, skill management, browser sweep                                                           |
-
-#### Post-Sync Verification (`/verify-sync`)
-
-Every upstream merge goes through a **4-gate verification workflow** before pushing:
-
-1. **Gate 1 — Build** — `npm run build` must succeed with zero errors
-2. **Gate 2 — Patch Survival** — 35+ critical patches verified via `grep` (CDP helpers, profile enforcement, agent routing, security stack)
-3. **Gate 3 — Upstream Tests** — stock `npm test` must pass
-4. **Gate 4 — Custom Test Suites** — all 623+ custom tests must pass
-
-No gate can be skipped. If any gate fails, the merge is investigated before pushing.
-
-> [!TIP]
-> Run the full custom test suite locally: `npx vitest run src/security/*.test.ts src/browser/*.test.ts src/auto-reply/reply/*.test.ts src/logging/*.test.ts src/memory/*.test.ts src/infra/*.test.ts src/agents/**/*.test.ts src/cron/**/*.test.ts src/config/*.test.ts`
 
 ### 🛠️ Agent Identity & Tooling
 
