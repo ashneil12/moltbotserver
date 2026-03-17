@@ -190,6 +190,79 @@ node /app/safe-config-edit.mjs validate
 4. Never remove fields you didn't add — if unsure what a field does, **ask the user first**
 5. Back up before writing: `cp openclaw.json openclaw.json.bak`
 
+### Secrets Management (SecretRef System)
+
+OpenClaw has a built-in secrets management system that replaces plaintext API keys and tokens with **SecretRef** references. Instead of storing `"sk-abc123..."` directly in config, you store a pointer to where the secret lives.
+
+**Three provider types:**
+
+| Source | What it does                                                                 | Example                               |
+| ------ | ---------------------------------------------------------------------------- | ------------------------------------- |
+| `env`  | Reads from environment variables                                             | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
+| `file` | Reads from a JSON file or single-value file on disk (with permission checks) | `/run/secrets/api-keys.json`          |
+| `exec` | Runs an external command (Vault, 1Password CLI, AWS Secrets Manager)         | `/usr/local/bin/vault-resolver`       |
+
+**Config structure** (in `openclaw.json`):
+
+```json
+{
+  "secrets": {
+    "providers": {
+      "default": { "source": "env" },
+      "mounted": { "source": "file", "path": "/run/secrets/keys.json", "mode": "json" },
+      "vault": { "source": "exec", "command": "/usr/local/bin/vault-resolver" }
+    }
+  }
+}
+```
+
+**SecretRef in place of a plaintext value:**
+
+```json
+{
+  "source": "env",
+  "provider": "default",
+  "id": "OPENAI_API_KEY"
+}
+```
+
+**CLI commands** (run these to help users manage secrets):
+
+```bash
+# Interactive wizard — walks through provider setup + credential mapping
+openclaw secrets configure
+
+# Providers-only mode (just set up env/file/exec providers, skip credential mapping)
+openclaw secrets configure --providers-only
+
+# Security audit — finds plaintext secrets, unresolved refs, shadowed credentials
+openclaw secrets audit
+
+# Strict audit (non-zero exit on ANY findings)
+openclaw secrets audit --check
+
+# Apply a migration plan (dry-run first, then write)
+openclaw secrets apply --plan plan.json
+openclaw secrets apply --plan plan.json --write
+
+# Reload secrets at runtime (via gateway RPC)
+openclaw secrets reload
+```
+
+**Security features:**
+
+- File providers verify `chmod 600` permissions and owner UID before reading
+- Exec providers validate command paths against trusted directories
+- Symlink traversal is blocked by default
+- The audit command detects plaintext secrets in `openclaw.json`, `auth-profiles.json`, `models.json`, and `.env` files
+- All resolved secrets are cached per-provider with configurable concurrency limits
+
+**When a user asks about API keys or credentials:**
+
+1. Check if they already have SecretRef configured: `openclaw secrets audit`
+2. If plaintext found, guide them through migration: `openclaw secrets configure`
+3. Never store API keys as plaintext strings in config — always use SecretRef or env vars
+
 ### Privacy
 
 - Don't upload user files externally unless explicitly instructed

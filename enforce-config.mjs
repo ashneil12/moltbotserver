@@ -514,13 +514,21 @@ function enforceMemory(configPath) {
     },
   };
 
-  if (isTruthy(env("OPENCLAW_QMD_ENABLED"))) {
-    // ── QMD backend (local llama.cpp embeddings) ──────────────────────────
+  // ── QMD backend (always-on; opt-out via OPENCLAW_QMD_ENABLED=false) ──────
+  const qmdDisabled =
+    env("OPENCLAW_QMD_ENABLED") === "false" || env("OPENCLAW_QMD_ENABLED") === "0";
+  if (!qmdDisabled) {
     memory.backend = "qmd";
     const qmd = ensure(memory, "qmd");
     qmd.includeDefaultMemory = true;
     qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
-    qmd.limits = { maxResults: 8, maxSnippetChars: 700, timeoutMs: 5000 };
+    const businessMode = isTruthy(env("OPENCLAW_BUSINESS_MODE"));
+    qmd.limits = {
+      maxResults: 8,
+      maxSnippetChars: 700,
+      maxInjectedChars: businessMode ? 10000 : 5000,
+      timeoutMs: 5000,
+    };
 
     // Fallback embedding provider (credits mode: gateway proxy)
     const aiGatewayUrl = env("AI_GATEWAY_URL");
@@ -641,11 +649,18 @@ function enforceCore(configPath) {
   // the plugin is enabled. This makes LCM survive config regeneration.
   const slots = ensure(plugins, "slots");
   slots.contextEngine = slots.contextEngine || "lossless-claw";
+  slots.memory = "memory-unified"; // Unified memory with per-turn auto-recall
   const entries = ensure(plugins, "entries");
   entries["lossless-claw"] = entries["lossless-claw"] || { enabled: true };
-  // Ensure lossless-claw is in the allow list (if one exists)
-  if (Array.isArray(plugins.allow) && !plugins.allow.includes("lossless-claw")) {
-    plugins.allow.push("lossless-claw");
+  entries["memory-unified"] = entries["memory-unified"] || { enabled: true };
+  // Ensure lossless-claw and memory-unified are in the allow list (if one exists)
+  if (Array.isArray(plugins.allow)) {
+    if (!plugins.allow.includes("lossless-claw")) {
+      plugins.allow.push("lossless-claw");
+    }
+    if (!plugins.allow.includes("memory-unified")) {
+      plugins.allow.push("memory-unified");
+    }
   }
 
   // Session — effectively disable auto-reset (3 years idle) to preserve LCM's

@@ -13,6 +13,8 @@ describe("source-boost", () => {
       ["memory/projects.md", BOOST],
       ["memory/relationships.md", BOOST],
       ["memory/2026-02-10.md", BOOST],
+      ["memory/knowledge/crypto-analysis.md", BOOST],
+      ["agents/dan/memory/knowledge/trading-patterns.md", BOOST],
       ["IDENTITY.md", BOOST],
       ["some/path/IDENTITY.md", BOOST],
       ["identity-scratchpad.md", BOOST],

@@ -1,0 +1,29 @@
+{
+  "id": "memory-unified",
+  "kind": "memory",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "autoRecall": {
+        "type": "boolean",
+        "description": "Inject relevant memories into context before each agent turn",
+        "default": true
+      },
+      "recallMaxResults": {
+        "type": "number",
+        "description": "Maximum number of memory search results to inject per turn",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 20
+      },
+      "recallMinScore": {
+        "type": "number",
+        "description": "Minimum similarity score for auto-recall results",
+        "default": 0.3,
+        "minimum": 0.0,
+        "maximum": 1.0
+      }
+    }
+  }
+}

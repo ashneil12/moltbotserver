@@ -5,7 +5,85 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
-## Comprehensive Cleanup Audit (2026-03-16)
+## Unified Memory System — Auto-Recall, ByteRover Expansion & Cleanup (2026-03-17)
+
+**Purpose:** Replace the manual `memory_search` agent workflow with automatic per-turn memory injection. Expand ByteRover's curation scope to cover knowledge topics, identity scratchpad, and yesterday's daily memory. Add a dedicated source-boost rule for knowledge files, and clean up configuration redundancies.
+
+### Feature 1 — Memory-Unified Plugin (`extensions/memory-unified/index.ts`)
+
+New plugin replaces `memory-core` as the active memory slot. Re-exports `memory_search` and `memory_get` tools (identical to memory-core) and adds a `before_agent_start` lifecycle hook for **per-turn auto-recall**.
+
+| Guard              | Condition                     | Purpose                              |
+| ------------------ | ----------------------------- | ------------------------------------ |
+| Short prompt       | `< 10 chars`                  | Avoids noise on empty/trivial inputs |
+| Trigger skip       | `cron`, `heartbeat`, `memory` | Don't inject on background jobs      |
+| Slash commands     | Starts with `/`               | Commands don't need memory context   |
+| Missing sessionKey | `!ctx.sessionKey`             | Defensive — shouldn't happen         |
+
+Auto-recalled results are formatted inside `<auto-recalled-memories>` XML tags and injected via `prependContext`.
+
+| File                                 | Change                                                                    | Sync Risk         |
+| ------------------------------------ | ------------------------------------------------------------------------- | ----------------- |
+| `extensions/memory-unified/index.ts` | **[NEW]** Plugin with auto-recall hook, tool re-exports, CLI registration | None — new        |
+| `enforce-config.mjs`                 | `slots.memory = "memory-unified"`, enabled in entries + allow list        | Low — custom file |
+
+### Feature 2 — QMD Always-On + Tiered Limits (`enforce-config.mjs`)
+
+QMD memory backend switched from opt-in to **always-on** (opt-out via `OPENCLAW_QMD_ENABLED=false`). `maxInjectedChars` now tiered: **5,000** for normal mode, **10,000** for business mode (env: `OPENCLAW_BUSINESS_MODE`).
+
+| File                 | Change                                                                     | Sync Risk         |
+| -------------------- | -------------------------------------------------------------------------- | ----------------- |
+| `enforce-config.mjs` | QMD always-on, tiered `maxInjectedChars`, removed redundant nested comment | Low — custom file |
+
+### Feature 3 — ByteRover Watcher Expansion (`scripts/brv-curate-watcher.sh`)
+
+Expanded `get_watched_files()` to include three new file sources for hash-based curation:
+
+| Source                             | Type           | Purpose                                                           |
+| ---------------------------------- | -------------- | ----------------------------------------------------------------- |
+| `memory/knowledge/*.md`            | Dynamic (find) | Curated topic files (e.g., crypto-analysis, trading-patterns)     |
+| `memory/identity-scratchpad.md`    | Fixed          | Identity evolution reasoning history                              |
+| `memory/YYYY-MM-DD.md` (yesterday) | Dynamic (date) | Previous day's memory — stable, curated once daily after midnight |
+
+| File                            | Change                                                 | Sync Risk         |
+| ------------------------------- | ------------------------------------------------------ | ----------------- |
+| `scripts/brv-curate-watcher.sh` | Added 3 new source categories to `get_watched_files()` | Low — custom file |
+
+### Feature 4 — Source-Boost Knowledge Rule (`src/memory/source-boost.ts`)
+
+Added explicit `memory/knowledge/*.md` boost rule (1.15×) before the generic `memory/*.md` catchall. Knowledge files were technically matched before, but the explicit rule clarifies intent and ensures nested knowledge subdirectory files are boosted.
+
+| File                              | Change                                                | Sync Risk         |
+| --------------------------------- | ----------------------------------------------------- | ----------------- |
+| `src/memory/source-boost.ts`      | Added `memory/knowledge/` regex rule to `BOOST_RULES` | Low — custom file |
+| `src/memory/source-boost.test.ts` | Added 2 test cases for knowledge dir paths            | None — test file  |
+
+### Prompt Update (`docs/reference/templates/AGENTS.md`)
+
+Replaced "Search Before Answering" section with "Memory Recall" note. Clarifies that memory recall is now automatic via `memory-unified` plugin; manual `memory_search` is available for targeted/deeper searches.
+
+| File                                 | Change                          | Sync Risk           |
+| ------------------------------------ | ------------------------------- | ------------------- |
+| `docs/reference/templates/AGENTS.md` | Updated memory guidance section | Low — template file |
+
+### Cleanup & Refactoring
+
+| File                                 | Change                                                                                                                    | Category   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `enforce-config.mjs`                 | Removed redundant nested `// QMD backend (local llama.cpp embeddings)` comment                                            | Cleanup    |
+| `extensions/memory-unified/index.ts` | Added sessionKey guard, typed catch clause (`err: unknown`), used `trimmedPrompt` for search, defensive `logger.warn?.()` | Robustness |
+
+### Tests
+
+- ✅ `source-boost.test.ts`: 26/26 passed (2 new knowledge dir test cases)
+
+### Upstream Sync Risk
+
+**None for new files** — `memory-unified/index.ts` has no upstream equivalent.
+**Low for modified files** — all changes are in custom files (`enforce-config.mjs`, `brv-curate-watcher.sh`, `source-boost.ts`).
+**Low for AGENTS.md** — template file, easy to re-apply on merge.
+
+---
 
 **Purpose:** Full codebase audit of all custom files, new test coverage for untested modules, unused variable removal, and `/update-openclaw` workflow rewrite.
 

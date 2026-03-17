@@ -178,6 +178,7 @@
 - Pi sessions live under `~/.openclaw/sessions/` by default; the base directory is not configurable.
 - Environment variables: see `~/.profile`.
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
+- Secrets management: OpenClaw has a built-in **SecretRef** system (`src/secrets/`) with env, file, and exec providers. CLI: `openclaw secrets configure`, `openclaw secrets audit`, `openclaw secrets apply`. See OPERATIONS.md § "Secrets Management (SecretRef System)" for full usage and config patterns.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
 ## GHSA (Repo Advisory) Patch/Publish

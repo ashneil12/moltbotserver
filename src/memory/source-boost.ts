@@ -19,6 +19,8 @@ const BOOST_RULES: ReadonlyArray<{ re: RegExp; boost: number }> = [
   { re: /(?:^|\/)MEMORY\.md$/i, boost: KNOWLEDGE_BOOST },
   // Diary files (including date-named entries)
   { re: /(?:^|\/)memory\/diary(?:[/.]|$)/i, boost: KNOWLEDGE_BOOST },
+  // Knowledge topic files (memory/knowledge/*.md)
+  { re: /(?:^|\/)memory\/knowledge\/[^/]+\.md$/i, boost: KNOWLEDGE_BOOST },
   // Any file under memory/ (topic files, etc.)
   { re: /(?:^|\/)memory\/[^/]+\.md$/i, boost: KNOWLEDGE_BOOST },
   // Identity and working notes at any depth

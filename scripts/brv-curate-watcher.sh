@@ -114,6 +114,11 @@ get_watched_files() {
     "USER.md"
     "IDENTITY.md"
     "SOUL.md"
+    # BrainX output files — curate so brv query can surface extracted facts/warnings
+    "memory/extracted-facts.md"
+    "memory/advisory-warnings.md"
+    # Identity evolution history
+    "memory/identity-scratchpad.md"
   )
   for f in "${fixed_files[@]}"; do
     echo "$WORKSPACE_DIR/$f"
@@ -122,6 +127,19 @@ get_watched_files() {
   # All diary/*.md files (discovered dynamically)
   if [ -d "$WORKSPACE_DIR/diary" ]; then
     find "$WORKSPACE_DIR/diary" -maxdepth 1 -name "*.md" -type f 2>/dev/null
+  fi
+
+  # All knowledge topic files (discovered dynamically)
+  if [ -d "$WORKSPACE_DIR/memory/knowledge" ]; then
+    find "$WORKSPACE_DIR/memory/knowledge" -maxdepth 1 -name "*.md" -type f 2>/dev/null
+  fi
+
+  # Yesterday's daily memory (stable — won't change during today's session)
+  # Curated exactly once per day when the watcher first encounters it after midnight.
+  local yesterday
+  yesterday="$(date -d 'yesterday' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)"
+  if [ -f "$WORKSPACE_DIR/memory/$yesterday.md" ]; then
+    echo "$WORKSPACE_DIR/memory/$yesterday.md"
   fi
 }
 

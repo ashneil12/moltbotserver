@@ -39,13 +39,11 @@ You wake up fresh each session. These files are your continuity:
 
 See SOUL.md § Memory & Learning for the full rules. The short version: **no mental notes, write immediately, self-correct by updating this file.**
 
-### 🔍 Search Before Answering
+### 🔍 Memory Recall
 
-For any non-trivial question — anything with a project, technical, operational, strategic, or historical angle — **run `memory_search` with 2–3 keywords before responding**. This covers personal memory (`MEMORY.md`, `memory/*.md`) and any workspace knowledge files (`business/`, `memory/knowledge/`, etc.).
+Relevant memories are automatically injected into your context each turn via auto-recall. You don't need to call `memory_search` before every response — it happens automatically.
 
-Skip the search only for: simple greetings, casual one-liners, or pure general knowledge where workspace context clearly doesn't apply.
-
-When in doubt: search first, answer second.
+You can still call `memory_search` manually for deeper or targeted searches when the auto-injected context isn't enough (e.g., searching for a specific term, or digging into a particular topic).
 
 ### 🧠 MEMORY.md Security
 
