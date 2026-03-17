@@ -175,7 +175,12 @@ if [[ "${ENABLE_NOVNC}" == "1" && "${HEADLESS}" != "1" ]]; then
     chmod 600 "${NOVNC_PASSWD_FILE}"
     x11vnc -display :1 -rfbport "${VNC_PORT}" -shared -forever -rfbauth "${NOVNC_PASSWD_FILE}" -localhost &
   fi
-  websockify --web /opt/novnc/ "${NOVNC_PORT}" "localhost:${VNC_PORT}" &
+  # Debian installs noVNC to /usr/share/novnc; upstream/manual installs use /opt/novnc.
+  NOVNC_WEB_ROOT="/usr/share/novnc"
+  if [[ ! -d "${NOVNC_WEB_ROOT}" ]]; then
+    NOVNC_WEB_ROOT="/opt/novnc"
+  fi
+  websockify --web "${NOVNC_WEB_ROOT}" "${NOVNC_PORT}" "localhost:${VNC_PORT}" &
 fi
 
 wait -n

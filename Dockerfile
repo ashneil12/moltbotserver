@@ -148,6 +148,8 @@ COPY --from=runtime-assets --chown=node:node /app/docs ./docs
 COPY --from=runtime-assets --chown=node:node /app/docker-entrypoint.sh ./docker-entrypoint.sh
 COPY --from=runtime-assets --chown=node:node /app/scripts ./scripts
 COPY --from=runtime-assets --chown=node:node /app/enforce-config.mjs ./enforce-config.mjs
+COPY --from=runtime-assets --chown=node:node /app/enforce-config-helpers.mjs ./enforce-config-helpers.mjs
+COPY --from=runtime-assets --chown=node:node /app/enforce-config-models.mjs ./enforce-config-models.mjs
 COPY --from=runtime-assets --chown=node:node /app/SOUL.md ./SOUL.md
 COPY --from=runtime-assets --chown=node:node /app/ACIP_SECURITY.md ./ACIP_SECURITY.md
 
