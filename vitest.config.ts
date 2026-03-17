@@ -82,6 +82,7 @@ export default defineConfig({
       "src/**/*.test.ts",
       "extensions/**/*.test.ts",
       "test/**/*.test.ts",
+      "*.test.mjs", // Root-level .mjs tests (enforce-config, safe-config-edit)
       "ui/src/ui/app-chat.test.ts",
       "ui/src/ui/views/agents-utils.test.ts",
       "ui/src/ui/views/chat.test.ts",

@@ -5,6 +5,36 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Codebase Cleanup — enforce-config Modularization & Test Coverage (2026-03-17)
+
+**Purpose:** Improve maintainability and testability of the two largest custom scripts (`enforce-config.mjs` and `safe-config-edit.mjs`) by extracting shared utilities into testable modules and adding comprehensive test suites.
+
+### Refactoring — enforce-config Module Extraction
+
+Extracted 210 lines of shared helpers from the 2524-line `enforce-config.mjs` into two focused modules:
+
+| File                         | Change                                                                                                                                                       | Sync Risk         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| `enforce-config-helpers.mjs` | **[NEW]** Shared utilities: `readConfig`, `writeConfig`, `ensure`, `makeId`, `env`, `isTruthy`, `repairConfig`, `backupConfig`, `resolveReflectionIntervals` | None — new        |
+| `enforce-config-models.mjs`  | **[NEW]** Model ID normalization: `normalizeModelId`, `CANONICAL_MODEL_IDS` map                                                                              | None — new        |
+| `enforce-config.mjs`         | Replaced inline helpers with imports from extracted modules. Added architecture docs in header. Reduced from 2524→2325 lines                                 | Low — custom file |
+
+### New Test Suites (69 tests total)
+
+| File                              | Tests                                                                                                                                                                             | Coverage   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `enforce-config-helpers.test.mjs` | **[NEW]** 34 tests — readConfig, writeConfig, ensure, makeId, env, isTruthy, resolveReflectionIntervals, repairConfig (prefix stripping, backup restore), backupConfig (rotation) | None — new |
+| `enforce-config-models.test.mjs`  | **[NEW]** 12 tests — normalizeModelId (case correction, passthrough, edge cases), CANONICAL_MODEL_IDS validation                                                                  | None — new |
+| `safe-config-edit.test.mjs`       | **[NEW]** 23 tests — CLI black-box: get/set/remove/validate/diff commands, backup rotation, --force/--dry-run flags                                                               | None — new |
+
+### Config — vitest include update
+
+| File               | Change                                                                  | Sync Risk      |
+| ------------------ | ----------------------------------------------------------------------- | -------------- |
+| `vitest.config.ts` | Added `*.test.mjs` to include patterns for root-level `.mjs` test files | Low — additive |
+
+---
+
 ## Unified Memory System — Auto-Recall, ByteRover Expansion & Cleanup (2026-03-17)
 
 **Purpose:** Replace the manual `memory_search` agent workflow with automatic per-turn memory injection. Expand ByteRover's curation scope to cover knowledge topics, identity scratchpad, and yesterday's daily memory. Add a dedicated source-boost rule for knowledge files, and clean up configuration redundancies.
