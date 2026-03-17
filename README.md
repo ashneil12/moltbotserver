@@ -85,40 +85,171 @@ This is a full-featured fork with a deep memory stack, browser containers, searc
 | Per-Agent CLI Onboarding         | `--agent` and `--sync-all` flags for scoped credential setup _(upstream feature)_                                                                                                                                                                                                                                                                                                                                                    |
 | Self-Delegation Guidance         | Agents taught when and how to break their own work into focused subtasks via `sessions_spawn`, keeping context clean across independent workstreams                                                                                                                                                                                                                                                                                  |
 
-### 🧠 Consciousness & Memory
+### 🧠 Consciousness & Memory — The 10-Layer Memory Stack
 
-This fork has a significantly deeper memory stack than upstream. Rather than treating each session as isolated, agents carry context forward across resets — and actively reflect on their own behavior.
+This fork has a significantly deeper memory stack than upstream. Rather than treating each session as isolated, agents carry context forward across resets — and actively reflect on their own behavior. The system has **10 distinct memory layers** across 4 categories, each firing at different times.
 
-**How context carryover works:**
+#### How It All Fits Together
 
-1. **Lossless Claw (LCM)** is the foundation — it replaces the default sliding-window compaction with a DAG-based SQLite-backed persistent summarization system. Sessions effectively never reset (3-year idle timeout). Context is preserved as a graph of summaries, not thrown away.
-2. On top of LCM, `session-context-summary.ts` runs trajectory compression: the first/last turns are preserved verbatim, the middle is compressed into key decisions, tool usage, and user intents. This gets written to `memory/session-context.md` and loaded on the next session boot.
-3. Every session is indexed into an FTS5 SQLite database (`memory/sessions.db`) so the `session_search` tool can do fast keyword lookup across all past conversations — complementing the embedding-based `memory_search`.
-4. The 3-tier reflection system runs entirely autonomously: self-review (06:00 + 18:00 UTC), consciousness loop (every 12h), and deep review (every 2 days at 04:00 UTC). These are not just prompts — they write structured entries to `memory/self-review.md`, `diary.md`, and the improvement backlog, which feed back into future heartbeats.
+```mermaid
+graph TD
+    subgraph "Layer 1 — Per-Turn Automatic"
+        A["User message"] --> B["memory-unified plugin"]
+        B -->|"before_agent_start hook"| C["QMD memory search"]
+        C --> D["Top results injected into context<br/>(auto-recalled-memories)"]
+    end
 
-The result: agents remember what they did, learn from their patterns, and carry their state forward without losing context.
+    subgraph "Layer 2-4 — Per-Turn Agent-Initiated"
+        A --> E["Agent decides to search"]
+        E -->|"explicit call"| F["memory_search tool"]
+        E -->|"explicit call"| G["brv query (ByteRover)"]
+        E -->|"explicit call"| H["session_search (FTS5)"]
+    end
 
-| Feature                       | Description                                                                                                                                                                                                                                                                                                                                              |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3-Tier Reflection System      | Self-review (2× daily), consciousness loop (12h), deep-review (every 2 days) — runs autonomously per agent on fixed cron schedules                                                                                                                                                                                                                       |
-| Lossless Claw (LCM)           | [DAG-based conversation memory](https://github.com/martian-engineering/lossless-claw) pre-baked into Docker image. Replaces default sliding-window compaction with SQLite-backed persistent summarization. Sessions never reset (3-year idle timeout)                                                                                                    |
-| Pre-Reset Memory Flush        | Deterministic memory flush before session reset — ensures no context is lost between compactions                                                                                                                                                                                                                                                         |
-| Trajectory Compression        | Smarter session context carryover — preserves first/last turns verbatim, compresses middle via key decisions, tool usage, and user intents                                                                                                                                                                                                               |
-| Session Search                | FTS5-powered keyword search across past conversations with [OpenViking](https://github.com/volcengine/OpenViking)-inspired hotness scoring (access count + recency decay) and mechanical query rewriting (OR-expansion)                                                                                                                                  |
-| Session Context Carryover     | Rolling `memory/session-context.md` persists context across session resets                                                                                                                                                                                                                                                                               |
-| BrainX Memory Enrichment      | Cron-based [fact extraction](https://github.com/Mdx2025/-BrainX-The-First-Brain-for-OpenClaw) from session transcripts (URLs, repos, env vars, services) + advisory warning detection (deploy failures, dangerous commands, auth errors) — writes to `memory/extracted-facts.md` and `memory/advisory-warnings.md`, auto-injected into bootstrap context |
-| Memory Extraction             | [OpenViking](https://github.com/volcengine/OpenViking)-inspired LLM-powered semantic fact extraction — 5 categories (`[preference]`, `[fact]`, `[entity]`, `[decision]`, `[open]`) with deduplication against existing memory                                                                                                                            |
-| Tool Usage Statistics         | [OpenViking](https://github.com/volcengine/OpenViking)-inspired per-tool usage tracking — call counts, success/failure rates, durations. Stored in shared `sessions.db`                                                                                                                                                                                  |
-| QMD Always-On                 | When `OPENCLAW_QMD_ENABLED=true`, QMD is enforced as the primary memory backend with 5-minute update intervals, boot-time sync, and hybrid vector+text search. No manual config required                                                                                                                                                                 |
-| Skill Auto-Creation           | Agents create and manage their own skill documents autonomously in `workspace/skills/`                                                                                                                                                                                                                                                                   |
-| Skill Evolution               | Weekly cron generates `SKILL.md` files from recurring failure patterns — inspired by [MetaClaw](https://github.com/aiming-lab/MetaClaw). Reviews self-review MISS logs, distinguishes behavioral rules from procedural skills, auto-discovers from 3+ occurrences                                                                                        |
-| Progressive Disclosure Skills | Token-efficient skill indexing — compact one-line-per-skill index in system prompt, full SKILL.md loaded on demand via `skill_view` tool. Inspired by [Hermes Agent](https://github.com/NousResearch/hermes-agent). ~50-60% token savings                                                                                                                |
-| Knowledge Base Indexer        | Auto-scans `memory/knowledge/*.md` and builds a queryable `_index.md`                                                                                                                                                                                                                                                                                    |
-| Improvement Backlog           | Structured backlog system for self-generated improvement proposals with tiered triage (auto-implement / build-then-approve / propose-only)                                                                                                                                                                                                               |
-| Nightly Innovation            | 5-phase autonomous building cron (2 AM) with backlog integration — agents build improvements overnight                                                                                                                                                                                                                                                   |
-| Morning Briefing              | Personalized daily summary (8 AM) with backlog surfacing, correction-awareness, and Standing Corrections from `MEMORY.md`                                                                                                                                                                                                                                |
-| Diary Archival & Continuity   | Automatic diary rotation with continuity summaries across archive boundaries                                                                                                                                                                                                                                                                             |
-| Auto-Tidy                     | Scheduled workspace cleanup — prunes stale entries from MEMORY.md, open-loops, self-review, session-context, backlog, and BrainX files                                                                                                                                                                                                                   |
+    subgraph "Layer 5-7 — Per-Session Events"
+        I["Session start"] -->|"bootstrap"| J["Loads MEMORY.md, WORKING.md,\nIDENTITY.md, session-context.md"]
+        K["/new or /reset"] -->|"session-memory hook"| L["Saves transcript →\nmemory/date-slug.md"]
+        M["Near compaction threshold"] -->|"memory flush"| N["Agent writes key facts →\nmemory/YYYY-MM-DD.md"]
+    end
+
+    subgraph "Layer 8-10 — Cron Background"
+        O["3× daily"] -->|"BrainX regex"| P["memory/extracted-facts.md"]
+        Q["6× daily"] -->|"BrainX regex"| R["memory/advisory-warnings.md"]
+        S["Daily"] -->|"LLM extraction"| P
+        T["5min poll"] -->|"brv-curate-watcher"| U[".brv/ knowledge tree"]
+    end
+
+    style B fill:#22c55e,color:#000
+    style C fill:#22c55e,color:#000
+    style D fill:#22c55e,color:#000
+```
+
+#### Layer 1: Auto-Recall — Memory-Unified Plugin _(per-turn, automatic)_
+
+**The newest layer.** The `memory-unified` plugin hooks into `before_agent_start` and automatically searches memory on every user turn. Results are injected as `<auto-recalled-memories>` XML tags via `prependContext` — no agent action needed.
+
+This replaced the old approach where agents had to remember to call `memory_search` themselves (they often didn't).
+
+| Setting            | Default | Description                 |
+| ------------------ | ------- | --------------------------- |
+| `autoRecall`       | `true`  | Enable per-turn auto-recall |
+| `recallMaxResults` | `5`     | Max memories to inject      |
+| `recallMinScore`   | `0.3`   | Minimum relevance threshold |
+
+**Guards** (auto-recall is skipped for): prompts < 10 chars, cron/heartbeat/memory triggers, slash commands starting with `/`, missing session keys.
+
+**Tiered injection limits:** `maxInjectedChars` is **5,000** in normal mode and **10,000** in business mode (controlled by `OPENCLAW_BUSINESS_MODE`).
+
+#### Layer 2: QMD Memory Backend _(per-turn, on-demand)_
+
+**What:** Hybrid BM25 + vector search over all workspace `.md` files — MEMORY.md, `memory/*.md`, diary, business docs, knowledge topics. Always-on by default (opt-out via `OPENCLAW_QMD_ENABLED=false`).
+
+**Features:**
+
+- Hybrid scoring: 70% vector / 30% BM25 text overlap
+- Temporal decay: 14-day half-life (recent memories rank higher)
+- [MiroFish](https://github.com/666ghj/MiroFish)-inspired source-boost: 1.15× boost for knowledge files (`MEMORY.md`, `memory/*.md`, `memory/knowledge/*.md`, `IDENTITY.md`, `WORKING.md`)
+- Multimodal support (images/audio via Gemini — optional)
+- Session transcript indexing (conversations are searchable too)
+
+**When:** Auto-recall (Layer 1) uses this backend automatically. Agents can also call `memory_search` manually for targeted queries.
+
+#### Layer 3: ByteRover _(per-turn agent-initiated + background curation)_
+
+**What:** Local-first knowledge curation via **Gemini Flash Lite**. Maintains a private knowledge tree (`.brv/`) with curated facts extracted from key files.
+
+**Agent-facing:** `brv query "topic"` — retrieval from the curated tree.
+
+**Background curation:** `brv-curate-watcher.sh` runs as a daemon, polling every 5min. Hash-based — only re-curates when files actually change. Watches:
+
+| Source                                                     | Type                           |
+| ---------------------------------------------------------- | ------------------------------ |
+| `MEMORY.md`, `USER.md`, `IDENTITY.md`, `SOUL.md`           | Fixed identity files           |
+| `memory/extracted-facts.md`, `memory/advisory-warnings.md` | BrainX outputs                 |
+| `memory/identity-scratchpad.md`                            | Identity evolution             |
+| `diary/*.md`                                               | All diary files (dynamic)      |
+| `memory/knowledge/*.md`                                    | Knowledge topics (dynamic)     |
+| Yesterday's `memory/YYYY-MM-DD.md`                         | Previous day's memory (stable) |
+
+#### Layer 4: Session Search _(per-turn, agent-initiated)_
+
+**What:** FTS5-powered keyword search across all past conversations stored in `memory/sessions.db`.
+
+**Features:** [OpenViking](https://github.com/volcengine/OpenViking)-inspired hotness scoring (access count + recency decay blended with FTS5 rank), mechanical query rewriting (OR-expansion), sub-agent session isolation.
+
+**When:** Agent calls `session_search` tool — complements the embedding-based `memory_search` with exact keyword lookup.
+
+#### Layer 5: Lossless Claw (LCM) _(session lifecycle)_
+
+**What:** [DAG-based conversation memory](https://github.com/martian-engineering/lossless-claw) that replaces the default sliding-window compaction. Context is preserved as a graph of summaries in SQLite — sessions effectively never reset (3-year idle timeout).
+
+**How:** Instead of throwing away old messages when the context window fills up, LCM summarizes conversation segments into a directed acyclic graph. Each new summary links to its predecessors, so the agent retains the full thread of context in compressed form. Pre-baked into the Docker image — no runtime install needed.
+
+#### Layer 6: Memory Flush _(pre-compaction)_
+
+**What:** When the context window nears compaction threshold, injects a "flush turn" telling the agent to write important context to `memory/YYYY-MM-DD.md` before the window compacts.
+
+**Triggers:** `totalTokens > contextWindow - 55000 - 8000` or transcript size > 2MB.
+
+**Why:** Even with LCM, some context is better preserved as explicit memory entries rather than summaries. The flush ensures critical facts survive compaction in full fidelity.
+
+#### Layer 7: Session-Memory Hook _(session reset)_
+
+**What:** When a user runs `/new` or `/reset`, saves the last 15 messages as a dated memory file with an LLM-generated slug (e.g., `2026-03-17-deploy-fix.md`).
+
+**Also:** `session-context-summary.ts` runs trajectory compression on every session — first/last turns preserved verbatim, middle compressed via key decisions, tool usage, and user intents. Written to `memory/session-context.md` for next-session boot.
+
+#### Layer 8: BrainX Fact Extractor _(cron, 3× daily)_
+
+**What:** Regex-based fact extraction from session transcripts. Scans for URLs, GitHub repos, port numbers, environment variables, service names, API endpoints.
+
+**Output:** `memory/extracted-facts.md` (deduplicated, max 16K chars). No LLM — pure regex, fast and deterministic.
+
+**Schedule:** 01:00, 09:00, 17:00 UTC.
+
+#### Layer 9: BrainX Advisory Warnings _(cron, 6× daily)_
+
+**What:** Scans diary + memory files for failure patterns — deploy crashes, dangerous commands, auth errors, OOM, rate limits.
+
+**Output:** `memory/advisory-warnings.md` (severity-sorted, max 4K chars). No LLM — pure regex.
+
+**Schedule:** Odd hours (03, 07, 11, 15, 19, 23 UTC).
+
+#### Layer 10: Memory Extraction _(cron, daily)_
+
+**What:** LLM-powered semantic extraction from recent non-cron conversations. [OpenViking](https://github.com/volcengine/OpenViking)-inspired 5-category system: `[preference]`, `[fact]`, `[entity]`, `[decision]`, `[open]`.
+
+**Output:** Appended to `memory/extracted-facts.md` with date headers. Deduplicates against existing `extracted-facts.md` and `MEMORY.md`. Consolidates and prunes when the file exceeds 200 lines.
+
+**Schedule:** Daily at 10:00 UTC.
+
+#### The 3-Tier Reflection System
+
+On top of the memory stack, three autonomous reflection jobs continuously refine the agent's self-model:
+
+| Job               | Schedule                | What it does                                                                                                   |
+| ----------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Self-Review**   | 2× daily (06:00, 18:00) | Pattern tracker — logs HIT/MISS entries, promotes 3× MISSes to CRITICAL rules in IDENTITY.md                   |
+| **Consciousness** | Every 12h (dynamic)     | Free-form reflection — diary writes, knowledge updates, identity evolution. Adjusts own wake interval (4h–12h) |
+| **Deep Review**   | Every 2 days (04:00)    | Full 48h audit — identity consolidation, memory hygiene, knowledge pruning, semantic consistency               |
+
+The result: agents remember what they did, learn from their patterns, carry forward across resets, and continuously evolve their own identity.
+
+#### Additional Memory Features
+
+| Feature                       | Description                                                                                                                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool Usage Statistics         | [OpenViking](https://github.com/volcengine/OpenViking)-inspired per-tool tracking — call counts, success/failure rates, durations. Stored in shared `sessions.db`                                              |
+| Skill Auto-Creation           | Agents create and manage their own skill documents autonomously in `workspace/skills/`                                                                                                                         |
+| Skill Evolution               | Weekly cron generates `SKILL.md` files from recurring failure patterns — inspired by [MetaClaw](https://github.com/aiming-lab/MetaClaw)                                                                        |
+| Progressive Disclosure Skills | Token-efficient skill indexing — compact index in system prompt, full SKILL.md loaded on demand via `skill_view`. [Hermes Agent](https://github.com/NousResearch/hermes-agent)-inspired. ~50-60% token savings |
+| Knowledge Base Indexer        | Auto-scans `memory/knowledge/*.md` and builds a queryable `_index.md`                                                                                                                                          |
+| Improvement Backlog           | Structured backlog with tiered triage (auto-implement / build-then-approve / propose-only)                                                                                                                     |
+| Nightly Innovation            | 5-phase autonomous building cron (2 AM) with backlog integration                                                                                                                                               |
+| Morning Briefing              | Personalized daily summary (8 AM) with backlog surfacing and Standing Corrections                                                                                                                              |
+| Diary Archival & Continuity   | Automatic diary rotation with continuity summaries across archive boundaries                                                                                                                                   |
+| Auto-Tidy                     | Scheduled workspace cleanup — prunes stale entries from MEMORY.md, open-loops, self-review, session-context, backlog, and BrainX files                                                                         |
+| Slash Commands                | `/fresh` (clear context), `/forget [topic]` (delete memories), `/remember [topic]` (inject specific memories)                                                                                                  |
 
 ### ⏰ Pre-Seeded Cron Jobs
 
