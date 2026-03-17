@@ -51,9 +51,13 @@ function buildMemorySection(params: {
   }
   const lines = [
     "## Memory Recall",
-    "Before answering any non-trivial question — anything involving project details, configurations, architecture, past decisions, names, processes, technical specifics, preferences, dates, prior work, or any topic where workspace context might exist — run memory_search with a few keywords from the request. " +
-      "This searches MEMORY.md, memory/*.md, diary, and all workspace documents (business/, docs/, notes/, and any *.md files in the workspace). Then use memory_get to pull only the needed lines. " +
-      "Skip this for simple greetings, casual conversation, pure general knowledge with no workspace angle, or when the answer is already visible in your loaded context above. " +
+    "**Tool priority for recall:**\n" +
+      '1. **`brv query`** (preferred) — For understanding the user, their preferences, past decisions, project context, and curated knowledge. ByteRover maintains a curated knowledge tree with pre-processed facts, making it faster and more contextual than raw search. Use via exec: `brv query "<topic>"`\n' +
+      "2. **`memory_search`** — For semantic search across workspace documents (MEMORY.md, memory/*.md, diary, business/, docs/, notes/, and any *.md files). Use when you need to find specific content in workspace files or when brv is unavailable.\n" +
+      "3. **`session_search`** — For finding specific messages, commands, error text, or exact quotes from past conversations. Use when you need the actual words that were said, not a summary.\n\n" +
+      "Before answering any non-trivial question — anything involving project details, configurations, architecture, past decisions, names, processes, technical specifics, preferences, dates, prior work, or any topic where workspace context might exist — start with `brv query` for curated context, then supplement with `memory_search` if needed. " +
+      "Use memory_get to pull only the needed lines from memory_search results. " +
+      "Skip all recall for simple greetings, casual conversation, pure general knowledge with no workspace angle, or when the answer is already visible in your loaded context above. " +
       "If search results are noisy due to a large repo directory, ask the user first, then add the path to .searchignore in the workspace root. If low confidence after search, say you checked.",
   ];
   if (params.citationsMode === "off") {
@@ -278,7 +282,7 @@ export function buildAgentSystemPrompt(params: {
       "Show a /status-equivalent status card (usage + time + Reasoning/Verbose/Elevated); use for model-use questions (📊 session_status); optional per-session model override",
     image: "Analyze an image with the configured image model",
     session_search:
-      "Search past conversation history using exact keyword/phrase matching. Use for finding specific names, commands, error messages, or decisions from previous sessions. For semantic/conceptual search, use memory_search instead.",
+      "Search all past conversation history using exact keyword/phrase matching. Use for finding specific messages, names, commands, error text, or decisions from previous sessions. Ideal when you need the actual words that were said or a specific message the user referenced.",
     skill_manage:
       "Create, update, delete, or list skill documents. Use to capture successful problem-solving patterns, workflows, or domain expertise as reusable skills.",
   };

@@ -40,7 +40,7 @@ If yes → **write it down now.** Don't wait. Don't batch. Don't "plan to write 
 
 In addition to file-based memory, you have **ByteRover** (`brv`) — a local-first knowledge curation layer powered by `gemini-3.1-flash-lite-preview`. ByteRover curates important facts from your sessions into a private context tree stored in `.brv/` inside your workspace. It runs entirely on-device — no external calls except to Gemini for curation and querying.
 
-**ByteRover supplements your file-based memory — it does not replace it.** Continue writing to memory files as described above. ByteRover gives you curated knowledge retrieval across sessions.
+**ByteRover is your PRIMARY recall tool for user understanding — it takes precedence over `memory_search`.** Its curated knowledge tree provides deeper, pre-processed context about the user, their preferences, past decisions, and project context. Use `memory_search` as a complement for searching raw workspace documents. Continue writing to memory files as described above.
 
 #### ByteRover Tools
 
@@ -65,7 +65,7 @@ Use these proactively alongside your file-based memory:
 
 You have `session_search` — a full-text search tool that lets you find **exact words and phrases** across all past conversation transcripts. It uses SQLite FTS5 and stores its index at `memory/sessions.db` in your workspace.
 
-**Session search complements `memory_search` — it does not replace it.** Use `memory_search` for semantic/conceptual recall ("what does the user think about X?"). Use `session_search` for exact keyword matches ("did we discuss a specific command, error, or name?").
+**Use `session_search` when you need to find a specific message or the exact words that were said.** This is your tool for retrieving actual conversation history — specific commands, error messages, decisions, or quoted phrases. For understanding the user's preferences or getting curated context, use `brv query` first. For semantic search across workspace documents, use `memory_search`.
 
 #### Session Search Tool
 

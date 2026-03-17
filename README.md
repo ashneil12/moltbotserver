@@ -51,7 +51,7 @@ Optimized Claw is a better fit than stock upstream if you are:
 | Disk     | 20 GB (Docker images + workspace data)                        |
 | OS       | Linux (Ubuntu 22.04+), macOS 13+, Windows 11 (Docker Desktop) |
 
-This is a full-featured fork with a deep memory stack, browser containers, search/scraping sidecars, and autonomous cron jobs — it's the opposite of a micro-fork. Budget accordingly.
+This is a full-featured fork with a deep memory stack, browser containers, search/scraping sidecars, and autonomous cron jobs — it's a beefy boi. Budget accordingly.
 
 ---
 
@@ -106,10 +106,16 @@ graph TD
         E -->|"explicit call"| H["session_search (FTS5)"]
     end
 
-    subgraph "Layer 5-7 — Per-Session Events"
-        I["Session start"] -->|"bootstrap"| J["Loads MEMORY.md, WORKING.md,\nIDENTITY.md, session-context.md"]
-        K["/new or /reset"] -->|"session-memory hook"| L["Saves transcript →\nmemory/date-slug.md"]
-        M["Near compaction threshold"] -->|"memory flush"| N["Agent writes key facts →\nmemory/YYYY-MM-DD.md"]
+    subgraph "Layer 5 — Lossless Claw / LCM"
+        AA["Context window fills"] -->|"DAG summarization"| AB["SQLite graph of summaries<br/>(3-year idle timeout)"]
+        AB -->|"compressed context"| AC["Session effectively never resets"]
+    end
+
+    subgraph "Layer 6-7 — Per-Session Events"
+        I["Session start"] -->|"bootstrap"| J["Loads MEMORY.md, WORKING.md,<br/>IDENTITY.md, diary.md,<br/>session-context.md, open-loops.md"]
+        M["Near compaction threshold"] -->|"memory flush"| N["Agent writes key facts →<br/>memory/YYYY-MM-DD.md"]
+        K["/new or /reset"] -->|"session-memory hook"| L["Saves transcript →<br/>memory/date-slug.md"]
+        K -->|"session-context-summary"| KA["Trajectory compression →<br/>memory/session-context.md"]
     end
 
     subgraph "Layer 8-10 — Cron Background"
@@ -119,9 +125,21 @@ graph TD
         T["5min poll"] -->|"brv-curate-watcher"| U[".brv/ knowledge tree"]
     end
 
+    subgraph "3-Tier Reflection System"
+        V["2× daily"] -->|"self-review"| W["memory/self-review.md<br/>(HIT/MISS patterns)"]
+        X["Every 12h"] -->|"consciousness"| Y["diary.md, knowledge/*,<br/>identity-scratchpad.md,<br/>open-loops.md"]
+        Z["Every 2 days"] -->|"deep-review"| ZA["IDENTITY.md consolidation,<br/>memory hygiene, pruning"]
+        W -->|"3× MISS → CRITICAL"| ZA
+    end
+
     style B fill:#22c55e,color:#000
     style C fill:#22c55e,color:#000
     style D fill:#22c55e,color:#000
+    style AB fill:#6366f1,color:#fff
+    style KA fill:#f59e0b,color:#000
+    style W fill:#ef4444,color:#fff
+    style Y fill:#ef4444,color:#fff
+    style ZA fill:#ef4444,color:#fff
 ```
 
 #### Layer 1: Auto-Recall — Memory-Unified Plugin _(per-turn, automatic)_
