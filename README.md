@@ -309,33 +309,35 @@ This fork ships with **623+ custom tests** across **37 test files** covering eve
 
 ### 🧰 Pre-Installed Skills
 
-This fork ships **62 pre-installed skills** available to all agents out of the box. These are seeded into each agent's workspace at creation and cover a wide range of operational, productivity, and integration tasks. Highlights:
+This fork ships **64 pre-installed skills** available to all agents out of the box. These are seeded into each agent's workspace at creation and cover a wide range of operational, productivity, and integration tasks. Highlights:
 
-| Skill                                                | Description                                                                                                                                     |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create-agent`                                       | Full lifecycle setup for a new team member — identity, workspace, channels (Telegram/Discord), browser container, cron jobs, and memory seeding |
-| `channel-team-setup`                                 | Configure multi-agent messaging across Telegram and Discord — bindings, group policy, sandbox settings, platform quirks                         |
-| `cron-setup`                                         | Create, configure, and troubleshoot custom cron jobs — job templates, delivery targets, schedule types, failure modes                           |
-| `review-pr`                                          | Read-only GitHub PR analysis using `gh` CLI — structured feedback and merge readiness assessment                                                |
-| `prepare-pr`                                         | Rebase PR onto main, fix review findings, run gates, push. Use after review, never merges directly                                              |
-| `merge-pr`                                           | Squash-merge a reviewed and prepared PR via `gh` CLI. Cleans up worktrees after success                                                         |
-| `prompt-guard`                                       | Prompt injection detection — teaches agents to use ACIP scanner for external content (emails, webhooks, API calls). Risk scoring + quarantine   |
-| `clawscan`                                           | Security scanning — workspaces, skills, dependencies, configs. Periodic sweep scheduling via cron                                               |
-| `coding-agent`                                       | Focused coding subtask delegation via `sessions_spawn`                                                                                          |
-| `session-logs`                                       | Session transcript export and analysis                                                                                                          |
-| `healthcheck`                                        | Agent health diagnostics and self-healing playbook execution                                                                                    |
-| `skill-creator`                                      | Autonomous skill creation from recurring patterns                                                                                               |
-| `blogwatcher`                                        | RSS/blog monitoring with summarization                                                                                                          |
-| `discord` / `slack`                                  | Channel-specific messaging guides and quirks                                                                                                    |
-| `github` / `gh-issues`                               | GitHub integration — repo management, issue tracking, PR workflows                                                                              |
-| `notion` / `obsidian` / `bear-notes` / `apple-notes` | Note-taking app integrations                                                                                                                    |
-| `openai-image-gen`                                   | Image generation via OpenAI's API                                                                                                               |
-| `openai-whisper`                                     | Audio transcription (local) and API-based speech-to-text                                                                                        |
-| `gemini`                                             | Gemini-specific model capabilities and usage patterns                                                                                           |
-| ...and 40+ more                                      | Covers iMessage, Apple Reminders, smart home (OpenHue), marketing, SEO, PDF handling, TTS, Oracle DB, and more                                  |
+| Skill                                                | Description                                                                                                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create-agent`                                       | Full lifecycle setup for a new team member — identity, workspace, channels (Telegram/Discord), browser container, cron jobs, and memory seeding   |
+| `channel-team-setup`                                 | Configure multi-agent messaging across Telegram and Discord — bindings, group policy, sandbox settings, platform quirks                           |
+| `cron-setup`                                         | Create, configure, and troubleshoot custom cron jobs — job templates, delivery targets, schedule types, failure modes                             |
+| `review-pr`                                          | Read-only GitHub PR analysis using `gh` CLI — structured feedback and merge readiness assessment                                                  |
+| `prepare-pr`                                         | Rebase PR onto main, fix review findings, run gates, push. Use after review, never merges directly                                                |
+| `merge-pr`                                           | Squash-merge a reviewed and prepared PR via `gh` CLI. Cleans up worktrees after success                                                           |
+| `prompt-guard`                                       | Prompt injection detection — teaches agents to use ACIP scanner for external content (emails, webhooks, API calls). Risk scoring + quarantine     |
+| `clawscan`                                           | Security scanning — workspaces, skills, dependencies, configs. Periodic sweep scheduling via cron                                                 |
+| `coding-agent`                                       | Focused coding subtask delegation via `sessions_spawn`                                                                                            |
+| `session-logs`                                       | Session transcript export and analysis                                                                                                            |
+| `healthcheck`                                        | Agent health diagnostics and self-healing playbook execution                                                                                      |
+| `skill-creator`                                      | Autonomous skill creation from recurring patterns                                                                                                 |
+| `blogwatcher`                                        | RSS/blog monitoring with summarization                                                                                                            |
+| `discord` / `slack`                                  | Channel-specific messaging guides and quirks                                                                                                      |
+| `github` / `gh-issues`                               | GitHub integration — repo management, issue tracking, PR workflows                                                                                |
+| `systematic-debugging`                               | 4-phase root-cause-first debugging — prevents fix-thrashing via structured investigation → pattern analysis → hypothesis testing → implementation |
+| `verification-gate`                                  | Evidence-before-claims gate — agents must run verification commands and show output before declaring success                                      |
+| `notion` / `obsidian` / `bear-notes` / `apple-notes` | Note-taking app integrations                                                                                                                      |
+| `openai-image-gen`                                   | Image generation via OpenAI's API                                                                                                                 |
+| `openai-whisper`                                     | Audio transcription (local) and API-based speech-to-text                                                                                          |
+| `gemini`                                             | Gemini-specific model capabilities and usage patterns                                                                                             |
+| ...and 40+ more                                      | Covers iMessage, Apple Reminders, smart home (OpenHue), marketing, SEO, PDF handling, TTS, Oracle DB, and more                                    |
 
 > [!NOTE]
-> This list is a highlight reel — there are 62 skills total in `skills/`. The full list evolves as agents autonomously create new skills from recurring patterns via the `skill-creator` cron job.
+> This list is a highlight reel — there are 64 skills total in `skills/`. The full list evolves as agents autonomously create new skills from recurring patterns via the `skill-creator` cron job.
 
 ---
 
@@ -692,6 +694,7 @@ This fork incorporates ideas, techniques, and patterns from across the AI agent 
 - **[Hermes Agent](https://github.com/NousResearch/hermes-agent)** by NousResearch — progressive disclosure architecture for token-efficient skill indexing
 - **SkillGuard** by [Ziwen Xu](https://github.com/ziwenxu) — AgentGuard secret redaction and security skills architecture
 - **[MiroFish](https://github.com/666ghj/MiroFish)** by [666ghj](https://github.com/666ghj) — source-aware ranking for memory search relevance
+- **[Superpowers](https://github.com/obra/superpowers)** by [Jesse Vincent](https://github.com/obra) — systematic debugging and verification gate skill patterns
 - **[SearXNG](https://github.com/searxng/searxng)** — privacy-respecting metasearch engine (bundled sidecar)
 - **[Scrapling](https://github.com/D4Vinci/Scrapling)** by [D4Vinci](https://github.com/D4Vinci) — stealth scraping backend with anti-bot-bypass via Playwright
 - **[Brad Mills (@bradmillscan)](https://x.com/bradmillscan)** — stale snapshot prevention analysis and ephemeral path failure modes
