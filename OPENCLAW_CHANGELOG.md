@@ -5,6 +5,59 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Marketing Skills Integration — 33 Skills from coreyhaines31/marketingskills (2026-03-17)
+
+**Purpose:** Integrate a comprehensive marketing skills library into the MoltBot agent system, giving agents access to structured marketing frameworks through OpenClaw's progressive disclosure system.
+
+**Source:** [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) (MIT License)
+
+### Tier 1 — Always-On Skills (4 skills, no gating)
+
+Available to all agents immediately via progressive disclosure (compact index → on-demand `skill_view` loading):
+
+| Skill                       | Purpose                                                                     |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `marketing-psychology`      | 60+ mental models with marketing applications                               |
+| `copywriting`               | Structured frameworks for marketing copy (homepage, landing pages, pricing) |
+| `social-content`            | Complete system for social media content creation across platforms          |
+| `product-marketing-context` | Foundational product/audience/positioning context document                  |
+
+### Tier 2 — Business-Gated Skills (29 skills, requires `business.enabled`)
+
+Available only when `business.enabled: true` is set in the agent's configuration. Gated via OpenClaw's `metadata.openclaw.requires.config` frontmatter:
+
+| Category                | Skills                                                                                                         |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **SEO & Content**       | `ai-seo`, `content-strategy`, `programmatic-seo`, `schema-markup`, `seo-audit`, `site-architecture`            |
+| **CRO & Conversion**    | `form-cro`, `onboarding-cro`, `page-cro`, `paywall-upgrade-cro`, `popup-cro`, `signup-flow-cro`                |
+| **Advertising**         | `ad-creative`, `paid-ads`                                                                                      |
+| **Email & Outreach**    | `cold-email`, `email-sequence`                                                                                 |
+| **Analytics & Testing** | `ab-test-setup`, `analytics-tracking`                                                                          |
+| **Sales & Revenue**     | `competitor-alternatives`, `pricing-strategy`, `referral-program`, `revops`, `sales-enablement`                |
+| **Strategy & Growth**   | `churn-prevention`, `copy-editing`, `free-tool-strategy`, `launch-strategy`, `lead-magnets`, `marketing-ideas` |
+
+### Marketing Tools Registry — Reference Skill
+
+| File                                               | Change                                                                                                                                                         | Sync Risk              |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `.agents/skills/marketing-tools-registry/SKILL.md` | **[NEW]** Reference to 51 zero-dependency Node.js CLI wrappers (analytics, email, ads, CRM, SEO, payments). Business-gated. Tools fetched on-demand via `npx`. | None — workspace level |
+
+### Integration Details
+
+| Aspect               | Detail                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Location**         | `.agents/skills/` (workspace-level, gitignored from source)                                                               |
+| **Indexing**         | Auto-indexed by OpenClaw's `buildWorkspaceSkillSnapshot()`                                                                |
+| **Prompt format**    | Progressive disclosure — compact name+description index in system prompt, full SKILL.md loaded on demand via `skill_view` |
+| **Token impact**     | ~200 tokens (index only) until agent reads a specific skill                                                               |
+| **Gating mechanism** | YAML frontmatter: `metadata.openclaw.requires.config: ["business.enabled"]`                                               |
+
+### Attribution
+
+All 33 marketing skills are sourced from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) under the MIT License. The `marketing-tools-registry` skill references CLI tools from the same repository.
+
+---
+
 ## Codebase Cleanup — enforce-config Modularization & Test Coverage (2026-03-17)
 
 **Purpose:** Improve maintainability and testability of the two largest custom scripts (`enforce-config.mjs` and `safe-config-edit.mjs`) by extracting shared utilities into testable modules and adding comprehensive test suites.
