@@ -28,12 +28,14 @@
 import { execSync } from "node:child_process";
 import {
   writeFileSync,
+  readFileSync,
   cpSync,
   mkdirSync,
   existsSync,
   chmodSync,
   readdirSync,
   statSync,
+  rmSync,
 } from "node:fs";
 import { dirname } from "node:path";
 // ── Extracted modules ───────────────────────────────────────────────────────
@@ -450,7 +452,16 @@ function enforceCore(configPath) {
   slots.memory = "memory-unified"; // Unified memory with per-turn auto-recall
   const entries = ensure(plugins, "entries");
   entries["lossless-claw"] = entries["lossless-claw"] || { enabled: true };
-  entries["memory-unified"] = entries["memory-unified"] || { enabled: true };
+  // Memory-unified: always enforce alignment scoring config.
+  // Default: enabled + active corrections (drift → correction injected).
+  // Set ALIGNMENT_CHECK_OBSERVE_ONLY=true to disable corrections (log only).
+  const muEntry = entries["memory-unified"] || { enabled: true };
+  muEntry.enabled = true;
+  muEntry.alignmentCheck = true;
+  muEntry.alignmentCheckObserveOnly = env("ALIGNMENT_CHECK_OBSERVE_ONLY") === "true";
+  muEntry.alignmentCheckCooldownTurns = Number(env("ALIGNMENT_CHECK_COOLDOWN_TURNS")) || 3;
+  muEntry.alignmentCheckThreshold = Number(env("ALIGNMENT_CHECK_THRESHOLD")) || 0.7;
+  entries["memory-unified"] = muEntry;
   // Ensure lossless-claw and memory-unified are in the allow list (if one exists)
   if (Array.isArray(plugins.allow)) {
     if (!plugins.allow.includes("lossless-claw")) {
@@ -1114,6 +1125,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       description:
         "Natural reflection — diary, knowledge, identity evolution, open-loops. Dynamic scheduling via NEXT_WAKE.",
       enabled: reflectionEnabled,
+      idleOnly: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
       schedule: { kind: "every", everyMs: 43200000, anchorMs: nowMs + 7200000 }, // 12h, +2h boot offset (NEXT_WAKE dynamic)
@@ -1212,6 +1224,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       description:
         "Comprehensive 48h audit — identity evolution, memory hygiene, knowledge pruning, over-correction check",
       enabled: reflectionEnabled,
+      idleOnly: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
       schedule: { kind: "cron", expr: "0 4 */2 * *" }, // every 2 days at 04:00 UTC
@@ -1330,6 +1343,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       description:
         "Analyse self-review MISS patterns and generate reusable SKILL.md files from recurring failures",
       enabled: reflectionEnabled,
+      idleOnly: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
       schedule: { kind: "every", everyMs: 604800000, anchorMs: nowMs + 21600000 }, // 7d, +6h offset
@@ -1359,9 +1373,11 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "Read in this order:",
           "1. memory/self-review.md — look for MISS patterns with 3+ occurrences",
           '   or flagged as "PROMOTION REQUIRED"',
-          "2. memory/diary.md — find context around those failures (what happened,",
+          "2. memory/skill-candidates.md — per-session skill candidates auto-extracted from recent conversations.",
+          "   These are lightweight topic summaries that may contain useful patterns worth promoting to full skills.",
+          "3. memory/diary.md — find context around those failures (what happened,",
           "   what was tried, what would have helped)",
-          "3. List contents of .agents/skills/ — check what skills already exist",
+          "4. List contents of .agents/skills/ — check what skills already exist",
           "",
           "PHASE 2: EVALUATE EACH CANDIDATE",
           "For each recurring MISS pattern, ask:",
@@ -1409,7 +1425,19 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "- The SKILL.md `name` field must match the directory name",
           "- Keep descriptions under 80 chars (they appear in the skill index)",
           "",
-          "PHASE 4: LOG",
+          "PHASE 3.5: BUMP SKILL GENERATION",
+          "If you created or revised ANY skills in this run, bump the skill generation:",
+          "Write to skills/.generation.json:",
+          '  { "generation": <current + 1>, "bumpedAt": "<ISO timestamp>", "bumpedBy": "skill-evolution" }',
+          "This allows downstream systems to detect when skills have changed (e.g. invalidate caches).",
+          "If you made zero skill changes, do NOT bump the generation.",
+          "",
+          "PHASE 4: CLEAN UP SKILL CANDIDATES",
+          "If you consumed any entries from memory/skill-candidates.md (promoted them to full skills,",
+          "or evaluated and rejected them), remove those consumed entries from the file.",
+          "Keep any candidates you didn't get to this cycle — they'll be reviewed next time.",
+          "",
+          "PHASE 5: LOG",
           "Write a brief entry to memory/diary.md:",
           "[DATE] SKILL-EVOLUTION: Generated N skill(s) from failure patterns: <list>",
           'If no candidates qualified, log that too: "No actionable skill candidates',
@@ -1432,6 +1460,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       description:
         "Overnight autonomous improvement cycle — builds quick wins, self-assigns follow-up loops, drafts proposals for big ideas, and reports findings each morning",
       enabled: true,
+      idleOnly: true,
       createdAtMs: nowMs,
       updatedAtMs: nowMs,
       schedule: { kind: "cron", expr: "0 2 * * *" },
@@ -2193,11 +2222,50 @@ function enforceBrowserProfiles(configPath) {
 // ── LCM (Lossless Claw) Plugin Enforcement ──────────────────────────────────
 
 /**
- * Ensure the Lossless Claw (LCM) context engine plugin is installed.
+ * Read the version string from a plugin directory's package.json.
+ * Returns null if the directory or package.json doesn't exist or is unreadable.
+ */
+function readPluginVersion(dir) {
+  try {
+    const raw = readFileSync(`${dir}/package.json`, "utf-8");
+    const pkg = JSON.parse(raw);
+    return pkg.version || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compare two semver strings (e.g. "0.3.0" vs "0.4.0").
+ * Returns true if `a` is strictly newer than `b`.
+ */
+function isNewerSemver(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const va = pa[i] || 0;
+    const vb = pb[i] || 0;
+    if (va > vb) {
+      return true;
+    }
+    if (va < vb) {
+      return false;
+    }
+  }
+  return false; // equal
+}
+
+/**
+ * Ensure the Lossless Claw (LCM) context engine plugin is installed and
+ * up-to-date with the pre-baked copy in the Docker image.
  *
  * If a pre-baked copy exists at /app/prebaked-plugins/lossless-claw (baked into
  * the Docker image at build time), it is copied to the extensions directory.
  * This avoids runtime npm installs and ensures the plugin survives redeploys.
+ *
+ * Version-aware: if the installed version is older than the prebaked version,
+ * the installed copy is replaced automatically. This means rebuilding the
+ * Docker image with a newer LCM version propagates on next container restart.
  *
  * The config-level enforcement (contextEngine slot, enabled flag) is handled
  * by enforceCore() so it applies even when no prebaked copy is available.
@@ -2207,35 +2275,65 @@ function enforceLCM() {
   const pluginDir = `${stateDir}/extensions/lossless-claw`;
   const prebakedDir = "/app/prebaked-plugins/lossless-claw";
 
-  // Skip if already installed
-  if (existsSync(pluginDir)) {
+  // Nothing to install from
+  if (!existsSync(prebakedDir)) {
+    if (!existsSync(pluginDir)) {
+      console.log(
+        "[enforce-config] LCM prebaked dir not found — plugin must be installed manually via 'openclaw plugins install @martian-engineering/lossless-claw'",
+      );
+    }
     return;
   }
 
-  // Install from pre-baked image copy (built into Docker image)
-  if (existsSync(prebakedDir)) {
-    try {
-      mkdirSync(`${stateDir}/extensions`, { recursive: true });
-      // Use cpSync instead of execSync("cp -r ...") to avoid shell injection surface
-      cpSync(prebakedDir, pluginDir, { recursive: true });
-      // Extensions must be owned by root for the plugin scanner.
-      // Validate path before passing to shell — reject shell metacharacters.
-      if (/[;"'`$\\|&<>(){}[\]!#~]/.test(pluginDir)) {
-        throw new Error(`Refusing to chown — path contains shell metacharacters: ${pluginDir}`);
-      }
-      execSync(`chown -R root:root "${pluginDir}"`, {
-        encoding: "utf8",
-        timeout: 10_000,
-      });
-      console.log("[enforce-config] ✅ Lossless Claw (LCM) plugin installed from pre-baked image");
-    } catch (err) {
-      console.error(
-        `[enforce-config] ⚠ LCM plugin install from prebaked failed (non-fatal): ${err.message}`,
+  const prebakedVersion = readPluginVersion(prebakedDir);
+  const installedVersion = readPluginVersion(pluginDir);
+
+  // Determine if we need to install or upgrade
+  if (installedVersion && prebakedVersion) {
+    if (!isNewerSemver(prebakedVersion, installedVersion)) {
+      // Installed version is same or newer — nothing to do
+      return;
+    }
+    console.log(`[enforce-config] LCM upgrade available: ${installedVersion} → ${prebakedVersion}`);
+  } else if (existsSync(pluginDir) && !prebakedVersion) {
+    // Plugin dir exists but we can't read prebaked version — don't risk overwriting
+    return;
+  }
+
+  const isUpgrade = !!installedVersion;
+
+  try {
+    mkdirSync(`${stateDir}/extensions`, { recursive: true });
+
+    // Remove existing install before copying to avoid stale file conflicts
+    if (existsSync(pluginDir)) {
+      rmSync(pluginDir, { recursive: true, force: true });
+    }
+
+    // Use cpSync instead of execSync("cp -r ...") to avoid shell injection surface
+    cpSync(prebakedDir, pluginDir, { recursive: true });
+    // Extensions must be owned by root for the plugin scanner.
+    // Validate path before passing to shell — reject shell metacharacters.
+    if (/[;"'`$\\|&<>(){}[\]!#~]/.test(pluginDir)) {
+      throw new Error(`Refusing to chown — path contains shell metacharacters: ${pluginDir}`);
+    }
+    execSync(`chown -R root:root "${pluginDir}"`, {
+      encoding: "utf8",
+      timeout: 10_000,
+    });
+
+    if (isUpgrade) {
+      console.log(
+        `[enforce-config] ✅ Lossless Claw (LCM) upgraded: ${installedVersion} → ${prebakedVersion}`,
+      );
+    } else {
+      console.log(
+        `[enforce-config] ✅ Lossless Claw (LCM) plugin installed from pre-baked image (v${prebakedVersion || "unknown"})`,
       );
     }
-  } else {
-    console.log(
-      "[enforce-config] LCM prebaked dir not found — plugin must be installed manually via 'openclaw plugins install @martian-engineering/lossless-claw'",
+  } catch (err) {
+    console.error(
+      `[enforce-config] ⚠ LCM plugin ${isUpgrade ? "upgrade" : "install"} from prebaked failed (non-fatal): ${err.message}`,
     );
   }
 }

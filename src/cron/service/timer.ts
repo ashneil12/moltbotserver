@@ -3,6 +3,7 @@ import type { CronConfig, CronRetryOn } from "../../config/types.cron.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
 import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
+import { shouldRunIdleJob, DEFAULT_DEFER_INTERVAL_MS } from "../idle-gate.js";
 import { sweepCronRunSessions } from "../session-reaper.js";
 import type {
   CronDeliveryStatus,
@@ -627,6 +628,8 @@ export async function onTimer(state: CronServiceState) {
     return;
   }
   state.running = true;
+  // Record the tick for scheduler liveness monitoring.
+  state.lastTickAtMs = state.deps.nowMs();
   // Keep a watchdog timer armed while a tick is executing. If execution hangs
   // (for example in a provider call), the scheduler still wakes to re-check.
   armRunningRecheckTimer(state);
@@ -871,7 +874,7 @@ function collectRunnableJobs(
   if (!state.store) {
     return [];
   }
-  return state.store.jobs.filter((job) =>
+  const due = state.store.jobs.filter((job) =>
     isRunnableJob({
       job,
       nowMs,
@@ -880,6 +883,33 @@ function collectRunnableJobs(
       allowCronMissedRunByLastRun: opts?.allowCronMissedRunByLastRun,
     }),
   );
+
+  // Idle gate: defer idleOnly jobs when the user is active.
+  if (due.some((j) => j.idleOnly)) {
+    const lastActivity = state.deps.getLastUserActivityMs?.();
+    const allowed = shouldRunIdleJob({ lastActivityAtMs: lastActivity, nowMs });
+    if (!allowed) {
+      const deferred: string[] = [];
+      const runnable = due.filter((job) => {
+        if (!job.idleOnly) {
+          return true;
+        }
+        // Defer: bump nextRunAtMs so the scheduler re-checks soon.
+        job.state.nextRunAtMs = nowMs + DEFAULT_DEFER_INTERVAL_MS;
+        deferred.push(job.name || job.id);
+        return false;
+      });
+      if (deferred.length > 0) {
+        state.deps.log.debug(
+          { deferred, nextCheckMs: DEFAULT_DEFER_INTERVAL_MS },
+          "cron: idle gate deferred jobs (user active)",
+        );
+      }
+      return runnable;
+    }
+  }
+
+  return due;
 }
 
 export async function runMissedJobs(

@@ -559,6 +559,24 @@ export async function initSessionState(params: {
       // Best-effort — session context summary is non-critical
     }
 
+    // Extract per-session skill candidates from the transcript.
+    // Candidates are lightweight topic/pattern summaries that the weekly
+    // skill-evolution cron evaluates for promotion to full SKILL.md files.
+    // Inspired by MetaClaw's per-session skill auto-summarization.
+    try {
+      const { extractSkillCandidates, persistSkillCandidates } =
+        await import("./session-skill-candidates.js");
+      const candidates = extractSkillCandidates({
+        transcriptPath: previousSessionEntry.sessionFile,
+        sessionId: previousSessionEntry.sessionId ?? "",
+      });
+      if (candidates.length > 0) {
+        persistSkillCandidates({ workspaceDir, candidates });
+      }
+    } catch {
+      // Best-effort — skill candidate extraction is non-critical
+    }
+
     // Index session messages for FTS5 search (session_search tool).
     try {
       const { indexTranscriptForSearch } = await import("./session-search.js");

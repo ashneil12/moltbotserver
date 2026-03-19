@@ -16,6 +16,7 @@ import { resolveAgentWorkspaceDir } from "../agent-scope.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR } from "../workspace.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringParam } from "./common.js";
+import { readSkillGeneration } from "./skill-generation.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -63,12 +64,13 @@ function sanitizeSkillName(name: string): string | null {
   return cleaned;
 }
 
-function buildSkillFrontmatter(name: string, description: string): string {
+function buildSkillFrontmatter(name: string, description: string, generation: number): string {
   return `---
 name: ${name}
 description: ${description}
 created_by: agent
 created_at: ${new Date().toISOString()}
+generation: ${generation}
 ---`;
 }
 
@@ -88,6 +90,7 @@ type SkillInfo = {
   name: string;
   description: string;
   createdBy?: string;
+  generation?: number;
   path: string;
 };
 
@@ -109,6 +112,11 @@ function readSkillInfo(skillDir: string): SkillInfo | null {
 
       const createdByMatch = /^created_by:\s*(.+)$/m.exec(fm);
       createdBy = createdByMatch?.[1]?.trim();
+
+      const genMatch = /^generation:\s*(\d+)$/m.exec(fm);
+      const generation = genMatch ? Number(genMatch[1]) : undefined;
+
+      return { name, description, createdBy, generation, path: skillPath };
     }
 
     return { name, description, createdBy, path: skillPath };
@@ -252,6 +260,7 @@ function createSkill(
   const frontmatter = buildSkillFrontmatter(
     name,
     description?.trim() || `Auto-created skill: ${name}`,
+    readSkillGeneration(workspaceDir),
   );
   const fileContent = `${frontmatter}\n\n${fullContent}\n`;
 

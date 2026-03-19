@@ -111,6 +111,13 @@ export type CronServiceDeps = {
     mode?: "announce" | "webhook";
     accountId?: string;
   }) => Promise<void>;
+  /**
+   * Returns the timestamp (ms since epoch) of the most recent user activity
+   * across all active sessions/bindings. Used by the idle gate to defer
+   * `idleOnly` jobs when the user is actively chatting.
+   * Returns undefined when no activity data is available.
+   */
+  getLastUserActivityMs?: () => number | undefined;
   onEvent?: (evt: CronEvent) => void;
 };
 
@@ -127,6 +134,8 @@ export type CronServiceState = {
   warnedDisabled: boolean;
   storeLoadedAtMs: number | null;
   storeFileMtimeMs: number | null;
+  /** Timestamp (ms) of the most recent scheduler timer tick. Used by health probes. */
+  lastTickAtMs: number | null;
 };
 
 export function createCronServiceState(deps: CronServiceDeps): CronServiceState {
@@ -139,6 +148,7 @@ export function createCronServiceState(deps: CronServiceDeps): CronServiceState 
     warnedDisabled: false,
     storeLoadedAtMs: null,
     storeFileMtimeMs: null,
+    lastTickAtMs: null,
   };
 }
 

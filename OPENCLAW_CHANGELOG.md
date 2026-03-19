@@ -5,6 +5,188 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Comprehensive Codebase Cleanup — Bug Fixes, Test Coverage, Orphan Removal (2026-03-20)
+
+**Purpose:** Systematic audit of all recently modified files plus broader codebase scan. Fixed bugs, added missing test coverage, removed dead code and orphan files, aligned documentation.
+
+### Bug Fixes
+
+| File                                               | Fix                                                                                                                                                      | Severity |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `src/cron/cron-health-probes.ts`                   | **Operator precedence bug** in `checkAutoDisabledJobs()` — mixed `&&`/`                                                                                  |          | ` without grouping caused the filter to let enabled jobs with consecutive errors through. Added parentheses for correct intent. | Medium |
+| `src/auto-reply/reply/session-skill-candidates.ts` | **Truncation logic reversed** — was removing newest entries from the bottom; corrected to remove oldest from the top so recent candidates are preserved. | Medium   |
+| `enforce-config.mjs`                               | **Duplicate step numbering** in skill-evolution cron prompt — had two "Step 3"s; corrected second to "Step 4".                                           | Low      |
+
+### New Test Coverage
+
+| File                                                    | Tests                                                                                                                                                                                                | Coverage      |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `src/cron/cron-health-probes.test.ts`                   | **[NEW]** 21 tests — all 4 probe functions (`checkSchedulerLiveness`, `checkConsecutiveErrors`, `checkAutoDisabledJobs`, `checkStaleDeliveryTargets`) + combined `runCronHealthProbes()` integration | Comprehensive |
+| `src/agents/tools/skill-generation.test.ts`             | **+3 tests** — NaN, Infinity, and zero generation value edge cases added to existing suite (now 15 total)                                                                                            | Edge cases    |
+| `src/auto-reply/reply/session-skill-candidates.test.ts` | **+1 test** — truncation logic (oldest-first removal), removed unused `makeAssistantText` helper (now 11 total)                                                                                      | Correctness   |
+
+### Orphan/Dead Code Removal
+
+| Item                                                    | Action                                                                        |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `src/infra/fs-bridge.test 2.ts`                         | **Deleted** — macOS Finder duplicate copy (space in filename), non-functional |
+| `src/channels/discord/discord-context 2.ts`             | **Deleted** — macOS Finder duplicate copy (space in filename), non-functional |
+| `session-skill-candidates.test.ts: makeAssistantText()` | **Removed** — unused helper function that was never called                    |
+
+### Documentation Alignment
+
+- Updated `OPENCLAW_CONTEXT.md` with all new MetaClaw and cron defense files
+- Updated `OPENCLAW_CHANGELOG.md` with audit results and this cleanup section
+- Corrected idle-gate documentation to reflect actual 30-minute default threshold (was incorrectly described as 15 minutes in earlier walkthrough)
+
+---
+
+## MetaClaw Integration — Idle-Aware Scheduling, Skill Generation Versioning & Per-Session Skill Candidates (2026-03-20)
+
+**Purpose:** Three features inspired by [MetaClaw](https://github.com/aiming-lab/MetaClaw) v0.2.0: (1) OMLS-inspired idle-aware cron scheduling that defers heavy background jobs when the user is active, (2) skill generation versioning for cache invalidation when skills evolve, (3) per-session mechanical extraction of skill candidates from transcripts.
+
+### Feature 1 — Idle-Aware Cron Scheduling (OMLS)
+
+Opportunistic Meta-Learning Scheduler pattern: heavy reflection crons (consciousness, deep-review, skill-evolution, nightly-innovation) are deferred when the user is actively chatting. Runs during idle windows or the sleep window (23:00–07:00 UTC).
+
+| File                         | Change                                                                                                                                                                          | Sync Risk                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `src/cron/idle-gate.ts`      | **[NEW]** Idle detection module: `isUserIdle()` (15-min threshold), `isInSleepWindow()` (23:00–07:00 UTC), `shouldRunIdleJob()` gate. Pure functions, fully configurable.       | None — new                      |
+| `src/cron/idle-gate.test.ts` | **[NEW]** 17 unit tests: active user, idle user, sleep window boundaries, custom config, edge cases                                                                             | None — test                     |
+| `src/cron/types-shared.ts`   | Added `idleOnly?: boolean` to `CronJobBase`                                                                                                                                     | Low — additive                  |
+| `src/cron/service/state.ts`  | Added `getLastUserActivityMs?: () => number \| undefined` to `CronServiceDeps`                                                                                                  | Low — additive                  |
+| `src/cron/service/timer.ts`  | Integrated idle gate into `collectRunnableJobs()`: due jobs with `idleOnly: true` are deferred (nextRunAtMs bumped 5 min) when user is active. Debug logging for deferred jobs. | Medium — modified upstream file |
+| `enforce-config.mjs`         | Tagged 4 crons with `idleOnly: true`: consciousness, deep-review, skill-evolution, nightly-innovation                                                                           | Low — custom file               |
+
+### Feature 2 — Skill Generation Versioning
+
+Monotonically increasing generation counter stored in `skills/.generation.json`. Skills are tagged with the current generation in frontmatter on creation. The skill-evolution cron bumps the generation after creating/revising skills.
+
+| File                                        | Change                                                                                                                           | Sync Risk         |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `src/agents/tools/skill-generation.ts`      | **[NEW]** `readSkillGeneration()`, `readSkillGenerationState()`, `bumpSkillGeneration()`. Persists to `skills/.generation.json`. | None — new        |
+| `src/agents/tools/skill-generation.test.ts` | **[NEW]** 12 unit tests: read/bump/persist, corrupt JSON, negative values, decimal flooring                                      | None — test       |
+| `src/agents/tools/skill-manage-tool.ts`     | Added `generation` to frontmatter builder, `SkillInfo` type, and frontmatter parser                                              | Low — additive    |
+| `enforce-config.mjs`                        | Updated skill-evolution cron prompt: Phase 3.5 (bump generation), Phase 4 (clean up candidates), Phase 5 (log)                   | Low — custom file |
+
+### Feature 3 — Per-Session Skill Candidates
+
+Zero-cost mechanical extraction from session transcripts on each session reset. Detects multi-step tool workflows (3+ distinct tools) and iterative correction patterns (same tool 3+ times). Candidates stored in `memory/skill-candidates.md` for the skill-evolution cron to evaluate.
+
+| File                                                    | Change                                                                                                          | Sync Risk         |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `src/auto-reply/reply/session-skill-candidates.ts`      | **[NEW]** `extractSkillCandidates()` (pattern-based, no LLM), `persistSkillCandidates()` (append with 16KB cap) | None — new        |
+| `src/auto-reply/reply/session-skill-candidates.test.ts` | **[NEW]** 10 unit tests: extraction patterns, capping, persistence, file creation/append                        | None — test       |
+| `src/auto-reply/reply/session.ts`                       | Hooked extraction into session reset flow (after `persistSessionContextOnReset`, best-effort)                   | Low — additive    |
+| `enforce-config.mjs`                                    | Skill-evolution Phase 1 now reads `memory/skill-candidates.md` (step 2 of candidate identification)             | Low — custom file |
+
+### Tests
+
+- ✅ `idle-gate.test.ts`: 17/17 passed
+- ✅ `skill-generation.test.ts`: 12/12 passed
+- ✅ `session-skill-candidates.test.ts`: 10/10 passed
+- ✅ `skill-manage-tool.test.ts`: 15/15 passed (regression)
+- ✅ `session-context-summary.test.ts`: 12/12 passed (regression)
+- ✅ `timer.next-wake.test.ts`: 12/12 passed (regression)
+- ✅ Build: clean (exit code 0)
+
+### Upstream Sync Risk
+
+**None for new files** — 5 new source + 4 test files, fully custom.
+**Low for modified files** — `types-shared.ts` and `state.ts` are additive. `session.ts` adds a best-effort try/catch block. `skill-manage-tool.ts` adds one field to frontmatter.
+**Medium for `timer.ts`** — 30-line addition to `collectRunnableJobs()` with new import. May need manual re-application if upstream modifies this function.
+
+---
+
+## Alignment Drift Scoring & ByteRover Reflection Sync (2026-03-19)
+
+**Purpose:** Two features: (1) alignment drift detection that scores each agent response against SOUL.md/IDENTITY.md rules using Flash Lite, injecting corrective context when the agent drifts from its identity; (2) expanding ByteRover's curation scope to include reflection artifacts for knowledge permanence.
+
+### Feature 1 — Alignment Drift Scoring
+
+Per-turn alignment evaluation via a lightweight LLM call (Gemini Flash Lite). Scores each assistant response against the agent's stated identity (`SOUL.md`) and critical rules (`IDENTITY.md`). When drift is detected, a correction context block is injected into the next turn via `prependContext`.
+
+| File                                             | Change                                                                                                                                                                                                                                                                                                                                                                                         | Sync Risk                     |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `src/memory/alignment-state.ts`                  | **[NEW]** In-memory per-session state tracker: turn counting, cooldown logic (configurable turns), mild-drift escalation (consecutive drifts trigger early recheck), severity classification (aligned/mild/severe). Pure functions following `session-health.ts` pattern.                                                                                                                      | None — new                    |
+| `src/memory/alignment-scorer.ts`                 | **[NEW]** Core scoring module: structured JSON prompt for Flash Lite, dependency-injected LLM call (`AlignmentLlmCall` type for testability), response parsing with markdown fence stripping and score clamping, `buildCorrectionContext()` outputs XML-tagged `<alignment-correction>` blocks, `formatAlignmentLogEntry()` for structured logging.                                            | None — new                    |
+| `src/memory/alignment-state.test.ts`             | **[NEW]** 19 tests: state creation, turn advancement, cooldown logic, mild-drift escalation, recordCheck immutability, severity classification with custom thresholds.                                                                                                                                                                                                                         | None — test                   |
+| `src/memory/alignment-scorer.test.ts`            | **[NEW]** 24 tests: JSON parsing (valid, markdown fences, out-of-range scores, invalid JSON, missing fields, non-string arrays), LLM call error handling (timeout, null, malformed), response truncation, correction context formatting, log entry structure.                                                                                                                                  | None — test                   |
+| `extensions/memory-unified/index.ts`             | Added alignment drift scoring hook alongside existing auto-recall hook. New helper functions: `extractLastAssistantText()` (walks messages backwards), `extractCriticalRules()` (regex-based CRITICAL section extraction from IDENTITY.md), `readTextFileOrEmpty()`, `createGeminiAlignmentCall()` (fetch-based with AbortController timeout). Registers `session_start` hook for state reset. | Low — additive to custom file |
+| `extensions/memory-unified/clawdbot.plugin.json` | Added 4 new config properties: `alignmentCheck` (boolean), `alignmentCheckObserveOnly` (boolean), `alignmentCheckCooldownTurns` (number), `alignmentCheckThreshold` (number).                                                                                                                                                                                                                  | None — schema extension       |
+| `enforce-config.mjs`                             | Auto-enables alignment scoring for all deployed agents. Sets `alignmentCheck: true`, `alignmentCheckObserveOnly: false` (active corrections by default). Configurable via env vars.                                                                                                                                                                                                            | Low — custom file             |
+
+#### Configuration (auto-enforced via enforce-config.mjs)
+
+| Setting                       | Default | Env Var Override                    | Purpose                                       |
+| ----------------------------- | ------- | ----------------------------------- | --------------------------------------------- |
+| `alignmentCheck`              | `true`  | —                                   | Always enabled via enforce-config             |
+| `alignmentCheckObserveOnly`   | `false` | `ALIGNMENT_CHECK_OBSERVE_ONLY=true` | Set to true to log-only mode (no corrections) |
+| `alignmentCheckCooldownTurns` | `3`     | `ALIGNMENT_CHECK_COOLDOWN_TURNS`    | Minimum turns between alignment checks        |
+| `alignmentCheckThreshold`     | `0.7`   | `ALIGNMENT_CHECK_THRESHOLD`         | Score below which a correction is injected    |
+
+#### Pipeline
+
+```
+before_agent_start hook
+  ├─ advanceTurn() — increment session turn counter
+  ├─ shouldCheck() — cooldown + mild-drift escalation gate
+  ├─ extractLastAssistantText() — walk messages backwards
+  ├─ Read SOUL.md + IDENTITY.md from workspace
+  ├─ scoreAlignment() — Flash Lite JSON evaluation
+  ├─ buildCorrectionContext() — format violations as XML
+  ├─ recordCheck() — update state (score, consecutive drifts)
+  └─ Return { prependContext: correctionContext } if warranted
+```
+
+#### Cost Estimate
+
+~$0.00008 per alignment check (Flash Lite at $0.40/1M output tokens, ~200 tokens per check).
+
+### Feature 2 — ByteRover Reflection Sync
+
+Added `memory/self-review.md` and `memory/open-loops.md` to ByteRover's curation watcher, ensuring reflection artifacts (agent failure analysis, ongoing task tracking) are curated into ByteRover's long-term knowledge tree.
+
+| File                            | Change                                                                                                                                                          | Sync Risk         |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `scripts/brv-curate-watcher.sh` | Added 2 files to `fixed_files` array in `get_watched_files()`: `memory/self-review.md` (agent failure analysis), `memory/open-loops.md` (ongoing work tracking) | Low — custom file |
+
+### Tests
+
+- ✅ `alignment-state.test.ts`: 19/19 passed
+- ✅ `alignment-scorer.test.ts`: 24/24 passed
+- ✅ TypeScript: compiles clean (`tsc --noEmit`)
+- ✅ No regressions in memory or extension test suites
+
+### Upstream Sync Risk
+
+**None for new files** — 4 new source + test files, fully custom.
+**Low for modified files** — `index.ts` additions are alongside existing auto-recall hook. Config schema is additive. ByteRover watcher is custom script.
+
+---
+
+## Lossless Claw (LCM) — Version-Aware Auto-Update (2026-03-19)
+
+**Purpose:** Make `enforceLCM()` version-aware so rebuilding the Docker image with a newer LCM version automatically propagates to running containers on next restart. Previously, `enforceLCM()` skipped installation if the plugin directory already existed — meaning the only way to update was to manually `rm -rf` the installed copy.
+
+### Changes
+
+| File                 | Change                                                                                                                                                                                   | Sync Risk         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `enforce-config.mjs` | Rewrote `enforceLCM()` with version comparison. Added `readPluginVersion()` (reads `package.json` → `.version`) and `isNewerSemver()` helpers. Old install is `rmSync`'d before upgrade. | Low — custom file |
+
+### Behavior
+
+| Scenario                           | Before               | After                                        |
+| ---------------------------------- | -------------------- | -------------------------------------------- |
+| Fresh install (no plugin dir)      | Copy prebaked → done | Same                                         |
+| Same version installed             | Skip (dir exists)    | Skip (version match)                         |
+| Prebaked is newer                  | Skip (dir exists)    | Remove old → copy new, log `upgraded: X → Y` |
+| Can't read prebaked `package.json` | N/A                  | Skip (don't risk overwriting)                |
+| Plugin dir exists, no prebaked     | Skip                 | Skip (no log noise)                          |
+
+---
+
 ## Marketing Skills Integration — 33 Skills from coreyhaines31/marketingskills (2026-03-17)
 
 **Purpose:** Integrate a comprehensive marketing skills library into the MoltBot agent system, giving agents access to structured marketing frameworks through OpenClaw's progressive disclosure system.
