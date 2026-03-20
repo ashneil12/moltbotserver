@@ -183,9 +183,12 @@ export async function sweepProactiveDiskHygiene(params: {
     params.log.warn({ err: String(err) }, "proactive-disk-hygiene: disk cleanup failed");
   }
 
-  // 2. Memory file rotation (daily → monthly archives)
+  // 2. Memory file rotation (daily → monthly archives) + staleness scan
+  let staleMemoryEntries = 0;
   try {
     const workspaceDirs = discoverAgentWorkspaceDirs(openclawDir);
+
+    // 2a. Rotate old daily memory files into monthly archives
     for (const workspaceDir of workspaceDirs) {
       const rotationResult = rotateOldMemoryFiles(workspaceDir, {
         nowMs: now,
@@ -200,14 +203,8 @@ export async function sweepProactiveDiskHygiene(params: {
         `proactive-disk-hygiene: rotated ${memoryFilesRotated} daily memory file(s) into monthly archives`,
       );
     }
-  } catch (err) {
-    params.log.warn({ err: String(err) }, "proactive-disk-hygiene: memory file rotation failed");
-  }
 
-  // 3. Memory staleness scan (check MEMORY.md for dated entries >90 days)
-  let staleMemoryEntries = 0;
-  try {
-    const workspaceDirs = discoverAgentWorkspaceDirs(openclawDir);
+    // 2b. Staleness scan — check MEMORY.md for dated entries >90 days old
     for (const workspaceDir of workspaceDirs) {
       const memoryPath = path.join(workspaceDir, "MEMORY.md");
       const result = scanMemoryForStaleness(memoryPath, { nowMs: now });
@@ -223,7 +220,10 @@ export async function sweepProactiveDiskHygiene(params: {
       }
     }
   } catch (err) {
-    params.log.warn({ err: String(err) }, "proactive-disk-hygiene: staleness scan failed");
+    params.log.warn(
+      { err: String(err) },
+      "proactive-disk-hygiene: memory maintenance (rotation/staleness) failed",
+    );
   }
 
   return { swept: true, result: diskResult, memoryFilesRotated, staleMemoryEntries };

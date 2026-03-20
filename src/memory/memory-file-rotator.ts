@@ -74,6 +74,11 @@ export function resolveMemoryFilesToRotate(
     const dateStr = `${year}-${month}-${day}`;
     const fileDate = new Date(`${dateStr}T00:00:00Z`).getTime();
 
+    // Guard against invalid dates (e.g. 2025-02-30.md)
+    if (Number.isNaN(fileDate)) {
+      continue;
+    }
+
     // Only rotate files older than the cutoff
     if (fileDate >= cutoffMs) {
       continue;
@@ -200,13 +205,13 @@ export function rotateOldMemoryFiles(
         }
       }
     } catch (err) {
-      log.warn(`memory-file-rotator: failed to archive ${group.month}: ${String(err)}`);
+      log.warn(`failed to archive ${group.month}: ${String(err)}`);
     }
   }
 
   if (archivesWritten > 0 || dailyFilesDeleted > 0) {
     log.info(
-      `memory-file-rotator: archived ${dailyFilesDeleted} daily files into ${archivesWritten} monthly archive(s)`,
+      `archived ${dailyFilesDeleted} daily files into ${archivesWritten} monthly archive(s)`,
     );
   }
 

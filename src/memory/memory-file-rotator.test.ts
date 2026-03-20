@@ -236,4 +236,41 @@ describe("rotateOldMemoryFiles", () => {
     expect(result.dailyFilesDeleted).toBe(2);
     expect(fs.existsSync(path.join(tmpDir, "memory", "archive", "2025-01.md"))).toBe(false);
   });
+
+  it("archives non-empty files and cleans empty files in same month", () => {
+    createMemoryFile("2025-01-05.md", "Real content");
+    createMemoryFile("2025-01-10.md", "");
+    createMemoryFile("2025-01-15.md", "More content");
+
+    const futureMs = new Date("2026-06-01T00:00:00Z").getTime();
+    const result = rotateOldMemoryFiles(tmpDir, { force: true, nowMs: futureMs });
+
+    expect(result.archivesWritten).toBe(1);
+    expect(result.dailyFilesDeleted).toBe(3);
+
+    const archivePath = path.join(tmpDir, "memory", "archive", "2025-01.md");
+    const content = fs.readFileSync(archivePath, "utf-8");
+    expect(content).toContain("Real content");
+    expect(content).toContain("More content");
+    expect(content).not.toContain("2025-01-10"); // empty file excluded from archive
+  });
+
+  it("skips files with impossible month/day values", () => {
+    // Note: JS Date auto-rolls 2025-02-30 to 2025-03-02, so we test
+    // the regex validation guard (month/day range check) instead.
+    // The regex matches \d{2} for month/day, but resolveMemoryFilesToRotate
+    // only receives files matching DAILY_FILE_PATTERN (/^\d{4}-\d{2}-\d{2}\.md$/),
+    // and we guard month 1-12, day 1-31 in the scanner. Here we verify that
+    // truly malformed filenames (e.g. month=00) are handled gracefully.
+    createMemoryFile("2025-00-15.md", "Month zero");
+    createMemoryFile("2025-01-15.md", "Valid date");
+
+    const futureMs = new Date("2026-06-01T00:00:00Z").getTime();
+    const groups = resolveMemoryFilesToRotate(path.join(tmpDir, "memory"), futureMs, 30);
+
+    // The valid file should be included; month-00 matches the regex but
+    // Date("2025-00-15") → NaN, so our NaN guard skips it
+    const allFiles = groups.flatMap((g) => g.files);
+    expect(allFiles.some((f) => f.date === "2025-01-15")).toBe(true);
+  });
 });

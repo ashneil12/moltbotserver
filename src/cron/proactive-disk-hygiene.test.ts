@@ -187,4 +187,28 @@ describe("sweepProactiveDiskHygiene", () => {
 
     expect(result.swept).toBe(false);
   });
+
+  it("reports stale memory entries from workspace MEMORY.md", async () => {
+    const { openclawDir, storePath } = setupOpenclawDir();
+    // Create a workspace with a MEMORY.md containing old dated entries
+    const agentDir = path.join(openclawDir, "agents", "main");
+    const memoryDir = path.join(agentDir, "memory");
+    fs.mkdirSync(memoryDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(agentDir, "MEMORY.md"),
+      "- Old preference [2023-01]\n- Recent fact [2025-12]\n",
+      "utf-8",
+    );
+
+    const now = new Date("2026-03-20T00:00:00Z").getTime();
+    const result = await sweepProactiveDiskHygiene({
+      sessionStorePaths: [storePath],
+      nowMs: now,
+      log,
+      force: true,
+    });
+
+    expect(result.swept).toBe(true);
+    expect(result.staleMemoryEntries).toBeGreaterThanOrEqual(1);
+  });
 });

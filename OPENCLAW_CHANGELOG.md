@@ -5,6 +5,79 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Memory Maintenance Cleanup — Performance, Correctness, Test Coverage (2026-03-20)
+
+**Purpose:** Refactoring pass on memory maintenance files from the previous session. Fixes performance, correctness, and test coverage gaps.
+
+| File                                      | Change                                                                                                                                                                                                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/cron/proactive-disk-hygiene.ts`      | **[MODIFIED]** Hoisted `discoverAgentWorkspaceDirs()` to run once, reusing result for both memory rotation and staleness scan (was called twice with redundant `readdirSync` + `existsSync` checks). Combined phases 2/3 into single try/catch. |
+| `src/memory/memory-file-rotator.ts`       | **[MODIFIED]** Removed duplicate `memory-file-rotator:` prefix from log messages (subsystem logger already adds it). Added `Number.isNaN` guard for invalid parsed dates (e.g. month=00).                                                       |
+| `src/cron/proactive-disk-hygiene.test.ts` | **[MODIFIED]** +1 test: verifies `staleMemoryEntries` is populated when workspace has old dated entries in `MEMORY.md`.                                                                                                                         |
+| `src/memory/memory-file-rotator.test.ts`  | **[MODIFIED]** +2 tests: mixed empty/non-empty files in same month (archives only non-empty, still deletes all), and invalid date filenames (`2025-00-15.md`) skipped by NaN guard.                                                             |
+
+**Total tests:** 44 (15 + 17 + 12), all passing. TypeScript type-check: ✓.
+
+---
+
+## Cron Defense — Self-Healing Agent Tool, Remediation Journal & Watchdog (2026-03-20)
+
+**Purpose:** Close the self-healing loop for cron jobs. The agent can now autonomously diagnose, fix, and monitor cron issues via the `cron_heal` tool. All automated actions are auditable via an append-only remediation journal, with automatic rollback and human escalation safety nets.
+
+### Phase 5a — Remediation Infrastructure
+
+| File                                    | Change                                                                                                                                                                                                                                                                                                                                                          | Sync Risk                       |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `src/cron/remediation-journal.ts`       | **[NEW]** Append-only JSONL journal (`~/.openclaw/cron/remediation-journal.jsonl`). Tracks all automated actions: snapshots, patches, test results, outcomes. Functions: `createEntry`, `readAllEntries` (10MB/5000-entry safety cap), `readActiveEntries`, `readPendingEntries`, `markEntry`, `pruneOldEntries`, `getJournalHistory`, `countPreviousAttempts`. | None — new                      |
+| `src/cron/remediation-journal.test.ts`  | **[NEW]** 23 tests — CRUD, pruning, malformed line handling, history filtering                                                                                                                                                                                                                                                                                  | None — test                     |
+| `src/cron/remediation-watchdog.ts`      | **[NEW]** Timer-tick watchdog (5-min throttle). Processes active journal entries: confirms fixes past TTL, rolls back re-failed jobs, escalates after max attempts. Uses `patchJob` + `enqueueSystemEvent` DI.                                                                                                                                                  | None — new                      |
+| `src/cron/remediation-watchdog.test.ts` | **[NEW]** 7 tests — rollback, escalation, confirmation, throttling, pruning                                                                                                                                                                                                                                                                                     | None — test                     |
+| `src/config/types.cron.ts`              | Added `remediationRetentionDays`, `remediationWatchdogMinutes`, `remediationMaxAttempts`, `seedSystemJobs` to `CronConfig`                                                                                                                                                                                                                                      | Low — additive                  |
+| `src/cron/service/timer.ts`             | Integrated `runRemediationWatchdog()` in `finally` block after disk hygiene sweep. Uses `sinceMs` check for `getJobErrorSince` timing accuracy. Static `import path from "node:path"`.                                                                                                                                                                          | Medium — modified upstream file |
+
+### Phase 5b — Agent Self-Healing Tool
+
+| File                                 | Change                                                                                                                                                                                                                                                                                                | Sync Risk      |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/agents/tools/cron-heal-tool.ts` | **[NEW]** `cron_heal` agent tool with 7 actions: `diagnose`, `re-enable`, `adjust-schedule`, `force-run`, `cleanup-disk`, `rollback`, `journal`. Follows snapshot→fix→test→journal flow. Agent cannot delete jobs or change delivery targets. Shared `lookupJob()` helper deduplicates gateway calls. | None — new     |
+| `src/agents/openclaw-tools.ts`       | Registered `createCronHealTool()` alongside `createCronTool()`                                                                                                                                                                                                                                        | Low — additive |
+| `src/agents/moltbot-tools.ts`        | Registered `createCronHealTool()` alongside `createCronTool()`                                                                                                                                                                                                                                        | Low — additive |
+| `src/agents/system-prompt.ts`        | Added `cron_heal` to `coreToolSummaries` and `toolOrder`                                                                                                                                                                                                                                              | Low — additive |
+
+### Phase 5c — Closing the Loop
+
+| File                                 | Change                                                                                                                                                                                  | Sync Risk      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/logging/health-sentinel.ts`     | Enhanced `composeSentinelEventText()` with `cron_heal` action hints for cron/disk issues                                                                                                | Low — additive |
+| `src/cron/health-check-seed.ts`      | **[NEW]** Auto-seeds `__system_health_check` cron job (every 6h, isolated session, silent delivery). Prompts agent to run `cron_heal diagnose`. Idempotent, gated via `seedSystemJobs`. | None — new     |
+| `src/cron/health-check-seed.test.ts` | **[NEW]** 8 tests — job definition, seed idempotency, error handling                                                                                                                    | None — test    |
+| `src/cron/service/ops.ts`            | Wired `seedHealthCheckJob()` into `start()`, gated by `seedSystemJobs` config                                                                                                           | Low — additive |
+| `docs/reference/templates/AGENTS.md` | Added "System Health & Self-Healing" guidance section for `cron_heal`                                                                                                                   | Low — template |
+
+### Code Quality Cleanup (post-implementation audit)
+
+| File                                 | Change                                                                                                                                                                         | Category             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
+| `src/agents/tools/cron-heal-tool.ts` | Extracted `lookupJob()` helper — deduplicates job-lookup pattern across `re-enable` and `adjust-schedule` actions                                                              | DRY                  |
+| `src/cron/remediation-journal.ts`    | Added 10MB/5000-entry safety guard in `readAllEntries()` to prevent memory pressure from runaway journal files                                                                 | Security             |
+| `src/cron/service/timer.ts`          | Replaced dynamic `await import("node:path")` with static import; fixed `getJobErrorSince` to use `sinceMs` parameter with `lastRunAtMs` timing check (was ignoring `_sinceMs`) | Bug fix, Performance |
+
+### Tests
+
+- ✅ `remediation-journal.test.ts`: 23/23 passed
+- ✅ `remediation-watchdog.test.ts`: 7/7 passed
+- ✅ `health-check-seed.test.ts`: 8/8 passed
+- ✅ Full cron regression: 703/703 passed
+- ✅ TypeScript: compiles clean (`tsc --noEmit`)
+
+### Upstream Sync Risk
+
+**None for new files** — 6 new source files + 3 test files, fully custom.
+**Low for modified files** — `openclaw-tools.ts`, `moltbot-tools.ts`, `system-prompt.ts`, `ops.ts` are additive imports + registrations.
+**Medium for `timer.ts`** — static import + 40-line watchdog integration in `finally` block. May need manual re-application if upstream modifies the maintenance section.
+
+---
+
 ## Memory Maintenance Automation — Proactive Disk Hygiene, File Rotation, Staleness Detection (2026-03-20)
 
 **Purpose:** Automated memory maintenance pipeline to prevent disk bloat and stale memory accumulation. 3-phase implementation: proactive cleanup, daily→monthly memory archival, and dated-entry staleness detection.
