@@ -5,6 +5,56 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Personality, Voice & Humor Enhancements + Codebase Hardening (2026-03-20)
+
+**Purpose:** Comprehensive personality overhaul: integrate humor training guide, enhance business mode voice, add Natural Voice system, fix IDENTITY.md detection bug, harden Zod schemas, bridge config env vars, and improve metadata stripping in the control UI. 13 files changed (+523/−95).
+
+### Personality & Voice
+
+| File                                                 | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Sync Risk                       |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `src/agents/system-prompt.ts`                        | **[MODIFIED]** Business mode SOUL guidance rewritten: added voice/personality language ("Your voice matters as much as your strategy", humor/wit/warmth instructions, "smartest friend in the room" framing). IDENTITY.md precedence over SOUL.md for personality/voice/communication style explicitly stated. Natural Voice section now conditionally includes humor guide in session-start grounding. New `## Humor Training (Active)` section rendered when `THE_ART_OF_BEING_FUNNY.md` is in context files. Legacy business mode fallback also gets IDENTITY.md precedence language. **Bug fix:** `getBaseName()` lowercases filenames but IDENTITY.md comparison used uppercase — fixed to lowercase `"identity.md"` for case-insensitive detection of freshness nudge. | Medium — modified upstream file |
+| `src/agents/workspace.ts`                            | **[MODIFIED]** Added `DEFAULT_HUMOR_GUIDE_FILENAME` constant. `THE_ART_OF_BEING_FUNNY.md` added to `WorkspaceBootstrapFileName` type, `VALID_BOOTSTRAP_NAMES` set, `ensureAgentWorkspace()` (seeds template when human mode enabled), and `loadWorkspaceBootstrapFiles()` (loaded alongside human guide).                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Medium — modified upstream file |
+| `docs/reference/templates/THE_ART_OF_BEING_FUNNY.md` | **[NEW]** Comprehensive humor training guide covering joke mechanics (incongruity, superiority, relief), comedy types (deadpan, absurdist, sarcasm, wordplay, callbacks, subversion), digital humor patterns, and AI-specific failure modes to avoid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | None — new                      |
+| `docs/reference/templates/openclaw-human-v1.md`      | **[MODIFIED]** Expanded with additional human voice patterns and communication philosophy (+97 lines).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None — template                 |
+| `docs/reference/templates/openclaw-business-v1.md`   | **[MODIFIED]** Rebalanced business guide: reduced dry operational text, added personality/voice guidance (+142/−95 net).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | None — template                 |
+
+### Configuration & Schema Hardening
+
+| File                                     | Change                                                                                                                                                                                                                                                                                                                                                                                                                   | Sync Risk                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| `src/config/zod-schema.agent-runtime.ts` | **[MODIFIED]** Added `z.literal("searxng")` to `ToolsWebSearchSchema` provider union. Added `searxng: z.object({ baseUrl?, engines? })` to search config. Added `scrapling: z.object({ enabled?, baseUrl?, timeoutSeconds?, stealth? })` to `ToolsWebFetchSchema`. Previously these config paths were in TypeScript types but missing from Zod validation — gateway would reject them with `Unrecognized key(s)` errors. | Low — additive to schema |
+| `enforce-config.mjs`                     | **[MODIFIED]** Auto-enables video understanding when `GEMINI_API_KEY` is present (since it's already collected for ByteRover memory curation). New web search provider bridging: `OPENCLAW_SEARCH_PROVIDER` → `tools.web.search.provider` and `SEARXNG_BASE_URL` → `tools.web.search.searxng.baseUrl` so dashboard settings propagate to runtime config.                                                                 | Low — custom file        |
+| `src/agents/tools/web-search.ts`         | **[MODIFIED]** `resolveSearxngEngines()` now reads `SEARXNG_ENGINES` env var alongside dashboard config for engine selection. Prevents `undefined` engines when configured only via env.                                                                                                                                                                                                                                 | Low — additive           |
+
+### Control UI & Security
+
+| File                                        | Change                                                                                                                                                                         | Sync Risk            |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
+| `ui/src/ui/chat/message-normalizer.ts`      | **[MODIFIED]** Enhanced `stripMetadata()` to strip `[SYSTEM: ...]` prefixed messages that were rendering visibly in chat UI. Added pattern for system-injected metadata lines. | Low — custom UI file |
+| `ui/src/ui/chat/message-normalizer.test.ts` | **[MODIFIED]** +45 lines: new tests for `[SYSTEM: ...]` stripping, edge cases for metadata patterns.                                                                           | None — test          |
+| `src/secrets/runtime-web-tools.ts`          | **[MODIFIED]** Refactored runtime web tools secret handling — extracted shared patterns, improved error messages.                                                              | Low — custom file    |
+| `src/secrets/runtime-web-tools.test.ts`     | **[MODIFIED]** +85 lines: comprehensive test coverage for runtime web tools secret resolution.                                                                                 | None — test          |
+
+### Test Coverage
+
+| File                               | Tests                                                                                                                                                | Coverage    |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/agents/system-prompt.test.ts` | **+5 tests** — Natural Voice rendering, Humor Training with/without guide, business mode voice reinforcement, IDENTITY.md case-insensitive detection | Personality |
+
+### Tests
+
+- ✅ `system-prompt.test.ts`: 53/53 passed (5 new)
+- ✅ `workspace.test.ts`: 16/16 passed
+- ✅ `workspace-templates.test.ts`: 1/1 passed
+- ✅ Total: 70/70 passed
+
+### Upstream Sync Risk
+
+**Low for most changes** — `workspace.ts` and `system-prompt.ts` are the highest risk (additive blocks in existing functions). Zod schema changes are additive. Template files are custom. Config/UI changes are in custom files.
+
+---
+
 ## Memory Maintenance Cleanup — Performance, Correctness, Test Coverage (2026-03-20)
 
 **Purpose:** Refactoring pass on memory maintenance files from the previous session. Fixes performance, correctness, and test coverage gaps.
@@ -4002,3 +4052,56 @@ Seven Biblical principles were woven into existing SOUL.md sections — embedded
 ### Upstream Sync Risk
 
 **Low.** All source changes are additive (new functions, new test files, new optional callback field). The `cron/default-jobs.json` and template files are fully custom (no upstream equivalents). The `system-prompt.ts` change adds a new stale-identity block after existing health nudges — will need to be re-applied if upstream modifies the surrounding health nudge logic.
+
+---
+
+## SearXNG Runtime Resolver, Gemini API Key & Codebase Cleanup (2026-03-21)
+
+**Purpose:** Fix SearXNG not being selected as the web search provider (causing `unsupported_country` errors), wire `GEMINI_API_KEY` from the dashboard's `byteroverGeminiKey` so all Gemini-dependent features work out of the box, auto-enable video understanding when a Gemini key is available, close Zod schema gaps for Scrapling and SearXNG, and perform code quality cleanup.
+
+### Root Cause: `unsupported_country` Error
+
+The `unsupported_country` error occurred because the runtime web tools resolver (`runtime-web-tools.ts`) didn't know about SearXNG. Even though the web search tool (`web-search.ts`) had a SearXNG provider, the _secret resolution_ layer that runs at container startup omitted it — so the runtime fell back to Gemini (which doesn't support `country` filtering), producing the error.
+
+### Gateway (moltbotserver-source)
+
+| File                                     | Change                                                                                                                                                                                                                   | Why                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `src/secrets/runtime-web-tools.ts`       | Added `"searxng"` to `WEB_SEARCH_PROVIDERS`, `normalizeProvider()`, `envVarsForProvider()` (empty array — no API key), and SearXNG-specific auto-detection in `resolveRuntimeWebTools()` (checks `SEARXNG_BASE_URL`)     | Runtime resolver now discovers and selects SearXNG                     |
+| `src/secrets/runtime-web-tools.test.ts`  | 4 new tests: explicit SearXNG, auto-detect via `SEARXNG_BASE_URL`, API-key providers win over SearXNG, SearXNG not selected without `SEARXNG_BASE_URL`                                                                   | Validates all SearXNG selection paths                                  |
+| `src/agents/tools/web-search.ts`         | (1) `runWebSearch` now passes `country` to `runSearxngSearch()`. (2) `runSearxngSearch` builds region-aware locale codes from `country`+`language`. (3) Updated `country`/`language` parameter checks to allow `searxng` | Country/language filtering actually reaches SearXNG API                |
+| `src/config/zod-schema.agent-runtime.ts` | (1) Added `z.literal("searxng")` to provider union. (2) Added `searxng: { baseUrl, engines }` config block. (3) Added `scrapling: { enabled, baseUrl, timeoutSeconds, stealth }` config block to `ToolsWebFetchSchema`   | Schema validation no longer rejects SearXNG or Scrapling config        |
+| `enforce-config.mjs`                     | Wires `OPENCLAW_SEARCH_PROVIDER` and `SEARXNG_BASE_URL` from env into `openclaw.json`; auto-enables `OPENCLAW_VIDEO_ENABLED` when `GEMINI_API_KEY` is present                                                            | Dashboard search provider choice reaches the runtime; video works OOTB |
+
+### Dashboard (moltbot-dashboard)
+
+| File                                      | Change                                                                                                                      | Why                                                                          |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/lib/services/instance-env.ts`        | Sets `GEMINI_API_KEY` from `byteroverGeminiKey`; auto-enables `OPENCLAW_VIDEO_ENABLED` when Gemini key is present           | All Gemini features (video, grounding, embeddings) work without separate key |
+| `src/app/.../CredentialVault.tsx`         | Deduplicated identical error/cancelled JSX blocks into single conditional                                                   | 20 lines of copy-pasted markup eliminated                                    |
+| `src/components/.../InlineDeployCard.tsx` | Model dropdown visible for all providers (not just custom); resets model on provider switch; simplified selectedModel logic | All users can select models regardless of provider type                      |
+
+### Personality & Voice (system-prompt.ts, templates)
+
+| File                                            | Change                                                                                                                                                                               | Why                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `src/agents/system-prompt.ts`                   | Removed duplicated Mentor's Creed section; added `## Personality, Humor & Voice` section with technique guide; strengthened 'we' language examples; added mild expressions allowance | Personality and humor instructions consolidated into one section |
+| `docs/reference/templates/openclaw-human-v1.md` | Added `## part 7.5: humor, wit & sarcasm` with techniques, rules of engagement, and voice check                                                                                      | Human voice template gets structured humor guide                 |
+
+### Upstream Sync Risk
+
+**Low.** All SearXNG/Gemini changes are within MoltBot-only logic blocks (`enforce-config.mjs`, `instance-env.ts`). The `runtime-web-tools.ts` changes are additive (new array entry, new `if` block in the detection loop). The `zod-schema.agent-runtime.ts` changes are additive (new union literal, new config block). The `web-search.ts` changes modify existing dispatch logic — if upstream changes `runWebSearch` or `runSearxngSearch`, these will need to be re-applied.
+
+---
+
+## Dashboard UI Improvements (2026-03-20)
+
+**Purpose:** Various UX improvements to the MoltBot dashboard, including model selection for all providers, OAuth credential restart flow, and system message stripping.
+
+### Files Modified
+
+| File                                      | Change                                                                                                      | Why                                            |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `src/components/.../InlineDeployCard.tsx` | Model dropdown visible for all providers; model reset on provider switch; removed hardcoded model fallbacks | Users can select models regardless of provider |
+| `src/app/.../CredentialVault.tsx`         | Added `restartFlow` callback + Restart Flow button on error/cancelled states                                | Users can retry OAuth without full page reload |
+| `ui/src/ui/chat/message-normalizer.ts`    | `[SYSTEM: ...]` messages stripped from rendered chat                                                        | System metadata no longer visible in chat UI   |

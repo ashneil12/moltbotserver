@@ -57,7 +57,7 @@ export function normalizeMessage(message: unknown): NormalizedMessage {
   if (role === "user" || role === "User") {
     content = content.map((item) => {
       if (item.type === "text" && typeof item.text === "string") {
-        return { ...item, text: stripInboundMetadata(item.text) };
+        return { ...item, text: stripSystemPrefixLines(stripInboundMetadata(item.text)) };
       }
       return item;
     });
@@ -100,4 +100,24 @@ export function isToolResultMessage(message: unknown): boolean {
   const m = message as Record<string, unknown>;
   const role = typeof m.role === "string" ? m.role.toLowerCase() : "";
   return role === "toolresult" || role === "tool_result";
+}
+
+/**
+ * Strip `[SYSTEM: ...]` lines injected by the gateway runtime.
+ * These are AI-facing directives (bootstrap reminders, heartbeat triggers)
+ * that should never appear in user-visible chat.
+ *
+ * Mirrors the regex from `noise-patterns.ts` but kept inline to avoid
+ * pulling backend dependencies into the UI browser bundle.
+ */
+export function stripSystemPrefixLines(text: string): string {
+  if (!text || !text.includes("[SYSTEM:")) {
+    return text;
+  }
+  return text
+    .split("\n")
+    .filter((line) => !/^\s*\[SYSTEM:/i.test(line))
+    .join("\n")
+    .replace(/^\n+/, "")
+    .replace(/\n+$/, "");
 }

@@ -64,6 +64,7 @@ export const DEFAULT_KNOWLEDGE_INDEX_FILENAME = "_index.md";
 export const DEFAULT_OPERATIONS_FILENAME = "OPERATIONS.md";
 export const DEFAULT_MEMORY_HYGIENE_FILENAME = "memory-hygiene.md";
 export const DEFAULT_HUMAN_GUIDE_FILENAME = "openclaw-human-v1.md";
+export const DEFAULT_HUMOR_GUIDE_FILENAME = "THE_ART_OF_BEING_FUNNY.md";
 export const DEFAULT_BUSINESS_GUIDE_FILENAME = "openclaw-business-v1.md";
 const DEFAULT_BUSINESS_DOCS_DIRNAME = "business";
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
@@ -320,6 +321,7 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_OPERATIONS_FILENAME
   | typeof DEFAULT_MEMORY_HYGIENE_FILENAME
   | typeof DEFAULT_HUMAN_GUIDE_FILENAME
+  | typeof DEFAULT_HUMOR_GUIDE_FILENAME
   | typeof DEFAULT_BUSINESS_GUIDE_FILENAME
   | (string & {});
 
@@ -354,6 +356,7 @@ const VALID_BOOTSTRAP_NAMES: ReadonlySet<string> = new Set([
   DEFAULT_MEMORY_FILENAME,
   DEFAULT_MEMORY_ALT_FILENAME,
   DEFAULT_HUMAN_GUIDE_FILENAME,
+  DEFAULT_HUMOR_GUIDE_FILENAME,
   DEFAULT_BUSINESS_GUIDE_FILENAME,
   DEFAULT_OPERATIONS_FILENAME,
 ]);
@@ -620,6 +623,11 @@ export async function ensureAgentWorkspace(params?: {
     const humanGuideTemplate = await loadTemplate(DEFAULT_HUMAN_GUIDE_FILENAME);
     await writeFileIfMissing(humanGuidePath, humanGuideTemplate);
 
+    // Humor guide: seed THE_ART_OF_BEING_FUNNY.md when human mode is enabled
+    const humorGuidePath = path.join(dir, DEFAULT_HUMOR_GUIDE_FILENAME);
+    const humorGuideTemplate = await loadTemplate(DEFAULT_HUMOR_GUIDE_FILENAME);
+    await writeFileIfMissing(humorGuidePath, humorGuideTemplate);
+
     // Cleanup: remove old split guides from existing workspaces
     for (const oldFile of ["writelikeahuman.md", "howtobehuman.md"]) {
       try {
@@ -803,6 +811,10 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     {
       name: DEFAULT_HUMAN_GUIDE_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_HUMAN_GUIDE_FILENAME),
+    },
+    {
+      name: DEFAULT_HUMOR_GUIDE_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_HUMOR_GUIDE_FILENAME),
     },
     // NOTE: openclaw-business-v1.md is intentionally NOT listed here.
     // When business mode is active, the business content lives inside SOUL.md.

@@ -25,7 +25,7 @@ Everything from upstream works as-is. Optimized Claw adds the layer on top: per-
 
 If you want a single-agent personal assistant, upstream OpenClaw is great. If you want to run a **team of agents** on a server, keeping them secure, self-aware, and structured for multi-agent operation — this fork is for you.
 
-The public brand is **Optimized Claw**, but the runtime, CLI, package layout, and config paths stay `openclaw` for upstream compatibility.
+The public brand is **Optimized Claw**, but the runtime, CLI, package layout, and config paths stay `openclaw` for upstream compatibility. You can [self-host it](#fresh-install) or run it on [OpenClaw Servers](https://openclawservers.com) if you'd rather not manage the infrastructure.
 
 ---
 
@@ -700,8 +700,22 @@ Only use ghcr.io/ashneil12/optimized-claw:main.
 
 </details>
 
+### Don't Want to Self-Host?
+
+Self-hosting gives you full control, but it also means you're on the hook for Docker, TLS, updates, backups, browser containers, and everything else. If you'd rather skip the ops work and just use the thing, [**OpenClaw Servers**](https://openclawservers.com) handles all of it — managed hosting built specifically for this fork.
+
+What you get:
+
+- **1-click deploy** — Optimized Claw running on dedicated infrastructure, no Docker wrangling
+- **Automatic TLS, updates, and backups** — OTA updates tested against the full fork test suite before they hit your instance
+- **Browser containers, SearXNG, Scrapling** — all pre-configured and running out of the box
+- **Dashboard included** — manage agents, credentials, cron jobs, and browser sessions from a single UI
+- **BYOK** — bring your own API keys (OpenAI, Anthropic, Gemini, OpenRouter, etc.)
+
+I also offer **1:1 setup sessions** if you want help getting everything dialed in — whether that's migrating from upstream OpenClaw, configuring your agent team, wiring up channels, or anything else. Book a session at [openclawservers.com](https://openclawservers.com) or email [info@openclawservers.com](mailto:info@openclawservers.com).
+
 > [!TIP]
-> **Don't want to manage infrastructure?** [OpenClaw Servers](https://openclawservers.com) offers 1-click managed hosting with automatic TLS, browser containers, OTA updates, backups, and a dashboard — all pre-configured. BYOK (Bring Your Own Key) supported.
+> If you're evaluating whether to self-host or go managed, the self-hosting path above works great — but if you hit a wall or just want it done, OpenClaw Servers and the 1:1 setup option exist for exactly that reason.
 
 ---
 
@@ -871,7 +885,7 @@ Many other improvements were drawn from ideas shared on Twitter/X, GitHub, Disco
 
 - [OpenClaw](https://github.com/openclaw/openclaw) — upstream project
 - [OpenClaw Docs](https://docs.openclaw.ai) — documentation (applies to this fork)
-- [OpenClaw Servers](https://openclawservers.com) — managed hosting
+- [OpenClaw Servers](https://openclawservers.com) — managed hosting + 1:1 setup sessions
 
 ---
 

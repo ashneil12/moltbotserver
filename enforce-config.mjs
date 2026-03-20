@@ -610,6 +610,8 @@ function enforceCore(configPath) {
   messages.queue = { mode: "collect" };
 
   // Video Understanding — bridge OPENCLAW_VIDEO_ENABLED to tools.media.video.enabled
+  // Auto-enable when a GEMINI_API_KEY is present (since we collect one for
+  // ByteRover memory curation anyway), unless user explicitly disabled it.
   const videoEnabledRaw = env("OPENCLAW_VIDEO_ENABLED");
   if (videoEnabledRaw) {
     const mediaVideo = ensure(tools, "media", "video");
@@ -617,6 +619,30 @@ function enforceCore(configPath) {
     console.log(
       `[enforce-config] ✅ Video understanding ${mediaVideo.enabled ? "enabled" : "disabled"}`,
     );
+  } else if (env("GEMINI_API_KEY")) {
+    const mediaVideo = ensure(tools, "media", "video");
+    mediaVideo.enabled = true;
+    console.log("[enforce-config] ✅ Video understanding auto-enabled (GEMINI_API_KEY present)");
+  }
+
+  // Web Search Provider — bridge OPENCLAW_SEARCH_PROVIDER + SEARXNG_BASE_URL
+  // into tools.web.search so the runtime provider resolver picks up the
+  // dashboard's chosen provider and the SearXNG sidecar URL.
+  const searchProvider = env("OPENCLAW_SEARCH_PROVIDER");
+  const searxngBaseUrl = env("SEARXNG_BASE_URL");
+  if (searchProvider || searxngBaseUrl) {
+    const toolsWeb = ensure(tools, "web");
+    const search = ensure(toolsWeb, "search");
+    if (searchProvider) {
+      search.provider = searchProvider;
+      console.log(`[enforce-config] ✅ Web search provider set to "${searchProvider}"`);
+    }
+    if (searxngBaseUrl) {
+      const searxng = ensure(search, "searxng");
+      if (!searxng.baseUrl) {
+        searxng.baseUrl = searxngBaseUrl;
+      }
+    }
   }
 
   // Browser (conditional)

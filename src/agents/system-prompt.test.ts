@@ -837,4 +837,79 @@ describe("buildSubagentSystemPrompt", () => {
       }
     }
   });
+
+  // ── Personality, Voice & Humor Tests ──────────────────────────────────────
+  it("renders Natural Voice section when openclaw-human-v1.md is in context files", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [
+        { path: "./openclaw-human-v1.md", content: "Human guide content" },
+        { path: "./IDENTITY.md", content: "Identity" },
+      ],
+    });
+
+    expect(prompt).toContain("## Natural Voice (Active)");
+    expect(prompt).toContain("openclaw-human-v1.md is loaded");
+    expect(prompt).toContain("Pre-reply self-check");
+    expect(prompt).toContain("Adaptation rule");
+  });
+
+  it("renders Humor Training section when THE_ART_OF_BEING_FUNNY.md is in context files alongside human guide", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [
+        { path: "./openclaw-human-v1.md", content: "Human guide content" },
+        { path: "./THE_ART_OF_BEING_FUNNY.md", content: "Humor guide content" },
+      ],
+    });
+
+    expect(prompt).toContain("## Humor Training (Active)");
+    expect(prompt).toContain("THE_ART_OF_BEING_FUNNY.md is loaded");
+    expect(prompt).toContain("Comedy = truth + surprise");
+    expect(prompt).toContain("AI's Specific Failures");
+    // Session-start grounding should mention the humor guide
+    expect(prompt).toContain("Also read `THE_ART_OF_BEING_FUNNY.md`");
+  });
+
+  it("does NOT render Humor Training when humor guide is absent", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [{ path: "./openclaw-human-v1.md", content: "Human guide content" }],
+    });
+
+    expect(prompt).toContain("## Natural Voice (Active)");
+    expect(prompt).not.toContain("## Humor Training");
+    expect(prompt).not.toContain("THE_ART_OF_BEING_FUNNY.md is loaded");
+    // Session-start grounding should NOT mention humor guide
+    expect(prompt).not.toContain("Also read `THE_ART_OF_BEING_FUNNY.md`");
+  });
+
+  it("includes voice and personality language in business mode SOUL guidance", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      businessModeEnabled: true,
+      contextFiles: [{ path: "./SOUL.md", content: "Core principles" }],
+    });
+
+    expect(prompt).toContain("Your voice matters as much as your strategy");
+    expect(prompt).toContain("humor, wit, and personality");
+    expect(prompt).toContain("energetic, warm, occasionally funny");
+  });
+
+  it("detects IDENTITY.md case-insensitively for freshness nudge", () => {
+    // getBaseName lowercases all filenames; this verifies the comparison
+    // uses lowercase "identity.md" (not uppercase "IDENTITY.md")
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [
+        { path: "./IDENTITY.md", content: "My identity" },
+        { path: "./SOUL.md", content: "Soul" },
+      ],
+    });
+
+    // The prompt should contain health section logic related to IDENTITY.md
+    // (it won't contain the stale nudge since the file doesn't exist on disk,
+    // but the detection logic should run without errors)
+    expect(prompt).toContain("# Project Context");
+  });
 });

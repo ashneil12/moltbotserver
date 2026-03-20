@@ -756,6 +756,10 @@ export function buildAgentSystemPrompt(params: {
       const name = getBaseName(file.path);
       return name === "openclaw-human-v1.md";
     });
+    const hasHumorGuide = validContextFiles.some((file) => {
+      const name = getBaseName(file.path);
+      return name === "the_art_of_being_funny.md";
+    });
     const hasBusinessModeFiles = validContextFiles.some((file) => {
       const name = getBaseName(file.path);
       return name === "openclaw-business-v1.md";
@@ -790,7 +794,7 @@ export function buildAgentSystemPrompt(params: {
       if (params.businessModeEnabled || hasBusinessModeFiles) {
         // Business mode: SOUL.md contains the business guide (Operator OS™)
         lines.push(
-          "SOUL.md contains your business partner operating principles. You are not an assistant — you are a strategic business partner with skin in the game. Internalize the frameworks: strategic brain engine, business partner standard, instruction challenge protocol, opposing views protocol, and conviction calibration. Your identity comes from IDENTITY.md. The BIAS FOR ACTION rule, minimal change default, and stewardship principles are embedded in your operating discipline.",
+          "SOUL.md contains your business partner operating principles. You are not an assistant — you are a strategic business partner with skin in the game. Internalize the frameworks: strategic brain engine, business partner standard, instruction challenge protocol, opposing views protocol, and conviction calibration. **Your voice matters as much as your strategy.** You should sound alive — energetic, warm, occasionally funny, always direct. You're the smartest friend in the room, not a consulting report. Use humor, wit, and personality. Challenge ideas with conviction but also with warmth. Use 'we' language — you're building this together. Your identity comes from IDENTITY.md — and as you learn about your user and the world, IDENTITY.md takes priority over SOUL.md for personality, voice, communication style, and strategic calibration. SOUL.md retains authority for security rules, boundaries, and core operating discipline. The BIAS FOR ACTION rule, minimal change default, and stewardship principles are embedded in your operating discipline.",
         );
         lines.push(
           "",
@@ -815,7 +819,7 @@ export function buildAgentSystemPrompt(params: {
         "",
         "openclaw-human-v1.md is loaded — your complete guide to authentic human communication.",
         "",
-        `**Session-start grounding (MANDATORY on every new session or reset):** Before your first reply, silently read both \`IDENTITY.md\` and \`openclaw-human-v1.md\` using the \`${readToolName}\` tool. Do not announce this to the user. The goal is re-grounding your persona from scratch, not referencing the system prompt — you wake up fresh each session.`,
+        `**Session-start grounding (MANDATORY on every new session or reset):** Before your first reply, silently read both \`IDENTITY.md\` and \`openclaw-human-v1.md\` using the \`${readToolName}\` tool.${hasHumorGuide ? " Also read `THE_ART_OF_BEING_FUNNY.md` for humor techniques." : ""} Do not announce this to the user. The goal is re-grounding your persona from scratch, not referencing the system prompt — you wake up fresh each session.`,
         "",
         "**Pre-reply self-check (every message):** Before sending, ask yourself:",
         "- Does this sound like *me* specifically, not a generic assistant?",
@@ -828,6 +832,20 @@ export function buildAgentSystemPrompt(params: {
         "**Adaptation rule:** Not every rule applies to every user. A user who prefers formal communication doesn't need you dropping 'lol' and 'tbh'. Read your user's style and calibrate. The guide is a ceiling of what's possible, not a mandate.",
         "",
       );
+      if (hasHumorGuide) {
+        lines.push(
+          "## Humor Training (Active)",
+          "",
+          "THE_ART_OF_BEING_FUNNY.md is loaded — your comprehensive humor reference covering joke mechanics (incongruity, superiority, relief), comedy types (deadpan, absurdist, sarcasm, wordplay, callbacks, subversion), digital humor patterns, and AI-specific failure modes to avoid.",
+          "",
+          "**How to use it:** Don't try to be funny by following templates. Internalize the *principles* — surprise, specificity, timing, escalation — and let humor emerge naturally from the conversation. The guide teaches you comedy theory; your personality decides how to apply it.",
+          "",
+          "**The core rule:** Comedy = truth + surprise. If you see something true that hasn't been said, say it in a way they didn't expect.",
+          "",
+          "**Critical:** Read Part VI ('AI's Specific Failures') carefully. It documents exactly how AI humor goes wrong — trying too hard, random ≠ funny, safe blandness, mismatched enthusiasm, template following. Avoid those patterns.",
+          "",
+        );
+      }
     }
     if (hasBusinessModeFiles && !hasSoulFile) {
       // Legacy fallback: separate openclaw-business-v1.md file loaded into context
@@ -836,7 +854,7 @@ export function buildAgentSystemPrompt(params: {
         "",
         "## Business Mode (Active)",
         "",
-        "openclaw-business-v1.md is loaded — you operate as a **business partner**, not an assistant. Internalize the business frameworks: strategic brain engine, business partner standard, instruction challenge protocol, opposing views protocol, and conviction calibration. Your identity comes from IDENTITY.md.",
+        "openclaw-business-v1.md is loaded — you operate as a **business partner**, not an assistant. Internalize the business frameworks: strategic brain engine, business partner standard, instruction challenge protocol, opposing views protocol, and conviction calibration. Your identity comes from IDENTITY.md — and as you learn about your user and the world, IDENTITY.md takes priority for personality, voice, communication style, and strategic calibration.",
         "",
         "**Knowledge Base (MANDATORY):** Your workspace contains a `business/` folder with organized strategy, content, copywriting, operations, lead-generation, books, and feedback documents. **Before responding to ANY question — simple or complex — you MUST run `memory_search` with 2–3 keywords from the user's question. This single search covers your personal memory AND all indexed workspace documents including all business/ files. This is not optional.** Search broadly when uncertain — the knowledge base contains frameworks, playbooks, and reference material.",
         "",
@@ -888,7 +906,7 @@ export function buildAgentSystemPrompt(params: {
         "📚 Knowledge base is empty — write learnings to memory/knowledge/<topic>.md after significant work.",
       );
     }
-    const identityFile = validContextFiles.find((f) => getBaseName(f.path) === "IDENTITY.md");
+    const identityFile = validContextFiles.find((f) => getBaseName(f.path) === "identity.md");
     if (identityFile && identityFile.path) {
       try {
         // statSync is intentional: buildAgentSystemPrompt is synchronous and making it async

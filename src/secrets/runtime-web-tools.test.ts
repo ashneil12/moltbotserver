@@ -446,4 +446,89 @@ describe("runtime web tools resolution", () => {
       ]),
     );
   });
+
+  it("selects searxng when explicitly configured without API key", async () => {
+    const { metadata } = await runRuntimeWebTools({
+      config: asConfig({
+        tools: {
+          web: {
+            search: {
+              enabled: true,
+              provider: "searxng",
+              searxng: { baseUrl: "http://searxng:8080" },
+            },
+          },
+        },
+      }),
+      env: {
+        SEARXNG_BASE_URL: "http://searxng:8080",
+      },
+    });
+
+    expect(metadata.search.providerConfigured).toBe("searxng");
+    expect(metadata.search.providerSource).toBe("configured");
+    expect(metadata.search.selectedProvider).toBe("searxng");
+  });
+
+  it("auto-detects searxng when SEARXNG_BASE_URL is set and no API keys available", async () => {
+    const { metadata } = await runRuntimeWebTools({
+      config: asConfig({
+        tools: {
+          web: {
+            search: {
+              enabled: true,
+            },
+          },
+        },
+      }),
+      env: {
+        SEARXNG_BASE_URL: "http://searxng:8080",
+      },
+    });
+
+    expect(metadata.search.providerSource).toBe("auto-detect");
+    expect(metadata.search.selectedProvider).toBe("searxng");
+  });
+
+  it("API-key providers win over searxng in runtime auto-detection", async () => {
+    const { metadata } = await runRuntimeWebTools({
+      config: asConfig({
+        tools: {
+          web: {
+            search: {
+              enabled: true,
+              gemini: {
+                apiKey: { source: "env", provider: "default", id: "GEMINI_REF" },
+              },
+            },
+          },
+        },
+      }),
+      env: {
+        GEMINI_REF: "gemini-test-key", // pragma: allowlist secret
+        SEARXNG_BASE_URL: "http://searxng:8080",
+      },
+    });
+
+    expect(metadata.search.providerSource).toBe("auto-detect");
+    expect(metadata.search.selectedProvider).toBe("gemini");
+  });
+
+  it("does not select searxng when SEARXNG_BASE_URL is not set", async () => {
+    const { metadata } = await runRuntimeWebTools({
+      config: asConfig({
+        tools: {
+          web: {
+            search: {
+              enabled: true,
+            },
+          },
+        },
+      }),
+      env: {},
+    });
+
+    // No keys, no SEARXNG_BASE_URL → no provider selected
+    expect(metadata.search.selectedProvider).toBeUndefined();
+  });
 });

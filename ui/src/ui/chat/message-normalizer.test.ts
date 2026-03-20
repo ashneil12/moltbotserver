@@ -3,6 +3,7 @@ import {
   normalizeMessage,
   normalizeRoleForGrouping,
   isToolResultMessage,
+  stripSystemPrefixLines,
 } from "./message-normalizer.ts";
 
 describe("message-normalizer", () => {
@@ -185,6 +186,49 @@ describe("message-normalizer", () => {
     it("returns false for non-string role", () => {
       expect(isToolResultMessage({ role: 123 })).toBe(false);
       expect(isToolResultMessage({ role: null })).toBe(false);
+    });
+  });
+
+  describe("stripSystemPrefixLines", () => {
+    it("returns text unchanged when no [SYSTEM:] present (fast path)", () => {
+      expect(stripSystemPrefixLines("hello world")).toBe("hello world");
+      expect(stripSystemPrefixLines("")).toBe("");
+    });
+
+    it("strips [SYSTEM: BOOTSTRAP.md ...] prefix from user message", () => {
+      const input =
+        "[SYSTEM: BOOTSTRAP.md is present — this is a first-run workspace. You MUST follow the bootstrap protocol as your FIRST action.]\n\nyo";
+      expect(stripSystemPrefixLines(input)).toBe("yo");
+    });
+
+    it("strips multiple [SYSTEM:] lines", () => {
+      const input = "[SYSTEM: session resumed]\n[SYSTEM: ready]\nHey there";
+      expect(stripSystemPrefixLines(input)).toBe("Hey there");
+    });
+
+    it("preserves text that mentions SYSTEM without the bracket prefix", () => {
+      const input = "The SYSTEM is running fine";
+      expect(stripSystemPrefixLines(input)).toBe("The SYSTEM is running fine");
+    });
+
+    it("handles indented [SYSTEM:] lines", () => {
+      const input = "  [SYSTEM: heartbeat]\nActual message";
+      expect(stripSystemPrefixLines(input)).toBe("Actual message");
+    });
+
+    it("returns empty string when entire message is system lines", () => {
+      expect(stripSystemPrefixLines("[SYSTEM: bootstrap]")).toBe("");
+    });
+  });
+
+  describe("normalizeMessage strips [SYSTEM:] from user content", () => {
+    it("strips [SYSTEM: BOOTSTRAP.md] prefix via normalizeMessage", () => {
+      const result = normalizeMessage({
+        role: "user",
+        content: "[SYSTEM: BOOTSTRAP.md is present — this is a first-run workspace.]\n\nyo",
+        timestamp: 1000,
+      });
+      expect(result.content[0].text).toBe("yo");
     });
   });
 });

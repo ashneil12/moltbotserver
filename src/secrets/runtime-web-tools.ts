@@ -10,7 +10,7 @@ import {
   type SecretDefaults,
 } from "./runtime-shared.js";
 
-const WEB_SEARCH_PROVIDERS = ["brave", "gemini", "grok", "kimi", "perplexity"] as const;
+const WEB_SEARCH_PROVIDERS = ["brave", "gemini", "grok", "kimi", "perplexity", "searxng"] as const;
 const PERPLEXITY_DIRECT_BASE_URL = "https://api.perplexity.ai";
 const DEFAULT_PERPLEXITY_BASE_URL = "https://openrouter.ai/api/v1";
 const PERPLEXITY_KEY_PREFIXES = ["pplx-"];
@@ -87,7 +87,8 @@ function normalizeProvider(value: unknown): WebSearchProvider | undefined {
     normalized === "gemini" ||
     normalized === "grok" ||
     normalized === "kimi" ||
-    normalized === "perplexity"
+    normalized === "perplexity" ||
+    normalized === "searxng"
   ) {
     return normalized;
   }
@@ -329,6 +330,10 @@ function envVarsForProvider(provider: WebSearchProvider): string[] {
   if (provider === "kimi") {
     return ["KIMI_API_KEY", "MOONSHOT_API_KEY"];
   }
+  if (provider === "searxng") {
+    // SearXNG has no API key — SEARXNG_BASE_URL is used for presence detection
+    return [];
+  }
   return ["PERPLEXITY_API_KEY", "OPENROUTER_API_KEY"];
 }
 
@@ -409,6 +414,22 @@ export async function resolveRuntimeWebTools(params: {
     let selectedResolution: SecretResolutionResult | undefined;
 
     for (const provider of candidates) {
+      // SearXNG has no API key — detect by SEARXNG_BASE_URL presence instead.
+      if (provider === "searxng") {
+        const searxngBaseUrl = normalizeSecretInput(params.context.env.SEARXNG_BASE_URL);
+        if (configuredProvider === "searxng" || searxngBaseUrl) {
+          selectedProvider = "searxng";
+          selectedResolution = {
+            value: searxngBaseUrl || "http://searxng:8080",
+            source: searxngBaseUrl ? "env" : "missing",
+            secretRefConfigured: false,
+            fallbackUsedAfterRefFailure: false,
+          };
+          break;
+        }
+        continue;
+      }
+
       const path =
         provider === "brave" ? "tools.web.search.apiKey" : `tools.web.search.${provider}.apiKey`;
       const value = resolveProviderKeyValue(search, provider);

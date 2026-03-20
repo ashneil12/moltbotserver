@@ -272,6 +272,7 @@ export const ToolsWebSearchSchema = z
         z.literal("grok"),
         z.literal("gemini"),
         z.literal("kimi"),
+        z.literal("searxng"),
       ])
       .optional(),
     apiKey: SecretInputSchema.optional().register(sensitive),
@@ -325,6 +326,13 @@ export const ToolsWebSearchSchema = z
       })
       .strict()
       .optional(),
+    searxng: z
+      .object({
+        baseUrl: z.string().optional(),
+        engines: z.array(z.string()).optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .optional();
@@ -347,6 +355,15 @@ export const ToolsWebFetchSchema = z
         onlyMainContent: z.boolean().optional(),
         maxAgeMs: z.number().int().nonnegative().optional(),
         timeoutSeconds: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
+    scrapling: z
+      .object({
+        enabled: z.boolean().optional(),
+        baseUrl: z.string().optional(),
+        timeoutSeconds: z.number().int().positive().optional(),
+        stealth: z.boolean().optional(),
       })
       .strict()
       .optional(),

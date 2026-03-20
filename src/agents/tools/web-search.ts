@@ -1692,6 +1692,7 @@ async function runWebSearch(params: {
       baseUrl: searxngBaseUrl,
       timeoutSeconds: params.timeoutSeconds,
       language: params.language,
+      country: params.country,
       engines: params.searxngEngines,
     });
 
@@ -1999,6 +2000,7 @@ async function runSearxngSearch(params: {
   baseUrl: string;
   timeoutSeconds: number;
   language?: string;
+  country?: string;
   engines?: string[];
 }): Promise<
   Array<{ title: string; url: string; description: string; engine?: string; published?: string }>
@@ -2007,8 +2009,15 @@ async function runSearxngSearch(params: {
   const url = new URL(`${baseUrl}/search`);
   url.searchParams.set("q", params.query);
   url.searchParams.set("format", "json");
-  if (params.language) {
-    url.searchParams.set("language", params.language);
+  // SearXNG uses combined locale codes (e.g. "en-US") for language + region.
+  // If both language and country are provided, combine them.
+  // If only country is provided, pass it as-is (SearXNG handles country codes too).
+  const effectiveLanguage =
+    params.language && params.country
+      ? `${params.language}-${params.country.toUpperCase()}`
+      : params.language || (params.country ? params.country.toLowerCase() : undefined);
+  if (effectiveLanguage) {
+    url.searchParams.set("language", effectiveLanguage);
   }
   if (params.engines && params.engines.length > 0) {
     url.searchParams.set("engines", params.engines.join(","));
@@ -2130,6 +2139,7 @@ export function createWebSearchTool(options?: {
       if (
         country &&
         provider !== "brave" &&
+        provider !== "searxng" &&
         !(provider === "perplexity" && supportsStructuredPerplexityFilters)
       ) {
         return jsonResult({
@@ -2137,7 +2147,7 @@ export function createWebSearchTool(options?: {
           message:
             provider === "perplexity"
               ? "country filtering is only supported by the native Perplexity Search API path. Remove Perplexity baseUrl/model overrides or use a direct PERPLEXITY_API_KEY to enable it."
-              : `country filtering is not supported by the ${provider} provider. Only Brave and Perplexity support country filtering.`,
+              : `country filtering is not supported by the ${provider} provider. Only Brave, Perplexity, and SearXNG support country filtering.`,
           docs: "https://docs.openclaw.ai/tools/web",
         });
       }
@@ -2145,6 +2155,7 @@ export function createWebSearchTool(options?: {
       if (
         language &&
         provider !== "brave" &&
+        provider !== "searxng" &&
         !(provider === "perplexity" && supportsStructuredPerplexityFilters)
       ) {
         return jsonResult({
@@ -2152,7 +2163,7 @@ export function createWebSearchTool(options?: {
           message:
             provider === "perplexity"
               ? "language filtering is only supported by the native Perplexity Search API path. Remove Perplexity baseUrl/model overrides or use a direct PERPLEXITY_API_KEY to enable it."
-              : `language filtering is not supported by the ${provider} provider. Only Brave and Perplexity support language filtering.`,
+              : `language filtering is not supported by the ${provider} provider. Only Brave, Perplexity, and SearXNG support language filtering.`,
           docs: "https://docs.openclaw.ai/tools/web",
         });
       }
