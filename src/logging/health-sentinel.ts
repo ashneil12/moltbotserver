@@ -315,6 +315,63 @@ function classifySystemCheck(check: CheckResult): ClassifiedIssue | null {
     };
   }
 
+  // Cron scheduler health probes
+  if (check.name === "cron.scheduler_liveness") {
+    return {
+      key,
+      classification: "needs-agent",
+      summary: `Cron scheduler issue: ${check.detail}`,
+      suggestedAction:
+        "The cron scheduler may be dead. Check if the gateway process is running and cron is enabled. Try restarting the gateway.",
+      source: check,
+    };
+  }
+
+  if (check.name === "cron.consecutive_errors") {
+    return {
+      key,
+      classification: check.status === "fail" ? "needs-agent" : "warning",
+      summary: check.detail,
+      suggestedAction:
+        "Review the failing cron jobs. Check their delivery targets, payload configuration, and recent error logs.",
+      source: check,
+    };
+  }
+
+  if (check.name === "cron.auto_disabled") {
+    return {
+      key,
+      classification: "needs-agent",
+      summary: check.detail,
+      suggestedAction:
+        "Re-enable the auto-disabled cron jobs after fixing the underlying issue (schedule errors or repeated failures).",
+      source: check,
+    };
+  }
+
+  if (check.name === "cron.stale_delivery") {
+    return {
+      key,
+      classification: "warning",
+      summary: check.detail,
+      suggestedAction:
+        "Set explicit delivery.channel and delivery.to on these jobs to prevent messages going to the wrong channel.",
+      source: check,
+    };
+  }
+
+  // Disk hygiene checks
+  if (check.name === "disk.session_bloat" || check.name === "disk.hygiene") {
+    return {
+      key,
+      classification: "auto-fixable",
+      summary: check.detail,
+      suggestedAction:
+        "Run disk cleanup to remove old session files, browser cache, and truncate gateway logs.",
+      source: check,
+    };
+  }
+
   // Unknown check type — classify based on actual status
   return {
     key,
@@ -598,6 +655,22 @@ export async function runSentinelCheck(deps: SentinelDeps): Promise<SentinelRepo
         systemReport.checks.push(...browserChecks);
       } catch (err) {
         log.warn?.(`doctor probe (browser health) failed: ${String(err)}`);
+      }
+    }
+    if (deps.doctorProbes.checkCronHealth) {
+      try {
+        const cronChecks = deps.doctorProbes.checkCronHealth();
+        systemReport.checks.push(...cronChecks);
+      } catch (err) {
+        log.warn?.(`doctor probe (cron health) failed: ${String(err)}`);
+      }
+    }
+    if (deps.doctorProbes.checkDiskHygiene) {
+      try {
+        const diskChecks = deps.doctorProbes.checkDiskHygiene();
+        systemReport.checks.push(...diskChecks);
+      } catch (err) {
+        log.warn?.(`doctor probe (disk hygiene) failed: ${String(err)}`);
       }
     }
   }

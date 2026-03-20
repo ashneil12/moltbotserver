@@ -57,4 +57,11 @@ export type CronConfig = {
   failureAlert?: CronFailureAlertConfig;
   /** Default destination for failure notifications across all cron jobs. */
   failureDestination?: CronFailureDestinationConfig;
+  /**
+   * Maximum age (in days) for cron session .jsonl files on disk.
+   * Files older than this in agents/&lt;id&gt;/sessions/ are deleted during reaper sweeps.
+   * Set to false to disable file-age pruning.
+   * Default: 30.
+   */
+  sessionFileRetentionDays?: number | false;
 };

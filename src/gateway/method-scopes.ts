@@ -74,6 +74,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "sessions.usage.logs",
     "cron.list",
     "cron.status",
+    "cron.health",
     "cron.runs",
     "gateway.identity.get",
     "system-presence",

@@ -1,3 +1,4 @@
+import { runCronHealthProbes, type CronHealthJob } from "../../cron/cron-health-probes.js";
 import { normalizeCronJobCreate, normalizeCronJobPatch } from "../../cron/normalize.js";
 import {
   readCronRunLogEntriesPage,
@@ -306,5 +307,106 @@ export const cronHandlers: GatewayRequestHandlers = {
       sortDir: p.sortDir,
     });
     respond(true, page, undefined);
+  },
+  "cron.health": async ({ respond, context }) => {
+    try {
+      // Get all jobs including disabled
+      const jobs = await context.cron.list({ includeDisabled: true });
+      const status = await context.cron.status();
+
+      // Map jobs to CronHealthJob shape for probes
+      const healthJobs: CronHealthJob[] = jobs.map((j: Record<string, unknown>) => ({
+        id: (j.id as string) || "",
+        name: (j.name as string) || undefined,
+        enabled: j.enabled !== false,
+        state: {
+          consecutiveErrors:
+            typeof j.consecutiveErrors === "number" ? j.consecutiveErrors : undefined,
+          lastRunAtMs: typeof j.lastRunAtMs === "number" ? j.lastRunAtMs : undefined,
+          lastStatus: typeof j.lastStatus === "string" ? j.lastStatus : undefined,
+          scheduleErrorCount:
+            typeof j.scheduleErrorCount === "number" ? j.scheduleErrorCount : undefined,
+        },
+        delivery:
+          typeof j.delivery === "object" && j.delivery !== null
+            ? {
+                mode: (j.delivery as Record<string, unknown>).mode as string | undefined,
+                channel: (j.delivery as Record<string, unknown>).channel as string | undefined,
+                to: (j.delivery as Record<string, unknown>).to as string | undefined,
+              }
+            : undefined,
+        sessionTarget: typeof j.sessionTarget === "string" ? j.sessionTarget : undefined,
+        payload:
+          typeof j.payload === "object" && j.payload !== null
+            ? { kind: (j.payload as Record<string, unknown>).kind as string | undefined }
+            : undefined,
+      }));
+
+      const nowMs = Date.now();
+      // Use cron status to get lastTickAtMs if available
+      const lastTickAtMs =
+        typeof (status as Record<string, unknown>)?.lastTickAtMs === "number"
+          ? ((status as Record<string, unknown>).lastTickAtMs as number)
+          : undefined;
+
+      const probeResults = runCronHealthProbes({
+        lastTickAtMs,
+        nowMs,
+        jobs: healthJobs,
+      });
+
+      // Build summary
+      const total = healthJobs.length;
+      const enabled = healthJobs.filter((j) => j.enabled).length;
+      const erroring = healthJobs.filter(
+        (j) =>
+          j.enabled &&
+          typeof j.state.consecutiveErrors === "number" &&
+          j.state.consecutiveErrors > 0,
+      ).length;
+      const disabled = total - enabled;
+
+      // Identify problem jobs
+      const problemJobs = healthJobs
+        .filter((j) => {
+          if (!j.enabled && j.state.scheduleErrorCount) {
+            return true;
+          }
+          if (j.state.consecutiveErrors && j.state.consecutiveErrors >= 2) {
+            return true;
+          }
+          return false;
+        })
+        .map((j) => ({
+          id: j.id,
+          name: j.name || j.id,
+          issue: !j.enabled ? "auto-disabled" : `${j.state.consecutiveErrors} consecutive errors`,
+          consecutiveErrors: j.state.consecutiveErrors,
+        }));
+
+      const schedulerAlive =
+        probeResults.find((r) => r.name === "cron.scheduler_liveness")?.status === "pass";
+
+      respond(
+        true,
+        {
+          schedulerAlive,
+          lastTickAtMs: lastTickAtMs ?? null,
+          summary: { total, enabled, erroring, disabled },
+          problemJobs,
+          probes: probeResults,
+        },
+        undefined,
+      );
+    } catch (err) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.UNAVAILABLE,
+          err instanceof Error ? err.message : "cron.health failed",
+        ),
+      );
+    }
   },
 };

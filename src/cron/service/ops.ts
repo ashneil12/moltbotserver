@@ -142,6 +142,7 @@ export async function status(state: CronServiceState) {
       storePath: state.deps.storePath,
       jobs: state.store?.jobs.length ?? 0,
       nextWakeAtMs: state.deps.cronEnabled ? (nextWakeAtMs(state) ?? null) : null,
+      lastTickAtMs: state.lastTickAtMs ?? null,
     };
   });
 }

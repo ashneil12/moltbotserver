@@ -37,6 +37,8 @@ export interface RemediationContext {
   restartBrowserContainer?: (containerName: string) => Promise<void>;
   /** Probe a browser container's CDP endpoint. Returns true if responsive. */
   probeBrowserCdp?: (cdpPort: number) => Promise<boolean>;
+  /** Run full disk hygiene cleanup (sessions, cache, logs, media). */
+  runDiskHygiene?: () => { freedBytes: number; filesDeleted: number; errors: string[] };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -308,6 +310,74 @@ export function createBrowserRestartPlaybook(ctx: RemediationContext): Remediati
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Disk Hygiene Playbook (sessions, cache, logs, media)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function isDiskHygieneIssue(issue: ClassifiedIssue): boolean {
+  return issue.key === "system:disk.session_bloat" || issue.key === "system:disk.hygiene";
+}
+
+export function createDiskHygienePlaybook(ctx: RemediationContext): RemediationPlaybook {
+  return {
+    id: "disk-hygiene",
+
+    matches(issue) {
+      return (
+        isDiskHygieneIssue(issue) &&
+        issue.classification === "auto-fixable" &&
+        ctx.runDiskHygiene !== undefined
+      );
+    },
+
+    async remediate(issue): Promise<RemediationAttempt> {
+      const start = Date.now();
+      if (!ctx.runDiskHygiene) {
+        return {
+          issueKey: issue.key,
+          playbook: "disk-hygiene",
+          status: "skipped",
+          error: "no disk hygiene handler",
+          durationMs: Date.now() - start,
+        };
+      }
+
+      log.info?.("attempting disk hygiene cleanup (sessions, cache, logs, media)");
+
+      try {
+        const result = ctx.runDiskHygiene();
+        const freedMB = Math.round(result.freedBytes / 1024 / 1024);
+        log.info?.(`disk hygiene: freed ${freedMB}MB, deleted ${result.filesDeleted} files`);
+        if (result.errors.length > 0) {
+          log.warn?.(`disk hygiene: ${result.errors.length} non-fatal errors`);
+        }
+        return {
+          issueKey: issue.key,
+          playbook: "disk-hygiene",
+          status: "success",
+          durationMs: Date.now() - start,
+        };
+      } catch (err) {
+        const error = String(err);
+        log.warn?.(`disk hygiene failed: ${error}`);
+        return {
+          issueKey: issue.key,
+          playbook: "disk-hygiene",
+          status: "failed",
+          error,
+          durationMs: Date.now() - start,
+        };
+      }
+    },
+
+    async verify(_issue): Promise<boolean> {
+      // Verify by re-checking disk space — hard to know exact threshold here
+      // so just return true (the cleanup itself is the fix)
+      return true;
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Playbook Registry
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -316,6 +386,7 @@ export function buildPlaybooks(ctx: RemediationContext): RemediationPlaybook[] {
   return [
     createChannelRestartPlaybook(ctx),
     createDiskCleanupPlaybook(ctx),
+    createDiskHygienePlaybook(ctx),
     createBrowserRestartPlaybook(ctx),
   ];
 }

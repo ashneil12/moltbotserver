@@ -168,6 +168,10 @@ export interface DoctorProbes {
   checkSidecarHealth?: () => Promise<CheckResult[]>;
   /** Check sandbox browser containers (Docker state + CDP probe) — async */
   checkBrowserHealth?: () => Promise<CheckResult[]>;
+  /** Check cron scheduler health (liveness, consecutive errors, auto-disabled, stale delivery) */
+  checkCronHealth?: () => CheckResult[];
+  /** Check disk hygiene (session files, browser cache, gateway logs) */
+  checkDiskHygiene?: () => CheckResult[];
 }
 
 export interface WeeklyProbes {

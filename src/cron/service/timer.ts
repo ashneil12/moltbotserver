@@ -28,6 +28,9 @@ import { DEFAULT_JOB_TIMEOUT_MS, resolveCronJobTimeoutMs } from "./timeout-polic
 
 export { DEFAULT_JOB_TIMEOUT_MS } from "./timeout-policy.js";
 
+/** Tracks which job IDs have already received the main-session bloat warning. */
+const mainSessionWarnedJobs = new Set<string>();
+
 const MAX_TIMER_DELAY_MS = 60_000;
 const MIN_NEXT_WAKE_MS = 60 * 60_000;
 const MAX_NEXT_WAKE_MS = 12 * 60 * 60_000;
@@ -1111,6 +1114,18 @@ export async function executeJobCore(
     return resolveAbortError();
   }
   if (job.sessionTarget === "main") {
+    // ── Main-session bloat warning ─────────────────────────────────────
+    // Cron jobs running in the main session dump all tool outputs into the
+    // shared context, which can balloon session files to 80+ MB and amplify
+    // token usage. Warn once per job to nudge operators toward isolation.
+    if (!mainSessionWarnedJobs.has(job.id)) {
+      mainSessionWarnedJobs.add(job.id);
+      state.deps.log.warn(
+        { jobId: job.id, jobName: job.name },
+        "cron: job runs in main session — consider using an isolated session " +
+          "(set sessionTarget in the cron job config) to prevent context bloat",
+      );
+    }
     const text = resolveJobPayloadTextForMain(job);
     if (!text) {
       const kind = job.payload.kind;

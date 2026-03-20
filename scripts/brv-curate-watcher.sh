@@ -119,6 +119,9 @@ get_watched_files() {
     "memory/advisory-warnings.md"
     # Identity evolution history
     "memory/identity-scratchpad.md"
+    # Reflection artifacts — curate so brv query surfaces self-review patterns and open work
+    "memory/self-review.md"
+    "memory/open-loops.md"
   )
   for f in "${fixed_files[@]}"; do
     echo "$WORKSPACE_DIR/$f"

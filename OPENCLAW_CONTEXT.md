@@ -54,7 +54,20 @@ These files don't exist in upstream. They will never conflict but must not be de
 | `src/logging/event-log.test.ts` | Tests for event logger (30 tests) |
 | `src/logging/diagnostics-toolkit.ts` | System health checks: PID file, port reachability, error rate, disk space |
 | `src/logging/diagnostics-toolkit.test.ts` | Tests for diagnostics toolkit (21 tests) |
-| `src/cron/service/timer.next-wake.test.ts` | Tests for `parseNextWakeDuration` (dynamic `NEXT_WAKE:` scheduling) |
+| `src/logging/disk-hygiene.ts` | **Disk Hygiene** — scanner (`scanDiskUsage()`) and cleaner (`runDiskCleanup()`) for OpenClaw disk bloat. Targets: old session .jsonl files, browser cache (Cache/GPUCache/Code Cache dirs), gateway.err.log truncation, old inbound media. Preserves `main.jsonl` and `sessions.json` by default. Configurable via `DiskHygieneConfig` (age thresholds, line caps). Integrated into health-sentinel playbook for automatic remediation. |
+| `src/logging/disk-hygiene.test.ts` | Tests for disk hygiene (10 tests: scanner + cleaner across all 4 areas) |
+| `src/cron/idle-gate.ts` | **Idle Gate** — [MetaClaw](https://github.com/aiming-lab/MetaClaw)-inspired OMLS (Opportunistic Meta-Learning Scheduler). Gates heavy cron jobs behind user idle detection. Pure functions: `isUserIdle()` (configurable threshold), `isInSleepWindow()` (wrapping midnight window), `shouldRunIdleJob()` entry point. Default: 30-min idle threshold, 23:00–07:00 UTC sleep window. |
+| `src/cron/idle-gate.test.ts` | Tests for idle gate (17 tests: idle detection, sleep window boundaries, custom config) |
+| `src/cron/cron-health-probes.ts` | **Cron Health Probes** — deterministic checks for cron scheduler health. 4 probes: `checkSchedulerLiveness()` (5-min tick threshold), `checkConsecutiveErrors()` (2+ threshold), `checkAutoDisabledJobs()`, `checkStaleDeliveryTargets()` (channel:"last" without explicit target). Returns `CheckResult[]` for health sentinel. |
+| `src/cron/cron-health-probes.test.ts` | Tests for cron health probes (17 tests: all 4 probes + integration) |
+| `src/agents/tools/skill-generation.ts` | **Skill Generation Versioning** — [MetaClaw](https://github.com/aiming-lab/MetaClaw)-inspired monotonic generation counter. `readSkillGeneration()`, `readSkillGenerationState()`, `bumpSkillGeneration()`. Persisted to `skills/.generation.json`. Skills tagged with generation in frontmatter. Bumped by skill-evolution cron. |
+| `src/agents/tools/skill-generation.test.ts` | Tests for skill generation (15 tests: read/bump/persist, corrupt JSON, edge cases) |
+| `src/auto-reply/reply/session-skill-candidates.ts` | **Per-Session Skill Candidates** — [MetaClaw](https://github.com/aiming-lab/MetaClaw)-inspired zero-cost (no LLM) extraction from session transcripts. Detects multi-step tool workflows (3+ distinct tools) and iterative correction patterns (same tool 3+ times). Persisted to `memory/skill-candidates.md` with 16KB cap. Consumed by skill-evolution cron. |
+| `src/auto-reply/reply/session-skill-candidates.test.ts` | Tests for session skill candidates (11 tests: extraction patterns, capping, persistence) |
+| `src/gateway/server-methods/cron.ts` (cron.health handler) | **Cron Health RPC** — `cron.health` gateway method exposing cron scheduler health to dashboard. Maps jobs to `CronHealthJob` shape, runs all probes, returns summary (total/enabled/erroring/disabled) + problem jobs + probe results. |
+| `src/cron/service/timer.ts` (idle gate integration) | Added idle gate into `collectRunnableJobs()`: due jobs with `idleOnly: true` are deferred (nextRunAtMs bumped 5 min) when user is active. Records `lastTickAtMs` for scheduler liveness monitoring. |
+| `src/cron/types-shared.ts` (`idleOnly` field) | Added `idleOnly?: boolean` to `CronJobBase` for idle-gated scheduling. |
+| `src/cron/service/state.ts` (`getLastUserActivityMs`) | Added `getLastUserActivityMs?: () => number \| undefined` to `CronServiceDeps` for idle gate. |
 | `src/browser/download-workspace-registry.ts` | Per-CDP-URL workspace mapping for auto-downloads + `sanitizeAutoDownloadFilename()` shared helper |
 | `src/auto-reply/reply/typing.test.ts` | Tests for `onTtlExpired` typing TTL callback |
 | `src/infra/heartbeat-runner.returns-default-unset.test.ts` | Test for updated heartbeat default interval |
