@@ -668,6 +668,10 @@ export async function ensureAgentWorkspace(params?: {
     }
   }
 
+  // Ensure .agents/skills/ exists for agent-created procedural skills
+  const agentSkillsDir = path.join(dir, ".agents", "skills");
+  await fs.mkdir(agentSkillsDir, { recursive: true });
+
   // Seed memory sub-directory templates (diary, self-review, open-loops, identity-scratchpad)
   const memoryDir = path.join(dir, "memory");
   await fs.mkdir(memoryDir, { recursive: true });

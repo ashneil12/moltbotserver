@@ -1,1 +1,0 @@
-{"timestamp":"2026-03-16T23:35:35.977Z","event":"security.webhook_scan","level":"info","data":{"riskScore":67,"safe":true,"quarantined":false,"findingsCount":1,"confidence":55,"webhookId":"wh-123"},"subsystem":"security"}

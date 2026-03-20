@@ -152,6 +152,15 @@ describe("ensureAgentWorkspace", () => {
     expect(memoryContent).toBe("# Long-term memory\nImportant stuff");
   });
 
+  it("creates .agents/skills/ directory for agent procedural skills", async () => {
+    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+
+    await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
+
+    const stat = await fs.stat(path.join(tempDir, ".agents", "skills"));
+    expect(stat.isDirectory()).toBe(true);
+  });
+
   it("preserves BOOTSTRAP.md across successive calls (SaaS fresh-deploy regression)", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
 

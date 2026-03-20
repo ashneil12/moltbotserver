@@ -47,6 +47,9 @@ const SCRATCHPAD_RELATIVE_PATH = "memory/identity-scratchpad.md";
 const SELF_REVIEW_RELATIVE_PATH = "memory/self-review.md";
 const ARCHIVE_STATE_FILENAME = ".diary-archive-state.json";
 
+/** Signal file written by the archiver to coordinate with the diary-post-archive cron. */
+export const CONTINUITY_PENDING_FILENAME = ".diary-continuity-pending";
+
 /** Downloads older than this are pruned from the agent workspace downloads/ folder. */
 const DOWNLOADS_PRUNE_AFTER_MS = 10 * 24 * 60 * 60 * 1000;
 
@@ -896,6 +899,21 @@ export async function runDiaryArchiveForWorkspace(
 
   // Update state
   await writeArchiveState(workspaceDir, { lastArchiveAtMs: Date.now() });
+
+  // Signal the diary-post-archive cron that a fresh archive is ready for
+  // continuity enrichment.  This solves the scheduling race condition: the
+  // deterministic archiver and the LLM cron job are independently timed, so
+  // the cron may fire before the archiver runs (or vice versa).  The cron
+  // prompt checks for this file and responds HEARTBEAT_OK if absent.
+  if (result.diaryArchived) {
+    const pendingPath = path.join(workspaceDir, "memory", CONTINUITY_PENDING_FILENAME);
+    const pendingData = {
+      archivedAtMs: Date.now(),
+      archiveRef,
+    };
+    await atomicWriteFile(pendingPath, `${JSON.stringify(pendingData, null, 2)}\n`);
+    log.info(`diary-archive: wrote continuity-pending signal → ${pendingPath}`);
+  }
 
   return result;
 }

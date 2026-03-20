@@ -805,3 +805,78 @@ describe("pruneOldDailyMemoryLogs", () => {
     await expect(fs.access(path.join(memDir, `${recentStr}.md`))).resolves.toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// buildNewDiary tests
+// ---------------------------------------------------------------------------
+
+import { buildNewDiary, extractTailExcerpt, CONTINUITY_PENDING_FILENAME } from "./diary-archive.js";
+
+describe("buildNewDiary", () => {
+  const template = "# Diary\n\n> Your reflective journal.\n";
+
+  it("includes PREVIOUS_ARCHIVE marker with archive reference", () => {
+    const result = buildNewDiary(template, "memory/archive/2026-03/diary-2026-03-20.md", "");
+    expect(result).toContain(
+      "<!-- PREVIOUS_ARCHIVE: memory/archive/2026-03/diary-2026-03-20.md -->",
+    );
+  });
+
+  it("includes blockquoted archive path reference", () => {
+    const result = buildNewDiary(template, "memory/archive/2026-03/diary-2026-03-20.md", "");
+    expect(result).toContain("> Archived to: `memory/archive/2026-03/diary-2026-03-20.md`");
+  });
+
+  it("includes Previous Period section", () => {
+    const result = buildNewDiary(template, "memory/archive/2026-03/diary-2026-03-20.md", "");
+    expect(result).toContain("## Previous Period");
+  });
+
+  it("blockquotes excerpt lines when excerpt is non-empty", () => {
+    const excerpt = "### 2026-03-19 — Reflection\n\nSome deep thoughts here.";
+    const result = buildNewDiary(template, "memory/archive/2026-03/diary-2026-03-20.md", excerpt);
+    expect(result).toContain("> ### 2026-03-19 — Reflection");
+    expect(result).toContain("> Some deep thoughts here.");
+  });
+
+  it("shows '_(no entries)_' for empty excerpt", () => {
+    const result = buildNewDiary(template, "memory/archive/2026-03/diary-2026-03-20.md", "");
+    expect(result).toContain("> _(no entries)_");
+  });
+
+  it("preserves template content at the start", () => {
+    const result = buildNewDiary(template, "memory/archive/2026-03/diary-2026-03-20.md", "");
+    expect(result.startsWith("# Diary")).toBe(true);
+    expect(result).toContain("> Your reflective journal.");
+  });
+});
+
+describe("extractTailExcerpt", () => {
+  it("extracts the last N lines from content", () => {
+    const content = "line1\nline2\nline3\nline4\nline5\n";
+    const excerpt = extractTailExcerpt(content, 3);
+    expect(excerpt).toBe("line3\nline4\nline5");
+  });
+
+  it("returns full content when fewer lines than requested", () => {
+    const content = "line1\nline2\n";
+    const excerpt = extractTailExcerpt(content, 10);
+    expect(excerpt).toBe("line1\nline2");
+  });
+
+  it("skips trailing blank lines", () => {
+    const content = "line1\nline2\n\n\n";
+    const excerpt = extractTailExcerpt(content, 5);
+    expect(excerpt).toBe("line1\nline2");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CONTINUITY_PENDING_FILENAME constant test
+// ---------------------------------------------------------------------------
+
+describe("CONTINUITY_PENDING_FILENAME", () => {
+  it("is exported and has the expected value", () => {
+    expect(CONTINUITY_PENDING_FILENAME).toBe(".diary-continuity-pending");
+  });
+});
