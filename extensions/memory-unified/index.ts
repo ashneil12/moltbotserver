@@ -139,24 +139,32 @@ const memoryUnifiedPlugin = {
       autoRecall?: boolean;
       recallMaxResults?: number;
       recallMinScore?: number;
-      alignmentCheck?: boolean;
-      alignmentCheckObserveOnly?: boolean;
-      alignmentCheckCooldownTurns?: number;
-      alignmentCheckThreshold?: number;
     };
 
     const autoRecall = pluginConfig.autoRecall !== false; // default: true
     const recallMaxResults = pluginConfig.recallMaxResults ?? 5;
     const recallMinScore = pluginConfig.recallMinScore ?? 0.3;
 
-    // Alignment scoring config
-    const alignmentEnabled = pluginConfig.alignmentCheck === true; // default: false (opt-in)
-    const alignmentObserveOnly = pluginConfig.alignmentCheckObserveOnly !== false; // default: true
+    // Alignment scoring config — read from environment variables because
+    // OpenClaw's core config validator rejects custom extension keys in
+    // plugins.entries.memory-unified (additionalProperties: false in the
+    // core schema), causing a startup crash loop if they're written to
+    // openclaw.json.
+    //
+    // Env vars (set by enforce-config comments / docker-compose):
+    //   ALIGNMENT_CHECK_ENABLED=true          (default: true)
+    //   ALIGNMENT_CHECK_OBSERVE_ONLY=true     (default: false)
+    //   ALIGNMENT_CHECK_COOLDOWN_TURNS=3      (default: 3)
+    //   ALIGNMENT_CHECK_THRESHOLD=0.7         (default: 0.7)
+    const alignmentEnabled =
+      (process.env.ALIGNMENT_CHECK_ENABLED ?? "true").toLowerCase() !== "false";
+    const alignmentObserveOnly =
+      (process.env.ALIGNMENT_CHECK_OBSERVE_ONLY ?? "false").toLowerCase() === "true";
     const alignmentConfig: AlignmentConfig = {
       enabled: alignmentEnabled,
       observeOnly: alignmentObserveOnly,
-      cooldownTurns: pluginConfig.alignmentCheckCooldownTurns ?? 3,
-      correctionThreshold: pluginConfig.alignmentCheckThreshold ?? 0.7,
+      cooldownTurns: Number(process.env.ALIGNMENT_CHECK_COOLDOWN_TURNS) || 3,
+      correctionThreshold: Number(process.env.ALIGNMENT_CHECK_THRESHOLD) || 0.7,
     };
 
     // Per-plugin-instance alignment state (session-scoped)

@@ -23,30 +23,6 @@
         "default": 0.3,
         "minimum": 0.0,
         "maximum": 1.0
-      },
-      "alignmentCheck": {
-        "type": "boolean",
-        "description": "Enable per-turn alignment drift scoring via Flash Lite LLM call",
-        "default": false
-      },
-      "alignmentCheckObserveOnly": {
-        "type": "boolean",
-        "description": "When true, log alignment scores but do not inject corrections (safe calibration mode)",
-        "default": true
-      },
-      "alignmentCheckCooldownTurns": {
-        "type": "number",
-        "description": "Minimum number of turns between alignment checks",
-        "default": 3,
-        "minimum": 1,
-        "maximum": 20
-      },
-      "alignmentCheckThreshold": {
-        "type": "number",
-        "description": "Score below which a correction is injected (0.0-1.0, lower = more permissive)",
-        "default": 0.7,
-        "minimum": 0.0,
-        "maximum": 1.0
       }
     }
   }

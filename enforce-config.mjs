@@ -452,15 +452,24 @@ function enforceCore(configPath) {
   slots.memory = "memory-unified"; // Unified memory with per-turn auto-recall
   const entries = ensure(plugins, "entries");
   entries["lossless-claw"] = entries["lossless-claw"] || { enabled: true };
-  // Memory-unified: always enforce alignment scoring config.
-  // Default: enabled + active corrections (drift → correction injected).
-  // Set ALIGNMENT_CHECK_OBSERVE_ONLY=true to disable corrections (log only).
+  // Memory-unified: enable the plugin. Alignment scoring settings are read
+  // from environment variables by the extension at runtime rather than config
+  // keys, because OpenClaw's core validator does not recognise custom extension
+  // config properties and rejects them as "unrecognized keys", causing a
+  // startup crash loop.
+  //
+  // Env vars (read by memory-unified/index.ts):
+  //   ALIGNMENT_CHECK_ENABLED=true          (default: true)
+  //   ALIGNMENT_CHECK_OBSERVE_ONLY=true     (default: false)
+  //   ALIGNMENT_CHECK_COOLDOWN_TURNS=3      (default: 3)
+  //   ALIGNMENT_CHECK_THRESHOLD=0.7         (default: 0.7)
   const muEntry = entries["memory-unified"] || { enabled: true };
   muEntry.enabled = true;
-  muEntry.alignmentCheck = true;
-  muEntry.alignmentCheckObserveOnly = env("ALIGNMENT_CHECK_OBSERVE_ONLY") === "true";
-  muEntry.alignmentCheckCooldownTurns = Number(env("ALIGNMENT_CHECK_COOLDOWN_TURNS")) || 3;
-  muEntry.alignmentCheckThreshold = Number(env("ALIGNMENT_CHECK_THRESHOLD")) || 0.7;
+  // Clean up legacy keys that cause validation failures on existing deployments
+  delete muEntry.alignmentCheck;
+  delete muEntry.alignmentCheckObserveOnly;
+  delete muEntry.alignmentCheckCooldownTurns;
+  delete muEntry.alignmentCheckThreshold;
   entries["memory-unified"] = muEntry;
   // Ensure lossless-claw and memory-unified are in the allow list (if one exists)
   if (Array.isArray(plugins.allow)) {
