@@ -22,7 +22,7 @@ import {
   formatAlignmentLogEntry,
   scoreAlignment,
   type AlignmentLlmCall,
-} from "../../src/memory/alignment-scorer.js";
+} from "./alignment-scorer.js";
 import {
   advanceTurn,
   createAlignmentState,
@@ -30,7 +30,7 @@ import {
   shouldCheck,
   type AlignmentConfig,
   type AlignmentState,
-} from "../../src/memory/alignment-state.js";
+} from "./alignment-state.js";
 
 /** Triggers that should NOT get auto-recall injection. */
 const SKIP_TRIGGERS = new Set(["cron", "heartbeat", "memory"]);
