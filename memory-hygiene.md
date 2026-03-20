@@ -139,6 +139,35 @@ The timing matters more than it might seem.
 
 ---
 
+## Automated Maintenance
+
+In addition to the agent's own memory discipline, several automated systems maintain memory health:
+
+### Proactive Disk Hygiene (every 6h)
+
+Piggybacked on the cron timer tick. Cleans old session files (>30d), browser cache, gateway error logs, and inbound media (>14d). Configurable via `cronConfig.diskHygieneIntervalMs`.
+
+### Memory File Rotation (daily)
+
+Daily `memory/YYYY-MM-DD.md` files older than 30 days are consolidated into monthly archives at `memory/archive/YYYY-MM.md`. Prevents hundreds of small files from accumulating. Runs as part of the proactive disk hygiene sweep.
+
+### BrainX Knowledge Maintenance (weekly/bi-weekly)
+
+The `brainx-maintenance.sh` orchestrator automates BrainX memory quality scripts:
+
+- **Weekly**: `cleanup-low-signal.js` (demotes short/low-importance memories) + `memory-consolidator.js` (merges similar memories)
+- **Bi-weekly**: `dedup-supersede.js` (removes duplicates) + `quality-scorer.js` (evaluates semantic quality)
+
+### Staleness Detection
+
+`memory-staleness-scanner.ts` scans MEMORY.md for dated entries older than 90 days and generates a summary. When wired into a heartbeat or cron job, nudges the agent to self-review stale entries.
+
+### Session Reaper (every 5min, throttled)
+
+Automatically prunes expired cron run sessions (24h default retention) and deletes orphaned `.jsonl` files older than 30 days.
+
+---
+
 ## Memory as a Relationship
 
 The deepest way to think about memory is not as a database or a log. It's as the accumulated evidence of paying attention.

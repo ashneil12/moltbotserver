@@ -4,7 +4,8 @@ import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
 import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import { shouldRunIdleJob, DEFAULT_DEFER_INTERVAL_MS } from "../idle-gate.js";
-import { sweepCronRunSessions } from "../session-reaper.js";
+import { sweepProactiveDiskHygiene } from "../proactive-disk-hygiene.js";
+import { sweepCronRunSessions, sweepStaleSessionFiles } from "../session-reaper.js";
 import type {
   CronDeliveryStatus,
   CronJob,
@@ -767,9 +768,32 @@ export async function onTimer(state: CronServiceState) {
             nowMs,
             log: state.deps.log,
           });
+          // File-age retention sweep — deletes orphaned .jsonl files older
+          // than sessionFileRetentionDays (default 30). Self-throttles to
+          // every 30 minutes.
+          await sweepStaleSessionFiles({
+            cronConfig: state.deps.cronConfig,
+            sessionStorePath: storePath,
+            nowMs,
+            log: state.deps.log,
+          });
         } catch (err) {
           state.deps.log.warn({ err: String(err), storePath }, "cron: session reaper sweep failed");
         }
+      }
+
+      // Proactive disk hygiene — cleans old sessions, browser cache, logs,
+      // and inbound media on a regular schedule (default: every 6h).
+      // Self-throttled; safe to call on every timer tick.
+      try {
+        await sweepProactiveDiskHygiene({
+          cronConfig: state.deps.cronConfig,
+          sessionStorePaths: [...storePaths],
+          nowMs,
+          log: state.deps.log,
+        });
+      } catch (err) {
+        state.deps.log.warn({ err: String(err) }, "cron: proactive disk hygiene sweep failed");
       }
     }
 
