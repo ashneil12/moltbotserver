@@ -19,6 +19,10 @@ import { resolveAgentsDirFromSessionStorePath } from "../config/sessions/paths.j
 import type { CronConfig } from "../config/types.cron.js";
 import { runDiskCleanup, type DiskCleanupResult } from "../logging/disk-hygiene.js";
 import { rotateOldMemoryFiles } from "../memory/memory-file-rotator.js";
+import {
+  formatStalenessSummary,
+  scanMemoryForStaleness,
+} from "../memory/memory-staleness-scanner.js";
 import type { Logger } from "./service/state.js";
 
 /** Default interval between proactive sweeps: 6 hours. */
@@ -113,6 +117,7 @@ export type ProactiveDiskHygieneResult = {
   swept: boolean;
   result?: DiskCleanupResult;
   memoryFilesRotated?: number;
+  staleMemoryEntries?: number;
 };
 
 /**
@@ -199,7 +204,29 @@ export async function sweepProactiveDiskHygiene(params: {
     params.log.warn({ err: String(err) }, "proactive-disk-hygiene: memory file rotation failed");
   }
 
-  return { swept: true, result: diskResult, memoryFilesRotated };
+  // 3. Memory staleness scan (check MEMORY.md for dated entries >90 days)
+  let staleMemoryEntries = 0;
+  try {
+    const workspaceDirs = discoverAgentWorkspaceDirs(openclawDir);
+    for (const workspaceDir of workspaceDirs) {
+      const memoryPath = path.join(workspaceDir, "MEMORY.md");
+      const result = scanMemoryForStaleness(memoryPath, { nowMs: now });
+      if (result.staleCount > 0) {
+        staleMemoryEntries += result.staleCount;
+        const summary = formatStalenessSummary(result);
+        if (summary) {
+          params.log.info(
+            { workspace: workspaceDir, staleCount: result.staleCount },
+            `proactive-disk-hygiene: ${summary}`,
+          );
+        }
+      }
+    }
+  } catch (err) {
+    params.log.warn({ err: String(err) }, "proactive-disk-hygiene: staleness scan failed");
+  }
+
+  return { swept: true, result: diskResult, memoryFilesRotated, staleMemoryEntries };
 }
 
 /** Reset the throttle timer (for tests). */

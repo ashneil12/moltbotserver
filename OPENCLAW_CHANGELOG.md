@@ -7,7 +7,7 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ## Memory Maintenance Automation — Proactive Disk Hygiene, File Rotation, Staleness Detection (2026-03-20)
 
-**Purpose:** Automated memory maintenance pipeline to prevent disk bloat and stale memory accumulation. 4-phase implementation: proactive cleanup, daily→monthly memory archival, BrainX script orchestration, and dated-entry staleness detection.
+**Purpose:** Automated memory maintenance pipeline to prevent disk bloat and stale memory accumulation. 3-phase implementation: proactive cleanup, daily→monthly memory archival, and dated-entry staleness detection.
 
 ### Phase 1 — Proactive Disk Hygiene Cron
 
@@ -24,14 +24,7 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 | `src/memory/memory-file-rotator.ts`      | **[NEW]** Consolidates daily memory files (`memory/YYYY-MM-DD.md` >30 days old) into monthly archives (`memory/archive/YYYY-MM.md`). Groups by month, sorts chronologically, appends to existing archives. Self-throttled (24h). Empty files cleaned without archive creation. |
 | `src/memory/memory-file-rotator.test.ts` | **[NEW]** 15 tests — grouping, sorting, archive creation/appending, recent file protection, non-date files, multi-month, throttling, empty/missing dirs                                                                                                                        |
 
-### Phase 3 — BrainX Cron Orchestrator
-
-| File                                   | Change                                                                                                                                                                                                                                                           |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BrainX/scripts/brainx-maintenance.sh` | **[NEW]** Shell orchestrator with 3 modes: `weekly` (cleanup + consolidation), `biweekly` (dedup + quality scoring), `all` (full suite). Configurable limits via `CONSOLIDATOR_LIMIT` / `SCORER_LIMIT`. Non-fatal per-script — continues on individual failures. |
-| `BrainX/scripts/MANIFEST.md`           | **[MODIFIED]** Updated frequencies and added orchestrator entry                                                                                                                                                                                                  |
-
-### Phase 4 — MEMORY.md Staleness Detection
+### Phase 3 — MEMORY.md Staleness Detection
 
 | File                                          | Change                                                                                                                                                                                                                                                               |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,10 +33,10 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ### Documentation
 
-| File                  | Change                                                                         |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `memory-hygiene.md`   | **[MODIFIED]** Added "Automated Maintenance" section documenting all 4 systems |
-| `OPENCLAW_CONTEXT.md` | **[MODIFIED]** Added 7 new file entries + updated `timer.ts` entry             |
+| File                  | Change                                                                       |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `memory-hygiene.md`   | **[MODIFIED]** Added "Automated Maintenance" section documenting all systems |
+| `OPENCLAW_CONTEXT.md` | **[MODIFIED]** Added 7 new file entries + updated `timer.ts` entry           |
 
 **Total new tests:** 41 (14 + 15 + 12). TypeScript type-check: ✓ (exit 0).
 
