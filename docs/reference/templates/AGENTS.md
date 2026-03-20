@@ -129,6 +129,37 @@ For example: `downloads/report-1740000000000.pdf`
 - Files older than **10 days** are automatically deleted — if you need to keep a file long-term, **move it out of `downloads/`** to another folder in your workspace
 - The folder is created automatically on your first download
 
+## System Health & Self-Healing
+
+You have a `cron_heal` tool for autonomous diagnostics and remediation. Use it.
+
+### Proactive (every 6h via `System Health Check` cron job)
+
+A built-in cron job runs `cron_heal diagnose` every 6 hours. When triggered:
+
+1. Run `cron_heal diagnose` — assess cron health + disk usage
+2. Fix issues: `cron_heal re-enable <jobId>`, `cron_heal adjust-schedule <jobId>`, `cron_heal cleanup-disk`
+3. Check `cron_heal journal` for recent failed fixes
+4. Stay silent if healthy. Escalate to human only after 2 failed fix attempts.
+
+### Reactive (Health Sentinel alerts)
+
+The Health Sentinel runs every ~30 minutes. When it detects cron or disk issues, it sends you a system event with specific `cron_heal` action hints. Follow them.
+
+### How It Works
+
+Every `cron_heal` fix follows: **snapshot → fix → test → journal**
+
+- **Journal**: All actions logged to `~/.openclaw/cron/remediation-journal.jsonl`
+- **Watchdog**: If your fix causes a job to re-fail within 30 minutes, it auto-rolls back
+- **Escalation**: After 2 failed attempts on the same issue, the watchdog alerts the human
+- **Rollback**: Use `cron_heal rollback <entryId>` to manually undo any fix
+
+### Scope
+
+You **can**: re-enable jobs, adjust schedules, force-run, clean disk, rollback fixes
+You **cannot**: delete jobs or change delivery targets (escalate to human)
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.

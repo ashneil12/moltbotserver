@@ -95,6 +95,8 @@ const BASE_METHODS = [
   "gateway.identity.get",
   "system-presence",
   "system-event",
+  "system.diskHealth",
+  "system.diskCleanup",
   "send",
   "agent",
   "agent.identity.get",

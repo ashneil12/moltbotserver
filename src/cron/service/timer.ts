@@ -1,3 +1,4 @@
+import path from "node:path";
 import { resolveFailoverReasonFromError } from "../../agents/failover-error.js";
 import type { CronConfig, CronRetryOn } from "../../config/types.cron.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
@@ -5,6 +6,8 @@ import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import { shouldRunIdleJob, DEFAULT_DEFER_INTERVAL_MS } from "../idle-gate.js";
 import { sweepProactiveDiskHygiene } from "../proactive-disk-hygiene.js";
+import { resolveJournalPath } from "../remediation-journal.js";
+import { runRemediationWatchdog } from "../remediation-watchdog.js";
 import { sweepCronRunSessions, sweepStaleSessionFiles } from "../session-reaper.js";
 import type {
   CronDeliveryStatus,
@@ -794,6 +797,52 @@ export async function onTimer(state: CronServiceState) {
         });
       } catch (err) {
         state.deps.log.warn({ err: String(err) }, "cron: proactive disk hygiene sweep failed");
+      }
+
+      // Remediation watchdog — checks active agent remediations for
+      // confirmation (fix held past TTL), rollback (job re-failed), or
+      // escalation (max attempts exceeded). Self-throttled to every 5 minutes.
+      try {
+        const journalDir = state.deps.storePath ? path.dirname(state.deps.storePath) : undefined;
+        const journalPath = resolveJournalPath(journalDir);
+        const jobs = state.store?.jobs ?? [];
+        await runRemediationWatchdog({
+          journalPath,
+          nowMs,
+          patchJob: async (jobId, patch) => {
+            const job = state.store?.jobs?.find((j) => j.id === jobId);
+            if (job && state.store) {
+              Object.assign(job, patch);
+              state.deps.log.info(
+                { jobId, patch },
+                "remediation watchdog: rolled back job to previous state",
+              );
+            }
+          },
+          enqueueSystemEvent: (text, opts) => {
+            state.deps.enqueueSystemEvent(text, opts);
+          },
+          getJobErrorSince: (jobId, sinceMs) => {
+            const job = jobs.find((j) => j.id === jobId);
+            if (!job) {
+              return null;
+            }
+            const s = job.state;
+            if (
+              s?.lastError &&
+              s?.consecutiveErrors &&
+              s.consecutiveErrors > 0 &&
+              // Only report errors that occurred after the remediation
+              (s.lastRunAtMs === undefined || s.lastRunAtMs >= sinceMs)
+            ) {
+              return s.lastError;
+            }
+            return null;
+          },
+          retentionDays: state.deps.cronConfig?.remediationRetentionDays,
+        });
+      } catch (err) {
+        state.deps.log.warn({ err: String(err) }, "cron: remediation watchdog failed");
       }
     }
 

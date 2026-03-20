@@ -1,3 +1,5 @@
+import os from "node:os";
+import path from "node:path";
 import { resolveMainSessionKeyFromConfig } from "../../config/sessions.js";
 import {
   loadOrCreateDeviceIdentity,
@@ -7,6 +9,7 @@ import { getLastHeartbeatEvent } from "../../infra/heartbeat-events.js";
 import { setHeartbeatsEnabled } from "../../infra/heartbeat-runner.js";
 import { enqueueSystemEvent, isSystemEventContextChanged } from "../../infra/system-events.js";
 import { listSystemPresence, updateSystemPresence } from "../../infra/system-presence.js";
+import { scanDiskUsage, runDiskCleanup } from "../../logging/disk-hygiene.js";
 import { ErrorCodes, errorShape } from "../protocol/index.js";
 import { broadcastPresenceSnapshot } from "../server/presence-events.js";
 import type { GatewayRequestHandlers } from "./types.js";
@@ -145,5 +148,59 @@ export const systemHandlers: GatewayRequestHandlers = {
       getHealthVersion: context.getHealthVersion,
     });
     respond(true, { ok: true }, undefined);
+  },
+
+  "system.diskHealth": ({ respond }) => {
+    try {
+      const openclawDir = path.join(os.homedir(), ".openclaw");
+      const scan = scanDiskUsage(openclawDir);
+      respond(
+        true,
+        {
+          totalBytes: scan.totalBytes,
+          totalMB: Math.round(scan.totalBytes / 1024 / 1024),
+          areas: scan.areas.map((a) => ({
+            name: a.name,
+            sizeBytes: a.sizeBytes,
+            sizeMB: Math.round(a.sizeBytes / 1024 / 1024),
+            fileCount: a.fileCount,
+          })),
+        },
+        undefined,
+      );
+    } catch (err) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, err instanceof Error ? err.message : "disk scan failed"),
+      );
+    }
+  },
+
+  "system.diskCleanup": ({ respond }) => {
+    try {
+      const openclawDir = path.join(os.homedir(), ".openclaw");
+      const result = runDiskCleanup(openclawDir);
+      respond(
+        true,
+        {
+          freedBytes: result.freedBytes,
+          freedMB: Math.round(result.freedBytes / 1024 / 1024),
+          filesDeleted: result.filesDeleted,
+          filesTruncated: result.filesTruncated,
+          errors: result.errors,
+        },
+        undefined,
+      );
+    } catch (err) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.UNAVAILABLE,
+          err instanceof Error ? err.message : "disk cleanup failed",
+        ),
+      );
+    }
   },
 };

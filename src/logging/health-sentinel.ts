@@ -568,8 +568,39 @@ function composeSentinelEventText(
     lines.push("");
   }
 
+  // Add cron_heal self-healing guidance when cron or disk issues are detected
+  const hasCronIssues = unresolved.some(
+    (i) => i.key?.startsWith("cron.") || i.key?.startsWith("cron:"),
+  );
+  const hasDiskIssues = unresolved.some(
+    (i) => i.key?.startsWith("disk.") || i.key?.startsWith("disk:"),
+  );
+
+  if (hasCronIssues || hasDiskIssues) {
+    lines.push("## Self-Healing Actions Available");
+    lines.push("Use the `cron_heal` tool to diagnose and fix these issues:");
+    if (hasCronIssues) {
+      lines.push("- `cron_heal diagnose` — assess overall cron health and identify root causes");
+      lines.push(
+        "- `cron_heal re-enable <jobId>` — re-enable disabled or failing jobs (with automatic snapshot and rollback)",
+      );
+      lines.push("- `cron_heal adjust-schedule <jobId>` — fix scheduling issues");
+    }
+    if (hasDiskIssues) {
+      lines.push(
+        "- `cron_heal cleanup-disk` — reclaim disk space from old sessions, browser cache, and logs",
+      );
+    }
+    lines.push(
+      "All actions are journaled and auto-rolled back if the fix doesn't hold within the watchdog window.",
+    );
+    lines.push("");
+  }
+
   lines.push(
-    "Please investigate and fix these issues. If you cannot resolve them, escalate to the user.",
+    hasCronIssues || hasDiskIssues
+      ? "Investigate and fix using `cron_heal` when applicable. If you cannot resolve them after 2 attempts, escalate to the user."
+      : "Please investigate and fix these issues. If you cannot resolve them, escalate to the user.",
   );
 
   return lines.join("\n");

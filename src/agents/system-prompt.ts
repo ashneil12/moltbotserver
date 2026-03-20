@@ -266,6 +266,8 @@ export function buildAgentSystemPrompt(params: {
     canvas: "Present/eval/snapshot the Canvas",
     nodes: "List/describe/notify/camera/screen on paired nodes",
     cron: "Manage cron jobs and wake events (use for reminders; when scheduling a reminder, write the systemEvent text as something that will read like a reminder when it fires, and mention that it is a reminder depending on the time gap between setting and firing; include recent context in reminder text if appropriate)",
+    cron_heal:
+      "Diagnose and self-heal cron/disk issues. Use when Health Sentinel alerts you or during proactive health checks. Actions: diagnose, re-enable, adjust-schedule, force-run, cleanup-disk, rollback, journal. All actions are journaled with auto-rollback.",
     message: "Send messages and channel actions",
     gateway: "Restart, apply config, or run updates on the running OpenClaw process",
     agents_list: acpSpawnRuntimeEnabled
@@ -303,6 +305,7 @@ export function buildAgentSystemPrompt(params: {
     "canvas",
     "nodes",
     "cron",
+    "cron_heal",
     "message",
     "gateway",
     "agents_list",

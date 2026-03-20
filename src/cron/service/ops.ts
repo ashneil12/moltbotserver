@@ -1,5 +1,6 @@
 import { enqueueCommandInLane } from "../../process/command-queue.js";
 import { CommandLane } from "../../process/lanes.js";
+import { seedHealthCheckJob } from "../health-check-seed.js";
 import type { CronJob, CronJobCreate, CronJobPatch } from "../types.js";
 import { normalizeCronCreateDeliveryInput } from "./initial-delivery.js";
 import {
@@ -116,6 +117,28 @@ export async function start(state: CronServiceState) {
 
   await locked(state, async () => {
     await ensureLoaded(state, { forceReload: true, skipRecompute: true });
+
+    // Seed the system health check job if it doesn't exist.
+    // Idempotent — checks by job name before creating.
+    // Gated by seedSystemJobs config (defaults true, false in tests).
+    if (state.deps.cronConfig && state.deps.cronConfig.seedSystemJobs !== false) {
+      try {
+        const jobs = state.store?.jobs ?? [];
+        seedHealthCheckJob({
+          jobs,
+          addJob: (jobDef) => {
+            const normalizedInput = normalizeCronCreateDeliveryInput(jobDef);
+            const job = createJob(state, normalizedInput);
+            state.store?.jobs.push(job);
+            return job;
+          },
+          agentId: state.deps.defaultAgentId,
+        });
+      } catch (err) {
+        state.deps.log.warn({ err: String(err) }, "cron: health check seed failed");
+      }
+    }
+
     recomputeNextRuns(state);
     await persist(state);
     armTimer(state);

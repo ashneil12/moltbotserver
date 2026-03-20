@@ -64,4 +64,24 @@ export type CronConfig = {
    * Default: 30.
    */
   sessionFileRetentionDays?: number | false;
+  /**
+   * Remediation journal retention in days. Entries older than this are pruned.
+   * Default: 14.
+   */
+  remediationRetentionDays?: number;
+  /**
+   * Watchdog window in minutes. If a remediated job re-fails within this
+   * window, the fix is auto-rolled back. Default: 30.
+   */
+  remediationWatchdogMinutes?: number;
+  /**
+   * Max agent remediation attempts per issue before escalating to human.
+   * Default: 2.
+   */
+  remediationMaxAttempts?: number;
+  /**
+   * Whether to auto-seed system cron jobs (e.g. health check) on startup.
+   * Default: true. Set to false in test environments.
+   */
+  seedSystemJobs?: boolean;
 };
