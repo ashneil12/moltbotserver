@@ -6,6 +6,7 @@
  * in chronological order.
  */
 
+import { randomUUID } from "node:crypto";
 import type { NormalizedConversation, NormalizedMessage } from "../types.js";
 
 // -- Raw ChatGPT export types --
@@ -148,7 +149,7 @@ function parseConversation(raw: ChatGptConversation): NormalizedConversation | n
   }
 
   return {
-    id: raw.id ?? `chatgpt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: raw.id ?? `chatgpt-${randomUUID().slice(0, 8)}`,
     title: raw.title,
     messages,
     source: "chatgpt",

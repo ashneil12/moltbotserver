@@ -6,6 +6,7 @@
  * over time, so we handle multiple variations.
  */
 
+import { randomUUID } from "node:crypto";
 import type { NormalizedConversation, NormalizedMessage } from "../types.js";
 
 // -- Raw Claude export types --
@@ -130,7 +131,7 @@ function parseConversation(raw: ClaudeConversation): NormalizedConversation | nu
   }
 
   return {
-    id: raw.uuid ?? `claude-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: raw.uuid ?? `claude-${randomUUID().slice(0, 8)}`,
     title: raw.name,
     messages,
     source: "claude",

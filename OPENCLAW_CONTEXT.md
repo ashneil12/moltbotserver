@@ -274,6 +274,10 @@ These exist in upstream AND have local changes. Conflicts are likely.
 | `src/telegram/bot-handlers.ts`                    | 15s media download timeout                                                                                                                                                                                  |
 | `src/discord/send.components.ts`                  | Removed unused import (lint)                                                                                                                                                                                |
 | `src/agents/tools/recall-message-tool.ts`         | Removed redundant type assertion (lint)                                                                                                                                                                     |
+| `src/channels/plugins/actions/discord/handle-action.test.ts` | Preserved 2/3-arg signature handling for messaging vs admin actions.                                                                                                                |
+| `src/channels/plugins/actions/telegram.test.ts`   | Preserved 3-arg signature for `handleTelegramAction` calls.                                                                                                                                                 |
+| `src/security/audit.ts`                           | Integrated OC deployment checks; removed redundant duplicate rate-limit check.                                                                                                                              |
+| `extensions/history-import/...`                   | Secure UUID generation (`randomUUID()`) in ChatGPT/Claude parsers.                                                                                                                             |
 | `src/agents/tool-catalog.ts`                      | `sql_query`/`sql_execute`/`session_search`/`skill_manage`/`workspace_search` entries; browser `profiles: ["coding"]`                                                                                        |
 | `src/memory/types.ts`                             | `"workspace"` in `MemorySource` union                                                                                                                                                                       |
 | `src/memory/qmd-manager.ts`                       | `bootstrapCollections` workspace mapping, `addCollectionWithRetry()`, `warnIfWorkspaceCollectionsEmpty()`                                                                                                   |
@@ -398,18 +402,15 @@ Run these after every merge from upstream. Grouped by area.
 
 ### Agent Behavior
 
-36. **Autonomous Problem-Solving** — `grep -c 'Autonomous Problem-Solving' src/agents/system-prompt.ts` ≥ 1 and `grep -c 'Exhaust Before Escalating' SOUL.md` ≥ 1.
-37. **Operating Discipline step 5** — `grep -c 'Document' src/agents/system-prompt.ts` ≥ 2.
-38. **Evidence counters** — `grep -c 'parseEvidenceCounters' src/cron/diary-archive.ts` ≥ 1.
-39. **Cron schedule redesign** — `grep -c 'kind: "cron"' enforce-config.mjs` ≥ 6. Verify no `anchorMs: nowMs,` without offset.
-40. **Stale snapshot guards** — `grep -c 'isEphemeralPath' src/infra/ephemeral-path.ts` ≥ 1 and `grep -c 'createdAt' src/config/sessions/types.ts` ≥ 1.
+### Tests & Security Hardening
 
-### Misc
-
-41. **soul-evil** — `rm -rf src/hooks/bundled/soul-evil src/hooks/soul-evil.ts` if re-introduced
-42. **Typing TTL** — `grep -c 'onTtlExpired' src/auto-reply/reply/typing.ts` ≥ 1.
-43. **Heartbeat default** — `grep 'DEFAULT_HEARTBEAT_EVERY' src/auto-reply/heartbeat.ts` should show `"1h"`.
-44. **Telegram media timeout** — `grep -c 'MEDIA_DOWNLOAD_TIMEOUT_MS' src/telegram/bot-handlers.ts` ≥ 1.
-45. **Backup scripts** — `grep -c 'notify_failure' scripts/backup-upload.sh` ≥ 1 and `grep -c 'restore-complete' scripts/restore-from-backup.sh` ≥ 1.
-46. **Agent CLI tooling** — `grep -c 'yt-dlp' Dockerfile` ≥ 1.
-47. **Build verification** — `npm install && npm run build`
+41. **Channel action test signatures** — `grep -c 'expect.anything' src/channels/plugins/actions/discord/handle-action.test.ts` ≥ 1. Ensures tests match the 3-arg messaging signature.
+42. **Deduplicated audit rate-limit** — `grep -c 'gateway.auth_no_rate_limit' src/security/audit.ts` should be exactly 1.
+43. **Secure history import IDs** — `grep -c 'randomUUID' extensions/history-import/src/parsers/chatgpt.ts` ≥ 1.
+44. **soul-evil** — `rm -rf src/hooks/bundled/soul-evil src/hooks/soul-evil.ts` if re-introduced
+45. **Typing TTL** — `grep -c 'onTtlExpired' src/auto-reply/reply/typing.ts` ≥ 1.
+46. **Heartbeat default** — `grep 'DEFAULT_HEARTBEAT_EVERY' src/auto-reply/heartbeat.ts` should show `"1h"`.
+47. **Telegram media timeout** — `grep -c 'MEDIA_DOWNLOAD_TIMEOUT_MS' src/telegram/bot-handlers.ts` ≥ 1.
+48. **Backup scripts** — `grep -c 'notify_failure' scripts/backup-upload.sh` ≥ 1 and `grep -c 'restore-complete' scripts/restore-from-backup.sh` ≥ 1.
+49. **Agent CLI tooling** — `grep -c 'yt-dlp' Dockerfile` ≥ 1.
+50. **Build verification** — `npm install && npm run build`

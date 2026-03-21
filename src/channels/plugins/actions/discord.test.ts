@@ -10,9 +10,9 @@ const sendPollDiscord = vi.fn<Parameters<SendPollDiscord>, ReturnType<SendPollDi
   async () => ({ ok: true }) as Awaited<ReturnType<SendPollDiscord>>,
 );
 
-vi.mock("../../../discord/send.js", async () => {
-  const actual = await vi.importActual<typeof import("../../../discord/send.js")>(
-    "../../../discord/send.js",
+vi.mock("../../../../extensions/discord/src/send.js", async () => {
+  const actual = await vi.importActual<typeof import("../../../../extensions/discord/src/send.js")>(
+    "../../../../extensions/discord/src/send.js",
   );
   return {
     ...actual,

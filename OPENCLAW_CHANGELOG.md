@@ -5,7 +5,21 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
-## ClawFlows v2 — Dynamic Cron-Based Workflow Library (2026-03-21)
+## Channel Plugin Action Fixes & Security Hardening (2026-03-21)
+
+**Purpose:** Resolve failing tests in Discord/Telegram plugins caused by signature mismatches, fix incorrect mock paths, and harden security guardrails in new extensions.
+
+| File | Change | Sync Risk |
+| ---- | ------ | --------- |
+| `src/channels/plugins/actions/discord.test.ts` | Corrected Discord mock path and updated `handleDiscordAction` mock signature. | None — test |
+| `src/channels/plugins/actions/discord/handle-action.test.ts` | Updated `toHaveBeenCalledWith` to match 3-argument signature for messaging actions and 2-argument for admin. | None — test |
+| `src/channels/plugins/actions/telegram.test.ts` | Updated `toHaveBeenCalledWith` to match 3-argument signature. | None — test |
+| `src/security/audit.ts` | Removed redundant/duplicate rate-limit check that was causing `trusted-proxy` test failures. | Low — cleanup |
+| `extensions/history-import/...` | Switched from `Math.random()` to `crypto.randomUUID()` in ChatGPT and Claude parsers to satisfy security guardrails. | None — extension |
+
+---
+
+
 
 **Purpose:** Complete overhaul of the ClawFlows integration. Replaces the static symlink-based "deploy-time toggle" system with a dynamic, cron-based "always-on" library. Users can now enable/disable 84+ workflows (6 built-in, 78 community) on the fly via the dashboard Settings modal, with support for per-agent scoping.
 

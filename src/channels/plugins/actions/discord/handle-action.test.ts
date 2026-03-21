@@ -30,6 +30,7 @@ describe("handleDiscordMessageAction", () => {
         content: "Initial forum post body",
       }),
       expect.any(Object),
+      expect.anything(),
     );
   });
 

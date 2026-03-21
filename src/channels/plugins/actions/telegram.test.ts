@@ -40,6 +40,7 @@ describe("telegramMessageActions", () => {
         asVoice: true,
       }),
       cfg,
+      expect.anything(),
     );
   });
 
@@ -66,6 +67,7 @@ describe("telegramMessageActions", () => {
         silent: true,
       }),
       cfg,
+      expect.anything(),
     );
   });
 
@@ -95,6 +97,7 @@ describe("telegramMessageActions", () => {
         accountId: undefined,
       },
       cfg,
+      expect.anything(),
     );
   });
 
