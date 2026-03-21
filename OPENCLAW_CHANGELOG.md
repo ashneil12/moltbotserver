@@ -5,6 +5,22 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Server Error Fixes: Scope Exemption, Caddy Retry & Browser Noise (2026-03-22)
+
+**Purpose:** Three production issues on Hetzner server (46.224.177.74): (1) Dashboard `system.diskHealth` calls failing with `missing scope: operator.read` because gateway strips scopes from device-less WebSocket connections. (2) Caddy 502 errors during gateway container restarts. (3) Benign Chromium shared-memory errors spamming browser container logs.
+
+| File                                | Change                                                                                                                                    | Sync Risk      |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/gateway/server-methods.ts`     | Added `SHARED_AUTH_EXEMPT_METHODS` set — `health`, `system.diskHealth`, `system.diskCleanup` bypass operator scope enforcement            | Medium         |
+| `src/gateway/method-scopes.ts`      | Classified `system.diskCleanup` under `ADMIN_SCOPE` (was unclassified, would fail `isGatewayMethodClassified` test)                       | Low — additive |
+| `src/gateway/method-scopes.test.ts` | +8 integration tests: scope exemption bypass via `handleGatewayRequest`, non-exempt blocking, admin compatibility, unauthenticated client | None — test    |
+| `hetzner-instance-service.ts`       | Added `lb_try_duration 30s` + `lb_try_interval 1s` to all `reverse_proxy openclaw-gateway:18789` blocks in Caddyfile template             | None — custom  |
+| `hetzner-instance-service.ts`       | Added `OPENCLAW_BROWSER_EXTRA_ARGS=--disable-dev-shm-usage --disable-features=MediaSessionService` to browser container env               | None — custom  |
+
+> **Sync Risk:** `server-methods.ts` — `SHARED_AUTH_EXEMPT_METHODS` is a 1-line const + 3-line check before existing auth flow. If upstream restructures `authorizeGatewayMethod`, re-apply. `method-scopes.ts` — single line addition to `ADMIN_SCOPE` array.
+
+---
+
 ## Cleanup: Memory Config Tests + Flush Prompt Dedup (2026-03-22)
 
 **Purpose:** Post-audit cleanup. Added comprehensive test coverage for `enforceMemory()` and eliminated triplicated flush prompt instructions.

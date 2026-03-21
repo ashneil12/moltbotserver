@@ -223,6 +223,7 @@ These exist in upstream AND have local changes. Conflicts are likely.
 
 | File                                                         | What to preserve                                                                                                                                                                                            |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/gateway/server-methods.ts`                              | `SHARED_AUTH_EXEMPT_METHODS` scope bypass for `health`, `system.diskHealth`, `system.diskCleanup` — dashboard device-less clients                                                                           |
 | `src/gateway/server-methods/update.ts`                       | `OPENCLAW_MANAGED_PLATFORM` guard                                                                                                                                                                           |
 | `src/cli/update-cli/update-command.ts`                       | `OPENCLAW_MANAGED_PLATFORM` guard                                                                                                                                                                           |
 | `src/infra/update-startup.ts`                                | Early return when managed platform                                                                                                                                                                          |
@@ -435,3 +436,5 @@ Run these after every merge from upstream. Grouped by area.
 48. **Backup scripts** — `grep -c 'notify_failure' scripts/backup-upload.sh` ≥ 1 and `grep -c 'restore-complete' scripts/restore-from-backup.sh` ≥ 1.
 49. **Agent CLI tooling** — `grep -c 'yt-dlp' Dockerfile` ≥ 1.
 50. **Build verification** — `npm install && npm run build`
+51. **Scope exemption** — `grep -c 'SHARED_AUTH_EXEMPT_METHODS' src/gateway/server-methods.ts` ≥ 1. Dashboard calls `system.diskHealth`/`system.diskCleanup` without device identity.
+52. **Caddy retry directives** — Dashboard Caddyfile template includes `lb_try_duration 30s` + `lb_try_interval 1s` on all `reverse_proxy openclaw-gateway` blocks.

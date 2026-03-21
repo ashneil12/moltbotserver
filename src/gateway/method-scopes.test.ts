@@ -1,11 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   authorizeOperatorScopesForMethod,
   isGatewayMethodClassified,
   resolveLeastPrivilegeOperatorScopesForMethod,
 } from "./method-scopes.js";
 import { listGatewayMethods } from "./server-methods-list.js";
-import { coreGatewayHandlers } from "./server-methods.js";
+import { coreGatewayHandlers, handleGatewayRequest } from "./server-methods.js";
+import type { GatewayRequestHandler } from "./server-methods/types.js";
 
 describe("method scope resolution", () => {
   it.each([
@@ -90,5 +91,122 @@ describe("core gateway method classification", () => {
       (method) => !isGatewayMethodClassified(method),
     );
     expect(unclassified).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SHARED_AUTH_EXEMPT_METHODS — integration tests
+// ---------------------------------------------------------------------------
+
+describe("scope-exempt methods (SHARED_AUTH_EXEMPT_METHODS)", () => {
+  const noWebchat = () => false;
+
+  /**
+   * Build a minimal client that simulates the dashboard's device-less
+   * WebSocket connection — authenticated (has a connect object) but with
+   * empty scopes, exactly as `clearUnboundScopes` would leave it.
+   */
+  function buildScopelessClient() {
+    return {
+      connect: {
+        role: "operator",
+        scopes: [] as string[],
+        client: {
+          id: "gateway-client",
+          version: "1.0.0",
+          platform: "linux",
+          mode: "ui",
+        },
+        minProtocol: 1,
+        maxProtocol: 1,
+      },
+      connId: "conn-dashboard",
+      clientIp: "127.0.0.1",
+    } as Parameters<typeof handleGatewayRequest>[0]["client"];
+  }
+
+  function buildContext() {
+    return {
+      logGateway: { warn: vi.fn() },
+    } as unknown as Parameters<typeof handleGatewayRequest>[0]["context"];
+  }
+
+  async function invokeMethod(params: {
+    method: string;
+    client: Parameters<typeof handleGatewayRequest>[0]["client"];
+    handler: GatewayRequestHandler;
+  }) {
+    const respond = vi.fn();
+    await handleGatewayRequest({
+      req: {
+        type: "req",
+        id: crypto.randomUUID(),
+        method: params.method,
+      },
+      respond,
+      client: params.client,
+      isWebchatConnect: noWebchat,
+      context: buildContext(),
+      extraHandlers: {
+        [params.method]: params.handler,
+      },
+    });
+    return respond;
+  }
+
+  const okHandler: GatewayRequestHandler = (opts) => {
+    opts.respond(true, { ok: true }, undefined);
+  };
+
+  it.each(["health", "system.diskHealth", "system.diskCleanup"])(
+    "allows %s with empty scopes (dashboard device-less client)",
+    async (method) => {
+      const respond = await invokeMethod({
+        method,
+        client: buildScopelessClient(),
+        handler: okHandler,
+      });
+      expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+    },
+  );
+
+  it.each(["send", "config.patch", "cron.add"])(
+    "blocks %s with empty scopes (non-exempt method)",
+    async (method) => {
+      const respond = await invokeMethod({
+        method,
+        client: buildScopelessClient(),
+        handler: okHandler,
+      });
+      expect(respond).toHaveBeenCalledWith(
+        false,
+        undefined,
+        expect.objectContaining({
+          code: "INVALID_REQUEST",
+          message: expect.stringContaining("missing scope"),
+        }),
+      );
+    },
+  );
+
+  it("allows exempt methods with full operator.admin scopes too", async () => {
+    const client = buildScopelessClient();
+    client!.connect.scopes = ["operator.admin"];
+    const respond = await invokeMethod({
+      method: "system.diskHealth",
+      client,
+      handler: okHandler,
+    });
+    expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+  });
+
+  it("allows exempt methods for unauthenticated clients (no connect)", async () => {
+    // When client has no connect object, authorizeGatewayMethod returns null early.
+    const respond = await invokeMethod({
+      method: "health",
+      client: null,
+      handler: okHandler,
+    });
+    expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
   });
 });
