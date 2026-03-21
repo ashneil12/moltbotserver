@@ -56,9 +56,9 @@ engines:
     shortcut: gh
     categories: [it, repos]
 
-  - name: stackoverflow
-    engine: stackoverflow
-    shortcut: so
+  - name: stackexchange
+    engine: stackexchange
+    shortcut: sx
     categories: [it, q&a]
 
   - name: arxiv
