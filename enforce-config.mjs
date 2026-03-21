@@ -323,6 +323,7 @@ function enforceMemory(configPath) {
     memory.backend = "qmd";
     const qmd = ensure(memory, "qmd");
     qmd.includeDefaultMemory = true;
+    qmd.searchMode = "vsearch"; // Vector + BM25 hybrid (embeddings via Gemini API)
     qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
     const businessMode = isTruthy(env("OPENCLAW_BUSINESS_MODE"));
     qmd.limits = {

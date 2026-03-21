@@ -5,7 +5,17 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
-## Fix Unresolved `{{PRIMARY_MODEL}}` Cron Template & SOUL.md False Quarantine (2026-03-22)
+## Enable QMD Vector+BM25 Hybrid Search (2026-03-22)
+
+**Purpose:** QMD defaulted to `searchMode: "search"` (BM25 keyword-only), which caused `shouldRunEmbed()` to return `false` — embeddings were never generated despite the Gemini embedding proxy being functional. Setting `searchMode: "vsearch"` enables hybrid vector+BM25 search, unlocking semantic recall for the per-turn workspace context sweep.
+
+| File                 | Change                                                                   | Sync Risk     |
+| -------------------- | ------------------------------------------------------------------------ | ------------- |
+| `enforce-config.mjs` | Added `qmd.searchMode = "vsearch"` in `enforceMemory()` QMD config block | None — custom |
+
+**Context:** The upstream default (`backend-config.ts:79`) is `"search"` to avoid slow local model inference on CPU-only servers. Since embeddings are already proxied to Gemini API via `patch-qmd-gemini.sh`, there is no local CPU cost for vector search — the CPU-only concern doesn't apply.
+
+---
 
 **Purpose:** Two production bugs: (1) `{{PRIMARY_MODEL}}` literal string in cron job payloads caused `FailoverError: Unknown model` on every execution of 7+ cron jobs, wasting a fallback cycle. (2) SOUL.md falsely quarantined (riskScore=100) because its own security documentation section contained text matching scanner prompt injection patterns.
 
