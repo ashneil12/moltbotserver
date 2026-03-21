@@ -170,7 +170,7 @@ describe("scope-exempt methods (SHARED_AUTH_EXEMPT_METHODS)", () => {
     },
   );
 
-  it.each(["send", "config.patch", "cron.add"])(
+  it.each(["send", "config.patch", "agents.create"])(
     "blocks %s with empty scopes (non-exempt method)",
     async (method) => {
       const respond = await invokeMethod({
@@ -188,6 +188,24 @@ describe("scope-exempt methods (SHARED_AUTH_EXEMPT_METHODS)", () => {
       );
     },
   );
+
+  it.each([
+    "cron.list",
+    "cron.health",
+    "cron.status",
+    "cron.add",
+    "cron.update",
+    "cron.remove",
+    "cron.run",
+    "cron.runs",
+  ])("allows %s with empty scopes (cron exempt for dashboard)", async (method) => {
+    const respond = await invokeMethod({
+      method,
+      client: buildScopelessClient(),
+      handler: okHandler,
+    });
+    expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+  });
 
   it("allows exempt methods with full operator.admin scopes too", async () => {
     const client = buildScopelessClient();

@@ -43,7 +43,21 @@ import { wizardHandlers } from "./server-methods/wizard.js";
  * scopes (`clearUnboundScopes`). These monitoring/read-only methods must still
  * be callable by any authenticated operator regardless of scope bindings.
  */
-const SHARED_AUTH_EXEMPT_METHODS = new Set(["health", "system.diskHealth", "system.diskCleanup"]);
+const SHARED_AUTH_EXEMPT_METHODS = new Set([
+  "health",
+  "system.diskHealth",
+  "system.diskCleanup",
+  // Cron dashboard methods — dashboard backend clients authenticate via gateway
+  // token but have no device identity, so their scopes are stripped.
+  "cron.list",
+  "cron.status",
+  "cron.health",
+  "cron.runs",
+  "cron.add",
+  "cron.update",
+  "cron.remove",
+  "cron.run",
+]);
 
 const CONTROL_PLANE_WRITE_METHODS = new Set(["config.apply", "config.patch", "update.run"]);
 function authorizeGatewayMethod(method: string, client: GatewayRequestOptions["client"]) {
