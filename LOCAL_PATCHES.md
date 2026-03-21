@@ -68,6 +68,11 @@ c 'skill-evolution' enforce-config.mjs 1 "Skill-evolution cron"
 c 'progressiveDisclosure' src/config/types.skills.ts 1 "Progressive disclosure"
 c 'createSkillViewTool' src/agents/openclaw-tools.ts 1 "Skill view tool"
 
+echo "=== Multi-Agent Team Coordination ==="
+c 'symlinkSync' enforce-config.mjs 1 "Team directory symlink"
+c 'team-sync' cron/default-jobs.json 1 "team-sync cron job"
+e scripts/provision-agent.sh "Deterministic provisioning script"
+
 echo "=== Infrastructure ==="
 c 'OPENCLAW_MANAGED_PLATFORM' docker-entrypoint.sh 3 "Managed platform guards"
 c 'OPENCLAW_MANAGED_PLATFORM' enforce-config.mjs 2 "Managed platform enforce"

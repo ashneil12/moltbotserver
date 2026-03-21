@@ -6,12 +6,11 @@
 // writing. Checks for duplicates. Prints exactly what was written.
 //
 // DELIVERY:
-//   --delivery none          Silent. Job runs, no message sent. (default)
-//   --delivery announce --auto-to
-//                            Deliver to user. Reads the credential store to
-//                            find the right channel and ID automatically.
-//   --delivery announce --channel telegram --to 5614099189
-//                            Explicit target (only if auto-to doesn't work).
+//   --delivery none               Silent. Job runs, no message sent. (default)
+//   --delivery announce --auto-to Deliver to user. Reads credential store to
+//                                 resolve channel + ID automatically. (recommended)
+//   --delivery announce --channel X --to Y
+//                                 Explicit target (fallback if auto-to fails).
 //
 // Usage:
 //   node /app/scripts/add-cron.mjs --agent <id> --name <name> --schedule <schedule> --prompt <prompt> [options]
@@ -22,16 +21,19 @@
 //   --schedule <expr>    Schedule — see formats below (required)
 //   --prompt <text>      The message/prompt the agent will receive (required)
 //   --delivery <mode>    Delivery mode: none | announce (default: none)
-//   --auto-to            Resolve delivery target from credential store (recommended)
-//   --channel <name>     Channel name when delivery=announce (e.g. telegram)
-//   --to <id>            Recipient ID when delivery=announce (numeric/internal)
+//   --auto-to               Resolve delivery target from credential store (recommended)
+//   --prefer-channel <name> With --auto-to, only look in this channel's credentials
+//                           e.g. --auto-to --prefer-channel telegram (Telegram only)
+//                                --auto-to --prefer-channel discord  (Discord only)
+//   --channel <name>        Channel name for explicit delivery (no --auto-to)
+//   --to <id>               Recipient ID for explicit delivery (no --auto-to)
 //   --wake <mode>        Wake mode: now | next-heartbeat (default: next-heartbeat)
 //   --idle-only          Only run when agent is idle
 //   --one-shot           Delete after running once
 //   --data-dir <path>    Data directory (default: /home/node/data)
 //   --dry-run            Show the job that would be added without writing
 //   --list               List all current jobs for this agent
-//   --check-delivery     Show what delivery target would be resolved (no job created)
+//   --check-delivery     Show what delivery target would be auto-resolved (no job created)
 //
 // Schedule formats:
 //   cron:0 8 * * *       cron expression (daily 08:00 UTC)
@@ -42,17 +44,17 @@
 //   at:2026-03-21T14:00Z one-shot at UTC time
 //
 // Examples:
-//   # Silent job (no delivery needed)
+//   # Silent job — runs and writes to workspace, no alert
 //   node add-cron.mjs --agent main --name price-check \
-//     --schedule "every:30m" --prompt "Check prices and write to WORKING.md."
+//     --schedule "every:30m" --prompt "Check prices. Write to WORKING.md."
 //
 //   # Alert the user — auto-resolves channel and ID from credential store
 //   node add-cron.mjs --agent main --name price-alert \
 //     --schedule "every:30m" \
-//     --prompt "Check prices. If BTC drops below 80k, alert the user immediately." \
+//     --prompt "Check BTC. If below 80k, alert the user immediately." \
 //     --delivery announce --auto-to
 //
-//   # Check what delivery target would be used
+//   # Check what delivery target would be resolved
 //   node add-cron.mjs --agent main --check-delivery
 //
 //   # List all jobs for an agent
@@ -61,7 +63,7 @@
 import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from "node:fs";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const RED = "\x1b[31m";
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
@@ -77,7 +79,6 @@ function die(msg) {
   fail(msg);
   process.exit(1);
 }
-
 function makeId() {
   return randomBytes(8).toString("hex");
 }
@@ -99,38 +100,40 @@ function writeJson(path, data) {
   }
 }
 
-// ── Credential-based delivery resolution ─────────────────────────────────────
+// ── Credential-based delivery resolution ──────────────────────────────────────
 //
-// Reads allowFrom.json files from the credential store to resolve which
-// channel and recipient ID to use. Same approach as enforce-config.mjs.
+// Reads <channel>-<agentId>-allowFrom.json from the credential store to
+// determine the delivery target. This is the same source used by enforce-config
+// when patching sub-agent cron delivery — so it's always correct.
 //
-// With --auto-to alone:       tries telegram → discord → whatsapp → slack
-// With --auto-to --channel X: looks only at the specified channel
-function resolveDeliveryFromCredentials(dataDir, agentId, preferChannel) {
+// Priority: telegram > discord > whatsapp > slack  (unless --prefer-channel overrides)
+// For sub-agents, also tries "main" as a fallback (user likely chatted with main).
+function resolveDelivery(dataDir, agentId, preferChannel = null) {
   const credDir = `${dataDir}/credentials`;
   if (!existsSync(credDir)) {
     return null;
   }
 
-  // If user specified a channel, try only that one
-  const CHANNELS = preferChannel ? [preferChannel] : ["telegram", "discord", "whatsapp", "slack"];
+  // If a channel is preferred, only search that one; otherwise use priority order
+  const channels = preferChannel ? [preferChannel] : ["telegram", "discord", "whatsapp", "slack"];
 
-  // Try exact agent match first, then fall back to "main"
+  // Try exact agent match first, then "main" as fallback
   const agentsToTry = agentId === "main" ? ["main"] : [agentId, "main"];
 
-  for (const channel of CHANNELS) {
+  for (const channel of channels) {
     for (const agent of agentsToTry) {
       const credFile = `${credDir}/${channel}-${agent}-allowFrom.json`;
-      if (existsSync(credFile)) {
-        try {
-          const cred = JSON.parse(readFileSync(credFile, "utf8"));
-          const ids = cred.allowFrom || [];
-          if (ids.length > 0) {
-            return { channel, to: String(ids[0]), source: credFile };
-          }
-        } catch {
-          /* skip unreadable */
+      if (!existsSync(credFile)) {
+        continue;
+      }
+      try {
+        const cred = JSON.parse(readFileSync(credFile, "utf8"));
+        const ids = cred.allowFrom || [];
+        if (ids.length > 0) {
+          return { channel, to: String(ids[0]), source: credFile, agentMatch: agent };
         }
+      } catch {
+        /* skip */
       }
     }
   }
@@ -150,25 +153,25 @@ function getArg(flag) {
   }
   return args[i + 1];
 }
-
 function hasFlag(flag) {
   return args.includes(flag);
 }
 
+// ── Help ──────────────────────────────────────────────────────────────────────
 if (hasFlag("--help") || hasFlag("-h") || args.length === 0) {
   console.log(`Usage: node add-cron.mjs --agent <id> --name <name> --schedule <schedule> --prompt <text> [options]
 
-Delivery (the most important choice):
-  --delivery none                        Silent — job runs, no message sent (default)
-  --delivery announce --auto-to          Alert the user — resolves channel/ID automatically
-  --delivery announce --channel X --to Y Explicit target (fallback if auto-to fails)
+Delivery (most important):
+  --delivery none                                    Silent — no message (default)
+  --delivery announce --auto-to                      Alert user — auto picks best channel
+  --delivery announce --auto-to --prefer-channel telegram  Telegram only
+  --delivery announce --auto-to --prefer-channel discord   Discord only
+  --delivery announce --channel X --to Y             Explicit target (fallback only)
 
 Schedule formats:
   cron:0 8 * * *       cron expression (daily 08:00 UTC)
-  every:6h             every 6 hours
-  every:30m            every 30 minutes
-  every:7d             every 7 days
-  every:86400000       every N milliseconds
+  every:6h / every:30m / every:7d        human-friendly interval
+  every:86400000       interval in milliseconds
   at:2026-03-21T14:00Z one-shot at UTC time
 
 Other options:
@@ -184,14 +187,16 @@ Other options:
   process.exit(0);
 }
 
+// ── Parse flags ───────────────────────────────────────────────────────────────
 const AGENT_ID = getArg("--agent");
 const JOB_NAME = getArg("--name");
 const SCHEDULE_RAW = getArg("--schedule");
 const PROMPT = getArg("--prompt");
 const DELIVERY_MODE = getArg("--delivery") ?? "none";
-const DELIVERY_CHANNEL = getArg("--channel");
+const DELIVERY_CHAN = getArg("--channel");
 const DELIVERY_TO = getArg("--to");
 const AUTO_TO = hasFlag("--auto-to");
+const PREFER_CHANNEL = getArg("--prefer-channel"); // e.g. telegram, discord
 const CHECK_DELIVERY = hasFlag("--check-delivery");
 const WAKE_MODE = getArg("--wake") ?? "next-heartbeat";
 const DATA_DIR = getArg("--data-dir") ?? "/home/node/data";
@@ -200,52 +205,42 @@ const ONE_SHOT = hasFlag("--one-shot");
 const DRY_RUN = hasFlag("--dry-run");
 const LIST_ONLY = hasFlag("--list");
 
-// ── Resolve jobs.json path ────────────────────────────────────────────────────
 if (!AGENT_ID) {
   die("Missing --agent");
 }
 
 const WORKSPACE =
   AGENT_ID === "main" ? `${DATA_DIR}/workspace-main` : `${DATA_DIR}/workspace-${AGENT_ID}`;
-
 const JOBS_FILE = `${WORKSPACE}/.openclaw/cron/jobs.json`;
 
 // ── --check-delivery mode ─────────────────────────────────────────────────────
 if (CHECK_DELIVERY) {
-  console.log(`\nDelivery targets available for agent "${AGENT_ID}":\n`);
-  const CHANNELS = ["telegram", "discord", "whatsapp", "slack"];
-  const agentsToTry = AGENT_ID === "main" ? ["main"] : [AGENT_ID, "main"];
-  let found = 0;
-  for (const channel of CHANNELS) {
-    for (const agent of agentsToTry) {
-      const credFile = `${DATA_DIR}/credentials/${channel}-${agent}-allowFrom.json`;
-      if (existsSync(credFile)) {
-        try {
-          const cred = JSON.parse(readFileSync(credFile, "utf8"));
-          const ids = cred.allowFrom || [];
-          if (ids.length > 0) {
-            ok(`${channel.padEnd(10)} → ID: ${ids[0]}  (from ${credFile.split("/").pop()})`);
-            found++;
-          }
-        } catch {
-          /* skip */
-        }
-      }
+  const scopeMsg = PREFER_CHANNEL ? ` (scoped to: ${PREFER_CHANNEL})` : "";
+  console.log(`\nDelivery target resolution for agent "${AGENT_ID}"${scopeMsg}:\n`);
+  const resolved = resolveDelivery(DATA_DIR, AGENT_ID, PREFER_CHANNEL);
+  if (resolved) {
+    ok("Found delivery target:");
+    info(`  Channel: ${resolved.channel}`);
+    info(`  To (ID): ${resolved.to}`);
+    info(`  Source:  ${resolved.source}`);
+    if (resolved.agentMatch !== AGENT_ID) {
+      warn(`  Matched via "main" fallback (no credentials for agent "${AGENT_ID}")`);
     }
-  }
-  if (found === 0) {
-    fail("No delivery targets found in credential store.");
-    info(`Checked: ${DATA_DIR}/credentials/<channel>-${AGENT_ID}-allowFrom.json`);
+    const preferFlag = PREFER_CHANNEL ? ` --prefer-channel ${PREFER_CHANNEL}` : "";
+    console.log(`\nUse --delivery announce --auto-to${preferFlag} to apply this automatically.`);
+  } else {
+    fail(`No delivery target found${PREFER_CHANNEL ? ` for channel "${PREFER_CHANNEL}"` : ""}.`);
+    info(
+      `Checked: ${DATA_DIR}/credentials/${PREFER_CHANNEL ?? "<channel>"}-${AGENT_ID}-allowFrom.json`,
+    );
+    info("Ensure at least one channel is authenticated for this agent (or main).");
     process.exit(1);
   }
-  console.log();
-  console.log("Use --delivery announce --auto-to to use the first available channel.");
-  console.log("Use --delivery announce --auto-to --channel telegram to pick a specific one.");
   console.log();
   process.exit(0);
 }
 
-// ── List mode ─────────────────────────────────────────────────────────────────
+// ── --list mode ───────────────────────────────────────────────────────────────
 if (LIST_ONLY) {
   if (!existsSync(JOBS_FILE)) {
     warn(`No jobs.json found at: ${JOBS_FILE}`);
@@ -265,7 +260,7 @@ if (LIST_ONLY) {
       job.schedule?.kind === "cron"
         ? `cron: ${job.schedule.expr}`
         : job.schedule?.kind === "every"
-          ? `every ${job.schedule.everyMs / 1000}s`
+          ? `every ${(job.schedule.everyMs / 3600000).toFixed(1)}h`
           : job.schedule?.kind === "at"
             ? `at: ${job.schedule.at}`
             : "unknown";
@@ -273,7 +268,7 @@ if (LIST_ONLY) {
       job.delivery?.mode === "announce"
         ? `→ ${job.delivery.channel}:${job.delivery.to}`
         : (job.delivery?.mode ?? "none");
-    console.log(`  ${enabled} ${job.name.padEnd(30)} ${schedule.padEnd(25)} ${delivery}`);
+    console.log(`  ${enabled} ${job.name.padEnd(30)} ${schedule.padEnd(22)} ${delivery}`);
   }
   console.log();
   process.exit(0);
@@ -305,24 +300,18 @@ if (!["none", "announce", "webhook"].includes(DELIVERY_MODE)) {
   errors++;
 }
 
-if (DELIVERY_MODE === "announce") {
-  if (!AUTO_TO && !DELIVERY_CHANNEL) {
-    fail("--delivery announce requires either --auto-to or --channel + --to");
-    info("Recommended: --auto-to (resolves from credential store)");
-    info(
-      "Check available channels: node add-cron.mjs --agent " +
-        (AGENT_ID ?? "<id>") +
-        " --check-delivery",
-    );
+if (DELIVERY_MODE === "announce" && !AUTO_TO) {
+  if (!DELIVERY_CHAN) {
+    fail("--delivery announce requires --auto-to or --channel");
     errors++;
   }
-  if (!AUTO_TO && !DELIVERY_TO) {
-    fail("--delivery announce requires either --auto-to or --channel + --to");
+  if (!DELIVERY_TO) {
+    fail("--delivery announce requires --auto-to or --to");
     errors++;
   }
   if (DELIVERY_TO && !/^\d+$/.test(DELIVERY_TO)) {
-    warn(`Delivery --to value "${DELIVERY_TO}" doesn't look like a numeric ID.`);
-    warn("Telegram/Discord IDs are numeric. Using usernames/handles will cause delivery failures.");
+    warn(`--to value "${DELIVERY_TO}" doesn't look like a numeric ID.`);
+    warn("Telegram/Discord/WhatsApp IDs are numeric. Usernames = delivery failures.");
   }
 }
 
@@ -335,45 +324,45 @@ if (errors > 0) {
   process.exit(1);
 }
 
-// ── Resolve --auto-to delivery ────────────────────────────────────────────────
-// --auto-to alone: picks first available channel (telegram → discord → ...)
-// --auto-to --channel telegram: picks telegram specifically
-// --auto-to --channel discord: picks discord specifically
-let resolvedChannel = DELIVERY_CHANNEL;
-let resolvedTo = DELIVERY_TO;
+// ── Resolve delivery target ───────────────────────────────────────────────────
+let finalChannel = DELIVERY_CHAN;
+let finalTo = DELIVERY_TO;
 
 if (AUTO_TO && DELIVERY_MODE === "announce") {
-  const resolved = resolveDeliveryFromCredentials(DATA_DIR, AGENT_ID, DELIVERY_CHANNEL ?? null);
+  const resolved = resolveDelivery(DATA_DIR, AGENT_ID, PREFER_CHANNEL);
   if (!resolved) {
-    const hint = DELIVERY_CHANNEL
-      ? `No ${DELIVERY_CHANNEL} credentials found for agent "${AGENT_ID}".`
-      : `No delivery credentials found for agent "${AGENT_ID}".`;
-    die(
-      `${hint}\n` +
-        `Run: node /app/scripts/add-cron.mjs --agent ${AGENT_ID} --check-delivery\n` +
-        `Or set --channel and --to manually.`,
-    );
+    const scope = PREFER_CHANNEL ? ` for channel "${PREFER_CHANNEL}"` : "";
+    fail(`--auto-to could not find a delivery target${scope} in the credential store.`);
+    const preferFlag = PREFER_CHANNEL ? ` --prefer-channel ${PREFER_CHANNEL}` : "";
+    info(`Run: node /app/scripts/add-cron.mjs --agent ${AGENT_ID} --check-delivery${preferFlag}`);
+    info("Or use --channel and --to to set the target manually.");
+    process.exit(1);
   }
-  resolvedChannel = resolved.channel;
-  resolvedTo = resolved.to;
-  info(
-    `auto-to resolved: ${resolvedChannel} → ${resolvedTo}  (from ${resolved.source.split("/").pop()})`,
-  );
+  finalChannel = resolved.channel;
+  finalTo = resolved.to;
+  const scopeNote = PREFER_CHANNEL ? ` [${PREFER_CHANNEL} only]` : "";
+  info(`auto-to resolved: ${finalChannel} → ${finalTo} (from ${resolved.source})${scopeNote}`);
+  if (resolved.agentMatch !== AGENT_ID) {
+    warn(`Resolved via "main" fallback — no credentials for agent "${AGENT_ID}"`);
+  }
 }
 
 // ── Parse schedule ────────────────────────────────────────────────────────────
 function parseSchedule(raw) {
-  const [kind, ...rest] = raw.split(":");
-  const value = rest.join(":"); // re-join for "at:2026-..." which contains colons
+  const colonIdx = raw.indexOf(":");
+  if (colonIdx === -1) {
+    die(`Unknown schedule format "${raw}" — use cron:, every:, or at:`);
+  }
+  const kind = raw.slice(0, colonIdx);
+  const value = raw.slice(colonIdx + 1);
 
   if (kind === "cron") {
     if (!value) {
       die("cron schedule requires an expression, e.g. cron:0 8 * * *");
     }
-    // Validate cron expression (5 or 6 fields)
     const fields = value.trim().split(/\s+/);
     if (fields.length < 5 || fields.length > 6) {
-      die(`Invalid cron expression "${value}" — must have 5 or 6 space-separated fields`);
+      die(`Invalid cron expression "${value}" — must have 5 or 6 fields`);
     }
     return { kind: "cron", expr: value.trim() };
   }
@@ -382,23 +371,22 @@ function parseSchedule(raw) {
     if (!value) {
       die("every schedule requires a duration, e.g. every:6h or every:86400000");
     }
-
     let ms;
     if (/^\d+$/.test(value)) {
       ms = parseInt(value, 10);
     } else if (/^\d+h$/.test(value)) {
-      ms = parseInt(value, 10) * 3600000;
+      ms = parseInt(value, 10) * 3_600_000;
     } else if (/^\d+m$/.test(value)) {
-      ms = parseInt(value, 10) * 60000;
+      ms = parseInt(value, 10) * 60_000;
     } else if (/^\d+d$/.test(value)) {
-      ms = parseInt(value, 10) * 86400000;
+      ms = parseInt(value, 10) * 86_400_000;
     } else {
       die(`Invalid interval "${value}" — use Nh, Nm, Nd, or milliseconds`);
     }
-    if (ms < 60000) {
-      warn(`Interval of ${ms}ms is very short (< 1 minute). Are you sure?`);
+    if (ms < 60_000) {
+      warn(`Interval ${ms}ms is very short (< 1 min). Are you sure?`);
     }
-    return { kind: "every", everyMs: ms, anchorMs: Date.now() + 60000 };
+    return { kind: "every", everyMs: ms, anchorMs: Date.now() + 60_000 };
   }
 
   if (kind === "at") {
@@ -410,7 +398,7 @@ function parseSchedule(raw) {
       die(`Invalid datetime "${value}" — use ISO 8601 UTC format`);
     }
     if (d.getTime() < Date.now()) {
-      warn(`Schedule time "${value}" is in the past. The job will run immediately at next check.`);
+      warn(`Schedule time "${value}" is in the past.`);
     }
     return { kind: "at", at: value };
   }
@@ -420,19 +408,19 @@ function parseSchedule(raw) {
 
 const schedule = parseSchedule(SCHEDULE_RAW);
 
-// ── Build delivery config ─────────────────────────────────────────────────────
+// ── Build job ─────────────────────────────────────────────────────────────────
+const nowMs = Date.now();
+
 function buildDelivery() {
   if (DELIVERY_MODE === "none") {
     return { mode: "none" };
   }
   if (DELIVERY_MODE === "announce") {
-    return { mode: "announce", channel: resolvedChannel, to: resolvedTo };
+    return { mode: "announce", channel: finalChannel, to: finalTo };
   }
   return { mode: DELIVERY_MODE };
 }
 
-// ── Build the job object ──────────────────────────────────────────────────────
-const nowMs = Date.now();
 const job = {
   id: makeId(),
   name: JOB_NAME,
@@ -443,10 +431,7 @@ const job = {
   schedule,
   sessionTarget: "isolated",
   wakeMode: WAKE_MODE,
-  payload: {
-    kind: "agentTurn",
-    message: PROMPT,
-  },
+  payload: { kind: "agentTurn", message: PROMPT },
   delivery: buildDelivery(),
   state: {},
 };
@@ -481,8 +466,8 @@ if (existsSync(JOBS_FILE)) {
   store = readJson(JOBS_FILE);
   store.jobs = store.jobs || [];
 } else {
-  warn(`No jobs.json found — creating a new one (default jobs not present).`);
-  warn(`Consider running: node /app/enforce-config.mjs cron-seed`);
+  warn("No jobs.json found — creating a new one (default seeded jobs not present).");
+  warn("Consider running: node /app/enforce-config.mjs cron-seed");
   store = { version: 1, jobs: [], knownJobs: [] };
 }
 
@@ -491,8 +476,8 @@ const existing = store.jobs.find((j) => j.name === JOB_NAME);
 if (existing) {
   fail(`A job named "${JOB_NAME}" already exists for agent "${AGENT_ID}"`);
   info(`Existing job ID: ${existing.id}`);
-  info(`To update it, use the cron tool with action:"update" and jobId:"${existing.id}"`);
-  info(`To replace it, delete it first: node add-cron.mjs --agent ${AGENT_ID} --list`);
+  info(`To update it: cron tool → action:"update", jobId:"${existing.id}"`);
+  info(`To replace it: delete it first, then re-run this script`);
   process.exit(1);
 }
 
@@ -500,26 +485,28 @@ if (existing) {
 store.jobs.push(job);
 writeJson(JOBS_FILE, store);
 
-// ── Success output ────────────────────────────────────────────────────────────
+// ── Success ───────────────────────────────────────────────────────────────────
 console.log();
 ok(`Cron job "${JOB_NAME}" added for agent "${AGENT_ID}"`);
 console.log();
-info(`Job ID:     ${job.id}`);
-info(`Schedule:   ${SCHEDULE_RAW}`);
-info(
-  `Delivery:   ${DELIVERY_MODE}${DELIVERY_MODE === "announce" ? ` → ${resolvedChannel}:${resolvedTo}${AUTO_TO ? " (auto-resolved)" : ""}` : ""}`,
-);
-info(`Wake mode:  ${WAKE_MODE}`);
+info(`Job ID:    ${job.id}`);
+info(`Schedule:  ${SCHEDULE_RAW}`);
+if (DELIVERY_MODE === "announce") {
+  info(`Delivery:  announce → ${finalChannel}:${finalTo}${AUTO_TO ? " (auto-resolved)" : ""}`);
+} else {
+  info(`Delivery:  silent (none)`);
+}
+info(`Wake mode: ${WAKE_MODE}`);
 if (IDLE_ONLY) {
-  info(`Idle only:  yes`);
+  info("Idle only: yes");
 }
 if (ONE_SHOT) {
-  info(`One-shot:   yes (will delete after first run)`);
+  info("One-shot:  yes (auto-deletes after first run)");
 }
 console.log();
-warn(`Gateway restart required for the new job to be picked up:`);
+warn("Gateway restart required for the job to be picked up:");
 console.log(`  openclaw gateway restart`);
 console.log();
-info(`Verify after restart:`);
+info("Verify after restart:");
 console.log(`  node /app/scripts/add-cron.mjs --agent ${AGENT_ID} --list`);
 console.log();

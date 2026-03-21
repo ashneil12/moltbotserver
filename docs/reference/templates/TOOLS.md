@@ -120,6 +120,7 @@ These are baked into the container — **do not say you can't use them.**
 | **Files**     | `zip`, `unzip`, `wget`, `rsync`, `tree`                                                                                                                                                        |
 | **System**    | `htop`, `ps`, `top` (via procps)                                                                                                                                                               |
 | **Runtime**   | `node`, `npm`, `pnpm`, `bun`, `python3`, `pip3`, `git`, `curl`                                                                                                                                 |
+| **Agents**    | `scripts/provision-agent.sh` (deterministic agent creator), `node scripts/add-cron.mjs` (deterministic cron configurations)                                                                    |
 
 ---
 

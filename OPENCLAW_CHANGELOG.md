@@ -5,6 +5,22 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Deterministic Agent Provisioning & Cron Configuration (2026-03-21)
+
+**Purpose:** Shift multi-agent team management from hallucination-prone AI commands to deterministic shell/Node scripts. Solves issues with missing auth files, hallucinatory path names, and malformed cron job configurations.
+
+| File                                                      | Change                                                                                                                                           | Sync Risk     |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `scripts/provision-agent.sh`                              | **NEW** — Deterministic bash script for copying workspaces, linking auth tokens, and hooking up the `team/` directory.                           | None — new    |
+| `scripts/add-cron.mjs`                                    | Added `--prefer-channel` and `--check-delivery` flags. Perfected the `--auto-to` credential resolver logic for reliable, hallucination-free IDs. | None — custom |
+| `enforce-config.mjs`                                      | Updated workspace startup to ensure the `team/` directory is symlinked across all agent nodes for shared state.                                  | None — custom |
+| `cron/default-jobs.json`                                  | Added `team-sync` job running `cat team/status.md team/decisions.md` every 6 hours.                                                              | None — custom |
+| `AGENTS.md`                                               | Updated Global Multi-Agent Rules to strictly forbid manual JSON/workspace hacking, enforcing `add-cron.mjs` and `provision-agent.sh`.            | Low           |
+| `docs/reference/templates/TOOLS.md`                       | Pre-installed CLI list updated so new agents discover `provision-agent.sh` and `add-cron.mjs` on boot.                                           | None — custom |
+| `.agents/skills/cron-setup/instructions/creating-jobs.md` | Promoted `--auto-to` and documented `--prefer-channel`.                                                                                          | None — custom |
+
+---
+
 ## Channel Plugin Action Fixes & Security Hardening (2026-03-21)
 
 **Purpose:** Resolve failing tests in Discord/Telegram plugins caused by signature mismatches, fix incorrect mock paths, and harden security guardrails in new extensions.
