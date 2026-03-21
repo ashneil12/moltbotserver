@@ -8,7 +8,6 @@
  */
 
 import { listAgentIds } from "../agents/agent-scope.js";
-import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { OpenClawConfig } from "../config/config.js";
 import {
   loadSessionStore,
@@ -16,6 +15,7 @@ import {
   type SessionEntry,
 } from "../config/sessions.js";
 import { DEFAULT_RESET_AT_HOUR } from "../config/sessions/reset.js";
+import { buildFlushPrompt } from "./flush-prompt.js";
 import type { RunCronAgentTurnResult } from "./isolated-agent.js";
 import type { CronJob } from "./types.js";
 
@@ -32,19 +32,10 @@ export const MIN_FLUSH_TOKENS = 2000;
 /** Maximum number of sessions to flush per sweep (prevent runaway API usage). */
 export const MAX_FLUSH_PER_SWEEP = 20;
 
-const PRE_RESET_FLUSH_PROMPT = [
-  "Pre-reset memory flush.",
-  "The daily session reset will happen in ~20 minutes — store any durable memories now.",
-  "",
-  "## 1. Daily memory log",
-  "Write to memory/YYYY-MM-DD.md; create memory/ if needed.",
-  "IMPORTANT: If the file already exists, APPEND new content only — do not overwrite existing entries.",
-  "Include a ### Seemingly Insignificant / Minor Notes section for small details, asides,",
-  "offhand mentions, or anything that didn't feel important at the time.",
-  "These often turn out to matter later. Better to write it down than lose it.",
-  "",
-  `If nothing to store, reply with ${SILENT_REPLY_TOKEN}.`,
-].join("\n");
+const PRE_RESET_FLUSH_PROMPT = buildFlushPrompt(
+  "Pre-reset memory flush.\n" +
+    "The daily session reset will happen in ~20 minutes — store any durable memories now.",
+);
 
 // ---------------------------------------------------------------------------
 // Timer computation

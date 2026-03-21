@@ -1,5 +1,4 @@
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { CliDeps } from "../cli/deps.js";
 import { createOutboundSendDeps } from "../cli/outbound-send-deps.js";
 import { loadConfig } from "../config/config.js";
@@ -11,6 +10,7 @@ import {
 import { resolveStorePath } from "../config/sessions/paths.js";
 import { resolveFailureDestination, sendFailureNotificationAnnounce } from "../cron/delivery.js";
 import { startDiaryArchiveTimer, stopDiaryArchiveTimer } from "../cron/diary-archive.js";
+import { buildFlushPrompt } from "../cron/flush-prompt.js";
 import { runCronIsolatedAgentTurn } from "../cron/isolated-agent.js";
 import { resolveDeliveryTarget } from "../cron/isolated-agent/delivery-target.js";
 import { startPreIdleFlushTimer, stopPreIdleFlushTimer } from "../cron/pre-idle-flush.js";
@@ -588,19 +588,10 @@ export function buildGatewayCronService(params: {
       wakeMode: "now" as const,
       payload: {
         kind: "agentTurn" as const,
-        message: [
-          "Session reset memory flush.",
-          `The user triggered a session reset (${request.reason}) — store any durable memories now.`,
-          "",
-          "## 1. Daily memory log",
-          "Write to memory/YYYY-MM-DD.md; create memory/ if needed.",
-          "IMPORTANT: If the file already exists, APPEND new content only — do not overwrite existing entries.",
-          "Include a ### Seemingly Insignificant / Minor Notes section for small details, asides,",
-          "offhand mentions, or anything that didn't feel important at the time.",
-          "These often turn out to matter later. Better to write it down than lose it.",
-          "",
-          `If nothing to store, reply with ${SILENT_REPLY_TOKEN}.`,
-        ].join("\n"),
+        message: buildFlushPrompt(
+          "Session reset memory flush.\n" +
+            `The user triggered a session reset (${request.reason}) — store any durable memories now.`,
+        ),
         deliver: false,
       },
       state: {},

@@ -11,7 +11,6 @@
  */
 
 import { listAgentIds } from "../agents/agent-scope.js";
-import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { OpenClawConfig } from "../config/config.js";
 import {
   loadSessionStore,
@@ -24,6 +23,7 @@ import {
   resolveChannelResetConfig,
   isThreadSessionKey,
 } from "../config/sessions/reset.js";
+import { buildFlushPrompt } from "./flush-prompt.js";
 import type { RunCronAgentTurnResult } from "./isolated-agent.js";
 import { MAX_FLUSH_PER_SWEEP, MIN_FLUSH_TOKENS } from "./pre-reset-flush.js";
 import type { CronJob } from "./types.js";
@@ -42,19 +42,10 @@ export const DEFAULT_IDLE_SWEEP_INTERVAL_MS = 10 * 60_000;
  */
 export const IDLE_FLUSH_THRESHOLD = 0.8;
 
-const PRE_IDLE_FLUSH_PROMPT = [
-  "Pre-idle-reset memory flush.",
-  "This session is about to expire due to inactivity — store any durable memories now.",
-  "",
-  "## 1. Daily memory log",
-  "Write to memory/YYYY-MM-DD.md; create memory/ if needed.",
-  "IMPORTANT: If the file already exists, APPEND new content only — do not overwrite existing entries.",
-  "Include a ### Seemingly Insignificant / Minor Notes section for small details, asides,",
-  "offhand mentions, or anything that didn't feel important at the time.",
-  "These often turn out to matter later. Better to write it down than lose it.",
-  "",
-  `If nothing to store, reply with ${SILENT_REPLY_TOKEN}.`,
-].join("\n");
+const PRE_IDLE_FLUSH_PROMPT = buildFlushPrompt(
+  "Pre-idle-reset memory flush.\n" +
+    "This session is about to expire due to inactivity — store any durable memories now.",
+);
 
 // ---------------------------------------------------------------------------
 // Session key patterns that indicate non-human sessions
