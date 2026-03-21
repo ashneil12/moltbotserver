@@ -5,6 +5,61 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Skills Expansion — Document Office, Frontend Design, Claude SEO & Context Engineering (2026-03-21)
+
+**Purpose:** Add 21 new skills to the fork's `skills/` directory (64 → 85 total). Covers document processing, frontend design methodology, comprehensive SEO auditing with subagents, and context engineering patterns. All purely additive — no existing code modified.
+
+### Document & Office Skills — [anthropics/skills](https://github.com/anthropics/skills)
+
+| Skill Directory    | Description                                                              | Dependencies                                        |
+| ------------------ | ------------------------------------------------------------------------ | --------------------------------------------------- |
+| `pdf/`             | PDF processing: read, extract tables, fill forms, merge/split            | `pypdf`, `pdfplumber`, `reportlab`, `poppler-utils` |
+| `docx/`            | Word doc creation (docx-js), editing (XML manipulation), tracked changes | `docx` (npm), `pandoc`                              |
+| `pptx/`            | Slide decks: pptxgenjs creation, markitdown reading, XML editing         | `pptxgenjs` (npm), `python-pptx`                    |
+| `xlsx/`            | Excel: openpyxl/pandas, formula verification, financial formatting       | `openpyxl`, `pandas`                                |
+| `doc-coauthoring/` | Pure methodology — 3-stage collaborative writing workflow                | None                                                |
+
+### Design — [anthropics/skills](https://github.com/anthropics/skills)
+
+| Skill Directory    | Description                                                                                                 |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `frontend-design/` | Production-grade UI design methodology. Anti-"AI slop" aesthetics, bold typography, cohesive design systems |
+
+### Claude SEO — [AgriciDaniel/claude-seo v1.5.0](https://github.com/AgriciDaniel/claude-seo)
+
+12 sub-skills + 7 subagent definitions + hooks + schema templates. Significantly more powerful than existing individual Corey Haines SEO skills.
+
+| Skill Directory            | Description                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `seo-audit-claude/`        | Full website audit with 7 parallel subagents, health scoring (0-100). Includes `agents/`, `hooks/`, `schema/` |
+| `seo-competitor-pages/`    | Competitor comparison page generation                                                                         |
+| `seo-content/`             | E-E-A-T analysis, readability, thin content detection                                                         |
+| `seo-geo/`                 | AI search optimization for Google AI Overviews, ChatGPT, Perplexity                                           |
+| `seo-hreflang/`            | International SEO hreflang implementation                                                                     |
+| `seo-images/`              | Image optimization audit (alt text, sizing, format)                                                           |
+| `seo-page/`                | Single-page on-page SEO analysis                                                                              |
+| `seo-plan/`                | Strategic SEO planning with assets                                                                            |
+| `seo-programmatic-claude/` | Programmatic SEO with quality gates (30/50 page thresholds)                                                   |
+| `seo-schema/`              | Schema markup detection, validation, generation                                                               |
+| `seo-sitemap/`             | Sitemap structure analysis and generation                                                                     |
+| `seo-technical/`           | Technical SEO: Core Web Vitals, robots.txt, canonicals, security headers                                      |
+
+> **Note:** `seo-audit-claude` and `seo-programmatic-claude` renamed to avoid conflicts with existing `seo-audit` (Corey Haines) and `programmatic-seo` skills. Both coexist.
+
+### Context Engineering — [muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/agent-skills-for-context-engineering)
+
+Cherry-picked 3 of 14 available skills (most relevant to hosted agent deployments).
+
+| Skill Directory         | Description                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| `context-compression/`  | Token cost reduction via context compression techniques. Includes `compression_evaluator.py` |
+| `context-optimization/` | Operational context optimization patterns. Includes `compaction.py`                          |
+| `hosted-agents/`        | Infrastructure patterns for hosted agent deployments. Includes `sandbox_manager.py`          |
+
+**Sync Risk:** None — all changes are purely additive (`skills/` directory new files only). No existing code modified.
+
+---
+
 ## Workspace Skills Auto-Creation & Diary Continuity Hardening (2026-03-21)
 
 **Purpose:** Auto-create `.agents/skills/` directory in workspace setup so deployed agents can write procedural skills without manual mkdir. Fix race condition between deterministic diary archiver and post-archive cron job. Gitignore cleanup.

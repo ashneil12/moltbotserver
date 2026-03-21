@@ -164,21 +164,26 @@ These files don't exist in upstream. They will never conflict but must not be de
 
 ### Dashboard & Skills
 
-| File                                                                                          | Feature                                                                     |
-| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `supabase/migrations/20260311100000_create_openclaw_backups.sql`                              | Backup tables + RLS + storage bucket                                        |
-| `src/app/api/instances/[id]/openclaw-backups/`                                                | Backup API routes (upload, list, delete, download, import, restore, config) |
-| `src/app/api/instances/[id]/alert/route.ts`                                                   | Container → dashboard alert endpoint                                        |
-| `src/app/api/cron/cleanup-backups/route.ts`                                                   | Paginated expired-backup purge                                              |
-| `src/config/config.web-search-provider.test.ts`                                               | SearXNG provider tests (9 total)                                            |
-| `src/agents/models-config.providers.sansa.test.ts`                                            | Sansa provider tests                                                        |
-| `src/browser/chrome.test.ts`                                                                  | Proxy support tests                                                         |
-| `src/commands/onboard-interactive.e2e.test.ts`                                                | Onboarding E2E test                                                         |
-| `src/auto-reply/reply/typing.test.ts`                                                         | Typing TTL callback tests                                                   |
-| `src/infra/heartbeat-runner.returns-default-unset.test.ts`                                    | Heartbeat default interval test                                             |
-| `.agents/skills/{marketing-psychology,copywriting,social-content,product-marketing-context}/` | Tier 1 (always-on) marketing skills                                         |
-| `.agents/skills/{29 business-gated skills}/`                                                  | Tier 2 (business-gated) marketing skills                                    |
-| `.agents/skills/marketing-tools-registry/`                                                    | 51 zero-dependency Node.js CLI wrappers                                     |
+| File                                                                                          | Feature                                                                                                             |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/20260311100000_create_openclaw_backups.sql`                              | Backup tables + RLS + storage bucket                                                                                |
+| `src/app/api/instances/[id]/openclaw-backups/`                                                | Backup API routes (upload, list, delete, download, import, restore, config)                                         |
+| `src/app/api/instances/[id]/alert/route.ts`                                                   | Container → dashboard alert endpoint                                                                                |
+| `src/app/api/cron/cleanup-backups/route.ts`                                                   | Paginated expired-backup purge                                                                                      |
+| `src/config/config.web-search-provider.test.ts`                                               | SearXNG provider tests (9 total)                                                                                    |
+| `src/agents/models-config.providers.sansa.test.ts`                                            | Sansa provider tests                                                                                                |
+| `src/browser/chrome.test.ts`                                                                  | Proxy support tests                                                                                                 |
+| `src/commands/onboard-interactive.e2e.test.ts`                                                | Onboarding E2E test                                                                                                 |
+| `src/auto-reply/reply/typing.test.ts`                                                         | Typing TTL callback tests                                                                                           |
+| `src/infra/heartbeat-runner.returns-default-unset.test.ts`                                    | Heartbeat default interval test                                                                                     |
+| `.agents/skills/{marketing-psychology,copywriting,social-content,product-marketing-context}/` | Tier 1 (always-on) marketing skills                                                                                 |
+| `.agents/skills/{29 business-gated skills}/`                                                  | Tier 2 (business-gated) marketing skills                                                                            |
+| `.agents/skills/marketing-tools-registry/`                                                    | 51 zero-dependency Node.js CLI wrappers                                                                             |
+| `skills/{pdf,docx,pptx,xlsx,doc-coauthoring}/`                                                | Anthropic document/office skills ([source](https://github.com/anthropics/skills))                                   |
+| `skills/frontend-design/`                                                                     | Production-grade UI design methodology ([source](https://github.com/anthropics/skills))                             |
+| `skills/{seo-audit-claude,seo-competitor-pages,seo-content,seo-geo,seo-hreflang,seo-images}/` | Claude SEO sub-skills ([source](https://github.com/AgriciDaniel/claude-seo))                                        |
+| `skills/{seo-page,seo-plan,seo-programmatic-claude,seo-schema,seo-sitemap,seo-technical}/`    | Claude SEO sub-skills (continued)                                                                                   |
+| `skills/{context-compression,context-optimization,hosted-agents}/`                            | Context engineering cherry-picks ([source](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)) |
 
 ### Control UI
 
