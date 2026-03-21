@@ -276,6 +276,14 @@
   - Only ask when changes are semantic (logic/data/behavior).
 - Lobster seam: use the shared CLI palette in `src/terminal/palette.ts` (no hardcoded colors); apply palette to onboarding/config prompts and other TTY UI output as needed.
 - **Multi-agent safety:** focus reports on your edits; avoid guard-rail disclaimers unless truly blocked; when multiple agents touch the same file, continue if safe; end with a brief “other files present” note only if relevant.
+- **Multi-agent team coordination:** when multiple agents exist, a shared `team/` directory (symlinked into each workspace) enables coordination without a central orchestrator:
+  - `team/decisions.md` — append-only decision log. Write here when you choose a technology, change shared state, or make user-visible decisions. Format: `## [date] [agent] — [title]` with Context/Decision/Affects/Status fields.
+  - `team/status.md` — per-agent status board. Each agent maintains its own section with current focus, blockers, and needs. Only edit YOUR section.
+  - `team/knowledge/` — shared domain knowledge files accessible to all agents.
+  - The `team-sync` cron job (every 6h) reads peer updates, absorbs relevant decisions, updates your status, and flags conflicts.
+  - Before starting work that overlaps with another agent's domain, read `team/status.md` and `team/decisions.md`.
+  - When you detect conflicting decisions, add a `> ⚠️ CONFLICT:` marker to `team/decisions.md` and escalate to the user.
+  - See `.agents/skills/team-coordination/` for the full coordination protocol.
 - Bug investigations: read source code of relevant npm dependencies and all related local code before concluding; aim for high-confidence root cause.
 - Code style: add brief comments for tricky logic; keep files under ~500 LOC when feasible (split/refactor as needed).
 - Tool schema guardrails (google-antigravity): avoid `Type.Union` in tool input schemas; no `anyOf`/`oneOf`/`allOf`. Use `stringEnum`/`optionalStringEnum` (Type.Unsafe enum) for string lists, and `Type.Optional(...)` instead of `... | null`. Keep top-level tool schema as `type: "object"` with `properties`.

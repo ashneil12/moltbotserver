@@ -5,6 +5,110 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## ClawFlows v2 — Dynamic Cron-Based Workflow Library (2026-03-21)
+
+**Purpose:** Complete overhaul of the ClawFlows integration. Replaces the static symlink-based "deploy-time toggle" system with a dynamic, cron-based "always-on" library. Users can now enable/disable 84+ workflows (6 built-in, 78 community) on the fly via the dashboard Settings modal, with support for per-agent scoping.
+
+**Key Changes:**
+
+- **Always-on:** Removed the `CLAWFLOWS_ENABLED` env var and deploy checkbox. ClawFlows is now cloned onto every instance by default via `cloud-init`.
+- **Cron-based execution:** Community workflows are no longer symlinked into an `enabled/` directory. Instead, the dashboard creates a `cron.add` job that executes the workflow markdown via the agent.
+- **Per-agent support:** Workflows can be enabled for specific agents (e.g., "Main", "Nehemiah"). The `agentId` is encoded into the cron job ID (`clawflow:agent-name:workflow-id`).
+- **Enhanced Built-ins:** Integrated 6 core MoltBot crons (Morning Briefing, Consciousness Loop, etc.) into the Workflows UI with an "Enhanced" badge. Toggling these updates the existing cron job via `cron.update`.
+- **UI/UX:** New `WorkflowsTab` in `SettingsModal` with search, category filters, and agent selection.
+
+| Component         | Files                                                      | Change                                                                                                              | Sync Risk            |
+| ----------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| Dashboard Service | `src/lib/services/clawflows.ts`                            | New service for catalog metadata (78 community + 6 built-in), cron ID builders/parsers, and `cloud-init` generator. | None — custom        |
+| Dashboard API     | `src/app/api/instances/[id]/workflows/route.ts`            | New endpoint for toggling workflows. Uses `cron.add/update/remove` RPCs. Added rate limiting.                       | None — custom        |
+| Dashboard UI      | `src/app/dashboard/instances/components/WorkflowsTab.tsx`  | New settings tab with unified workflow management.                                                                  | None — custom        |
+| Dashboard UI      | `src/app/dashboard/instances/components/SettingsModal.tsx` | Integrated `WorkflowsTab`.                                                                                          | None — custom        |
+| Dashboard Lib     | `src/lib/services/instance-env.ts`                         | Removed `CLAWFLOWS_ENABLED` from `InstanceEnv` and `DeployConfig`.                                                  | Low — simple removal |
+| Dashboard Tests   | `src/lib/services/clawflows.test.ts`                       | 40 unit tests for the clawflows service.                                                                            | None — custom        |
+
+**Sync Risk:** Very low. Most changes are in new, custom files. The removal of the `CLAWFLOWS_ENABLED` flag in `instance-env.ts` is the only modification to an existing file that might conflict with upstream changes to the deploy process, but it's a simple deletion.
+
+---
+
+## Agent Skills Restructuring — Progressive Disclosure Pattern (2026-03-21)
+
+**Purpose:** Restructure all 38 monolithic `.agents/skills/SKILL.md` files into Anthropic's progressive disclosure pattern — thin orchestrator `SKILL.md` files that delegate details to focused `instructions/` sub-files. Reduces context bloat when the `skill_view` tool loads a skill, and makes skills easier to maintain and extend.
+
+**Pattern applied:**
+
+```
+skill-name/
+├── SKILL.md               # Thin orchestrator: workflow + delegation refs (34–86 lines)
+└── instructions/           # Step-by-step procedural content (loaded on demand)
+    ├── step-1.md
+    └── step-2.md
+```
+
+**Results:** ~81% average SKILL.md size reduction (418→71L Tier 1, 378→68L Tier 2, 236→47L Tier 3). 130+ instruction sub-files created. No content lost — all detail migrated.
+
+| Tier                     | Skills | Avg Before | Avg After | Sub-files |
+| ------------------------ | ------ | ---------- | --------- | --------- |
+| 1 — Critical operational | 3      | 418L       | 72L       | 15        |
+| 2 — Large marketing/ops  | 15     | 378L       | 68L       | 64        |
+| 3 — Moderate             | 20     | 236L       | 47L       | 51        |
+
+### Tier 1 — Critical Operational Skills
+
+| Skill                | Before | After | Sub-files |
+| -------------------- | ------ | ----- | --------- |
+| `create-agent`       | 483L   | 79L   | 5         |
+| `cron-setup`         | 398L   | 66L   | 4         |
+| `channel-team-setup` | 374L   | 69L   | 6         |
+
+### Tier 2 — Large Marketing/Operational Skills
+
+| Skill                  | Before | After |
+| ---------------------- | ------ | ----- |
+| `popup-cro`            | 455L   | 75L   |
+| `marketing-psychology` | 455L   | 86L   |
+| `copy-editing`         | 448L   | 69L   |
+| `form-cro`             | 430L   | 79L   |
+| `churn-prevention`     | 425L   | 84L   |
+| `seo-audit`            | 413L   | 78L   |
+| `ai-seo`               | 400L   | 62L   |
+| `content-strategy`     | 367L   | 62L   |
+| `ad-creative`          | 364L   | 62L   |
+| `signup-flow-cro`      | 361L   | 58L   |
+| `site-architecture`    | 359L   | 62L   |
+| `launch-strategy`      | 355L   | 52L   |
+| `sales-enablement`     | 351L   | 68L   |
+| `revops`               | 345L   | 68L   |
+| `paid-ads`             | 317L   | 62L   |
+
+### Tier 3 — Moderate Skills
+
+| Skill                                                                             | Before | After |
+| --------------------------------------------------------------------------------- | ------ | ----- |
+| `lead-magnets`, `email-sequence`, `analytics-tracking`, `social-content`          | ~310L  | ~53L  |
+| `ab-test-setup`, `competitor-alternatives`, `referral-program`, `copywriting`     | ~260L  | ~50L  |
+| `prepare-pr`, `product-marketing-context`, `programmatic-seo`, `pricing-strategy` | ~235L  | ~47L  |
+| `review-pr`, `paywall-upgrade-cro`, `onboarding-cro`, `page-cro`                  | ~210L  | ~44L  |
+| `schema-markup`, `free-tool-strategy`, `marketing-ideas`, `cold-email`            | ~170L  | ~46L  |
+
+**Skipped (Tier 4 — already well-structured or under 160L):** `merge-pr`, `team-coordination`, `verification-gate`, `systematic-debugging`, `marketing-tools-registry`, `marketing-psychology` (already restructured in Tier 2), `channel-team-setup` (Tier 1).
+
+**Sync Risk:** None — `.agents/skills/` is entirely custom; no upstream equivalent. Safe from any upstream merge.
+
+---
+
+## cron-setup — Promote `add-cron.mjs` as Primary Interface (2026-03-21)
+
+**Purpose:** Update `cron-setup/instructions/creating-jobs.md` to promote `scripts/add-cron.mjs` as the preferred method for creating cron jobs. The script already existed but wasn't prominently documented. It validates inputs, detects duplicates, auto-resolves delivery targets, and supports dry-run — all things that reduce agent errors from hand-crafted JSON.
+
+| File                                                      | Change                                                                                                                                           | Sync Risk     |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `.agents/skills/cron-setup/instructions/creating-jobs.md` | Added `add-cron.mjs` as primary section with flags, schedule formats, delivery options. Manual `cron` tool usage moved to "if you must" section. | None — custom |
+| `.agents/skills/cron-setup/SKILL.md`                      | Updated Don'ts section to reflect `add-cron.mjs` as preferred; removed `openclaw cron` CLI warning (already addressed internally by the script)  | None — custom |
+
+**Sync Risk:** None — `.agents/` is fully custom.
+
+---
+
 ## Skills Expansion — Document Office, Frontend Design, Claude SEO & Context Engineering (2026-03-21)
 
 **Purpose:** Add 21 new skills to the fork's `skills/` directory (64 → 85 total). Covers document processing, frontend design methodology, comprehensive SEO auditing with subagents, and context engineering patterns. All purely additive — no existing code modified.
@@ -95,6 +199,20 @@ Cherry-picked 3 of 14 available skills (most relevant to hosted agent deployment
 | `src/lib/services/instance-env.ts`        | Sets `GEMINI_API_KEY` from `byteroverGeminiKey`; auto-enables `OPENCLAW_VIDEO_ENABLED` | None — custom |
 | `src/app/.../CredentialVault.tsx`         | Deduplicated identical error/cancelled JSX blocks                                      | None — custom |
 | `src/components/.../InlineDeployCard.tsx` | Model dropdown visible for all providers; resets model on provider switch              | None — custom |
+
+---
+
+## Dashboard UI Refinements & SearXNG Engine Audit (2026-03-21)
+
+**Purpose:** UI polish for the deployment flow and correction of SearXNG engine IDs for the 2026.3.x engine line.
+
+| File | Change                        |
+| ---- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| +    | `SearxngEngineSelector.tsx`   | **Engine Audit**: Updated `stackoverflow` → `stackexchange`, `youtube` → `youtube_noapi`, and fixed `apple maps` (no underscore). |
+| +    | `NaturalVoiceToggle.tsx`      | Removed "Experimental" tag; simplified labels; improved layout.                                                                   |
+| +    | `InlineDeployCard.tsx`        | Provider pills switched from 4-col to 2x2 grid for better mobile/desktop balance.                                                 |
+| +    | `hetzner-instance-service.ts` | Model dropdown visible for all providers; resets model on provider switch.                                                        |
+| +    | `agent-env.ts`                | Wires `byteroverGeminiKey` to `GEMINI_API_KEY`; auto-enables `OPENCLAW_VIDEO_ENABLED`.                                            |
 
 ---
 

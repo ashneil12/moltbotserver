@@ -36,6 +36,8 @@ import {
   readdirSync,
   statSync,
   rmSync,
+  symlinkSync,
+  readlinkSync,
 } from "node:fs";
 import { dirname } from "node:path";
 // ── Extracted modules ───────────────────────────────────────────────────────
@@ -1985,6 +1987,98 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
       delivery: { mode: "none" },
       state: {},
     },
+
+    // ── Team coordination sync ─────────────────────────────────────────────
+    // Every 6 hours, each agent reads the shared team/ directory for
+    // decisions and status updates from other agents, then contributes its own.
+    // This is how multi-agent teams stay coordinated without an orchestrator.
+    {
+      id: makeId(),
+      name: "team-sync",
+      description:
+        "Periodic team coordination — read peer decisions, update team status, flag conflicts",
+      enabled: true,
+      idleOnly: true,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+      schedule: { kind: "every", everyMs: 21600000, anchorMs: nowMs + 5400000 }, // 6h, +1.5h boot offset
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: [
+          "TEAM SYNC — Coordinate with other agents via the shared team/ directory.",
+          "",
+          "⚠️ BOUNDARY RULES — READ FIRST:",
+          "- This is NOT a heartbeat or self-review pass. Do NOT read HEARTBEAT.md.",
+          "- Do NOT start with broad memory_search. Read the files listed below directly.",
+          "- If team/ directory doesn't exist or is empty, respond HEARTBEAT_OK.",
+          "- If you are the only agent and no team files exist, respond HEARTBEAT_OK.",
+          "",
+          "PHASE 1: READ TEAM STATE",
+          "1. Read team/status.md — what are other agents working on?",
+          "2. Read team/decisions.md — any new decisions since your last sync?",
+          "3. Skim team/knowledge/ files — any new shared knowledge?",
+          "",
+          "If none of these files exist yet, create team/status.md and team/decisions.md",
+          "with header sections. Then proceed to Phase 2.",
+          "",
+          "PHASE 2: ABSORB RELEVANT DECISIONS",
+          "For each decision in team/decisions.md that:",
+          "- Was made by another agent",
+          "- Affects your domain or current work",
+          "- You haven't seen before",
+          "→ Note it in your own WORKING.md or memory/knowledge/ so you act on it.",
+          "",
+          "PHASE 3: UPDATE YOUR STATUS",
+          "Find your section in team/status.md (create one if it doesn't exist).",
+          "Update it with:",
+          "- Current focus (one-liner)",
+          "- Blocked on (nothing, or what you need)",
+          "- Recent significant decisions you made",
+          "- Anything you need from other agents",
+          "",
+          "Format for your section:",
+          "## [Your Agent Name] — Last updated: [YYYY-MM-DD HH:MM]",
+          "**Current focus:** [what you're working on]",
+          "**Blocked on:** [nothing | description]",
+          "**Recent decisions:** [brief list or 'none']",
+          "**Needs from team:** [nothing | what you need]",
+          "",
+          "PHASE 4: LOG YOUR DECISIONS",
+          "If you've made any significant decisions since last sync that other agents",
+          "should know about, append them to team/decisions.md.",
+          "",
+          "Decision format:",
+          "## [YYYY-MM-DD HH:MM] [Your Name] — [Decision Title]",
+          "**Context:** Why this was needed",
+          "**Decision:** What was decided",
+          "**Affects:** Which agents/domains this impacts",
+          "**Status:** active",
+          "",
+          "Only log decisions that affect shared state, architecture, or user-visible behavior.",
+          "Don't log routine task completions.",
+          "",
+          "PHASE 5: CONFLICT CHECK",
+          "Scan team/decisions.md for potential conflicts:",
+          "- Two agents working on the same thing?",
+          "- Contradictory decisions (one chose X, another chose Y)?",
+          "- A decision that breaks your current work?",
+          "",
+          "If conflict found:",
+          "1. Add a CONFLICT marker to team/decisions.md:",
+          "   > ⚠️ CONFLICT: [Agent A] decided X but [Agent B] decided Y. Needs resolution.",
+          "2. Note it in your WORKING.md as a blocker.",
+          "3. Message the user briefly about the conflict.",
+          "",
+          "If no conflicts, respond HEARTBEAT_OK.",
+        ].join("\n"),
+        model: "{{PRIMARY_MODEL}}",
+        lightContext: true,
+      },
+      delivery: { mode: "none" },
+      state: {},
+    },
   ];
 
   // Security audit — only for non-managed (community) deployments.
@@ -2027,6 +2121,34 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
   }
 
   return jobs;
+}
+
+/**
+ * Ensure a symlink at `linkPath` points to `targetDir`.
+ * Idempotent: skips if already correct, updates if stale, creates if missing.
+ * If a real directory exists at `linkPath`, it's left alone (agent may have
+ * manually created it before the shared team dir was introduced).
+ */
+function ensureTeamSymlink(linkPath, targetDir) {
+  if (existsSync(linkPath)) {
+    try {
+      const current = readlinkSync(linkPath);
+      if (current === targetDir) {
+        return; // Already correct
+      }
+      // Stale symlink — remove and recreate
+      rmSync(linkPath);
+    } catch {
+      // Not a symlink (real directory) — leave it alone
+      return;
+    }
+  }
+  try {
+    symlinkSync(targetDir, linkPath, "dir");
+    console.log(`[enforce-config] ✅ Team directory symlink: ${linkPath} → ${targetDir}`);
+  } catch (err) {
+    console.log(`[enforce-config] ⚠️ Could not create team symlink at ${linkPath}: ${err.message}`);
+  }
 }
 
 /**
@@ -2096,8 +2218,27 @@ function seedSubAgentCronJobs(dataDir) {
     return false;
   });
 
+  // ── Shared team directory ───────────────────────────────────────────────
+  // Create a central team/ directory that all agents share via symlinks.
+  // This runs BEFORE the sub-agent check so the main agent always has team/
+  // ready — even before any sub-agents are created. When sub-agents arrive
+  // later, they get their symlinks during the cron seeding loop below.
+  const teamDir = `${dataDir}/team`;
+  mkdirSync(`${teamDir}/knowledge`, { recursive: true });
+
+  // Symlink team/ into the main workspace (always, regardless of sub-agents)
+  const mainWorkspace = env("OPENCLAW_WORKSPACE_DIR", "/home/node/workspace");
+  const mainTeamLink = `${mainWorkspace}/team`;
+  ensureTeamSymlink(mainTeamLink, teamDir);
+
   if (workspaceDirs.length === 0) {
-    return; // No sub-agents — nothing to do
+    return; // No sub-agents — team dir is ready for when they arrive
+  }
+
+  // Symlink team/ into each sub-agent workspace
+  for (const wsEntry of workspaceDirs) {
+    const wsTeamLink = `${dataDir}/${wsEntry.name}/team`;
+    ensureTeamSymlink(wsTeamLink, teamDir);
   }
 
   let seeded = 0;
