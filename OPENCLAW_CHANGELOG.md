@@ -5,6 +5,25 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## QMD Gemini Embedding Patch (2026-03-21)
+
+**Purpose:** Patch QMD v2.0.1 to use the Gemini `gemini-embedding-2-preview` API for embeddings instead of local llama.cpp GGUF models. Solves Vulkan compilation failures and slow CPU-only embedding on Hetzner VMs. Rerank and query expansion still use local llama.cpp models.
+
+| File                          | Change                                                                                                                                                       | Sync Risk     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `scripts/patch-qmd-gemini.sh` | **NEW** — Runtime monkey-patch for QMD's `llm.ts`. Appends `GeminiEmbedProxy extends LlamaCpp` class, replaces `getDefaultLlamaCpp()` singleton. Idempotent. | None — new    |
+| `docker-entrypoint.sh`        | Calls `patch-qmd-gemini.sh` after QMD pre-warm, gated on `GEMINI_API_KEY` + `QMD_EMBED_PROVIDER != local`.                                                   | None — custom |
+
+**Environment Variables:**
+
+- `GEMINI_API_KEY` — required; enables the Gemini proxy when set
+- `QMD_EMBED_PROVIDER` — set to `local` to disable the patch and use local GGUF models
+- `QMD_GEMINI_EMBED_MODEL` — override the default model (default: `gemini-embedding-2-preview`)
+
+**Tested:** 1426 chunks from 83 documents embedded in ~65s via Gemini API on Hetzner CX22.
+
+---
+
 ## Auto-Heal Self-Healing Agent System (2026-03-21)
 
 **Purpose:** Autonomous background code repair via a hidden engineering subagent ("Ross"). Follows a strict TDD loop: diagnose errors from the error journal → backup target file → write failing test → apply smallest fix → verify with vitest → commit or rollback. All modifications are strictly scoped to "leaf node" files (tools/, skills/, utils/, cron/) with hard-reject for trunk nodes (system-prompt, security, config, Dockerfile). Escalation presents fix-first options before "disable." Inspired by [Shubham Saboo's autonomous agent team architecture](https://x.com/Saboo_Shubham_).

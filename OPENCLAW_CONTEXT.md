@@ -14,7 +14,7 @@ These files don't exist in upstream. They will never conflict but must not be de
 
 | File / Directory                  | Feature                                                                                                                                                                                                                                                                                                                                                                         |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docker-entrypoint.sh`            | Managed platform guards, Sansa provider, memory template seeding, `allowlist`→`groupAllowFrom` migration, `groupPolicy` validation, stock plugin fix, `root:root` re-chown, device pairing auto-approve, QMD pre-warm, workspace-doc-converter sidecar, backup restore before enforce-config                                                                                    |
+| `docker-entrypoint.sh`            | Managed platform guards, Sansa provider, memory template seeding, `allowlist`→`groupAllowFrom` migration, `groupPolicy` validation, stock plugin fix, `root:root` re-chown, device pairing auto-approve, QMD pre-warm, **QMD Gemini embedding patch** (calls `patch-qmd-gemini.sh`), workspace-doc-converter sidecar, backup restore before enforce-config                      |
 | `enforce-config.mjs`              | Multi-agent `team/` symlinking, Model normalization, 4-tier reflection patching, cron job seeding (`MAIN_ONLY_JOBS`), tool loop detection, `tools.profile = "full"` enforcement, per-agent browser profiles/containers, `browser` in `alsoAllow`, LCM version-aware enforcement, skill-evolution cron, cron schedule redesign (interval→fixed cron), `MAIN_ONLY_JOBS` expansion |
 | `enforce-config-helpers.mjs`      | Shared utilities: `readConfig`, `writeConfig`, `ensure`, `makeId`, `env`, `isTruthy`, `repairConfig` (3-stage), `backupConfig` (3-slot rotation), `resolveReflectionIntervals`                                                                                                                                                                                                  |
 | `enforce-config-models.mjs`       | `normalizeModelId()` + `CANONICAL_MODEL_IDS` map                                                                                                                                                                                                                                                                                                                                |
@@ -166,6 +166,7 @@ These files don't exist in upstream. They will never conflict but must not be de
 | `scripts/backup-upload.sh`                           | Full backup lifecycle (retry, upload, DB insert, notify)                     |
 | `scripts/restore-from-backup.sh`                     | Restore from Supabase Storage (integrity verify, path mapping, sanitization) |
 | `scripts/workspace-doc-converter.sh`                 | Background sidecar — converts .pdf/.txt/.docx/.csv to .md                    |
+| `scripts/patch-qmd-gemini.sh`                        | Runtime QMD patch — replaces local llama.cpp embeddings with Gemini API      |
 | `Dockerfile.scrapling`                               | Scrapling HTTP microservice container                                        |
 | `scripts/scrapling-server.py`                        | FastAPI wrapper for Scrapling                                                |
 | `searxng/settings.yml`                               | SearXNG configuration                                                        |
@@ -402,6 +403,7 @@ Run these after every merge from upstream. Grouped by area.
 29. **QMD retry** — `grep -c 'addCollectionWithRetry' src/memory/qmd-manager.ts` ≥ 1.
 30. **Workspace doc converter** — `grep -c 'workspace-doc-converter' docker-entrypoint.sh` ≥ 1.
 31. **scanMemoryFiles bounds** — `grep -c 'MAX_FILES' src/brainx/advisory-warnings.ts` ≥ 1.
+32. **QMD Gemini embedding patch** — `grep -c 'patch-qmd-gemini' docker-entrypoint.sh` ≥ 1 and `test -f scripts/patch-qmd-gemini.sh`.
 
 ### Security
 
