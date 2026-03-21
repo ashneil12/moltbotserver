@@ -6,6 +6,7 @@ const handleTelegramAction = vi.fn(async (..._args: unknown[]) => ({ ok: true })
 const sendReactionSignal = vi.fn(async (..._args: unknown[]) => ({ ok: true }));
 const removeReactionSignal = vi.fn(async (..._args: unknown[]) => ({ ok: true }));
 const handleSlackAction = vi.fn(async (..._args: unknown[]) => ({ details: { ok: true } }));
+const handleWhatsAppAction = vi.fn(async (..._args: unknown[]) => ({ details: { ok: true } }));
 
 vi.mock("../../../agents/tools/discord-actions.js", () => ({
   handleDiscordAction,
@@ -24,11 +25,25 @@ vi.mock("../../../agents/tools/slack-actions.js", () => ({
   handleSlackAction,
 }));
 
+vi.mock("../../../agents/tools/whatsapp-actions.js", () => ({
+  handleWhatsAppAction,
+}));
+
 const { discordMessageActions } = await import("./discord.js");
 const { handleDiscordMessageAction } = await import("./discord/handle-action.js");
 const { telegramMessageActions } = await import("./telegram.js");
 const { signalMessageActions } = await import("./signal.js");
 const { createSlackActions } = await import("../slack.actions.js");
+const { whatsappPlugin } = await import("../../../../extensions/whatsapp/src/channel.js");
+const { setWhatsAppRuntime } = await import("../../../../extensions/whatsapp/src/runtime.js");
+
+setWhatsAppRuntime({
+  channel: {
+    whatsapp: {
+      handleWhatsAppAction,
+    },
+  },
+} as unknown as Parameters<typeof setWhatsAppRuntime>[0]);
 
 function telegramCfg(): OpenClawConfig {
   return { channels: { telegram: { botToken: "tok" } } } as OpenClawConfig;
@@ -104,19 +119,29 @@ async function runSlackAction(
     action,
     cfg,
     params,
+    mediaLocalRoots: [],
   });
   return { cfg, actions };
 }
 
 function expectFirstSlackAction(expected: Record<string, unknown>) {
-  const [params] = handleSlackAction.mock.calls[0] ?? [];
+  const [params, cfg, options] = handleSlackAction.mock.calls[0] ?? [];
   expect(params).toMatchObject(expected);
+  expect(cfg).toBeDefined();
+  expect(options).toMatchObject({ mediaLocalRoots: expect.any(Array) });
 }
 
 function expectModerationActions(actions: string[]) {
   expect(actions).toContain("timeout");
   expect(actions).toContain("kick");
   expect(actions).toContain("ban");
+}
+
+function expectFirstWhatsAppAction(expected: Record<string, unknown>) {
+  const [params, cfg, options] = handleWhatsAppAction.mock.calls[0] ?? [];
+  expect(params).toMatchObject(expected);
+  expect(cfg).toBeDefined();
+  expect(options).toMatchObject({ mediaLocalRoots: expect.any(Array) });
 }
 
 function expectChannelCreateAction(actions: string[], expected: boolean) {
@@ -442,11 +467,13 @@ describe("handleDiscordMessageAction", () => {
       await handleDiscordMessageAction({
         ...testCase.input,
         cfg: {} as OpenClawConfig,
+        mediaLocalRoots: [],
       });
 
       const call = handleDiscordAction.mock.calls.at(-1);
       expect(call?.[0]).toEqual(expect.objectContaining(testCase.expected));
       expect(call?.[1]).toEqual(expect.any(Object));
+      expect(call?.[2]).toEqual(expect.objectContaining({ mediaLocalRoots: expect.any(Array) }));
     });
   }
 
@@ -1275,5 +1302,28 @@ describe("slack actions adapter", () => {
       }),
     ).rejects.toThrow(/edit requires message or blocks/i);
     expect(handleSlackAction).not.toHaveBeenCalled();
+  });
+
+  describe("WhatsApp", () => {
+    it("forwards react action", async () => {
+      await whatsappPlugin.actions!.handleAction!({
+        channel: "whatsapp",
+        action: "react",
+        params: {
+          messageId: "msg-123",
+          emoji: "👍",
+          to: "whatsapp:123456789",
+        },
+        cfg: {} as OpenClawConfig,
+        mediaLocalRoots: [],
+      });
+
+      expectFirstWhatsAppAction({
+        action: "react",
+        messageId: "msg-123",
+        emoji: "👍",
+        chatJid: "whatsapp:123456789",
+      });
+    });
   });
 });

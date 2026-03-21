@@ -261,7 +261,8 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
       return Array.from(actions);
     },
     supportsAction: ({ action }) => action === "react",
-    handleAction: async ({ action, params, cfg, accountId }) => {
+    handleAction: async (ctx) => {
+      const { action, params, cfg, accountId } = ctx;
       if (action !== "react") {
         throw new Error(`Action ${action} is not supported for provider ${meta.id}.`);
       }
@@ -283,6 +284,7 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
           fromMe: typeof params.fromMe === "boolean" ? params.fromMe : undefined,
         },
         cfg,
+        { mediaLocalRoots: ctx.mediaLocalRoots },
       );
     },
   },
