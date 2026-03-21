@@ -638,6 +638,15 @@ if [ "${OPENCLAW_QMD_ENABLED:-true}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-tr
       | head -15 || true
     echo "[entrypoint] qmd pre-warm complete"
   fi
+
+  # Apply Gemini embedding patch (uses API instead of slow local GGUF models)
+  # Gated on GEMINI_API_KEY; disable with QMD_EMBED_PROVIDER=local
+  if [ -n "${GEMINI_API_KEY:-}" ] && [ "${QMD_EMBED_PROVIDER:-}" != "local" ]; then
+    PATCH_SCRIPT="/app/scripts/patch-qmd-gemini.sh"
+    if [ -f "$PATCH_SCRIPT" ]; then
+      bash "$PATCH_SCRIPT" 2>&1 || echo "[entrypoint] WARNING: QMD Gemini patch failed (non-fatal)"
+    fi
+  fi
 fi
 
 # =============================================================================
