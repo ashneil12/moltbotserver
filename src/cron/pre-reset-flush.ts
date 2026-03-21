@@ -27,10 +27,10 @@ import type { CronJob } from "./types.js";
 export const DEFAULT_PRE_RESET_LEAD_MINUTES = 20;
 
 /** Minimum context tokens a session must have to be worth flushing. */
-const MIN_FLUSH_TOKENS = 2000;
+export const MIN_FLUSH_TOKENS = 2000;
 
 /** Maximum number of sessions to flush per sweep (prevent runaway API usage). */
-const MAX_FLUSH_PER_SWEEP = 20;
+export const MAX_FLUSH_PER_SWEEP = 20;
 
 const PRE_RESET_FLUSH_PROMPT = [
   "Pre-reset memory flush.",

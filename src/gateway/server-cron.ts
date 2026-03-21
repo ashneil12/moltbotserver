@@ -1,4 +1,5 @@
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { CliDeps } from "../cli/deps.js";
 import { createOutboundSendDeps } from "../cli/outbound-send-deps.js";
 import { loadConfig } from "../config/config.js";
@@ -12,6 +13,7 @@ import { resolveFailureDestination, sendFailureNotificationAnnounce } from "../c
 import { startDiaryArchiveTimer, stopDiaryArchiveTimer } from "../cron/diary-archive.js";
 import { runCronIsolatedAgentTurn } from "../cron/isolated-agent.js";
 import { resolveDeliveryTarget } from "../cron/isolated-agent/delivery-target.js";
+import { startPreIdleFlushTimer, stopPreIdleFlushTimer } from "../cron/pre-idle-flush.js";
 import { startPreResetFlushTimer, stopPreResetFlushTimer } from "../cron/pre-reset-flush.js";
 import {
   appendCronRunLog,
@@ -19,6 +21,10 @@ import {
   resolveCronRunLogPruneOptions,
 } from "../cron/run-log.js";
 import { CronService } from "../cron/service.js";
+import {
+  registerSessionFlushCallback,
+  unregisterSessionFlushCallback,
+} from "../cron/session-flush-global.js";
 import { resolveCronStorePath } from "../cron/store.js";
 import { startTranscriptSweepTimer, stopTranscriptSweepTimer } from "../cron/transcript-sweep.js";
 import { normalizeHttpWebhookUrl } from "../cron/webhook-url.js";
@@ -40,6 +46,8 @@ export type GatewayCronState = {
   storePath: string;
   cronEnabled: boolean;
   stopPreResetFlush: () => void;
+  stopPreIdleFlush: () => void;
+  stopSessionFlushCallback: () => void;
   stopDiaryArchive: () => void;
   stopTranscriptSweep: () => void;
 };
@@ -538,8 +546,76 @@ export function buildGatewayCronService(params: {
     log: cronLogger,
   });
 
+  startPreIdleFlushTimer({
+    cfg: params.cfg,
+    resolveSessionStorePath,
+    runIsolatedAgentJob: async ({ job, message }) => {
+      const { agentId, cfg: runtimeConfig } = resolveCronAgent(job.agentId);
+      return await runCronIsolatedAgentTurn({
+        cfg: runtimeConfig,
+        deps: params.deps,
+        job,
+        message,
+        abortSignal: undefined,
+        agentId,
+        sessionKey: `cron:${job.id}`,
+        lane: "cron",
+      });
+    },
+    log: cronLogger,
+  });
+
   startDiaryArchiveTimer({ cfg: params.cfg });
   startTranscriptSweepTimer({ cfg: params.cfg });
+
+  // Register the global session flush callback so session.ts can trigger
+  // fire-and-forget memory flush turns on /new and /reset.
+  registerSessionFlushCallback(async (request) => {
+    const { agentId: resolvedAgentId, cfg: runtimeConfig } = resolveCronAgent(request.agentId);
+    const now = Date.now();
+    const syntheticJob = {
+      id: `__session-flush:${request.sessionKey}`,
+      agentId: resolvedAgentId,
+      name: "Session reset memory flush",
+      description: `Memory flush before session reset (${request.reason})`,
+      enabled: true,
+      deleteAfterRun: true,
+      createdAtMs: now,
+      updatedAtMs: now,
+      sessionKey: request.sessionKey,
+      schedule: { kind: "at" as const, at: new Date(now).toISOString() },
+      sessionTarget: "main" as const,
+      wakeMode: "now" as const,
+      payload: {
+        kind: "agentTurn" as const,
+        message: [
+          "Session reset memory flush.",
+          `The user triggered a session reset (${request.reason}) — store any durable memories now.`,
+          "",
+          "## 1. Daily memory log",
+          "Write to memory/YYYY-MM-DD.md; create memory/ if needed.",
+          "IMPORTANT: If the file already exists, APPEND new content only — do not overwrite existing entries.",
+          "Include a ### Seemingly Insignificant / Minor Notes section for small details, asides,",
+          "offhand mentions, or anything that didn't feel important at the time.",
+          "These often turn out to matter later. Better to write it down than lose it.",
+          "",
+          `If nothing to store, reply with ${SILENT_REPLY_TOKEN}.`,
+        ].join("\n"),
+        deliver: false,
+      },
+      state: {},
+    };
+    await runCronIsolatedAgentTurn({
+      cfg: runtimeConfig,
+      deps: params.deps,
+      job: syntheticJob,
+      message: syntheticJob.payload.message,
+      abortSignal: undefined,
+      agentId: resolvedAgentId,
+      sessionKey: `cron:${syntheticJob.id}`,
+      lane: "cron",
+    });
+  });
   // Security audit scheduler disabled — produces false positives on SaaS/Docker deployments
   // startSecurityAuditScheduler({ cfg: params.cfg, deps: params.deps });
 
@@ -548,6 +624,8 @@ export function buildGatewayCronService(params: {
     storePath,
     cronEnabled,
     stopPreResetFlush: stopPreResetFlushTimer,
+    stopPreIdleFlush: stopPreIdleFlushTimer,
+    stopSessionFlushCallback: unregisterSessionFlushCallback,
     stopDiaryArchive: stopDiaryArchiveTimer,
     stopTranscriptSweep: stopTranscriptSweepTimer,
   };

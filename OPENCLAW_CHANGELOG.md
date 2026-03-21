@@ -5,6 +5,26 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Session Memory Flush — Pre-Idle & Reset-Triggered (2026-03-21)
+
+**Purpose:** Context was being silently discarded on session resets — only daily resets at 4 AM got a pre-reset memory flush. Now all three reset paths trigger agentic memory flush: daily (existing timer), idle (new background sweep), and `/new`/`/reset` (new fire-and-forget via global callback bridge).
+
+| File                                    | Change                                                                                                                                                                                | Sync Risk      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/cron/pre-idle-flush.ts`            | **NEW** — Background sweep for idle sessions. `isHumanSession()` gate (rejects cron/hook/heartbeat/system), `isEligibleForPreIdleFlush()` (80% threshold), timer lifecycle.           | None — new     |
+| `src/cron/pre-idle-flush.test.ts`       | **NEW** — 28 tests covering human session gate, idle eligibility, sweep logic, timer lifecycle.                                                                                       | None — test    |
+| `src/cron/session-flush-global.ts`      | **NEW** — Global singleton callback (`Symbol.for` pattern, same as `hook-runner-global.ts`). Bridges session.ts → server-cron.ts for fire-and-forget memory flush on `/new`/`/reset`. | None — new     |
+| `src/cron/session-flush-global.test.ts` | **NEW** — 5 tests covering registration, unregistration, fire-and-forget, error swallowing, callback replacement.                                                                     | None — test    |
+| `src/cron/pre-reset-flush.ts`           | Exported `MIN_FLUSH_TOKENS` and `MAX_FLUSH_PER_SWEEP` constants for reuse by idle flush module.                                                                                       | Low — additive |
+| `src/gateway/server-cron.ts`            | Integrated `startPreIdleFlushTimer`, registered `SessionFlushCallback` (runs isolated agent turn with memory flush prompt), added `stopPreIdleFlush` + `stopSessionFlushCallback`.    | Medium         |
+| `src/auto-reply/reply/session.ts`       | Added fire-and-forget `requestSessionFlush()` on `/new`/`/reset` when ≥2000 context tokens. Runs before transcript archival.                                                          | Low — additive |
+
+**Human-session-only filtering:** The idle sweep rejects all system sessions via `isHumanSession()` — session keys containing `:cron:`, `:run:`, `:hook:`, `heartbeat`, `__pre-reset-flush:`, or `__pre-idle-flush:` are skipped. Sessions must also have a valid `chatType` (`direct`, `group`, `channel`) or be a thread session.
+
+> **Sync Risk:** `server-cron.ts` — `buildGatewayCronService()` grows by ~50 lines (callback registration + synthetic job builder). `session.ts` — 15-line fire-and-forget block added to the session reset path. Both are additive blocks unlikely to conflict but check during upstream sync.
+
+---
+
 ## QMD Gemini Embedding Patch (2026-03-21)
 
 **Purpose:** Patch QMD v2.0.1 to use the Gemini `gemini-embedding-2-preview` API for embeddings instead of local llama.cpp GGUF models. Solves Vulkan compilation failures and slow CPU-only embedding on Hetzner VMs. Rerank and query expansion still use local llama.cpp models.

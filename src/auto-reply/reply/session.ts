@@ -591,6 +591,24 @@ export async function initSessionState(params: {
       // Best-effort — session search indexing is non-critical
       log.warn(`session search indexing failed: ${String(err)}`);
     }
+
+    // Fire-and-forget: request an agentic memory flush on the old session
+    // so the agent can persist durable memories before the transcript is
+    // archived. Only for explicit user resets (/new, /reset) with meaningful
+    // context — idle/daily resets are handled by background sweep timers.
+    // 2000 matches MIN_FLUSH_TOKENS from pre-reset-flush.ts
+    if (resetTriggered && (previousSessionEntry.totalTokens ?? 0) >= 2000) {
+      try {
+        const { requestSessionFlush } = await import("../../cron/session-flush-global.js");
+        requestSessionFlush({
+          sessionKey,
+          agentId,
+          reason: "reset-trigger",
+        });
+      } catch {
+        // Best-effort — memory flush is non-critical
+      }
+    }
   }
 
   // Archive old transcript so it doesn't accumulate on disk (#14869).
