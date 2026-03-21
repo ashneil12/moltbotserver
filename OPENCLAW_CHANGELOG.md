@@ -5,6 +5,27 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Auto-Heal Self-Healing Agent System (2026-03-21)
+
+**Purpose:** Autonomous background code repair via a hidden engineering subagent ("Ross"). Follows a strict TDD loop: diagnose errors from the error journal → backup target file → write failing test → apply smallest fix → verify with vitest → commit or rollback. All modifications are strictly scoped to "leaf node" files (tools/, skills/, utils/, cron/) with hard-reject for trunk nodes (system-prompt, security, config, Dockerfile). Escalation presents fix-first options before "disable." Inspired by [Shubham Saboo's autonomous agent team architecture](https://x.com/Saboo_Shubham_).
+
+| File                                            | Change                                                                                                                                                                                             | Sync Risk     |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `src/logging/error-journal.ts`                  | **NEW** — Structured error capture for auto-heal pipeline. Append-only JSONL log with deduplication, severity classification, auto-escalation. Uses atomic writes (tmp → rename) for crash safety. | None — new    |
+| `src/logging/error-journal.test.ts`             | **NEW** — 15 tests covering append, dedup, severity classification, status marking, pruning.                                                                                                       | None — test   |
+| `src/cron/auto-heal-journal.ts`                 | **NEW** — Audit trail for autonomous code fixes. Records backup paths, test commands, outcomes. Generates `BACKGROUND_FIXES.md`. Enforces leaf/trunk node scope. Atomic writes.                    | None — new    |
+| `src/cron/auto-heal-journal.test.ts`            | **NEW** — 17 tests covering scope enforcement, entry creation, attempt counting, pruning, BACKGROUND_FIXES.md generation.                                                                          | None — test   |
+| `src/agents/tools/auto-heal-tool.ts`            | **NEW** — Agent-facing tool with 5 actions (diagnose, attempt-fix, rollback, journal, status). 3-strike limit per error, scope enforcement, escalation integration.                                | None — new    |
+| `src/agents/tools/auto-heal-tool.test.ts`       | **NEW** — 21 tests covering all actions, scope violations, escalation triggers, backup/rollback, journal queries.                                                                                  | None — test   |
+| `src/agents/tools/auto-heal-escalation.ts`      | **NEW** — Translates technical errors into plain-English messages with fix-first options. "Disable" is always the last option.                                                                     | None — new    |
+| `src/agents/tools/auto-heal-escalation.test.ts` | **NEW** — 15 tests verifying fix-first option ordering, plain-English translation, recurring error handling.                                                                                       | None — test   |
+| `.agents/skills/auto-heal/SKILL.md`             | **NEW** — Protocol instructions for the auto-heal subagent. Documents the TDD loop, scope constraints, and escalation flow.                                                                        | None — custom |
+| `src/logging/health-sentinel.ts`                | Added `auto_heal` tool guidance to sentinel escalation text alongside existing `cron_heal` guidance.                                                                                               | Low           |
+| `src/agents/tools/moltbot-tools.ts`             | Wired `createAutoHealTool()` into MoltBot tool registry.                                                                                                                                           | Low           |
+| `src/agents/tools/openclaw-tools.ts`            | Wired `createAutoHealTool()` into OpenClaw tool registry.                                                                                                                                          | Low           |
+
+---
+
 ## Deterministic Agent Provisioning & Cron Configuration (2026-03-21)
 
 **Purpose:** Shift multi-agent team management from hallucination-prone AI commands to deterministic shell/Node scripts. Solves issues with missing auth files, hallucinatory path names, and malformed cron job configurations.

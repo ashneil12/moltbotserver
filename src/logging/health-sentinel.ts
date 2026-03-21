@@ -597,9 +597,34 @@ function composeSentinelEventText(
     lines.push("");
   }
 
+  // Add auto_heal guidance when error-rate or tool-related issues are detected
+  const hasErrorRateIssues = unresolved.some((i) => i.key?.startsWith("system:logs.error_rate"));
+  const hasToolIssues = unresolved.some(
+    (i) => i.summary?.toLowerCase().includes("tool") || i.key?.includes("tool"),
+  );
+
+  if (hasErrorRateIssues || hasToolIssues) {
+    lines.push("## Auto-Heal Actions Available");
+    lines.push("Use the `auto_heal` tool to diagnose and fix code-level errors:");
+    lines.push(
+      "- `auto_heal diagnose` — check error journal for pending errors, classify by severity",
+    );
+    lines.push(
+      "- `auto_heal attempt-fix` — backup the file, apply a fix, run tests, and report the result",
+    );
+    lines.push("- `auto_heal rollback` — restore a file from its backup if a fix fails");
+    lines.push("- `auto_heal status` — view overall error journal and repair statistics");
+    lines.push(
+      "The auto-heal tool enforces strict scope constraints (leaf nodes only), mandatory backups,",
+    );
+    lines.push("and a 3-strike limit per error. All repairs are logged to BACKGROUND_FIXES.md.");
+    lines.push("");
+  }
+
+  const hasAnySelfHeal = hasCronIssues || hasDiskIssues || hasErrorRateIssues || hasToolIssues;
   lines.push(
-    hasCronIssues || hasDiskIssues
-      ? "Investigate and fix using `cron_heal` when applicable. If you cannot resolve them after 2 attempts, escalate to the user."
+    hasAnySelfHeal
+      ? "Investigate and fix using `cron_heal` / `auto_heal` when applicable. If you cannot resolve them after 3 attempts, escalate to the user with fix-first options."
       : "Please investigate and fix these issues. If you cannot resolve them, escalate to the user.",
   );
 

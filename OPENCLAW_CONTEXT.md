@@ -108,40 +108,48 @@ These files don't exist in upstream. They will never conflict but must not be de
 
 ### Cron & Self-Healing
 
-| File                                      | Feature                                                     |
-| ----------------------------------------- | ----------------------------------------------------------- |
-| `src/cron/idle-gate.ts`                   | Idle-aware cron scheduling. 17 tests                        |
-| `src/cron/idle-gate.test.ts`              | Tests                                                       |
-| `src/cron/cron-health-probes.ts`          | 4 deterministic probes for scheduler health. 21 tests       |
-| `src/cron/cron-health-probes.test.ts`     | Tests                                                       |
-| `src/cron/proactive-disk-hygiene.ts`      | Self-throttled disk sweep wrapper. 14 tests                 |
-| `src/cron/proactive-disk-hygiene.test.ts` | Tests                                                       |
-| `src/cron/pre-reset-flush.ts`             | Pre-reset memory flush cron                                 |
-| `src/cron/pre-reset-flush.test.ts`        | Tests                                                       |
-| `src/cron/remediation-journal.ts`         | Append-only JSONL log for automated fixes. 23 tests         |
-| `src/cron/remediation-journal.test.ts`    | Tests                                                       |
-| `src/cron/remediation-watchdog.ts`        | Timer-tick watchdog — confirms/rollbacks/escalates. 7 tests |
-| `src/cron/remediation-watchdog.test.ts`   | Tests                                                       |
-| `src/cron/health-check-seed.ts`           | Auto-seeds `__system_health_check` cron job. 8 tests        |
-| `src/cron/health-check-seed.test.ts`      | Tests                                                       |
+| File                                      | Feature                                                                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `src/cron/idle-gate.ts`                   | Idle-aware cron scheduling. 17 tests                                                                                |
+| `src/cron/idle-gate.test.ts`              | Tests                                                                                                               |
+| `src/cron/cron-health-probes.ts`          | 4 deterministic probes for scheduler health. 21 tests                                                               |
+| `src/cron/cron-health-probes.test.ts`     | Tests                                                                                                               |
+| `src/cron/proactive-disk-hygiene.ts`      | Self-throttled disk sweep wrapper. 14 tests                                                                         |
+| `src/cron/proactive-disk-hygiene.test.ts` | Tests                                                                                                               |
+| `src/cron/pre-reset-flush.ts`             | Pre-reset memory flush cron                                                                                         |
+| `src/cron/pre-reset-flush.test.ts`        | Tests                                                                                                               |
+| `src/cron/remediation-journal.ts`         | Append-only JSONL log for automated fixes. 23 tests                                                                 |
+| `src/cron/remediation-journal.test.ts`    | Tests                                                                                                               |
+| `src/cron/remediation-watchdog.ts`        | Timer-tick watchdog — confirms/rollbacks/escalates. 7 tests                                                         |
+| `src/cron/remediation-watchdog.test.ts`   | Tests                                                                                                               |
+| `src/cron/health-check-seed.ts`           | Auto-seeds `__system_health_check` cron job. 8 tests                                                                |
+| `src/cron/health-check-seed.test.ts`      | Tests                                                                                                               |
+| `src/cron/auto-heal-journal.ts`           | Auto-heal audit trail — JSONL log, scope enforcement (leaf/trunk nodes), `BACKGROUND_FIXES.md` generation. 17 tests |
+| `src/cron/auto-heal-journal.test.ts`      | Tests                                                                                                               |
+| `src/logging/error-journal.ts`            | Error journal for auto-heal pipeline — deduplication, severity classification, atomic writes. 15 tests              |
+| `src/logging/error-journal.test.ts`       | Tests                                                                                                               |
 
 ### Agent Tools
 
-| File                                                    | Feature                                                                                                   |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `src/agents/tools/cron-heal-tool.ts`                    | `cron_heal` — 7 actions: diagnose, re-enable, adjust-schedule, force-run, cleanup-disk, rollback, journal |
-| `src/agents/tools/sql-tool.ts`                          | `sql_query` + `sql_execute`. 22 tests                                                                     |
-| `src/agents/tools/sql-tool.test.ts`                     | Tests                                                                                                     |
-| `src/agents/tools/session-search-tool.ts`               | `session_search` — FTS5 search with query rewriting                                                       |
-| `src/agents/tools/session-search-tool.test.ts`          | 14 tests                                                                                                  |
-| `src/agents/tools/skill-manage-tool.ts`                 | `skill_manage` — agent skill CRUD. 15 tests                                                               |
-| `src/agents/tools/skill-manage-tool.test.ts`            | Tests                                                                                                     |
-| `src/agents/tools/skill-view-tool.ts`                   | `skill_view` — progressive disclosure                                                                     |
-| `src/agents/tools/workspace-search-tool.ts`             | `workspace_search` — QMD workspace-only search                                                            |
-| `src/agents/tools/skill-generation.ts`                  | Skill generation versioning. 15 tests                                                                     |
-| `src/agents/tools/skill-generation.test.ts`             | Tests                                                                                                     |
-| `src/auto-reply/reply/session-skill-candidates.ts`      | Per-session skill candidate extraction. 11 tests                                                          |
-| `src/auto-reply/reply/session-skill-candidates.test.ts` | Tests                                                                                                     |
+| File                                                    | Feature                                                                                                                |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/agents/tools/cron-heal-tool.ts`                    | `cron_heal` — 7 actions: diagnose, re-enable, adjust-schedule, force-run, cleanup-disk, rollback, journal              |
+| `src/agents/tools/sql-tool.ts`                          | `sql_query` + `sql_execute`. 22 tests                                                                                  |
+| `src/agents/tools/sql-tool.test.ts`                     | Tests                                                                                                                  |
+| `src/agents/tools/session-search-tool.ts`               | `session_search` — FTS5 search with query rewriting                                                                    |
+| `src/agents/tools/session-search-tool.test.ts`          | 14 tests                                                                                                               |
+| `src/agents/tools/skill-manage-tool.ts`                 | `skill_manage` — agent skill CRUD. 15 tests                                                                            |
+| `src/agents/tools/skill-manage-tool.test.ts`            | Tests                                                                                                                  |
+| `src/agents/tools/skill-view-tool.ts`                   | `skill_view` — progressive disclosure                                                                                  |
+| `src/agents/tools/workspace-search-tool.ts`             | `workspace_search` — QMD workspace-only search                                                                         |
+| `src/agents/tools/skill-generation.ts`                  | Skill generation versioning. 15 tests                                                                                  |
+| `src/agents/tools/skill-generation.test.ts`             | Tests                                                                                                                  |
+| `src/auto-reply/reply/session-skill-candidates.ts`      | Per-session skill candidate extraction. 11 tests                                                                       |
+| `src/auto-reply/reply/session-skill-candidates.test.ts` | Tests                                                                                                                  |
+| `src/agents/tools/auto-heal-tool.ts`                    | `auto_heal` — 5 actions: diagnose, attempt-fix, rollback, journal, status. 3-strike limit, scope enforcement. 21 tests |
+| `src/agents/tools/auto-heal-tool.test.ts`               | Tests                                                                                                                  |
+| `src/agents/tools/auto-heal-escalation.ts`              | Translates auto-heal failures to plain-English messages with fix-first options. 15 tests                               |
+| `src/agents/tools/auto-heal-escalation.test.ts`         | Tests                                                                                                                  |
 
 ### Templates, Docs & Scripts
 

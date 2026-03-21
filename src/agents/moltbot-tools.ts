@@ -4,6 +4,7 @@ import type { GatewayMessageChannel } from "../utils/message-channel.js";
 import { resolveSessionAgentId } from "./agent-scope.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import { createAgentsListTool } from "./tools/agents-list-tool.js";
+import { createAutoHealTool } from "./tools/auto-heal-tool.js";
 import { createBrowserTool } from "./tools/browser-tool.js";
 import { createCanvasTool } from "./tools/canvas-tool.js";
 import type { AnyAgentTool } from "./tools/common.js";
@@ -95,6 +96,7 @@ export function createMoltbotTools(options?: {
       agentSessionKey: options?.agentSessionKey,
     }),
     createCronHealTool(),
+    createAutoHealTool({ workspaceDir: options?.workspaceDir }),
     createMessageTool({
       agentAccountId: options?.agentAccountId,
       agentSessionKey: options?.agentSessionKey,
