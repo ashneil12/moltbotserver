@@ -321,24 +321,34 @@ export async function runCronIsolatedAgentTurn(params: {
     params.job.payload.kind === "agentTurn" ? params.job.payload.model : undefined;
   const modelOverride = typeof modelOverrideRaw === "string" ? modelOverrideRaw.trim() : undefined;
   if (modelOverride !== undefined && modelOverride.length > 0) {
-    const resolvedOverride = resolveAllowedModelRef({
-      cfg: cfgWithAgentDefaults,
-      catalog: await loadCatalog(),
-      raw: modelOverride,
-      defaultProvider: resolvedDefault.provider,
-      defaultModel: resolvedDefault.model,
-    });
-    if ("error" in resolvedOverride) {
-      if (resolvedOverride.error.startsWith("model not allowed:")) {
-        logWarn(
-          `cron: payload.model '${modelOverride}' not allowed, falling back to agent defaults`,
-        );
-      } else {
-        return { status: "error", error: resolvedOverride.error };
-      }
+    // Defensive: skip unresolved template variables (e.g. "{{PRIMARY_MODEL}}")
+    // that may appear in un-migrated jobs.json files. Passing these to the model
+    // resolver would fail and waste a fallback cycle.
+    if (/\{\{.*\}\}/.test(modelOverride)) {
+      logWarn(
+        `cron: payload.model '${modelOverride}' contains unresolved template variable, ` +
+          `falling back to agent defaults`,
+      );
     } else {
-      provider = resolvedOverride.ref.provider;
-      model = resolvedOverride.ref.model;
+      const resolvedOverride = resolveAllowedModelRef({
+        cfg: cfgWithAgentDefaults,
+        catalog: await loadCatalog(),
+        raw: modelOverride,
+        defaultProvider: resolvedDefault.provider,
+        defaultModel: resolvedDefault.model,
+      });
+      if ("error" in resolvedOverride) {
+        if (resolvedOverride.error.startsWith("model not allowed:")) {
+          logWarn(
+            `cron: payload.model '${modelOverride}' not allowed, falling back to agent defaults`,
+          );
+        } else {
+          return { status: "error", error: resolvedOverride.error };
+        }
+      } else {
+        provider = resolvedOverride.ref.provider;
+        model = resolvedOverride.ref.model;
+      }
     }
   }
   const now = Date.now();

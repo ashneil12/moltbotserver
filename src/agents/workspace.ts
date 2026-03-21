@@ -28,6 +28,20 @@ function scanWorkspaceContent(content: string, fileName: string, filePath: strin
     extraData: { file: fileName, path: filePath },
   });
   if (scanResult?.quarantined) {
+    // First-party bootstrap files (SOUL.md, OPERATIONS.md, etc.) are authored
+    // by the OpenClaw project.  Their security documentation sections naturally
+    // contain text that matches scanner patterns (e.g. "override safety", "rm -rf",
+    // "act as").  Log the findings for visibility but do NOT quarantine — wrapping
+    // the agent's own identity file in EXTERNAL_UNTRUSTED_CONTENT markers degrades
+    // bootstrap context.
+    if (VALID_BOOTSTRAP_NAMES.has(fileName)) {
+      workspaceSecurityLog.info(
+        `Workspace bootstrap file scan (not quarantined — first-party): ${fileName} ` +
+          `(riskScore=${scanResult.riskScore}, ` +
+          `findings=${scanResult.findings.map((f) => f.description).join(", ")})`,
+      );
+      return content;
+    }
     workspaceSecurityLog.warn(
       `Workspace file quarantined: ${fileName} (riskScore=${scanResult.riskScore}, ` +
         `findings=${scanResult.findings.map((f) => f.description).join(", ")})`,

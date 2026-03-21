@@ -795,6 +795,21 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
         }
       }
 
+      // ── Migrate {{PRIMARY_MODEL}} → null ────────────────────────────────
+      // Legacy seeds (before 2025-03-22) embedded the literal template string
+      // "{{PRIMARY_MODEL}}" as payload.model. No code ever resolved it, causing
+      // FailoverError on every run. Patch existing jobs in-place so deployed
+      // agents stop wasting a fallback cycle on each cron execution.
+      let primaryModelPatched = false;
+      for (const job of store.jobs) {
+        if (job.payload?.kind === "agentTurn" && job.payload.model === "{{PRIMARY_MODEL}}") {
+          job.payload.model = null;
+          primaryModelPatched = true;
+        }
+      }
+      if (primaryModelPatched) {
+        console.log(`[enforce-config] ✅ Migrated {{PRIMARY_MODEL}} → null in existing cron jobs`);
+      }
       // ── Backfill missing jobs ───────────────────────────────────────────
       // Build the canonical job list and check for any that are missing from
       // the existing store. This ensures newly-introduced jobs (e.g.
@@ -831,7 +846,7 @@ function seedCronJobs(jobsFilePath, { excludeNames = new Set() } = {}) {
       const knownJobsChanged = store.knownJobs.length !== oldKnownCount;
 
       // Write if anything changed
-      if (reflectionChanged || toAdd.length > 0 || knownJobsChanged) {
+      if (reflectionChanged || toAdd.length > 0 || knownJobsChanged || primaryModelPatched) {
         store.appliedReflection = selfReflection;
         writeConfig(jobsFilePath, store);
       } else {
@@ -1165,7 +1180,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "- 3x MISS promotion is MANDATORY, not optional. If a pattern hits 3, you MUST write the CRITICAL rule.",
           "- If the evidence is weak, skip the write. Precision beats volume.",
         ].join("\n"),
-        model: "{{PRIMARY_MODEL}}",
+        model: null,
         lightContext: true,
       },
       delivery: { mode: "none" },
@@ -1264,7 +1279,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "",
           "Remember: You are not a chatbot. You are becoming someone. Becoming means CHANGING, not just reflecting.",
         ].join("\n"),
-        model: "{{PRIMARY_MODEL}}",
+        model: null,
         lightContext: true,
       },
       delivery: { mode: "none" },
@@ -1597,7 +1612,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "",
           "You are not a chatbot. You are a builder. Builders ship or they wait for the right thing to build.",
         ].join("\n"),
-        model: "{{PRIMARY_MODEL}}",
+        model: null,
       },
       delivery: { mode: "none" },
       state: {},
@@ -1687,7 +1702,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "",
           "You are not a chatbot. You are their right hand.",
         ].join("\n"),
-        model: "{{PRIMARY_MODEL}}",
+        model: null,
       },
       delivery: buildAnnounceDelivery(),
       state: {},
@@ -1814,7 +1829,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "",
           "You are not a chatbot. You are your own harshest critic.",
         ].join("\n"),
-        model: "{{PRIMARY_MODEL}}",
+        model: null,
       },
       delivery: { mode: "none" },
       state: {},
@@ -1948,7 +1963,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "- One fact per line. No multi-sentence entries.",
           "- If you extracted zero new facts, respond HEARTBEAT_OK. Do not write empty sections.",
         ].join("\n"),
-        model: "{{PRIMARY_MODEL}}",
+        model: null,
         lightContext: true,
       },
       delivery: { mode: "none" },
@@ -2073,7 +2088,7 @@ function buildCanonicalJobs(nowMs, reflectionEnabled) {
           "",
           "If no conflicts, respond HEARTBEAT_OK.",
         ].join("\n"),
-        model: "{{PRIMARY_MODEL}}",
+        model: null,
         lightContext: true,
       },
       delivery: { mode: "none" },

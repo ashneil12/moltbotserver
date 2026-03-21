@@ -5,7 +5,22 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
-## Session Memory Flush — Pre-Idle & Reset-Triggered (2026-03-21)
+## Fix Unresolved `{{PRIMARY_MODEL}}` Cron Template & SOUL.md False Quarantine (2026-03-22)
+
+**Purpose:** Two production bugs: (1) `{{PRIMARY_MODEL}}` literal string in cron job payloads caused `FailoverError: Unknown model` on every execution of 7+ cron jobs, wasting a fallback cycle. (2) SOUL.md falsely quarantined (riskScore=100) because its own security documentation section contained text matching scanner prompt injection patterns.
+
+| File                                        | Change                                                                                                                                                                                                                                     | Sync Risk      |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| `enforce-config.mjs`                        | Replaced 7 `model: "{{PRIMARY_MODEL}}"` → `model: null` in `buildCanonicalJobs()`. Added `{{PRIMARY_MODEL}}` → `null` migration patch in `seedCronJobs()` for existing deployed agents. Updated write condition to include migration flag. | None — custom  |
+| `cron/default-jobs.json`                    | Replaced 3 `"model": "{{PRIMARY_MODEL}}"` → `"model": null`                                                                                                                                                                                | None — custom  |
+| `src/cron/isolated-agent/run.ts`            | Added defensive guard: skip model override if it contains `{{...}}` (unresolved template variable), log warning and fall back to agent defaults                                                                                            | Low — additive |
+| `src/agents/workspace.ts`                   | Bootstrap file quarantine exemption: files in `VALID_BOOTSTRAP_NAMES` are scanned but never quarantined. Findings logged at `info` level instead of `warn`.                                                                                | Low — additive |
+| `enforce-config-cron-seed.test.mjs`         | **NEW** — 5 tests: migration correctness, idempotency, non-agentTurn safety, zero remaining `{{PRIMARY_MODEL}}` in seed sources                                                                                                            | None — test    |
+| `src/agents/workspace.context-scan.test.ts` | Updated 4 tests + added 2 new tests for bootstrap file quarantine exemption                                                                                                                                                                | None — test    |
+
+> **Sync Risk:** `run.ts` — 10-line defensive guard added to model override block. If upstream restructures the model resolution path, re-apply. `workspace.ts` — 14-line check added to `scanWorkspaceContent()`. Both are additive.
+
+---
 
 **Purpose:** Context was being silently discarded on session resets — only daily resets at 4 AM got a pre-reset memory flush. Now all three reset paths trigger agentic memory flush: daily (existing timer), idle (new background sweep), and `/new`/`/reset` (new fire-and-forget via global callback bridge).
 

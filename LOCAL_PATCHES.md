@@ -260,8 +260,10 @@ Groq/npm/Anthropic, connection strings, Bearer tokens, PEM keys). `redactSecrets
 **Why**: Workspace context files (SOUL.md, OPERATIONS.md) could contain injections.
 
 **What**: `scanAndLog()` with `source: "workspace_context"` before system prompt injection.
+Bootstrap file quarantine exemption: files in `VALID_BOOTSTRAP_NAMES` are scanned but never
+quarantined, preventing false positives when security documentation discusses injection patterns.
 
-**How to verify**: `grep -c 'scanAndLog' src/agents/workspace.ts`
+**How to verify**: `grep -c 'scanAndLog' src/agents/workspace.ts` and `grep -c 'VALID_BOOTSTRAP_NAMES' src/agents/workspace.ts`
 
 ---
 
