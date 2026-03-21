@@ -35,12 +35,22 @@ import { voicewakeHandlers } from "./server-methods/voicewake.js";
 import { webHandlers } from "./server-methods/web.js";
 import { wizardHandlers } from "./server-methods/wizard.js";
 
+/**
+ * Methods exempt from operator scope enforcement.
+ *
+ * Backend clients (e.g. the dashboard) authenticate with the shared gateway
+ * token but have no device identity, so the gateway strips their self-declared
+ * scopes (`clearUnboundScopes`). These monitoring/read-only methods must still
+ * be callable by any authenticated operator regardless of scope bindings.
+ */
+const SHARED_AUTH_EXEMPT_METHODS = new Set(["health", "system.diskHealth", "system.diskCleanup"]);
+
 const CONTROL_PLANE_WRITE_METHODS = new Set(["config.apply", "config.patch", "update.run"]);
 function authorizeGatewayMethod(method: string, client: GatewayRequestOptions["client"]) {
   if (!client?.connect) {
     return null;
   }
-  if (method === "health") {
+  if (SHARED_AUTH_EXEMPT_METHODS.has(method)) {
     return null;
   }
   const roleRaw = client.connect.role ?? "operator";

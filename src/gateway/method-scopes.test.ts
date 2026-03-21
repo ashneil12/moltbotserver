@@ -26,6 +26,18 @@ describe("method scope resolution", () => {
   it("returns empty scopes for unknown methods", () => {
     expect(resolveLeastPrivilegeOperatorScopesForMethod("totally.unknown.method")).toEqual([]);
   });
+
+  it("classifies system.diskHealth as operator.read", () => {
+    expect(resolveLeastPrivilegeOperatorScopesForMethod("system.diskHealth")).toEqual([
+      "operator.read",
+    ]);
+  });
+
+  it("classifies system.diskCleanup as operator.admin", () => {
+    expect(resolveLeastPrivilegeOperatorScopesForMethod("system.diskCleanup")).toEqual([
+      "operator.admin",
+    ]);
+  });
 });
 
 describe("operator scope authorization", () => {
