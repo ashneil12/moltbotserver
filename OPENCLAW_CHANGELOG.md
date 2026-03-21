@@ -5,6 +5,21 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Cleanup: Memory Config Tests + Flush Prompt Dedup (2026-03-22)
+
+**Purpose:** Post-audit cleanup. Added comprehensive test coverage for `enforceMemory()` and eliminated triplicated flush prompt instructions.
+
+| File                             | Change                                                                                                                             | Sync Risk      |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `enforce-config-memory.test.mjs` | **NEW** — 19 tests: QMD backend, searchMode, limits, hybrid weights, business mode, builtin fallback, Gemini provider, idempotency | None — test    |
+| `src/cron/flush-prompt.ts`       | **NEW** — Shared `buildFlushPrompt(header)` centralizing memory flush instructions                                                 | None — custom  |
+| `src/cron/pre-reset-flush.ts`    | Replaced inline flush prompt with `buildFlushPrompt()` call                                                                        | Low — refactor |
+| `src/cron/pre-idle-flush.ts`     | Replaced inline flush prompt with `buildFlushPrompt()` call                                                                        | Low — refactor |
+| `src/gateway/server-cron.ts`     | Replaced inline flush prompt with `buildFlushPrompt()` call                                                                        | Low — refactor |
+| `OPENCLAW_CONTEXT.md`            | Added `flush-prompt.ts`, `enforce-config-memory.test.mjs`, vsearch enforcement note, verification items #33-34                     | None — docs    |
+
+---
+
 ## Enable QMD Vector+BM25 Hybrid Search (2026-03-22)
 
 **Purpose:** QMD defaulted to `searchMode: "search"` (BM25 keyword-only), which caused `shouldRunEmbed()` to return `false` — embeddings were never generated despite the Gemini embedding proxy being functional. Setting `searchMode: "vsearch"` enables hybrid vector+BM25 search, unlocking semantic recall for the per-turn workspace context sweep.
