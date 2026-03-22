@@ -5,6 +5,69 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Search Provider Default Fix, README Updates & Test Coverage (2026-03-23)
+
+**Purpose:** Four changes: (1) Fix search provider default from legacy "tavily" to "searxng" across the dashboard, (2) Add tavily→searxng normalization in enforce-config.mjs for existing deployments, (3) Comprehensive README updates for both server source and dashboard, (4) New test file for search provider enforcement.
+
+### 1. Dashboard: Search Provider Default Fix
+
+The dashboard's default search provider was still "tavily" in 6 locations — but Tavily was never a valid gateway provider (not in `WEB_SEARCH_PROVIDERS`). Updated all defaults to "searxng" which has been the bundled search provider since the SearXNG sidecar integration.
+
+| File                                                        | Change                                                           | Sync Risk     |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- | ------------- | --------- | ------------- |
+| `src/app/api/instances/[id]/settings/route.ts`              | Default fallback `'tavily'` → `'searxng'`                        | None — custom |
+| `src/app/dashboard/console/components/ConfigurationTab.tsx` | `useState` default and settings hydration fallback → `'searxng'` | None — custom |
+| `src/app/dashboard/instances/actions.ts`                    | Default fallback `'tavily'` → `'searxng'`                        | None — custom |
+| `src/app/dashboard/instances/components/SettingsModal.tsx`  | `useState` default and settings hydration fallback → `'searxng'` | None — custom |
+| `src/lib/services/instance-env.ts`                          | JSDoc updated: `'searxng' (default)                              | 'brave'       | 'tavily'` | None — custom |
+
+### 2. Server: Legacy Tavily Normalization
+
+Existing deployed instances may have `OPENCLAW_SEARCH_PROVIDER=tavily` baked into their `.env` files from the old dashboard default. Added a guard in `enforceCore()` that normalizes `"tavily"` → `"searxng"` when `SEARXNG_BASE_URL` is also set (i.e., when SearXNG is available).
+
+| File                 | Change                                                                                                           | Sync Risk     |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------- |
+| `enforce-config.mjs` | 7-line normalization guard: `if (searchProvider === "tavily" && searxngBaseUrl)` → `"searxng"` + console warning | None — custom |
+
+### 3. README Updates
+
+#### Server README (`README.md`)
+
+Comprehensive update after cross-referencing all 70+ changelog entries. Added missing features, fixed stale counts, expanded the environment variable table.
+
+| Area                   | Changes                                                                                                                                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| QMD Memory Backend     | Added Q-value RL, intent classification, gravity/hub dampening, Gemini API embed proxy                                                                                                                                |
+| Memory Flush           | Expanded from single-path to 3-path (pre-compaction + pre-idle + session-reset)                                                                                                                                       |
+| Security               | Added quarantine notification system, plugin SDK barrel                                                                                                                                                               |
+| Stability & Resilience | Added auto-heal agent                                                                                                                                                                                                 |
+| ClawFlows              | **NEW section** — 84+ dynamic workflows with dashboard UI                                                                                                                                                             |
+| Agent Tooling          | Added auto-heal tool                                                                                                                                                                                                  |
+| Human Voice Mode       | Added humor training guide (`THE_ART_OF_BEING_FUNNY.md`)                                                                                                                                                              |
+| Stale counts           | Cron jobs 17→18, skills 64→97, tests 812+→950+                                                                                                                                                                        |
+| Environment variables  | Added 11 missing vars: `OPENCLAW_SELF_REFLECTION`, `OPENCLAW_MANAGED_PLATFORM`, `OPENCLAW_VIDEO_ENABLED`, `BYTEROVER_GEMINI_KEY`, `QMD_EMBED_PROVIDER`, `QMD_GEMINI_EMBED_MODEL`, `PROXY_HOST/PORT/USERNAME/PASSWORD` |
+
+#### Dashboard README (`README.md`)
+
+Full rewrite. Old README was 78 lines with outdated "MoltBot" branding, stale "Brave Search API key" reference, and ~15 missing features.
+
+| Area     | Changes                                                                                                                                                                                      |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Branding | "MoltBot Dashboard" → "OpenClaw Servers Dashboard"                                                                                                                                           |
+| Removed  | Brave Search API key reference (removed from codebase)                                                                                                                                       |
+| Added    | Console, health/memory/browser/personality/terminal/migration modals, credential vault, workflows tab, OAuth manager, OpenClaw backups, update controls, SearXNG engine selector, log viewer |
+| Added    | Tech stack section (Next.js 14, Clerk, Supabase, Stripe, Coolify, Tailwind)                                                                                                                  |
+
+### 4. Test Coverage: Search Provider Enforcement
+
+| File                             | Change                                                                                                                                 | Sync Risk   |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `enforce-config-search.test.mjs` | **NEW** — 13 tests covering tavily→searxng normalization, SearXNG baseUrl wiring, video auto-enable, provider passthrough, idempotency | None — test |
+
+> **Sync Risk:** `enforce-config.mjs` — 7-line additive guard in `enforceCore()` search provider section. Will not conflict with upstream unless they add their own search provider normalization. Dashboard changes are all in custom files. README is custom. Test is new.
+
+---
+
 ## Security DRY Refactor, Bug Fixes & Test Coverage (2026-03-22)
 
 **Purpose:** Five changes: (1) Prevent redundant SOUL.md overwrites in business mode, (2–3) Fix two bugs in security event logging, (4) DRY-extract shared lazy logger pattern, (5) Expand test coverage to 24 security tests.

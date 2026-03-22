@@ -634,8 +634,15 @@ function enforceCore(configPath) {
   // Web Search Provider — bridge OPENCLAW_SEARCH_PROVIDER + SEARXNG_BASE_URL
   // into tools.web.search so the runtime provider resolver picks up the
   // dashboard's chosen provider and the SearXNG sidecar URL.
-  const searchProvider = env("OPENCLAW_SEARCH_PROVIDER");
+  let searchProvider = env("OPENCLAW_SEARCH_PROVIDER");
   const searxngBaseUrl = env("SEARXNG_BASE_URL");
+  // Normalize legacy "tavily" → "searxng". Tavily was never a valid gateway
+  // provider (not in WEB_SEARCH_PROVIDERS) but was the old dashboard default.
+  // Existing instances may still have it baked into their .env files.
+  if (searchProvider === "tavily" && searxngBaseUrl) {
+    searchProvider = "searxng";
+    console.log(`[enforce-config] ⚠ Normalized legacy search provider "tavily" → "searxng"`);
+  }
   if (searchProvider || searxngBaseUrl) {
     const toolsWeb = ensure(tools, "web");
     const search = ensure(toolsWeb, "search");
