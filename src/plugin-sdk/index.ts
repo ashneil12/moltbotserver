@@ -337,6 +337,7 @@ export {
   sendPayloadWithChunkedTextAndMedia,
   sendMediaWithLeadingCaption,
 } from "./reply-payload.js";
+export { type OutboundSendDeps, resolveOutboundSendDep } from "../infra/outbound/deliver.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
   buildInboundReplyDispatchBase,
@@ -835,3 +836,190 @@ export {
 
 // Security utilities
 export { redactSensitiveText } from "../logging/redact.js";
+
+// ── SDK Extension Exports (auto-generated) ─────────────────────────
+export {
+  ensureConfiguredAcpRouteReady,
+  resolveConfiguredAcpRoute,
+} from "../acp/persistent-bindings.route.js";
+export { resolveAgentDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+export { resolveApiKeyForProvider } from "../agents/model-auth.js";
+export type { ModelCatalogEntry } from "../agents/model-catalog.js";
+export { resolveDefaultModelForAgent } from "../agents/model-selection.js";
+export { formatReasoningMessage } from "../agents/pi-embedded-utils.js";
+export { handleTelegramAction } from "../agents/tools/telegram-actions.js";
+export {
+  chunkMarkdownTextWithMode,
+  chunkText,
+  resolveChunkMode,
+  resolveTextChunkLimit,
+} from "../auto-reply/chunk.js";
+export { resolveCommandAuthorization } from "../auto-reply/command-auth.js";
+export { hasControlCommand } from "../auto-reply/command-detection.js";
+export { normalizeCommandBody } from "../auto-reply/commands-registry.js";
+export type { CommandArgs } from "../auto-reply/commands-registry.js";
+export { isAbortRequestText } from "../auto-reply/reply/abort.js";
+export { buildCommandsPaginationKeyboard } from "../auto-reply/reply/commands-info.js";
+export { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
+export { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
+export { resolveStoredModelOverride } from "../auto-reply/reply/model-selection.js";
+export { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
+export { buildCommandsMessagePaginated } from "../auto-reply/status.js";
+export type { MsgContext } from "../auto-reply/templating.js";
+export type { GetReplyOptions } from "../auto-reply/types.js";
+export { loginWeb } from "../channel-web.js";
+export { shouldAckReaction as shouldAckReactionGate } from "../channels/ack-reactions.js";
+export { normalizeChatType } from "../channels/chat-type.js";
+export { resolveCommandAuthorizedFromAuthorizers } from "../channels/command-gating.js";
+export { getChannelDock } from "../channels/dock.js";
+export { createFinalizableDraftLifecycle } from "../channels/draft-stream-controls.js";
+export { createDraftStreamLoop } from "../channels/draft-stream-loop.js";
+export { shouldDebounceTextInbound } from "../channels/inbound-debounce-policy.js";
+export { resolveNativeCommandSessionTargets } from "../channels/native-command-session-targets.js";
+export { createAccountActionGate } from "../channels/plugins/account-action-gate.js";
+export { resolveReactionMessageId } from "../channels/plugins/actions/reaction-message-id.js";
+export { resolveChannelConfigWrites } from "../channels/plugins/config-writes.js";
+export type { DirectoryConfigParams } from "../channels/plugins/directory-config.js";
+export { configureChannelAccessWithAllowlist } from "../channels/plugins/onboarding/channel-access-configure.js";
+export { sendTextMediaPayload } from "../channels/plugins/outbound/direct-text-media.js";
+export { recordInboundSessionMetaSafe } from "../channels/session-meta.js";
+export { resolveThreadBindingConversationIdFromBindingId } from "../channels/thread-binding-id.js";
+export { formatThreadBindingDurationLabel } from "../channels/thread-bindings-messages.js";
+export { formatCliCommand } from "../cli/command-format.js";
+export { detectBinary } from "../commands/onboard-helpers.js";
+export { resolveAgentMaxConcurrent } from "../config/agent-limits.js";
+export { loadConfig, readConfigFileSnapshotForWrite, writeConfigFile } from "../config/config.js";
+export type { ReplyToMode } from "../config/config.js";
+export type { ChannelGroupPolicy } from "../config/group-policy.js";
+export { writeConfigFile } from "../config/io.js";
+export { resolveMarkdownTableMode } from "../config/markdown-tables.js";
+export { mergeWhatsAppConfig } from "../config/merge-config.js";
+export { STATE_DIR, resolveOAuthDir, resolveStateDir } from "../config/paths.js";
+export { loadSessionStore, readSessionUpdatedAt, resolveStorePath } from "../config/sessions.js";
+export type {
+  DiscordAccountConfig,
+  DiscordActionConfig,
+  DiscordGuildEntry,
+} from "../config/types.discord.js";
+export type {
+  DiscordAccountConfig,
+  DiscordActionConfig,
+  DiscordGuildChannelConfig,
+  DiscordGuildEntry,
+  IMessageAccountConfig,
+  ReplyToMode,
+  SignalAccountConfig,
+  SignalReactionNotificationMode,
+  SlackAccountConfig,
+  TelegramAccountConfig,
+  TelegramActionConfig,
+  TelegramDirectConfig,
+  TelegramGroupConfig,
+  WhatsAppAccountConfig,
+} from "../config/types.js";
+export type { SlackAccountConfig, SlackChannelConfig } from "../config/types.slack.js";
+export type {
+  TelegramAccountConfig,
+  TelegramActionConfig,
+  TelegramExecApprovalConfig,
+  TelegramGroupConfig,
+  TelegramInlineButtonsScope,
+  TelegramNetworkConfig,
+} from "../config/types.telegram.js";
+export { loadCronStore, resolveCronStorePath, saveCronStore } from "../cron/store.js";
+export { GatewayClient } from "../gateway/client.js";
+export { resolveClientIp } from "../gateway/net.js";
+export { createOperatorApprovalsGatewayClient } from "../gateway/operator-approvals-client.js";
+export type { EventFrame } from "../gateway/protocol/index.js";
+export { danger, info, logVerbose, shouldLogVerbose, success, warn } from "../globals.js";
+export { waitForAbortSignal } from "../infra/abort-signal.js";
+export { computeBackoff, sleepWithAbort } from "../infra/backoff.js";
+export type { BackoffPolicy } from "../infra/backoff.js";
+export { recordChannelActivity } from "../infra/channel-activity.js";
+export { isDiagnosticFlagEnabled } from "../infra/diagnostic-flags.js";
+export { formatUncaughtError } from "../infra/errors.js";
+export { resolveExecApprovalCommandDisplay } from "../infra/exec-approval-command-display.js";
+export { getExecApprovalReplyMetadata } from "../infra/exec-approval-reply.js";
+export type { ExecApprovalReplyDecision } from "../infra/exec-approval-reply.js";
+export { resolveExecApprovalSessionTarget } from "../infra/exec-approval-session-target.js";
+export { resolveFetch } from "../infra/fetch.js";
+export { formatDurationPrecise } from "../infra/format-time/format-duration.ts";
+export { SafeOpenError, readLocalFileSafely } from "../infra/fs-safe.js";
+export { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
+export { writeJsonAtomic } from "../infra/json-files.js";
+export { hasEnvHttpProxyConfigured } from "../infra/net/proxy-env.js";
+export type { PinnedDispatcherPolicy } from "../infra/net/ssrf.js";
+export type { OutboundIdentity } from "../infra/outbound/identity.js";
+export { getSessionBindingService } from "../infra/outbound/session-binding-service.js";
+export { createDiscordRetryRunner, createTelegramRetryRunner } from "../infra/retry-policy.js";
+export type { RetryRunner } from "../infra/retry-policy.js";
+export { resolveRetryConfig, retryAsync } from "../infra/retry.js";
+export type { RetryConfig } from "../infra/retry.js";
+export { tryReadSecretFileSync } from "../infra/secret-file.js";
+export { generateSecureUuid } from "../infra/secure-random.js";
+export { enqueueSystemEvent, resetSystemEventsForTest } from "../infra/system-events.js";
+export { waitForTransportReady } from "../infra/transport-ready.js";
+export { registerUnhandledRejectionHandler } from "../infra/unhandled-rejections.js";
+export { logInfo } from "../logger.js";
+export { getChildLogger, resetLogger, setLoggerOverride, toPinoLikeLogger } from "../logging.js";
+export { getChildLogger } from "../logging/logger.js";
+export { redactIdentifier } from "../logging/redact-identifier.js";
+export { createSubsystemLogger } from "../logging/subsystem.js";
+export { chunkMarkdownIR, markdownToIR } from "../markdown/ir.js";
+export type { MarkdownLinkSpan } from "../markdown/ir.js";
+export { renderMarkdownWithMarkers } from "../markdown/render.js";
+export { convertMarkdownTables } from "../markdown/tables.js";
+export { markdownToWhatsApp } from "../markdown/whatsapp.js";
+export { resolveAutoImageModel } from "../media-understanding/runner.js";
+export { isTelegramVoiceCompatibleAudio } from "../media/audio.js";
+export { maxBytesForKind } from "../media/constants.js";
+export type { MediaKind } from "../media/constants.js";
+export { MediaFetchError, fetchRemoteMedia } from "../media/fetch.js";
+export { MEDIA_FFMPEG_MAX_AUDIO_DURATION_SECS } from "../media/ffmpeg-limits.js";
+export { buildOutboundMediaLoadOptions } from "../media/load-options.js";
+export { getAgentScopedMediaLocalRoots, getDefaultMediaLocalRoots } from "../media/local-roots.js";
+export { isGifMedia, kindFromMime } from "../media/mime.js";
+export { resolveOutboundAttachmentFromUrl } from "../media/outbound-attachment.js";
+export { encodePngRgba, fillPixel } from "../media/png-encode.js";
+export { saveMediaBuffer } from "../media/store.js";
+export type { SavedMedia } from "../media/store.js";
+export { unlinkIfExists } from "../media/temp-files.js";
+export {
+  readChannelAllowFromStore,
+  upsertChannelPairingRequest,
+} from "../pairing/pairing-store.js";
+export { resolveTelegramPollVisibility } from "../poll-params.js";
+export { normalizePollInput } from "../polls.js";
+export { runCommandWithTimeout } from "../process/exec.js";
+export { resolveAccountEntry } from "../routing/account-lookup.js";
+export { formatSetExplicitDefaultInstruction } from "../routing/default-account-warnings.js";
+export {
+  buildAgentSessionKey,
+  deriveLastRoutePolicy,
+  resolveAgentRoute,
+  resolveInboundLastRouteSessionKey,
+} from "../routing/resolve-route.js";
+export type { ResolvedAgentRoute } from "../routing/resolve-route.js";
+export { parseAgentSessionKey } from "../routing/session-key.js";
+export { createNonExitingRuntime, defaultRuntime } from "../runtime.js";
+export { resolveDefaultSecretProviderAlias } from "../secrets/ref-contract.js";
+export { resolvePinnedMainDmOwnerFromAllowlist } from "../security/dm-policy-shared.js";
+export { compileSafeRegex, testRegexWithBoundedInput } from "../security/safe-regex.js";
+export { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
+export { resolveGlobalMap, resolveGlobalSingleton } from "../shared/global-singleton.js";
+export { normalizeStringEntries } from "../shared/string-normalization.js";
+export { findCodeRegions, isInsideCode } from "../shared/text/code-regions.js";
+export { stripReasoningTagsFromText } from "../shared/text/reasoning-tags.js";
+export type { MockFn } from "../test-utils/vitest-mock-fn.js";
+export {
+  ensureDir,
+  isRecord,
+  jidToE164,
+  pathExists,
+  resolveUserPath,
+  toWhatsappJid,
+} from "../utils.js";
+export type { WebChannel } from "../utils.js";
+export { fetchWithTimeout } from "../utils/fetch-timeout.js";
+export { withTimeout } from "../utils/with-timeout.js";
+export { VERSION } from "../version.js";

@@ -1,6 +1,6 @@
 import { ChannelType, type Guild } from "@buape/carbon";
+import { typedCases } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { typedCases } from "../../../src/test-utils/typed-cases.js";
 import {
   allowListMatches,
   buildDiscordMediaPayload,

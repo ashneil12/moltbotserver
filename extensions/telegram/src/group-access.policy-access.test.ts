@@ -1,6 +1,6 @@
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { TelegramAccountConfig } from "openclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { TelegramAccountConfig } from "../../../src/config/types.js";
 import { evaluateTelegramGroupPolicyAccess } from "./group-access.js";
 
 /**

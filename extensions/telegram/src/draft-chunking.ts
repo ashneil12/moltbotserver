@@ -1,8 +1,8 @@
-import { resolveTextChunkLimit } from "../../../src/auto-reply/chunk.js";
-import { getChannelDock } from "../../../src/channels/dock.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
-import { normalizeAccountId } from "../../../src/routing/session-key.js";
+import { resolveTextChunkLimit } from "openclaw/plugin-sdk";
+import { getChannelDock } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { resolveAccountEntry } from "openclaw/plugin-sdk";
+import { normalizeAccountId } from "openclaw/plugin-sdk";
 
 const DEFAULT_TELEGRAM_DRAFT_STREAM_MIN = 200;
 const DEFAULT_TELEGRAM_DRAFT_STREAM_MAX = 800;

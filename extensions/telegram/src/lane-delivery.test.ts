@@ -1,5 +1,5 @@
+import type { ReplyPayload } from "openclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
-import type { ReplyPayload } from "../../../src/auto-reply/types.js";
 import { createTestDraftStream } from "./draft-stream.test-helpers.js";
 import { createLaneTextDeliverer, type DraftLaneState, type LaneName } from "./lane-delivery.js";
 

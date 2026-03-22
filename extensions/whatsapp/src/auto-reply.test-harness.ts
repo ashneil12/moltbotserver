@@ -2,10 +2,10 @@ import "./test-helpers.js";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
+import * as ssrf from "openclaw/plugin-sdk";
+import { resetLogger, setLoggerOverride } from "openclaw/plugin-sdk";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import * as ssrf from "../../../src/infra/net/ssrf.js";
-import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
 import type { WebInboundMessage, WebListenerCloseReason } from "./inbound.js";
 import {
   resetBaileysMocks as _resetBaileysMocks,

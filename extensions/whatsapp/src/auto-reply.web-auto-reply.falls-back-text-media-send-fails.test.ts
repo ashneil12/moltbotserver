@@ -2,9 +2,9 @@ import "./test-helpers.js";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import * as ssrf from "openclaw/plugin-sdk";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as ssrf from "../../../src/infra/net/ssrf.js";
 
 const TEST_NET_IP = "203.0.113.10";
 
@@ -17,8 +17,8 @@ vi.mock("../../../src/agents/pi-embedded.js", () => ({
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
 }));
 
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
+import { resetLogger, setLoggerOverride } from "openclaw/plugin-sdk";
 import { monitorWebChannel } from "./auto-reply.js";
 import { resetBaileysMocks, resetLoadConfigMock } from "./test-helpers.js";
 

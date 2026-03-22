@@ -1,6 +1,6 @@
-import type { MarkdownTableMode } from "../../../src/config/types.base.js";
-import { chunkMarkdownIR, markdownToIR, type MarkdownLinkSpan } from "../../../src/markdown/ir.js";
-import { renderMarkdownWithMarkers } from "../../../src/markdown/render.js";
+import type { MarkdownTableMode } from "openclaw/plugin-sdk";
+import { chunkMarkdownIR, markdownToIR, type MarkdownLinkSpan } from "openclaw/plugin-sdk";
+import { renderMarkdownWithMarkers } from "openclaw/plugin-sdk";
 
 // Escape special characters for Slack mrkdwn format.
 // Preserve Slack's angle-bracket tokens so mentions and links stay intact.

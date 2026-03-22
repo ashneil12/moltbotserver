@@ -1,13 +1,6 @@
-import {
-  asString,
-  collectIssuesForEnabledAccounts,
-  isRecord,
-} from "../../../src/channels/plugins/status-issues/shared.js";
-import type {
-  ChannelAccountSnapshot,
-  ChannelStatusIssue,
-} from "../../../src/channels/plugins/types.js";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
+import { asString, collectIssuesForEnabledAccounts, isRecord } from "openclaw/plugin-sdk";
+import type { ChannelAccountSnapshot, ChannelStatusIssue } from "openclaw/plugin-sdk";
+import { formatCliCommand } from "openclaw/plugin-sdk";
 
 type WhatsAppAccountStatus = {
   accountId?: unknown;

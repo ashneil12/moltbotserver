@@ -1,5 +1,5 @@
+import * as ssrf from "openclaw/plugin-sdk";
 import { afterEach, beforeAll, beforeEach, expect, vi, type Mock } from "vitest";
-import * as ssrf from "../../../src/infra/net/ssrf.js";
 import { onSpy, sendChatActionSpy } from "./bot.media.e2e-harness.js";
 
 type StickerSpy = Mock<(...args: unknown[]) => unknown>;

@@ -1,8 +1,8 @@
-import { sendTextMediaPayload } from "../../../src/channels/plugins/outbound/direct-text-media.js";
-import type { ChannelOutboundAdapter } from "../../../src/channels/plugins/types.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { resolveOutboundSendDep } from "../../../src/infra/outbound/deliver.js";
-import type { OutboundIdentity } from "../../../src/infra/outbound/identity.js";
+import { sendTextMediaPayload } from "openclaw/plugin-sdk";
+import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { resolveOutboundSendDep } from "openclaw/plugin-sdk";
+import type { OutboundIdentity } from "openclaw/plugin-sdk";
 import { getThreadBindingManager, type ThreadBindingRecord } from "./monitor/thread-bindings.js";
 import { normalizeDiscordOutboundTarget } from "./normalize.js";
 import { sendMessageDiscord, sendPollDiscord, sendWebhookMessageDiscord } from "./send.js";

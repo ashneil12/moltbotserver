@@ -1,8 +1,8 @@
 import { EventEmitter } from "node:events";
 import fsSync from "node:fs";
 import path from "node:path";
+import { resetLogger, setLoggerOverride } from "openclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
 import { baileys, getLastSocket, resetBaileysMocks, resetLoadConfigMock } from "./test-helpers.js";
 
 const { createWaSocket, formatError, logWebSelfId, waitForWaConnection } =

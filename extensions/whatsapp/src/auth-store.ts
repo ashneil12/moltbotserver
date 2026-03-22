@@ -1,14 +1,14 @@
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import { resolveOAuthDir } from "../../../src/config/paths.js";
-import { info, success } from "../../../src/globals.js";
-import { getChildLogger } from "../../../src/logging.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { defaultRuntime, type RuntimeEnv } from "../../../src/runtime.js";
-import type { WebChannel } from "../../../src/utils.js";
-import { jidToE164, resolveUserPath } from "../../../src/utils.js";
+import { formatCliCommand } from "openclaw/plugin-sdk";
+import { resolveOAuthDir } from "openclaw/plugin-sdk";
+import { info, success } from "openclaw/plugin-sdk";
+import { getChildLogger } from "openclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk";
+import { defaultRuntime, type RuntimeEnv } from "openclaw/plugin-sdk";
+import type { WebChannel } from "openclaw/plugin-sdk";
+import { jidToE164, resolveUserPath } from "openclaw/plugin-sdk";
 
 export function resolveDefaultWebAuthDir(): string {
   return path.join(resolveOAuthDir(), "whatsapp", DEFAULT_ACCOUNT_ID);

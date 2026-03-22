@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { Bot } from "grammy";
+import { STATE_DIR } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { STATE_DIR } from "../../../src/config/paths.js";
 import {
   createSequencedTestDraftStream,
   createTestDraftStream,

@@ -1,8 +1,5 @@
-import {
-  looksLikeHandleOrPhoneTarget,
-  trimMessagingTarget,
-} from "../../../src/channels/plugins/normalize/shared.js";
-import { normalizeWhatsAppTarget } from "../../../src/whatsapp/normalize.js";
+import { looksLikeHandleOrPhoneTarget, trimMessagingTarget } from "openclaw/plugin-sdk";
+import { normalizeWhatsAppTarget } from "openclaw/plugin-sdk";
 
 export function normalizeWhatsAppMessagingTarget(raw: string): string | undefined {
   const trimmed = trimMessagingTarget(raw);

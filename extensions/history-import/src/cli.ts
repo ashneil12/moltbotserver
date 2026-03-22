@@ -2,7 +2,7 @@
  * CLI command handler for `openclaw history-import`.
  */
 
-import type { OpenClawPluginApi } from "../../../src/plugins/types.js";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import { writeConversations } from "./importer.js";
 import { loadAndParse } from "./parsers/detect.js";
 import { sampleConversations } from "./sampler.js";

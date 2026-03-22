@@ -1,17 +1,14 @@
-import { resolveConfiguredAcpRoute } from "../../../src/acp/persistent-bindings.route.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { logVerbose } from "../../../src/globals.js";
-import { getSessionBindingService } from "../../../src/infra/outbound/session-binding-service.js";
+import { resolveConfiguredAcpRoute } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { logVerbose } from "openclaw/plugin-sdk";
+import { getSessionBindingService } from "openclaw/plugin-sdk";
 import {
   buildAgentSessionKey,
   deriveLastRoutePolicy,
   pickFirstExistingAgentId,
   resolveAgentRoute,
-} from "../../../src/routing/resolve-route.js";
-import {
-  buildAgentMainSessionKey,
-  resolveAgentIdFromSessionKey,
-} from "../../../src/routing/session-key.js";
+} from "openclaw/plugin-sdk";
+import { buildAgentMainSessionKey, resolveAgentIdFromSessionKey } from "openclaw/plugin-sdk";
 import {
   buildTelegramGroupPeerId,
   buildTelegramParentPeer,

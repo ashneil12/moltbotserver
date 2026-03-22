@@ -1,4 +1,4 @@
-import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../src/auto-reply/chunk.js";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "openclaw/plugin-sdk";
 
 export type ChunkDiscordTextOpts = {
   /** Max characters per Discord message. Default: 2000. */

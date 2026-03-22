@@ -1,6 +1,6 @@
-import { resolveFetch } from "../../../src/infra/fetch.js";
-import { generateSecureUuid } from "../../../src/infra/secure-random.js";
-import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
+import { resolveFetch } from "openclaw/plugin-sdk";
+import { generateSecureUuid } from "openclaw/plugin-sdk";
+import { fetchWithTimeout } from "openclaw/plugin-sdk";
 
 export type SignalRpcOptions = {
   baseUrl: string;

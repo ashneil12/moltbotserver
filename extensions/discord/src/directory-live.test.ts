@@ -1,5 +1,5 @@
+import type { DirectoryConfigParams } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DirectoryConfigParams } from "../../../src/channels/plugins/directory-config.js";
 
 const mocks = vi.hoisted(() => ({
   fetchDiscord: vi.fn(),

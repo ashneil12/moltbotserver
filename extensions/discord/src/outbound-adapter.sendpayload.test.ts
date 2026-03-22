@@ -1,9 +1,6 @@
+import type { ReplyPayload } from "openclaw/plugin-sdk";
+import { installSendPayloadContractSuite, primeSendMock } from "openclaw/plugin-sdk";
 import { describe, vi } from "vitest";
-import type { ReplyPayload } from "../../../src/auto-reply/types.js";
-import {
-  installSendPayloadContractSuite,
-  primeSendMock,
-} from "../../../src/test-utils/send-payload-contract.js";
 import { discordOutbound } from "./outbound-adapter.js";
 
 function createHarness(params: {

@@ -454,7 +454,10 @@ function enforceCore(configPath) {
   slots.contextEngine = slots.contextEngine || "lossless-claw";
   slots.memory = "memory-unified"; // Unified memory with per-turn auto-recall
   const entries = ensure(plugins, "entries");
-  entries["lossless-claw"] = entries["lossless-claw"] || { enabled: true };
+  entries["lossless-claw"] = {
+    enabled: true,
+    databasePath: "/home/node/data/lcm.db",
+  };
   // Memory-unified: enable the plugin. Alignment scoring settings are read
   // from environment variables by the extension at runtime rather than config
   // keys, because OpenClaw's core validator does not recognise custom extension
@@ -2501,7 +2504,12 @@ function enforceLCM() {
       // Installed version is same or newer — nothing to do
       return;
     }
-    console.log(`[enforce-config] LCM upgrade available: ${installedVersion} → ${prebakedVersion}`);
+  }
+
+  if (prebakedVersion || !installedVersion) {
+    console.log(
+      `[enforce-config] LCM ${installedVersion ? "upgrade" : "install"} available: v${installedVersion || "unknown"} → v${prebakedVersion || "unknown"}`,
+    );
   } else if (existsSync(pluginDir) && !prebakedVersion) {
     // Plugin dir exists but we can't read prebaked version — don't risk overwriting
     return;

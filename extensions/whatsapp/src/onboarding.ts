@@ -1,21 +1,21 @@
 import path from "node:path";
-import { loginWeb } from "../../../src/channel-web.js";
-import type { ChannelOnboardingAdapter } from "../../../src/channels/plugins/onboarding-types.js";
+import { loginWeb } from "openclaw/plugin-sdk";
+import type { ChannelOnboardingAdapter } from "openclaw/plugin-sdk";
 import {
   normalizeAllowFromEntries,
   resolveAccountIdForConfigure,
   resolveOnboardingAccountId,
   splitOnboardingEntries,
-} from "../../../src/channels/plugins/onboarding/helpers.js";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { mergeWhatsAppConfig } from "../../../src/config/merge-config.js";
-import type { DmPolicy } from "../../../src/config/types.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import { normalizeE164, pathExists } from "../../../src/utils.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+} from "openclaw/plugin-sdk";
+import { formatCliCommand } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { mergeWhatsAppConfig } from "openclaw/plugin-sdk";
+import type { DmPolicy } from "openclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk";
+import type { RuntimeEnv } from "openclaw/plugin-sdk";
+import { formatDocsLink } from "openclaw/plugin-sdk";
+import { normalizeE164, pathExists } from "openclaw/plugin-sdk";
+import type { WizardPrompter } from "openclaw/plugin-sdk";
 import {
   listWhatsAppAccountIds,
   resolveDefaultWhatsAppAccountId,

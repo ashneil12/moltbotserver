@@ -1,10 +1,10 @@
 import path from "node:path";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { STATE_DIR } from "openclaw/plugin-sdk";
+import { TELEGRAM_COMMAND_NAME_PATTERN } from "openclaw/plugin-sdk";
+import type { TelegramAccountConfig } from "openclaw/plugin-sdk";
+import type { RuntimeEnv } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { STATE_DIR } from "../../../src/config/paths.js";
-import { TELEGRAM_COMMAND_NAME_PATTERN } from "../../../src/config/telegram-custom-commands.js";
-import type { TelegramAccountConfig } from "../../../src/config/types.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 
 const { listSkillCommandsForAgents } = vi.hoisted(() => ({

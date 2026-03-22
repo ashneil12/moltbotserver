@@ -1,11 +1,7 @@
+import { AcpRuntimeError } from "openclaw/plugin-sdk";
+import { __testing, getAcpRuntimeBackend, requireAcpRuntimeBackend } from "openclaw/plugin-sdk";
 import type { AcpRuntime, OpenClawPluginServiceContext } from "openclaw/plugin-sdk/acpx";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AcpRuntimeError } from "../../../src/acp/runtime/errors.js";
-import {
-  __testing,
-  getAcpRuntimeBackend,
-  requireAcpRuntimeBackend,
-} from "../../../src/acp/runtime/registry.js";
 import { ACPX_BUNDLED_BIN, ACPX_PINNED_VERSION } from "./config.js";
 import { createAcpxRuntimeService } from "./service.js";
 

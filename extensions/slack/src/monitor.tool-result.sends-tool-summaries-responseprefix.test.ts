@@ -1,7 +1,7 @@
+import { HISTORY_CONTEXT_MARKER } from "openclaw/plugin-sdk";
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
+import { CURRENT_MESSAGE_MARKER } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HISTORY_CONTEXT_MARKER } from "../../../src/auto-reply/reply/history.js";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import { CURRENT_MESSAGE_MARKER } from "../../../src/auto-reply/reply/mentions.js";
 import {
   defaultSlackTestConfig,
   getSlackTestState,

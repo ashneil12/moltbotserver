@@ -1,9 +1,9 @@
 import { DisconnectReason } from "@whiskeysockets/baileys";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import { loadConfig } from "../../../src/config/config.js";
-import { danger, info, success } from "../../../src/globals.js";
-import { logInfo } from "../../../src/logger.js";
-import { defaultRuntime, type RuntimeEnv } from "../../../src/runtime.js";
+import { formatCliCommand } from "openclaw/plugin-sdk";
+import { loadConfig } from "openclaw/plugin-sdk";
+import { danger, info, success } from "openclaw/plugin-sdk";
+import { logInfo } from "openclaw/plugin-sdk";
+import { defaultRuntime, type RuntimeEnv } from "openclaw/plugin-sdk";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { createWaSocket, formatError, logoutWeb, waitForWaConnection } from "./session.js";
 

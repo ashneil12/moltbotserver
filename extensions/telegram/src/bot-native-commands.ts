@@ -1,8 +1,8 @@
 import type { Bot, Context } from "grammy";
-import { ensureConfiguredAcpRouteReady } from "../../../src/acp/persistent-bindings.route.js";
-import { resolveChunkMode } from "../../../src/auto-reply/chunk.js";
-import { resolveCommandAuthorization } from "../../../src/auto-reply/command-auth.js";
-import type { CommandArgs } from "../../../src/auto-reply/commands-registry.js";
+import { ensureConfiguredAcpRouteReady } from "openclaw/plugin-sdk";
+import { resolveChunkMode } from "openclaw/plugin-sdk";
+import { resolveCommandAuthorization } from "openclaw/plugin-sdk";
+import type { CommandArgs } from "openclaw/plugin-sdk";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -10,40 +10,40 @@ import {
   listNativeCommandSpecsForConfig,
   parseCommandArgs,
   resolveCommandArgMenu,
-} from "../../../src/auto-reply/commands-registry.js";
-import { finalizeInboundContext } from "../../../src/auto-reply/reply/inbound-context.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../../src/auto-reply/reply/provider-dispatcher.js";
-import { listSkillCommandsForAgents } from "../../../src/auto-reply/skill-commands.js";
-import { resolveCommandAuthorizedFromAuthorizers } from "../../../src/channels/command-gating.js";
-import { resolveNativeCommandSessionTargets } from "../../../src/channels/native-command-session-targets.js";
-import { createReplyPrefixOptions } from "../../../src/channels/reply-prefix.js";
-import { recordInboundSessionMetaSafe } from "../../../src/channels/session-meta.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { ChannelGroupPolicy } from "../../../src/config/group-policy.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
+} from "openclaw/plugin-sdk";
+import { finalizeInboundContext } from "openclaw/plugin-sdk";
+import { dispatchReplyWithBufferedBlockDispatcher } from "openclaw/plugin-sdk";
+import { listSkillCommandsForAgents } from "openclaw/plugin-sdk";
+import { resolveCommandAuthorizedFromAuthorizers } from "openclaw/plugin-sdk";
+import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk";
+import { createReplyPrefixOptions } from "openclaw/plugin-sdk";
+import { recordInboundSessionMetaSafe } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { ChannelGroupPolicy } from "openclaw/plugin-sdk";
+import { resolveMarkdownTableMode } from "openclaw/plugin-sdk";
 import {
   normalizeTelegramCommandName,
   resolveTelegramCustomCommands,
   TELEGRAM_COMMAND_NAME_PATTERN,
-} from "../../../src/config/telegram-custom-commands.js";
+} from "openclaw/plugin-sdk";
 import type {
   ReplyToMode,
   TelegramAccountConfig,
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "../../../src/config/types.js";
-import { danger, logVerbose } from "../../../src/globals.js";
-import { getChildLogger } from "../../../src/logging.js";
-import { getAgentScopedMediaLocalRoots } from "../../../src/media/local-roots.js";
+} from "openclaw/plugin-sdk";
+import { danger, logVerbose } from "openclaw/plugin-sdk";
+import { getChildLogger } from "openclaw/plugin-sdk";
+import { getAgentScopedMediaLocalRoots } from "openclaw/plugin-sdk";
 import {
   executePluginCommand,
   getPluginCommandSpecs,
   matchPluginCommand,
-} from "../../../src/plugins/commands.js";
-import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
-import { resolveThreadSessionKeys } from "../../../src/routing/session-key.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+} from "openclaw/plugin-sdk";
+import { resolveAgentRoute } from "openclaw/plugin-sdk";
+import { resolveThreadSessionKeys } from "openclaw/plugin-sdk";
+import type { RuntimeEnv } from "openclaw/plugin-sdk";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { isSenderAllowed, normalizeDmAllowFromWithStore } from "./bot-access.js";
 import type { TelegramMediaRef } from "./bot-message-context.js";

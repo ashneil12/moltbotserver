@@ -1,5 +1,5 @@
-import { detectMime } from "../../../src/media/mime.js";
-import { type SavedMedia, saveMediaBuffer } from "../../../src/media/store.js";
+import { detectMime } from "openclaw/plugin-sdk";
+import { type SavedMedia, saveMediaBuffer } from "openclaw/plugin-sdk";
 
 export type TelegramFileInfo = {
   file_id: string;

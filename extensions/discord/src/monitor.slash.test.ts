@@ -1,5 +1,5 @@
+import { createReplyDispatcherWithTyping } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createReplyDispatcherWithTyping } from "../../../src/auto-reply/reply/reply-dispatcher.js";
 
 const dispatchMock = vi.fn();
 

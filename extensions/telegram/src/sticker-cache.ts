@@ -1,22 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveApiKeyForProvider } from "../../../src/agents/model-auth.js";
-import type { ModelCatalogEntry } from "../../../src/agents/model-catalog.js";
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../../../src/agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../../../src/agents/model-selection.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { STATE_DIR } from "../../../src/config/paths.js";
-import { logVerbose } from "../../../src/globals.js";
-import { loadJsonFile, saveJsonFile } from "../../../src/infra/json-file.js";
-import {
-  AUTO_IMAGE_KEY_PROVIDERS,
-  DEFAULT_IMAGE_MODELS,
-} from "../../../src/media-understanding/defaults.js";
-import { resolveAutoImageModel } from "../../../src/media-understanding/runner.js";
+import { resolveApiKeyForProvider } from "openclaw/plugin-sdk";
+import type { ModelCatalogEntry } from "openclaw/plugin-sdk";
+import { findModelInCatalog, loadModelCatalog, modelSupportsVision } from "openclaw/plugin-sdk";
+import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { STATE_DIR } from "openclaw/plugin-sdk";
+import { logVerbose } from "openclaw/plugin-sdk";
+import { loadJsonFile, saveJsonFile } from "openclaw/plugin-sdk";
+import { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "openclaw/plugin-sdk";
+import { resolveAutoImageModel } from "openclaw/plugin-sdk";
 
 const CACHE_FILE = path.join(STATE_DIR, "telegram", "sticker-cache.json");
 const CACHE_VERSION = 1;

@@ -5,7 +5,7 @@ vi.mock("../../../src/globals.js", () => ({
   logVerbose: vi.fn(),
 }));
 
-import { logVerbose } from "../../../src/globals.js";
+import { logVerbose } from "openclaw/plugin-sdk";
 import { attachDiscordGatewayLogging } from "./gateway-logging.js";
 
 const makeRuntime = () => ({

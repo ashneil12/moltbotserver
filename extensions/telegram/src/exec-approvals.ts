@@ -1,7 +1,7 @@
-import type { ReplyPayload } from "../../../src/auto-reply/types.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { TelegramExecApprovalConfig } from "../../../src/config/types.telegram.js";
-import { getExecApprovalReplyMetadata } from "../../../src/infra/exec-approval-reply.js";
+import type { ReplyPayload } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { TelegramExecApprovalConfig } from "openclaw/plugin-sdk";
+import { getExecApprovalReplyMetadata } from "openclaw/plugin-sdk";
 import { resolveTelegramAccount } from "./accounts.js";
 import { resolveTelegramTargetChatType } from "./targets.js";
 

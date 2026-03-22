@@ -1,10 +1,6 @@
-import {
-  firstDefined,
-  isSenderIdAllowed,
-  mergeDmAllowFromSources,
-} from "../../../src/channels/allow-from.js";
-import type { AllowlistMatch } from "../../../src/channels/allowlist-match.js";
-import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
+import { firstDefined, isSenderIdAllowed, mergeDmAllowFromSources } from "openclaw/plugin-sdk";
+import type { AllowlistMatch } from "openclaw/plugin-sdk";
+import { createSubsystemLogger } from "openclaw/plugin-sdk";
 
 export type NormalizedAllowFrom = {
   entries: string[];

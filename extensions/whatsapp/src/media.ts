@@ -1,20 +1,20 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { logVerbose, shouldLogVerbose } from "../../../src/globals.js";
-import { SafeOpenError, readLocalFileSafely } from "../../../src/infra/fs-safe.js";
-import type { SsrFPolicy } from "../../../src/infra/net/ssrf.js";
-import { type MediaKind, maxBytesForKind } from "../../../src/media/constants.js";
-import { fetchRemoteMedia } from "../../../src/media/fetch.js";
+import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk";
+import { SafeOpenError, readLocalFileSafely } from "openclaw/plugin-sdk";
+import type { SsrFPolicy } from "openclaw/plugin-sdk";
+import { type MediaKind, maxBytesForKind } from "openclaw/plugin-sdk";
+import { fetchRemoteMedia } from "openclaw/plugin-sdk";
 import {
   convertHeicToJpeg,
   hasAlphaChannel,
   optimizeImageToPng,
   resizeToJpeg,
-} from "../../../src/media/image-ops.js";
-import { getDefaultMediaLocalRoots } from "../../../src/media/local-roots.js";
-import { detectMime, extensionForMime, kindFromMime } from "../../../src/media/mime.js";
-import { resolveUserPath } from "../../../src/utils.js";
+} from "openclaw/plugin-sdk";
+import { getDefaultMediaLocalRoots } from "openclaw/plugin-sdk";
+import { detectMime, extensionForMime, kindFromMime } from "openclaw/plugin-sdk";
+import { resolveUserPath } from "openclaw/plugin-sdk";
 
 export type WebMediaResult = {
   buffer: Buffer;

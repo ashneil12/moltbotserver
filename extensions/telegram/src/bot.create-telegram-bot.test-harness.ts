@@ -1,9 +1,9 @@
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
+import type { MsgContext } from "openclaw/plugin-sdk";
+import type { GetReplyOptions, ReplyPayload } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { MockFn } from "openclaw/plugin-sdk";
 import { beforeEach, vi } from "vitest";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import type { MsgContext } from "../../../src/auto-reply/templating.js";
-import type { GetReplyOptions, ReplyPayload } from "../../../src/auto-reply/types.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
 type AnyAsyncMock = MockFn<(...args: unknown[]) => Promise<unknown>>;

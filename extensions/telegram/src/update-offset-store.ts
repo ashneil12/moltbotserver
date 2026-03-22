@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveStateDir } from "../../../src/config/paths.js";
-import { writeJsonAtomic } from "../../../src/infra/json-files.js";
+import { resolveStateDir } from "openclaw/plugin-sdk";
+import { writeJsonAtomic } from "openclaw/plugin-sdk";
 
 const STORE_VERSION = 2;
 

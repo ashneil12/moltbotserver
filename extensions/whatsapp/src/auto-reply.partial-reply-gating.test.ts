@@ -13,10 +13,10 @@ vi.mock("../../../src/agents/pi-embedded.js", () => ({
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
 }));
 
-import { runEmbeddedPiAgent } from "../../../src/agents/pi-embedded.js";
-import { getReplyFromConfig } from "../../../src/auto-reply/reply.js";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import { runEmbeddedPiAgent } from "openclaw/plugin-sdk";
+import { getReplyFromConfig } from "openclaw/plugin-sdk";
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import { monitorWebChannel } from "./auto-reply.js";
 import { resetLoadConfigMock, setLoadConfigMock } from "./test-helpers.js";
 

@@ -2,8 +2,8 @@ import { EventEmitter } from "node:events";
 import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { resetLogger, setLoggerOverride } from "openclaw/plugin-sdk";
 import { afterEach, beforeEach, expect, vi } from "vitest";
-import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
 
 // Avoid exporting vitest mock types (TS2742 under pnpm + d.ts emit).
 // oxlint-disable-next-line typescript/no-explicit-any

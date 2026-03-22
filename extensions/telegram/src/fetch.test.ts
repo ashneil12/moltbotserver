@@ -1,5 +1,5 @@
+import { resolveFetch } from "openclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveFetch } from "../../../src/infra/fetch.js";
 import { resolveTelegramFetch, resolveTelegramTransport } from "./fetch.js";
 
 const setDefaultResultOrder = vi.hoisted(() => vi.fn());

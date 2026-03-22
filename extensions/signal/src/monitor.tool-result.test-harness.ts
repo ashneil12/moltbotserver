@@ -1,7 +1,7 @@
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
+import { resetSystemEventsForTest } from "openclaw/plugin-sdk";
+import type { MockFn } from "openclaw/plugin-sdk";
 import { beforeEach, vi } from "vitest";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import { resetSystemEventsForTest } from "../../../src/infra/system-events.js";
-import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 import type { SignalDaemonExitEvent, SignalDaemonHandle } from "./daemon.js";
 
 type SignalToolResultTestMocks = {

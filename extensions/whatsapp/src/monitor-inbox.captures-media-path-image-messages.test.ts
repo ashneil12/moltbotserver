@@ -3,8 +3,8 @@ import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import "./monitor-inbox.test-harness.js";
+import { setLoggerOverride } from "openclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { setLoggerOverride } from "../../../src/logging.js";
 import { monitorWebInbox } from "./inbound.js";
 import {
   DEFAULT_ACCOUNT_ID,

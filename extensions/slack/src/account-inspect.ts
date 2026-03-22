@@ -1,10 +1,7 @@
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import {
-  hasConfiguredSecretInput,
-  normalizeSecretInputString,
-} from "../../../src/config/types.secrets.js";
-import type { SlackAccountConfig } from "../../../src/config/types.slack.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { hasConfiguredSecretInput, normalizeSecretInputString } from "openclaw/plugin-sdk";
+import type { SlackAccountConfig } from "openclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk";
 import type { SlackAccountSurfaceFields } from "./account-surface-fields.js";
 import {
   mergeSlackAccountConfig,

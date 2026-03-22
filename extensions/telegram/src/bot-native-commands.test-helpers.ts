@@ -1,9 +1,9 @@
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { ChannelGroupPolicy } from "openclaw/plugin-sdk";
+import type { TelegramAccountConfig } from "openclaw/plugin-sdk";
+import type { RuntimeEnv } from "openclaw/plugin-sdk";
+import type { MockFn } from "openclaw/plugin-sdk";
 import { vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { ChannelGroupPolicy } from "../../../src/config/group-policy.js";
-import type { TelegramAccountConfig } from "../../../src/config/types.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
-import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 
 type RegisterTelegramNativeCommandsParams = Parameters<typeof registerTelegramNativeCommands>[0];

@@ -1,19 +1,19 @@
 import { timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import { InputFile, webhookCallback } from "grammy";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { isDiagnosticsEnabled } from "../../../src/infra/diagnostic-events.js";
-import { formatErrorMessage } from "../../../src/infra/errors.js";
-import { readJsonBodyWithLimit } from "../../../src/infra/http-body.js";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { isDiagnosticsEnabled } from "openclaw/plugin-sdk";
+import { formatErrorMessage } from "openclaw/plugin-sdk";
+import { readJsonBodyWithLimit } from "openclaw/plugin-sdk";
 import {
   logWebhookError,
   logWebhookProcessed,
   logWebhookReceived,
   startDiagnosticHeartbeat,
   stopDiagnosticHeartbeat,
-} from "../../../src/logging/diagnostic.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
-import { defaultRuntime } from "../../../src/runtime.js";
+} from "openclaw/plugin-sdk";
+import type { RuntimeEnv } from "openclaw/plugin-sdk";
+import { defaultRuntime } from "openclaw/plugin-sdk";
 import { resolveTelegramAllowedUpdates } from "./allowed-updates.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { createTelegramBot } from "./bot.js";

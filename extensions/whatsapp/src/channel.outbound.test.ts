@@ -1,8 +1,5 @@
+import { createWhatsAppPollFixture, expectWhatsAppPollSent } from "openclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createWhatsAppPollFixture,
-  expectWhatsAppPollSent,
-} from "../../../src/test-helpers/whatsapp-outbound.js";
 
 const hoisted = vi.hoisted(() => ({
   sendPollWhatsApp: vi.fn(async () => ({ messageId: "wa-poll-1", toJid: "1555@s.whatsapp.net" })),

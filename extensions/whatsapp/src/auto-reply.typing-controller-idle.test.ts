@@ -1,6 +1,6 @@
 import "./test-helpers.js";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
 import { monitorWebChannel } from "./auto-reply.js";
 import {
   createMockWebListener,

@@ -3,13 +3,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Bot } from "grammy";
-import { resolveStateDir } from "../../../src/config/paths.js";
-import {
-  normalizeTelegramCommandName,
-  TELEGRAM_COMMAND_NAME_PATTERN,
-} from "../../../src/config/telegram-custom-commands.js";
-import { logVerbose } from "../../../src/globals.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+import { resolveStateDir } from "openclaw/plugin-sdk";
+import { normalizeTelegramCommandName, TELEGRAM_COMMAND_NAME_PATTERN } from "openclaw/plugin-sdk";
+import { logVerbose } from "openclaw/plugin-sdk";
+import type { RuntimeEnv } from "openclaw/plugin-sdk";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 
 export const TELEGRAM_MAX_COMMANDS = 100;

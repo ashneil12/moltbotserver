@@ -1,5 +1,5 @@
 import { type ApiClientOptions, Bot } from "grammy";
-import type { TelegramNetworkConfig } from "../../../src/config/types.telegram.js";
+import type { TelegramNetworkConfig } from "openclaw/plugin-sdk";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { resolveTelegramFetch } from "./fetch.js";
 

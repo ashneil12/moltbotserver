@@ -1,8 +1,5 @@
+import { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } from "openclaw/plugin-sdk";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  clearRuntimeConfigSnapshot,
-  setRuntimeConfigSnapshot,
-} from "../../../src/config/config.js";
 import { buildTelegramMessageContextForTest } from "./bot-message-context.test-harness.js";
 
 describe("buildTelegramMessageContext dm thread sessions", () => {

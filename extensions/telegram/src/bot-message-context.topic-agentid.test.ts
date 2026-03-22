@@ -1,5 +1,5 @@
+import { loadConfig } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadConfig } from "../../../src/config/config.js";
 import { buildTelegramMessageContextForTest } from "./bot-message-context.test-harness.js";
 
 const { defaultRouteConfig } = vi.hoisted(() => ({

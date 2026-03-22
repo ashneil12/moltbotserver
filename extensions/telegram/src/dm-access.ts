@@ -1,9 +1,9 @@
 import type { Message } from "@grammyjs/types";
 import type { Bot } from "grammy";
-import type { DmPolicy } from "../../../src/config/types.js";
-import { logVerbose } from "../../../src/globals.js";
-import { issuePairingChallenge } from "../../../src/pairing/pairing-challenge.js";
-import { upsertChannelPairingRequest } from "../../../src/pairing/pairing-store.js";
+import type { DmPolicy } from "openclaw/plugin-sdk";
+import { logVerbose } from "openclaw/plugin-sdk";
+import { issuePairingChallenge } from "openclaw/plugin-sdk";
+import { upsertChannelPairingRequest } from "openclaw/plugin-sdk";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { resolveSenderAllowMatch, type NormalizedAllowFrom } from "./bot-access.js";
 

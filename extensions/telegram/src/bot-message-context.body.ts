@@ -1,30 +1,20 @@
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../../../src/agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../../../src/agents/model-selection.js";
-import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
-import {
-  recordPendingHistoryEntryIfEnabled,
-  type HistoryEntry,
-} from "../../../src/auto-reply/reply/history.js";
-import {
-  buildMentionRegexes,
-  matchesMentionWithExplicit,
-} from "../../../src/auto-reply/reply/mentions.js";
-import type { MsgContext } from "../../../src/auto-reply/templating.js";
-import { resolveControlCommandGate } from "../../../src/channels/command-gating.js";
-import { formatLocationText, type NormalizedLocation } from "../../../src/channels/location.js";
-import { logInboundDrop } from "../../../src/channels/logging.js";
-import { resolveMentionGatingWithBypass } from "../../../src/channels/mention-gating.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import { findModelInCatalog, loadModelCatalog, modelSupportsVision } from "openclaw/plugin-sdk";
+import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk";
+import { hasControlCommand } from "openclaw/plugin-sdk";
+import { recordPendingHistoryEntryIfEnabled, type HistoryEntry } from "openclaw/plugin-sdk";
+import { buildMentionRegexes, matchesMentionWithExplicit } from "openclaw/plugin-sdk";
+import type { MsgContext } from "openclaw/plugin-sdk";
+import { resolveControlCommandGate } from "openclaw/plugin-sdk";
+import { formatLocationText, type NormalizedLocation } from "openclaw/plugin-sdk";
+import { logInboundDrop } from "openclaw/plugin-sdk";
+import { resolveMentionGatingWithBypass } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "../../../src/config/types.js";
-import { logVerbose } from "../../../src/globals.js";
+} from "openclaw/plugin-sdk";
+import { logVerbose } from "openclaw/plugin-sdk";
 import type { NormalizedAllowFrom } from "./bot-access.js";
 import { isSenderAllowed } from "./bot-access.js";
 import type {

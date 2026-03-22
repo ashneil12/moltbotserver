@@ -1,11 +1,11 @@
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import {
   addChannelAllowFromStoreEntry,
   approveChannelPairingCode,
   listChannelPairingRequests,
   readChannelAllowFromStore,
   upsertChannelPairingRequest,
-} from "../../../src/pairing/pairing-store.js";
+} from "openclaw/plugin-sdk";
 
 export type TelegramPairingListEntry = {
   chatId: string;

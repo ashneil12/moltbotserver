@@ -1,5 +1,5 @@
+import type { MockFn } from "openclaw/plugin-sdk";
 import { beforeEach, vi } from "vitest";
-import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 
 const { botApi, botCtorSpy } = vi.hoisted(() => ({
   botApi: {

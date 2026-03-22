@@ -1,5 +1,5 @@
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
 import { beforeEach, vi, type Mock } from "vitest";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
 
 export const useSpy: Mock = vi.fn();
 export const middlewareUseSpy: Mock = vi.fn();

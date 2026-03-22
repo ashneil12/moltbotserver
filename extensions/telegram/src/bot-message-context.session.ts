@@ -1,26 +1,20 @@
-import { normalizeCommandBody } from "../../../src/auto-reply/commands-registry.js";
-import {
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "../../../src/auto-reply/envelope.js";
-import {
-  buildPendingHistoryContextFromMap,
-  type HistoryEntry,
-} from "../../../src/auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../../src/auto-reply/reply/inbound-context.js";
-import { toLocationContext } from "../../../src/channels/location.js";
-import { recordInboundSession } from "../../../src/channels/session.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../../src/config/sessions.js";
+import { normalizeCommandBody } from "openclaw/plugin-sdk";
+import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "openclaw/plugin-sdk";
+import { buildPendingHistoryContextFromMap, type HistoryEntry } from "openclaw/plugin-sdk";
+import { finalizeInboundContext } from "openclaw/plugin-sdk";
+import { toLocationContext } from "openclaw/plugin-sdk";
+import { recordInboundSession } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { readSessionUpdatedAt, resolveStorePath } from "openclaw/plugin-sdk";
 import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "../../../src/config/types.js";
-import { logVerbose, shouldLogVerbose } from "../../../src/globals.js";
-import type { ResolvedAgentRoute } from "../../../src/routing/resolve-route.js";
-import { resolveInboundLastRouteSessionKey } from "../../../src/routing/resolve-route.js";
-import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../src/security/dm-policy-shared.js";
+} from "openclaw/plugin-sdk";
+import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk";
+import type { ResolvedAgentRoute } from "openclaw/plugin-sdk";
+import { resolveInboundLastRouteSessionKey } from "openclaw/plugin-sdk";
+import { resolvePinnedMainDmOwnerFromAllowlist } from "openclaw/plugin-sdk";
 import { normalizeAllowFrom } from "./bot-access.js";
 import type {
   TelegramMediaRef,

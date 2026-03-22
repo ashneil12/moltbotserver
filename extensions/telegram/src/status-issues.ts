@@ -3,11 +3,8 @@ import {
   asString,
   isRecord,
   resolveEnabledConfiguredAccountId,
-} from "../../../src/channels/plugins/status-issues/shared.js";
-import type {
-  ChannelAccountSnapshot,
-  ChannelStatusIssue,
-} from "../../../src/channels/plugins/types.js";
+} from "openclaw/plugin-sdk";
+import type { ChannelAccountSnapshot, ChannelStatusIssue } from "openclaw/plugin-sdk";
 
 type TelegramAccountStatus = {
   accountId?: unknown;

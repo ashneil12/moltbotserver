@@ -1,5 +1,5 @@
+import { withEnvAsync } from "openclaw/plugin-sdk";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { withEnvAsync } from "../../../src/test-utils/env.js";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../../test/helpers/envelope-timestamp.js";
 import {
   createWebListenerFactoryCapture,

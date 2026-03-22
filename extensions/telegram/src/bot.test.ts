@@ -1,11 +1,8 @@
 import { rm } from "node:fs/promises";
+import { listNativeCommandSpecs, listNativeCommandSpecsForConfig } from "openclaw/plugin-sdk";
+import { loadSessionStore } from "openclaw/plugin-sdk";
+import { normalizeTelegramCommandName } from "openclaw/plugin-sdk";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  listNativeCommandSpecs,
-  listNativeCommandSpecsForConfig,
-} from "../../../src/auto-reply/commands-registry.js";
-import { loadSessionStore } from "../../../src/config/sessions.js";
-import { normalizeTelegramCommandName } from "../../../src/config/telegram-custom-commands.js";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../../test/helpers/envelope-timestamp.js";
 import { expectInboundContextContract } from "../../../test/helpers/inbound-contract.js";
 import {

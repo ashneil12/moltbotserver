@@ -1,11 +1,11 @@
-import type { MarkdownTableMode } from "../../../src/config/types.base.js";
+import type { MarkdownTableMode } from "openclaw/plugin-sdk";
 import {
   chunkMarkdownIR,
   markdownToIR,
   type MarkdownLinkSpan,
   type MarkdownIR,
-} from "../../../src/markdown/ir.js";
-import { renderMarkdownWithMarkers } from "../../../src/markdown/render.js";
+} from "openclaw/plugin-sdk";
+import { renderMarkdownWithMarkers } from "openclaw/plugin-sdk";
 
 export type TelegramFormattedChunk = {
   html: string;

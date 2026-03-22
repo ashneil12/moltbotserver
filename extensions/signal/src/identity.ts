@@ -1,5 +1,5 @@
-import { evaluateSenderGroupAccessForPolicy } from "../../../src/plugin-sdk/group-access.js";
-import { normalizeE164 } from "../../../src/utils.js";
+import { evaluateSenderGroupAccessForPolicy } from "openclaw/plugin-sdk";
+import { normalizeE164 } from "openclaw/plugin-sdk";
 
 export type SignalSender =
   | { kind: "phone"; raw: string; e164: string }

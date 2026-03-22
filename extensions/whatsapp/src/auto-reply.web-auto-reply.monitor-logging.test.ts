@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
+import { setLoggerOverride } from "openclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { setLoggerOverride } from "../../../src/logging.js";
 import {
   createWebListenerFactoryCapture,
   installWebAutoReplyTestHomeHooks,

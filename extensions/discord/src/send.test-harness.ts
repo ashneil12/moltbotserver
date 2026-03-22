@@ -1,5 +1,5 @@
+import type { MockFn } from "openclaw/plugin-sdk";
 import { vi } from "vitest";
-import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 
 type DiscordWebMediaMockFactoryResult = {
   loadWebMedia: MockFn;

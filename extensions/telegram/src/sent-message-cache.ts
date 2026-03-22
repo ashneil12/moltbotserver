@@ -1,4 +1,4 @@
-import { resolveGlobalMap } from "../../../src/shared/global-singleton.js";
+import { resolveGlobalMap } from "openclaw/plugin-sdk";
 
 /**
  * In-memory cache of sent message IDs per chat.

@@ -1,5 +1,5 @@
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import { vi, type MockInstance } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
 import type { ResolvedSlackAccount } from "./accounts.js";
 
 // --- SHARED STATE ---

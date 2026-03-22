@@ -1,5 +1,5 @@
+import type { TelegramNetworkConfig } from "openclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { TelegramNetworkConfig } from "../../../src/config/types.telegram.js";
 import {
   resetTelegramNetworkConfigStateForTests,
   resolveTelegramAutoSelectFamilyDecision,
@@ -11,7 +11,7 @@ vi.mock("../../../src/infra/wsl.js", () => ({
   isWSL2Sync: vi.fn(() => false),
 }));
 
-import { isWSL2Sync } from "../../../src/infra/wsl.js";
+import { isWSL2Sync } from "openclaw/plugin-sdk";
 
 describe("resolveTelegramAutoSelectFamilyDecision", () => {
   afterEach(() => {

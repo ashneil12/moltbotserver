@@ -1,41 +1,35 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
-import { resolveAgentDir, resolveDefaultAgentId } from "../../../src/agents/agent-scope.js";
-import { resolveDefaultModelForAgent } from "../../../src/agents/model-selection.js";
-import {
-  createInboundDebouncer,
-  resolveInboundDebounceMs,
-} from "../../../src/auto-reply/inbound-debounce.js";
-import { buildCommandsPaginationKeyboard } from "../../../src/auto-reply/reply/commands-info.js";
-import {
-  buildModelsProviderData,
-  formatModelsAvailableHeader,
-} from "../../../src/auto-reply/reply/commands-models.js";
-import { resolveStoredModelOverride } from "../../../src/auto-reply/reply/model-selection.js";
-import { listSkillCommandsForAgents } from "../../../src/auto-reply/skill-commands.js";
-import { buildCommandsMessagePaginated } from "../../../src/auto-reply/status.js";
-import { shouldDebounceTextInbound } from "../../../src/channels/inbound-debounce-policy.js";
-import { resolveChannelConfigWrites } from "../../../src/channels/plugins/config-writes.js";
-import { loadConfig } from "../../../src/config/config.js";
-import { writeConfigFile } from "../../../src/config/io.js";
+import { resolveAgentDir, resolveDefaultAgentId } from "openclaw/plugin-sdk";
+import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk";
+import { createInboundDebouncer, resolveInboundDebounceMs } from "openclaw/plugin-sdk";
+import { buildCommandsPaginationKeyboard } from "openclaw/plugin-sdk";
+import { buildModelsProviderData, formatModelsAvailableHeader } from "openclaw/plugin-sdk";
+import { resolveStoredModelOverride } from "openclaw/plugin-sdk";
+import { listSkillCommandsForAgents } from "openclaw/plugin-sdk";
+import { buildCommandsMessagePaginated } from "openclaw/plugin-sdk";
+import { shouldDebounceTextInbound } from "openclaw/plugin-sdk";
+import { resolveChannelConfigWrites } from "openclaw/plugin-sdk";
+import { loadConfig } from "openclaw/plugin-sdk";
+import { writeConfigFile } from "openclaw/plugin-sdk";
 import {
   loadSessionStore,
   resolveSessionStoreEntry,
   resolveStorePath,
   updateSessionStore,
-} from "../../../src/config/sessions.js";
-import type { DmPolicy } from "../../../src/config/types.base.js";
+} from "openclaw/plugin-sdk";
+import type { DmPolicy } from "openclaw/plugin-sdk";
 import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "../../../src/config/types.js";
-import { danger, logVerbose, warn } from "../../../src/globals.js";
-import { enqueueSystemEvent } from "../../../src/infra/system-events.js";
-import { MediaFetchError } from "../../../src/media/fetch.js";
-import { readChannelAllowFromStore } from "../../../src/pairing/pairing-store.js";
-import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
-import { resolveThreadSessionKeys } from "../../../src/routing/session-key.js";
-import { applyModelOverrideToSessionEntry } from "../../../src/sessions/model-overrides.js";
+} from "openclaw/plugin-sdk";
+import { danger, logVerbose, warn } from "openclaw/plugin-sdk";
+import { enqueueSystemEvent } from "openclaw/plugin-sdk";
+import { MediaFetchError } from "openclaw/plugin-sdk";
+import { readChannelAllowFromStore } from "openclaw/plugin-sdk";
+import { resolveAgentRoute } from "openclaw/plugin-sdk";
+import { resolveThreadSessionKeys } from "openclaw/plugin-sdk";
+import { applyModelOverrideToSessionEntry } from "openclaw/plugin-sdk";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   isSenderAllowed,

@@ -1,19 +1,19 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resolveThreadBindingConversationIdFromBindingId } from "../../../src/channels/thread-binding-id.js";
-import { formatThreadBindingDurationLabel } from "../../../src/channels/thread-bindings-messages.js";
-import { resolveStateDir } from "../../../src/config/paths.js";
-import { logVerbose } from "../../../src/globals.js";
-import { writeJsonAtomic } from "../../../src/infra/json-files.js";
+import { resolveThreadBindingConversationIdFromBindingId } from "openclaw/plugin-sdk";
+import { formatThreadBindingDurationLabel } from "openclaw/plugin-sdk";
+import { resolveStateDir } from "openclaw/plugin-sdk";
+import { logVerbose } from "openclaw/plugin-sdk";
+import { writeJsonAtomic } from "openclaw/plugin-sdk";
 import {
   registerSessionBindingAdapter,
   unregisterSessionBindingAdapter,
   type BindingTargetKind,
   type SessionBindingRecord,
-} from "../../../src/infra/outbound/session-binding-service.js";
-import { normalizeAccountId } from "../../../src/routing/session-key.js";
-import { resolveGlobalSingleton } from "../../../src/shared/global-singleton.js";
+} from "openclaw/plugin-sdk";
+import { normalizeAccountId } from "openclaw/plugin-sdk";
+import { resolveGlobalSingleton } from "openclaw/plugin-sdk";
 
 const DEFAULT_THREAD_BINDING_IDLE_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_THREAD_BINDING_MAX_AGE_MS = 0;

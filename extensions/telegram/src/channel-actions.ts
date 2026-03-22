@@ -3,21 +3,15 @@ import {
   readStringArrayParam,
   readStringOrNumberParam,
   readStringParam,
-} from "../../../src/agents/tools/common.js";
-import { handleTelegramAction } from "../../../src/agents/tools/telegram-actions.js";
-import { resolveReactionMessageId } from "../../../src/channels/plugins/actions/reaction-message-id.js";
-import {
-  createUnionActionGate,
-  listTokenSourcedAccounts,
-} from "../../../src/channels/plugins/actions/shared.js";
-import type {
-  ChannelMessageActionAdapter,
-  ChannelMessageActionName,
-} from "../../../src/channels/plugins/types.js";
-import type { TelegramActionConfig } from "../../../src/config/types.telegram.js";
-import { readBooleanParam } from "../../../src/plugin-sdk/boolean-param.js";
-import { extractToolSend } from "../../../src/plugin-sdk/tool-send.js";
-import { resolveTelegramPollVisibility } from "../../../src/poll-params.js";
+} from "openclaw/plugin-sdk";
+import { handleTelegramAction } from "openclaw/plugin-sdk";
+import { resolveReactionMessageId } from "openclaw/plugin-sdk";
+import { createUnionActionGate, listTokenSourcedAccounts } from "openclaw/plugin-sdk";
+import type { ChannelMessageActionAdapter, ChannelMessageActionName } from "openclaw/plugin-sdk";
+import type { TelegramActionConfig } from "openclaw/plugin-sdk";
+import { readBooleanParam } from "openclaw/plugin-sdk";
+import { extractToolSend } from "openclaw/plugin-sdk";
+import { resolveTelegramPollVisibility } from "openclaw/plugin-sdk";
 import {
   createTelegramActionGate,
   listEnabledTelegramAccounts,

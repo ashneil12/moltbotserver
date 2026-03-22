@@ -1,11 +1,11 @@
 import type { RunOptions } from "@grammyjs/runner";
-import { resolveAgentMaxConcurrent } from "../../../src/config/agent-limits.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { loadConfig } from "../../../src/config/config.js";
-import { waitForAbortSignal } from "../../../src/infra/abort-signal.js";
-import { formatErrorMessage } from "../../../src/infra/errors.js";
-import { registerUnhandledRejectionHandler } from "../../../src/infra/unhandled-rejections.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+import { resolveAgentMaxConcurrent } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { loadConfig } from "openclaw/plugin-sdk";
+import { waitForAbortSignal } from "openclaw/plugin-sdk";
+import { formatErrorMessage } from "openclaw/plugin-sdk";
+import { registerUnhandledRejectionHandler } from "openclaw/plugin-sdk";
+import type { RuntimeEnv } from "openclaw/plugin-sdk";
 import { resolveTelegramAccount } from "./accounts.js";
 import { resolveTelegramAllowedUpdates } from "./allowed-updates.js";
 import { TelegramExecApprovalHandler } from "./exec-approvals-handler.js";

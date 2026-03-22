@@ -1,5 +1,5 @@
+import { DEFAULT_EMOJIS } from "openclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_EMOJIS } from "../../../src/channels/status-reactions.js";
 import {
   buildTelegramStatusReactionVariants,
   extractTelegramAllowedEmojiReactions,

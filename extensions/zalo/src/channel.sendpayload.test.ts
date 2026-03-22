@@ -1,9 +1,6 @@
+import { installSendPayloadContractSuite, primeSendMock } from "openclaw/plugin-sdk";
 import type { ReplyPayload } from "openclaw/plugin-sdk/zalo";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  installSendPayloadContractSuite,
-  primeSendMock,
-} from "../../../src/test-utils/send-payload-contract.js";
 import { zaloPlugin } from "./channel.js";
 
 vi.mock("./send.js", () => ({

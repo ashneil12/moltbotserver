@@ -1,5 +1,5 @@
-import type { MsgContext } from "../../../src/auto-reply/templating.js";
-import { normalizeChatType } from "../../../src/channels/chat-type.js";
+import type { MsgContext } from "openclaw/plugin-sdk";
+import { normalizeChatType } from "openclaw/plugin-sdk";
 
 export function normalizeExplicitDiscordSessionKey(
   sessionKey: string,

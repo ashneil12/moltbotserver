@@ -1,6 +1,6 @@
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import type { PollInput } from "../../../src/polls.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { formatCliCommand } from "openclaw/plugin-sdk";
+import type { PollInput } from "openclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk";
 
 export type ActiveWebSendOptions = {
   gifPlayback?: boolean;

@@ -1,10 +1,7 @@
+import { hasControlCommand } from "openclaw/plugin-sdk";
+import { createInboundDebouncer, resolveInboundDebounceMs } from "openclaw/plugin-sdk";
 import type { ClawdbotConfig, RuntimeEnv } from "openclaw/plugin-sdk/feishu";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
-import {
-  createInboundDebouncer,
-  resolveInboundDebounceMs,
-} from "../../../src/auto-reply/inbound-debounce.js";
 import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
 import { parseFeishuMessageEvent, type FeishuMessageEvent } from "./bot.js";
 import * as dedup from "./dedup.js";

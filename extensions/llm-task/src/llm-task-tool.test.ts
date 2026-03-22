@@ -9,7 +9,7 @@ vi.mock("../../../src/agents/pi-embedded-runner.js", () => {
   };
 });
 
-import { runEmbeddedPiAgent } from "../../../src/agents/pi-embedded-runner.js";
+import { runEmbeddedPiAgent } from "openclaw/plugin-sdk";
 import { createLlmTaskTool } from "./llm-task-tool.js";
 
 // oxlint-disable-next-line typescript/no-explicit-any

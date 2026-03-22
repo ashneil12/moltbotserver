@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { BackoffPolicy } from "../../../src/infra/backoff.js";
-import { computeBackoff, sleepWithAbort } from "../../../src/infra/backoff.js";
-import { clamp } from "../../../src/utils.js";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { BackoffPolicy } from "openclaw/plugin-sdk";
+import { computeBackoff, sleepWithAbort } from "openclaw/plugin-sdk";
+import { clamp } from "openclaw/plugin-sdk";
 
 export type ReconnectPolicy = BackoffPolicy & {
   maxAttempts: number;

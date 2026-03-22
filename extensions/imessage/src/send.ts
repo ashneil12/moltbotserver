@@ -1,8 +1,8 @@
-import { loadConfig } from "../../../src/config/config.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
-import { convertMarkdownTables } from "../../../src/markdown/tables.js";
-import { kindFromMime } from "../../../src/media/mime.js";
-import { resolveOutboundAttachmentFromUrl } from "../../../src/media/outbound-attachment.js";
+import { loadConfig } from "openclaw/plugin-sdk";
+import { resolveMarkdownTableMode } from "openclaw/plugin-sdk";
+import { convertMarkdownTables } from "openclaw/plugin-sdk";
+import { kindFromMime } from "openclaw/plugin-sdk";
+import { resolveOutboundAttachmentFromUrl } from "openclaw/plugin-sdk";
 import { resolveIMessageAccount, type ResolvedIMessageAccount } from "./accounts.js";
 import { createIMessageRpcClient, type IMessageRpcClient } from "./client.js";
 import { formatIMessageChatTarget, type IMessageService, parseIMessageTarget } from "./targets.js";

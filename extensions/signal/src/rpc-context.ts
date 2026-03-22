@@ -1,4 +1,4 @@
-import { loadConfig } from "../../../src/config/config.js";
+import { loadConfig } from "openclaw/plugin-sdk";
 import { resolveSignalAccount } from "./accounts.js";
 
 export function resolveSignalRpcContext(

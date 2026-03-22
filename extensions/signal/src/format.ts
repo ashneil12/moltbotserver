@@ -1,10 +1,10 @@
-import type { MarkdownTableMode } from "../../../src/config/types.base.js";
+import type { MarkdownTableMode } from "openclaw/plugin-sdk";
 import {
   chunkMarkdownIR,
   markdownToIR,
   type MarkdownIR,
   type MarkdownStyle,
-} from "../../../src/markdown/ir.js";
+} from "openclaw/plugin-sdk";
 
 type SignalTextStyle = "BOLD" | "ITALIC" | "STRIKETHROUGH" | "MONOSPACE" | "SPOILER";
 

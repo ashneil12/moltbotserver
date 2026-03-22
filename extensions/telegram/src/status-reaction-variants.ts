@@ -1,7 +1,4 @@
-import {
-  DEFAULT_EMOJIS,
-  type StatusReactionEmojis,
-} from "../../../src/channels/status-reactions.js";
+import { DEFAULT_EMOJIS, type StatusReactionEmojis } from "openclaw/plugin-sdk";
 
 type StatusReactionEmojiKey = keyof Required<StatusReactionEmojis>;
 

@@ -1,6 +1,6 @@
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import { withEnv } from "openclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { withEnv } from "../../../src/test-utils/env.js";
 import {
   listTelegramAccountIds,
   resetMissingDefaultWarnFlag,

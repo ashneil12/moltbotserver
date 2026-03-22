@@ -1,13 +1,7 @@
-import type { ReplyPayload } from "../../../src/auto-reply/types.js";
-import {
-  resolvePayloadMediaUrls,
-  sendPayloadMediaSequence,
-} from "../../../src/channels/plugins/outbound/direct-text-media.js";
-import type { ChannelOutboundAdapter } from "../../../src/channels/plugins/types.js";
-import {
-  resolveOutboundSendDep,
-  type OutboundSendDeps,
-} from "../../../src/infra/outbound/deliver.js";
+import type { ReplyPayload } from "openclaw/plugin-sdk";
+import { resolvePayloadMediaUrls, sendPayloadMediaSequence } from "openclaw/plugin-sdk";
+import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk";
+import { resolveOutboundSendDep, type OutboundSendDeps } from "openclaw/plugin-sdk";
 import type { TelegramInlineButtons } from "./button-types.js";
 import { markdownToTelegramHtmlChunks } from "./format.js";
 import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";

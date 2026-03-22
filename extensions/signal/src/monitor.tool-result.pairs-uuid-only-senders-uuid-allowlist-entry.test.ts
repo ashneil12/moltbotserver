@@ -1,6 +1,6 @@
+import { resetInboundDedupe } from "openclaw/plugin-sdk";
+import { resetSystemEventsForTest } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import { resetSystemEventsForTest } from "../../../src/infra/system-events.js";
 import { monitorSignalProvider } from "./monitor.js";
 
 const sendMock = vi.fn();

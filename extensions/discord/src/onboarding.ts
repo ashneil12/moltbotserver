@@ -1,8 +1,5 @@
-import type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-} from "../../../src/channels/plugins/onboarding-types.js";
-import { configureChannelAccessWithAllowlist } from "../../../src/channels/plugins/onboarding/channel-access-configure.js";
+import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "openclaw/plugin-sdk";
+import { configureChannelAccessWithAllowlist } from "openclaw/plugin-sdk";
 import {
   applySingleTokenPromptResult,
   parseMentionOrPrefixedId,
@@ -16,13 +13,13 @@ import {
   setAccountGroupPolicyForChannel,
   setLegacyChannelDmPolicyWithAllowFrom,
   setOnboardingChannelEnabled,
-} from "../../../src/channels/plugins/onboarding/helpers.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import type { DiscordGuildEntry } from "../../../src/config/types.discord.js";
-import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+} from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { DiscordGuildEntry } from "openclaw/plugin-sdk";
+import { hasConfiguredSecretInput } from "openclaw/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk";
+import { formatDocsLink } from "openclaw/plugin-sdk";
+import type { WizardPrompter } from "openclaw/plugin-sdk";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,
