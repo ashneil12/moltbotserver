@@ -18,6 +18,7 @@ const alertLog = createSubsystemLogger("quarantine-alert");
 
 const DEFAULT_ALERT_THRESHOLD = 85;
 const RATE_LIMIT_MS = 60 * 60 * 1000; // 1 hour
+const MAX_RATE_CACHE_SIZE = 200;
 
 /** Tracks last alert time per file path. */
 const lastAlertTime = new Map<string, number>();
@@ -27,11 +28,23 @@ function isRateLimited(filePath: string): boolean {
   if (last === undefined) {
     return false;
   }
-  return Date.now() - last < RATE_LIMIT_MS;
+  // Clean up expired entry proactively
+  if (Date.now() - last >= RATE_LIMIT_MS) {
+    lastAlertTime.delete(filePath);
+    return false;
+  }
+  return true;
 }
 
 function recordAlert(filePath: string): void {
   lastAlertTime.set(filePath, Date.now());
+  // Evict oldest entries if cache exceeds bounds
+  if (lastAlertTime.size > MAX_RATE_CACHE_SIZE) {
+    const firstKey = lastAlertTime.keys().next().value;
+    if (firstKey !== undefined) {
+      lastAlertTime.delete(firstKey);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

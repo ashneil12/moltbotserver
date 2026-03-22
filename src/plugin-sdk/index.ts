@@ -891,7 +891,6 @@ export { resolveAgentMaxConcurrent } from "../config/agent-limits.js";
 export { loadConfig, readConfigFileSnapshotForWrite, writeConfigFile } from "../config/config.js";
 export type { ReplyToMode } from "../config/config.js";
 export type { ChannelGroupPolicy } from "../config/group-policy.js";
-export { writeConfigFile } from "../config/io.js";
 export { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 export { mergeWhatsAppConfig } from "../config/merge-config.js";
 export { STATE_DIR, resolveOAuthDir, resolveStateDir } from "../config/paths.js";
@@ -902,12 +901,8 @@ export type {
   DiscordGuildEntry,
 } from "../config/types.discord.js";
 export type {
-  DiscordAccountConfig,
-  DiscordActionConfig,
   DiscordGuildChannelConfig,
-  DiscordGuildEntry,
   IMessageAccountConfig,
-  ReplyToMode,
   SignalAccountConfig,
   SignalReactionNotificationMode,
   SlackAccountConfig,
@@ -917,12 +912,8 @@ export type {
   TelegramGroupConfig,
   WhatsAppAccountConfig,
 } from "../config/types.js";
-export type { SlackAccountConfig, SlackChannelConfig } from "../config/types.slack.js";
 export type {
-  TelegramAccountConfig,
-  TelegramActionConfig,
   TelegramExecApprovalConfig,
-  TelegramGroupConfig,
   TelegramInlineButtonsScope,
   TelegramNetworkConfig,
 } from "../config/types.telegram.js";
@@ -962,7 +953,6 @@ export { waitForTransportReady } from "../infra/transport-ready.js";
 export { registerUnhandledRejectionHandler } from "../infra/unhandled-rejections.js";
 export { logInfo } from "../logger.js";
 export { getChildLogger, resetLogger, setLoggerOverride, toPinoLikeLogger } from "../logging.js";
-export { getChildLogger } from "../logging/logger.js";
 export { redactIdentifier } from "../logging/redact-identifier.js";
 export { createSubsystemLogger } from "../logging/subsystem.js";
 export { chunkMarkdownIR, markdownToIR } from "../markdown/ir.js";

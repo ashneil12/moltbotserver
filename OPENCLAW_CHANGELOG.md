@@ -5,6 +5,43 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Plugin SDK Migration, Quarantine Notifications & Codebase Cleanup (2026-03-22)
+
+**Purpose:** Three changes: (1) Migrate all 779 extension imports from fragile relative paths to stable `openclaw/plugin-sdk` barrel, (2) Add proactive user notifications when workspace files are quarantined, (3) Fix 20 duplicate export errors and add memory bounds to caches.
+
+### 1. Plugin SDK Import Migration
+
+Rewrote 779 imports across 257 extension files from `../../../src/` relative paths to `openclaw/plugin-sdk`. Added 293 new exports to the SDK barrel. Prevents Docker import breakage when extension directories are restructured.
+
+| File                      | Change                                                                                           | Sync Risk         |
+| ------------------------- | ------------------------------------------------------------------------------------------------ | ----------------- |
+| `src/plugin-sdk/index.ts` | Added 293 exports spanning config, security, memory, logging, channels, tools, and infra modules | Low — additive    |
+| 257 extension files       | Rewrote `../../../src/` to `openclaw/plugin-sdk` imports (779 total)                             | None — extensions |
+
+### 2. Quarantine User Notification System
+
+When a non-bootstrap workspace file is quarantined by the ACIP scanner, the agent now proactively informs the user via system event injection. High-severity quarantines (risk score ≥ 85) also fire an operator-level alert. Both include deduplication and rate limiting.
+
+| File                                     | Change                                                                                                    | Sync Risk      |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/security/quarantine-notify.ts`      | **NEW** — System event injection + dedup cache (path+mtime, max 500 entries). 9 tests                     | None — new     |
+| `src/security/quarantine-notify.test.ts` | **NEW** — Tests: dedup, event enqueuing, mtime change re-notify, no-mtime bypass, journal logging         | None — test    |
+| `src/security/quarantine-alert.ts`       | **NEW** — Operator alerts for risk ≥ 85, rate-limited 1/file/hour (max 200 entries). 7 tests              | None — new     |
+| `src/security/quarantine-alert.test.ts`  | **NEW** — Tests: threshold, rate limiting, custom threshold, multi-file, message content                  | None — test    |
+| `src/agents/workspace.ts`                | `scanWorkspaceContent()` calls `notifyQuarantine()` and `alertOperatorQuarantine()` for quarantined files | Low — additive |
+
+### 3. SDK Dedup & Cache Bounds Cleanup
+
+| File                                | Change                                                                                           | Sync Risk  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ | ---------- |
+| `src/plugin-sdk/index.ts`           | Removed 5 duplicate export blocks (fixed 20 `TS2300: Duplicate identifier` errors)               | None — fix |
+| `src/security/quarantine-notify.ts` | Added `MAX_CACHE_SIZE = 500` with LRU-style eviction to prevent unbounded memory growth          | None — fix |
+| `src/security/quarantine-alert.ts`  | Added `MAX_RATE_CACHE_SIZE = 200` with eviction; proactive cleanup of expired rate-limit entries | None — fix |
+
+> **Sync Risk:** `workspace.ts` — 35-line notification block in `scanWorkspaceContent()` after existing quarantine warning. `plugin-sdk/index.ts` — purely additive re-exports. Both new security modules are fully custom.
+
+---
+
 ## QMD Embedding Persistence & Quarantine Log Noise Fix (2026-03-22)
 
 **Purpose:** Fix QMD embeddings not surviving server redeployments and memory search degrading over a session. Also reduce SOUL.md quarantine log noise.

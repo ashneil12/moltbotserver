@@ -20,8 +20,12 @@ import { logSecurityEvent } from "./security-event-journal.js";
  * Tracks which (file, mtime) pairs have already been notified.
  * Reset on process restart — intentional, since restarts may indicate
  * config changes that warrant re-notification.
+ *
+ * Bounded to MAX_CACHE_SIZE to prevent unbounded memory growth on
+ * long-running processes that scan many workspace files.
  */
 const notifiedFiles = new Map<string, number>();
+const MAX_CACHE_SIZE = 500;
 
 /**
  * Check whether this quarantine event has already been notified.
@@ -29,14 +33,18 @@ const notifiedFiles = new Map<string, number>();
  */
 function isDuplicate(filePath: string, mtimeMs: number): boolean {
   const cached = notifiedFiles.get(filePath);
-  if (cached !== undefined && cached === mtimeMs) {
-    return true;
-  }
-  return false;
+  return cached !== undefined && cached === mtimeMs;
 }
 
 function recordNotified(filePath: string, mtimeMs: number): void {
   notifiedFiles.set(filePath, mtimeMs);
+  // Evict oldest entries if cache exceeds bounds
+  if (notifiedFiles.size > MAX_CACHE_SIZE) {
+    const firstKey = notifiedFiles.keys().next().value;
+    if (firstKey !== undefined) {
+      notifiedFiles.delete(firstKey);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
