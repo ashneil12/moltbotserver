@@ -643,6 +643,21 @@ if [ "${OPENCLAW_QMD_ENABLED:-true}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-tr
       | grep -Ev "cmake|clang|llama|ggml|xpack|CXX|C compiler|OpenMP|pthread|assembler|Detect" \
       | head -15 || true
     echo "[entrypoint] qmd pre-warm complete"
+
+    # Background embed: create vector embeddings on first boot so semantic
+    # search works immediately. qmd-manager.ts also runs embed on its own
+    # interval, but without this, the first 5–60 minutes after deploy have
+    # zero vectors (BM25-only fallback). Fire-and-forget so it doesn't
+    # block gateway startup.
+    (
+      XDG_CACHE_HOME="$QMD_PREWARM_CACHE" \
+        XDG_CONFIG_HOME="$QMD_PREWARM_CONFIG" \
+        QMD_CONFIG_DIR="$QMD_PREWARM_CONFIG" \
+        NO_COLOR=1 \
+        qmd embed 2>&1 \
+        | tail -3 || true
+      echo "[entrypoint] qmd embed (background) complete"
+    ) &
   fi
 
   # Apply Gemini embedding patch (uses API instead of slow local GGUF models)

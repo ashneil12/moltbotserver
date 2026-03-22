@@ -5,6 +5,30 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## QMD Embedding Persistence & Quarantine Log Noise Fix (2026-03-22)
+
+**Purpose:** Fix QMD embeddings not surviving server redeployments and memory search degrading over a session. Also reduce SOUL.md quarantine log noise.
+
+**Root Cause (QMD):** Three-layer failure chain:
+
+1. `enforce-config.mjs` defaulted `searchMode` to `"search"` (BM25-only) — set in the prior "QMD Search Performance" change to avoid CPU reranker cold starts.
+2. `qmd-manager.ts:shouldRunEmbed()` returns `false` when `searchMode === "search"`, preventing embedding generation.
+3. `docker-entrypoint.sh` only ran `qmd status` during pre-warm, not `qmd embed`, so even with the correct searchMode, embeddings weren't created on first boot.
+
+**Key insight:** The CPU timeout concern that motivated the `"search"` default doesn't apply — embeddings are proxied to the Gemini API via `patch-qmd-gemini.sh`, not run locally.
+
+| File                                | Change                                                                                                                    | Sync Risk      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `enforce-config.mjs`                | Changed default `searchMode` from `"search"` back to `"vsearch"` (vector + BM25 hybrid)                                   | None — custom  |
+| `docker-entrypoint.sh`              | Added backgrounded `qmd embed` to prewarm phase (after `qmd status` + Gemini patch), with error logging and timeout guard | None — custom  |
+| `src/security/scan-and-log.ts`      | Added `suppressQuarantineLog` option to `ScanAndLogOptions` — callers can suppress the generic quarantine warning         | None — custom  |
+| `src/agents/workspace.ts`           | Uses `suppressQuarantineLog: true` for first-party bootstrap files (SOUL.md etc.), logs at `debug` instead of `info`      | Low — additive |
+| `src/security/scan-and-log.test.ts` | +2 tests: suppression enabled and disabled                                                                                | None — test    |
+
+> **Sync Risk:** `scan-and-log.ts` — `suppressQuarantineLog` is a new optional field on `ScanAndLogOptions` + 3-line guard in `scanAndLog()`. `workspace.ts` — adds the option to the existing `scanAndLog()` call for bootstrap files. Both are additive.
+
+---
+
 ## Port Collision Prevention, Gateway Diagnostics & Identity Cross-References (2026-03-22)
 
 **Purpose:** Fix Telegram gateway disconnects caused by ByteRover's `brv-server` inheriting `PORT` and binding to the gateway's port. Add `/proc/net/tcp` fallback diagnostics for minimal Docker environments, and add cross-references between identity/humor/voice docs.
