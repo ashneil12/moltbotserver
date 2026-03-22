@@ -1023,3 +1023,190 @@ export type { WebChannel } from "../utils.js";
 export { fetchWithTimeout } from "../utils/fetch-timeout.js";
 export { withTimeout } from "../utils/with-timeout.js";
 export { VERSION } from "../version.js";
+
+// ── Additional SDK Exports (auto-generated pass 2) ─────────────────
+export { runAcpRuntimeAdapterContract } from "../acp/runtime/adapter-contract.testkit.js";
+export {
+  findModelInCatalog,
+  loadModelCatalog,
+  modelSupportsVision,
+} from "../agents/model-catalog.js";
+export { runEmbeddedPiAgent } from "../agents/pi-embedded-runner.js";
+export { writeSkill } from "../agents/skills.e2e-test-helpers.js";
+export { readStringOrNumberParam } from "../agents/tools/common.js";
+export { chunkTextWithMode } from "../auto-reply/chunk.js";
+export {
+  buildCommandTextFromArgs,
+  findCommandByNativeName,
+  listNativeCommandSpecs,
+  listNativeCommandSpecsForConfig,
+  resolveCommandArgMenu,
+} from "../auto-reply/commands-registry.js";
+export { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../auto-reply/envelope.js";
+export { HEARTBEAT_PROMPT, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
+export { resolveInboundDebounceMs } from "../auto-reply/inbound-debounce.js";
+export { getReplyFromConfig } from "../auto-reply/reply.js";
+export {
+  buildModelsProviderData,
+  formatModelsAvailableHeader,
+} from "../auto-reply/reply/commands-models.js";
+export { HISTORY_CONTEXT_MARKER } from "../auto-reply/reply/history.js";
+export { CURRENT_MESSAGE_MARKER } from "../auto-reply/reply/mentions.js";
+export { buildMentionRegexes, matchesMentionWithExplicit } from "../auto-reply/reply/mentions.js";
+export { createReplyDispatcherWithTyping } from "../auto-reply/reply/reply-dispatcher.js";
+export { HEARTBEAT_TOKEN } from "../auto-reply/tokens.js";
+export { isSenderIdAllowed, mergeDmAllowFromSources } from "../channels/allow-from.js";
+export { listTokenSourcedAccounts } from "../channels/plugins/actions/shared.js";
+export {
+  looksLikeHandleOrPhoneTarget,
+  trimMessagingTarget,
+} from "../channels/plugins/normalize/shared.js";
+export {
+  applySingleTokenPromptResult,
+  noteChannelLookupFailure,
+  noteChannelLookupSummary,
+  parseMentionOrPrefixedId,
+  patchChannelConfigForAccount,
+  promptLegacyChannelAllowFrom,
+  promptResolvedAllowFrom,
+  resolveOnboardingAccountId,
+  runSingleChannelSecretStep,
+  setAccountGroupPolicyForChannel,
+  setOnboardingChannelEnabled,
+  splitOnboardingEntries,
+} from "../channels/plugins/onboarding/helpers.js";
+export {
+  resolvePayloadMediaUrls,
+  sendPayloadMediaSequence,
+} from "../channels/plugins/outbound/direct-text-media.js";
+export {
+  appendMatchMetadata,
+  collectIssuesForEnabledAccounts,
+  resolveEnabledConfiguredAccountId,
+} from "../channels/plugins/status-issues/shared.js";
+export { DEFAULT_EMOJIS } from "../channels/status-reactions.test.js";
+export {
+  StatusReactionController,
+  StatusReactionEmojis,
+  createStatusReactionController,
+} from "../channels/status-reactions.js";
+export {
+  MessagingTarget,
+  MessagingTargetKind,
+  MessagingTargetParseOptions,
+  buildMessagingTarget,
+  ensureTargetId,
+  parseMentionPrefixOrAtUserTarget,
+  requireTargetKind,
+} from "../channels/targets.js";
+export {
+  resolveThreadBindingIdleTimeoutMsForChannel,
+  resolveThreadBindingMaxAgeMsForChannel,
+  resolveThreadBindingSpawnPolicy,
+} from "../channels/thread-bindings-policy.js";
+export {
+  isNativeCommandsExplicitlyDisabled,
+  resolveNativeCommandsEnabled,
+  resolveNativeSkillsEnabled,
+} from "../config/commands.js";
+export {
+  SlackLegacyDraftStreamMode,
+  StreamingMode,
+  mapStreamingModeToSlackLegacyDraftStreamMode,
+  resolveSlackNativeStreaming,
+  resolveSlackStreamingMode,
+} from "../config/discord-preview-streaming.js";
+export { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } from "../config/io.js";
+export { resolveAgentIdFromSessionKey } from "../config/sessions/main-session.js";
+export { resolveSessionStoreEntry, updateSessionStore } from "../config/sessions/store.js";
+export {
+  TELEGRAM_COMMAND_NAME_PATTERN,
+  normalizeTelegramCommandName,
+} from "../config/telegram-custom-commands.js";
+export { resolveTelegramCustomCommands } from "../config/telegram-custom-commands.js";
+export { coerceSecretRef } from "../config/types.secrets.js";
+export { firstDefined } from "../feishu/access.js";
+export { collectErrorGraphCandidates, extractErrorCode, readErrorName } from "../infra/errors.js";
+export {
+  ExecApprovalPendingReplyParams,
+  buildExecApprovalPendingReplyPayload,
+} from "../infra/exec-approval-reply.js";
+export { ExecApprovalRequest, ExecApprovalResolved } from "../infra/exec-approvals.js";
+export { withTrustedEnvProxyGuardedFetchMode } from "../infra/net/fetch-guard.js";
+export { getProxyUrlFromFetch, makeProxyFetch } from "../infra/net/proxy-fetch.js";
+export {
+  BindingTargetKind,
+  SessionBindingRecord,
+  registerSessionBindingAdapter,
+  unregisterSessionBindingAdapter,
+} from "../infra/outbound/session-binding-service.js";
+export { __testing } from "../infra/restart.js";
+export { peekSystemEvents } from "../infra/system-events.js";
+export {
+  logWebhookError,
+  logWebhookProcessed,
+  logWebhookReceived,
+  startDiagnosticHeartbeat,
+} from "../logging/diagnostic.js";
+export { MarkdownStyle } from "../markdown/ir.js";
+export { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "../media-understanding/defaults.js";
+export { parseFfprobeCodecAndSampleRate, runFfmpeg, runFfprobe } from "../media/ffmpeg-exec.js";
+export {
+  convertHeicToJpeg,
+  hasAlphaChannel,
+  optimizeImageToPng,
+  resizeToJpeg,
+} from "../media/image-ops.js";
+export { approveChannelPairingCode } from "../pairing/pairing-store.js";
+export {
+  executePluginCommand,
+  getPluginCommandSpecs,
+  matchPluginCommand,
+} from "../plugins/commands.js";
+export { createEmptyPluginRegistry } from "../plugins/registry.js";
+export { setActivePluginRegistry } from "../plugins/runtime.js";
+export { normalizePollDurationHours } from "../polls.js";
+export { pickFirstExistingAgentId } from "../routing/resolve-route.js";
+export { mockPinnedHostnameResolution } from "../test-helpers/ssrf.js";
+export { withStateDirEnv } from "../test-helpers/state-dir-env.js";
+export {
+  createWhatsAppPollFixture,
+  expectWhatsAppPollSent,
+} from "../test-helpers/whatsapp-outbound.js";
+export { countLines, hasBalancedFences } from "../test-utils/chunk-test-helpers.js";
+export { withEnv, withEnvAsync } from "../test-utils/env.js";
+export { captureEnv } from "../test-utils/env.js";
+export { withFetchPreconnect } from "../test-utils/fetch-mock.js";
+export { useFrozenTime, useRealTime } from "../test-utils/frozen-time.js";
+export { createMockServerResponse } from "../test-utils/mock-http-response.js";
+export { installProviderRuntimeGroupPolicyFallbackSuite } from "../test-utils/runtime-group-policy-contract.js";
+export {
+  installSendPayloadContractSuite,
+  primeSendMock,
+} from "../test-utils/send-payload-contract.js";
+export { typedCases } from "../test-utils/typed-cases.js";
+export { asString } from "../tui/tui-formatters.js";
+export { ReactionLevel, ResolvedReactionLevel } from "../utils/reaction-level.js";
+
+// ── Final SDK Export Pass ────────────────────────────────────────────
+export {
+  setLegacyChannelDmPolicyWithAllowFrom,
+  setChannelDmPolicyWithAllowFrom,
+  normalizeAllowFromEntries,
+} from "../channels/plugins/onboarding/helpers.js";
+export { createInboundDebouncer } from "../auto-reply/inbound-debounce.js";
+export { resolveChannelGroupPolicy } from "../config/group-policy.js";
+export type { MarkdownIR } from "../markdown/ir.js";
+export { resolveReactionLevel } from "../utils/reaction-level.js";
+export { listBoundAccountIds, resolveDefaultAgentBoundAccountId } from "../routing/bindings.js";
+export { normalizeOptionalAccountId } from "../routing/account-id.js";
+export type { TelegramTopicConfig } from "../config/types.telegram.js";
+export { parseCommandArgs } from "../auto-reply/commands-registry.js";
+export { readStringArrayParam } from "../agents/tools/common.js";
+export { createUnionActionGate } from "../channels/plugins/actions/shared.js";
+export { buildAgentMainSessionKey } from "../routing/session-key.js";
+export {
+  addChannelAllowFromStoreEntry,
+  listChannelPairingRequests,
+} from "../pairing/pairing-store.js";
+export { stopDiagnosticHeartbeat } from "../logging/diagnostic.js";
