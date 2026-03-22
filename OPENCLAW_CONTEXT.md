@@ -74,27 +74,29 @@ These files don't exist in upstream. They will never conflict but must not be de
 
 ### Security
 
-| File                                       | Feature                                                                                      |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `src/security/content-scanner.ts`          | Two-stage content scanner (regex + optional model). 48 tests                                 |
-| `src/security/content-scanner.test.ts`     | Tests                                                                                        |
-| `src/security/data-classification.ts`      | Three-tier data classification + PII detection + AgentGuard secret redaction (14 patterns)   |
-| `src/security/data-classification.test.ts` | 47 tests                                                                                     |
-| `src/security/scan-and-log.ts`             | Shared `scanAndLog()` helper + `suppressQuarantineLog` option                                |
-| `src/security/scan-and-log.test.ts`        | 12 tests                                                                                     |
-| `src/security/quarantine-notify.ts`        | Proactive user quarantine alerts via system event injection + dedup cache (500 max). 9 tests |
-| `src/security/quarantine-notify.test.ts`   | Tests                                                                                        |
-| `src/security/quarantine-alert.ts`         | Operator alerts for high-severity quarantines (risk ≥ 85), rate-limited 1/file/hr. 7 tests   |
-| `src/security/quarantine-alert.test.ts`    | Tests                                                                                        |
-| `src/security/security-event-journal.ts`   | AgentGuard security event journal — append-only JSONL                                        |
-| `src/logging/event-log.ts`                 | Structured JSONL event logger with PII redaction + rotation. 30 tests                        |
-| `src/logging/event-log.test.ts`            | Tests                                                                                        |
-| `src/logging/diagnostics-toolkit.ts`       | System health checks. 21 tests                                                               |
-| `src/logging/diagnostics-toolkit.test.ts`  | Tests                                                                                        |
-| `src/logging/disk-hygiene.ts`              | Disk scanner + cleaner (sessions, browser cache, logs, media). 10 tests                      |
-| `src/logging/disk-hygiene.test.ts`         | Tests                                                                                        |
-| `skills/prompt-guard/SKILL.md`             | Prompt injection detection skill                                                             |
-| `skills/clawscan/SKILL.md`                 | Security scanning skill                                                                      |
+| File                                          | Feature                                                                                      |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `src/security/content-scanner.ts`             | Two-stage content scanner (regex + optional model). 48 tests                                 |
+| `src/security/content-scanner.test.ts`        | Tests                                                                                        |
+| `src/security/data-classification.ts`         | Three-tier data classification + PII detection + AgentGuard secret redaction (14 patterns)   |
+| `src/security/data-classification.test.ts`    | 47 tests                                                                                     |
+| `src/security/scan-and-log.ts`                | Shared `scanAndLog()` helper + `suppressQuarantineLog` option                                |
+| `src/security/scan-and-log.test.ts`           | 12 tests                                                                                     |
+| `src/security/lazy-event-logger.ts`           | Shared `LazyEventLogger` class — eager-init singleton used by scan-and-log + event journal   |
+| `src/security/quarantine-notify.ts`           | Proactive user quarantine alerts via system event injection + dedup cache (500 max). 9 tests |
+| `src/security/quarantine-notify.test.ts`      | Tests                                                                                        |
+| `src/security/quarantine-alert.ts`            | Operator alerts for high-severity quarantines (risk ≥ 85), rate-limited 1/file/hr. 7 tests   |
+| `src/security/quarantine-alert.test.ts`       | Tests                                                                                        |
+| `src/security/security-event-journal.ts`      | AgentGuard security event journal — append-only JSONL                                        |
+| `src/security/security-event-journal.test.ts` | 12 tests: structured log fields, query delegation, never-throws                              |
+| `src/logging/event-log.ts`                    | Structured JSONL event logger with PII redaction + rotation. 30 tests                        |
+| `src/logging/event-log.test.ts`               | Tests                                                                                        |
+| `src/logging/diagnostics-toolkit.ts`          | System health checks. 21 tests                                                               |
+| `src/logging/diagnostics-toolkit.test.ts`     | Tests                                                                                        |
+| `src/logging/disk-hygiene.ts`                 | Disk scanner + cleaner (sessions, browser cache, logs, media). 10 tests                      |
+| `src/logging/disk-hygiene.test.ts`            | Tests                                                                                        |
+| `skills/prompt-guard/SKILL.md`                | Prompt injection detection skill                                                             |
+| `skills/clawscan/SKILL.md`                    | Security scanning skill                                                                      |
 
 ### Health & Resilience
 

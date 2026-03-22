@@ -5,6 +5,46 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Security DRY Refactor, Bug Fixes & Test Coverage (2026-03-22)
+
+**Purpose:** Five changes: (1) Prevent redundant SOUL.md overwrites in business mode, (2–3) Fix two bugs in security event logging, (4) DRY-extract shared lazy logger pattern, (5) Expand test coverage to 24 security tests.
+
+### 1. Business-Mode SOUL.md Skip Guard
+
+`ensureAgentWorkspace()` was overwriting `SOUL.md` with the business template on _every_ call when `OPENCLAW_BUSINESS_MODE=1`, causing redundant disk I/O and noisy logs. Added a guard: skip the overwrite when `workspace-state.json` already has `soulOverride === "business"`.
+
+| File                           | Change                                                                   | Sync Risk      |
+| ------------------------------ | ------------------------------------------------------------------------ | -------------- |
+| `src/agents/workspace.ts`      | Guard `state.soulOverride !== "business"` around business-mode overwrite | Low — additive |
+| `src/agents/workspace.test.ts` | +1 test: pre-seeded state → SOUL.md not overwritten                      | None — test    |
+
+### 2. Security Bug Fixes
+
+| File                                | Change                                                                                           | Sync Risk  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ | ---------- |
+| `src/security/scan-and-log.test.ts` | Fixed mock path `../../logging/event-log.js` → `../logging/event-log.js` (matched source import) | None — fix |
+| `src/security/scan-and-log.ts`      | `resetScanAndLogForTest()` now clears `_loggerInitPromise` (was only clearing `_cachedLogger`)   | None — fix |
+
+### 3. LazyEventLogger DRY Extraction
+
+`scan-and-log.ts` and `security-event-journal.ts` had identical 25-line eager-init singleton patterns. Extracted to a shared `LazyEventLogger` class.
+
+| File                                     | Change                                                              | Sync Risk  |
+| ---------------------------------------- | ------------------------------------------------------------------- | ---------- |
+| `src/security/lazy-event-logger.ts`      | **NEW** — `LazyEventLogger` class: eager init, lazy get, test reset | None — new |
+| `src/security/scan-and-log.ts`           | Replaced inline singleton with `LazyEventLogger` instance           | None — DRY |
+| `src/security/security-event-journal.ts` | Replaced inline singleton with `LazyEventLogger` instance           | None — DRY |
+
+### 4. Expanded Test Coverage
+
+| File                                          | Change                                                                                             | Sync Risk   |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------- |
+| `src/security/security-event-journal.test.ts` | Expanded from 4 to 12 tests: mocked event logger, verified structured log fields, query delegation | None — test |
+
+> **Sync Risk:** `workspace.ts` — 5-line guard. `scan-and-log.ts` / `security-event-journal.ts` — import swap only. `lazy-event-logger.ts` is fully custom.
+
+---
+
 ## Plugin SDK Migration, Quarantine Notifications & Codebase Cleanup (2026-03-22)
 
 **Purpose:** Three changes: (1) Migrate all 779 extension imports from fragile relative paths to stable `openclaw/plugin-sdk` barrel, (2) Add proactive user notifications when workspace files are quarantined, (3) Fix 20 duplicate export errors and add memory bounds to caches.

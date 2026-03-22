@@ -10,6 +10,7 @@
  */
 
 import { logWarn } from "../logger.js";
+import { LazyEventLogger } from "./lazy-event-logger.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,34 +36,10 @@ export interface SecurityEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Eager singleton (mirrors scan-and-log.ts pattern)
+// Shared singleton (eager import at module load time)
 // ---------------------------------------------------------------------------
 
-let _cachedLogger: import("../logging/event-log.js").EventLogger | null = null;
-let _loggerInitPromise: Promise<void> | null = null;
-
-function initSecurityEventLogger(): void {
-  if (_cachedLogger || _loggerInitPromise) {
-    return;
-  }
-  _loggerInitPromise = import("../logging/event-log.js")
-    .then(({ createEventLogger }) => {
-      _cachedLogger = createEventLogger({});
-    })
-    .catch(() => {
-      _loggerInitPromise = null;
-    });
-}
-
-// Kick off import eagerly at module load time
-initSecurityEventLogger();
-
-function getSecurityEventLogger(): import("../logging/event-log.js").EventLogger | null {
-  if (!_cachedLogger) {
-    initSecurityEventLogger();
-  }
-  return _cachedLogger;
-}
+const securityLogger = new LazyEventLogger();
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -83,7 +60,7 @@ export function logSecurityEvent(event: SecurityEvent): void {
       );
     }
 
-    const logger = getSecurityEventLogger();
+    const logger = securityLogger.get();
     if (!logger) {
       return;
     }
@@ -115,7 +92,7 @@ export function querySecurityEvents(options?: {
   limit?: number;
 }): Array<import("../logging/event-log.js").StoredEventEntry> {
   try {
-    const logger = getSecurityEventLogger();
+    const logger = securityLogger.get();
     if (!logger) {
       return [];
     }
@@ -131,6 +108,5 @@ export function querySecurityEvents(options?: {
 
 /** Reset the cached logger (for testing). */
 export function resetSecurityEventJournalForTest(): void {
-  _cachedLogger = null;
-  _loggerInitPromise = null;
+  securityLogger.resetForTest();
 }

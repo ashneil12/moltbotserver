@@ -633,14 +633,17 @@ export async function ensureAgentWorkspace(params?: {
   if (businessModeEnabled) {
     // Overwrite SOUL.md entirely with business template content.
     // Skip conditional stripping — the file is being replaced wholesale.
-    const businessTemplate = await loadTemplate(DEFAULT_BUSINESS_GUIDE_FILENAME);
-    console.log(
-      `[workspace] business mode ON → overwriting SOUL.md (${soulPath}) with business template (${businessTemplate.length} chars)`,
-    );
-    // Ensure writable — docker-entrypoint.sh sets chmod 444 on SOUL.md
-    await fs.chmod(soulPath, 0o644).catch(() => {});
-    await fs.writeFile(soulPath, businessTemplate, "utf-8");
+    // Guard: only overwrite on the first run (soulOverride not yet set).
+    // Subsequent calls reuse the already-written file to avoid redundant
+    // disk I/O and log noise on every message.
     if (state.soulOverride !== "business") {
+      const businessTemplate = await loadTemplate(DEFAULT_BUSINESS_GUIDE_FILENAME);
+      console.log(
+        `[workspace] business mode ON → overwriting SOUL.md (${soulPath}) with business template (${businessTemplate.length} chars)`,
+      );
+      // Ensure writable — docker-entrypoint.sh sets chmod 444 on SOUL.md
+      await fs.chmod(soulPath, 0o644).catch(() => {});
+      await fs.writeFile(soulPath, businessTemplate, "utf-8");
       markState({ soulOverride: "business" });
     }
   } else {

@@ -8,39 +8,13 @@
 import { logWarn } from "../logger.js";
 import { scanContentSync, type ScanResult } from "./content-scanner.js";
 import type { ExternalContentSource } from "./external-content.js";
-
 // ---------------------------------------------------------------------------
-// Eager singleton event logger — starts import at module load time so the
-// logger is ready before the first scan (modules load well before first HTTP
-// request). Previous lazy approach dropped the first security event.
+// Shared singleton event logger — starts import at module load time so the
+// logger is ready before the first scan.
 // ---------------------------------------------------------------------------
+import { LazyEventLogger } from "./lazy-event-logger.js";
 
-let _cachedLogger: import("../logging/event-log.js").EventLogger | null = null;
-let _loggerInitPromise: Promise<void> | null = null;
-
-function initSharedEventLogger(): void {
-  if (_cachedLogger || _loggerInitPromise) {
-    return;
-  }
-  _loggerInitPromise = import("../logging/event-log.js")
-    .then(({ createEventLogger }) => {
-      _cachedLogger = createEventLogger({});
-    })
-    .catch(() => {
-      // Allow retry on next call
-      _loggerInitPromise = null;
-    });
-}
-
-// Kick off import eagerly at module load time
-initSharedEventLogger();
-
-function getSharedEventLogger(): import("../logging/event-log.js").EventLogger | null {
-  if (!_cachedLogger) {
-    initSharedEventLogger();
-  }
-  return _cachedLogger;
-}
+const sharedLogger = new LazyEventLogger();
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -94,7 +68,7 @@ export function scanAndLog(content: string, options: ScanAndLogOptions): ScanAnd
     // Only log an event if there were actual findings (avoid noise)
     if (result.findings.length > 0) {
       try {
-        const logger = getSharedEventLogger();
+        const logger = sharedLogger.get();
         if (!logger) {
           // Logger not yet initialized (first call, dynamic import pending)
           return result;
@@ -126,5 +100,5 @@ export function scanAndLog(content: string, options: ScanAndLogOptions): ScanAnd
 
 /** Reset the cached logger (for testing). */
 export function resetScanAndLogForTest(): void {
-  _cachedLogger = null;
+  sharedLogger.resetForTest();
 }

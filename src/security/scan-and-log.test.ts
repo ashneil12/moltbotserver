@@ -23,7 +23,7 @@ const eventLogMocks = vi.hoisted(() => {
     _logFn: logFn,
   };
 });
-vi.mock("../../logging/event-log.js", () => eventLogMocks);
+vi.mock("../logging/event-log.js", () => eventLogMocks);
 
 // Must import after mocks
 import { resetScanAndLogForTest, scanAndLog } from "./scan-and-log.js";

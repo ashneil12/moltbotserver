@@ -176,6 +176,43 @@ describe("ensureAgentWorkspace", () => {
     await expectBootstrapSeeded(tempDir);
     expect((await readOnboardingState(tempDir)).onboardingCompletedAt).toBeUndefined();
   });
+
+  // ── Business-mode skip guard ──────────────────────────────────────
+
+  it("does not overwrite SOUL.md when soulOverride is already 'business'", async () => {
+    const savedEnv = process.env.OPENCLAW_BUSINESS_MODE;
+    try {
+      process.env.OPENCLAW_BUSINESS_MODE = "1";
+
+      const tempDir = await makeTempWorkspace("openclaw-workspace-");
+
+      // Pre-seed SOUL.md with known "already overwritten" content
+      const customSoulContent = "# Already-Overwritten Business SOUL\nCustom business content.";
+      await writeWorkspaceFile({ dir: tempDir, name: "SOUL.md", content: customSoulContent });
+
+      // Pre-seed workspace state with soulOverride = "business"
+      const stateDir = path.join(tempDir, ".openclaw");
+      await fs.mkdir(stateDir, { recursive: true });
+      await fs.writeFile(
+        path.join(stateDir, "workspace-state.json"),
+        JSON.stringify({ version: 1, soulOverride: "business" }),
+        "utf-8",
+      );
+
+      await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
+
+      // SOUL.md must NOT have been overwritten — guard should have skipped
+      const soulContent = await fs.readFile(path.join(tempDir, "SOUL.md"), "utf-8");
+      expect(soulContent).toBe(customSoulContent);
+    } finally {
+      // Restore env
+      if (savedEnv === undefined) {
+        delete process.env.OPENCLAW_BUSINESS_MODE;
+      } else {
+        process.env.OPENCLAW_BUSINESS_MODE = savedEnv;
+      }
+    }
+  });
 });
 
 describe("loadWorkspaceBootstrapFiles", () => {
