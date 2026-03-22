@@ -1,0 +1,491 @@
+
+[1m[46m RUN [49m[22m [36mv4.1.0 [39m[90m/Users/ash/Documents/MoltBotServers/moltbotserver-source[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mskips tool summaries with responsePrefix
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mdoes not derive responsePrefix from routed agent identity when unset
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mpreserves RawBody without injecting processed room history
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mscopes thread history to the thread by default
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mupdates assistant thread status when replies start
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2maccepts channel messages when mentionPatterns match
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2maccepts channel messages when mentionPatterns match even if another user is mentioned
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mtreats replies to bot threads as implicit mentions
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2maccepts channel messages without mention when channels.slack.requireMention is false
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mtreats control commands as mentions for group bypass
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+[90mstderr[2m | extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22m[2mmonitorSlackProvider tool results[2m > [22m[2mthreads replies when incoming message is in a thread
+[22m[39mSTARTING SLACK MONITOR [33mtrue[39m function
+PROVIDER RESULT [33mtrue[39m
+
+ [31m❯[39m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts [2m([22m[2m12 tests[22m[2m | [22m[31m12 failed[39m[2m)[22m[32m 138[2mms[22m[39m
+[31m     [31m×[31m skips tool summaries with responsePrefix[39m[32m 15[2mms[22m[39m
+[31m     [31m×[31m drops events with mismatched api_app_id[39m[32m 0[2mms[22m[39m
+[31m     [31m×[31m does not derive responsePrefix from routed agent identity when unset[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m preserves RawBody without injecting processed room history[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m scopes thread history to the thread by default[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m updates assistant thread status when replies start[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m accepts channel messages when mentionPatterns match[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m accepts channel messages when mentionPatterns match even if another user is mentioned[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m treats replies to bot threads as implicit mentions[39m[32m 17[2mms[22m[39m
+[31m     [31m×[31m accepts channel messages without mention when channels.slack.requireMention is false[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m treats control commands as mentions for group bypass[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m threads replies when incoming message is in a thread[39m[32m 11[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 12 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mskips tool summaries with responsePrefix
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m32:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mdrops events with mismatched api_app_id
+[31m[1mError[22m: Slack client not registered[39m
+[36m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m50:13[22m[39m
+    [90m 48|[39m     [35mconst[39m client [33m=[39m [34mgetSlackClient[39m()[33m;[39m
+    [90m 49|[39m     [35mif[39m ([33m![39mclient) {
+    [90m 50|[39m       [35mthrow[39m [35mnew[39m [33mError[39m([32m"Slack client not registered"[39m)[33m;[39m
+    [90m   |[39m             [31m^[39m
+    [90m 51|[39m     }
+    [90m 52|[39m     (client.auth as { test: ReturnType<typeof vi.fn> }).test.mockResol…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mdoes not derive responsePrefix from routed agent identity when unset
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m106:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mpreserves RawBody without injecting processed room history
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m140:21[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mscopes thread history to the thread by default
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m193:21[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mupdates assistant thread status when replies start
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m245:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22maccepts channel messages when mentionPatterns match
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m290:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22maccepts channel messages when mentionPatterns match even if another user is mentioned
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m320:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mtreats replies to bot threads as implicit mentions
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m346:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22maccepts channel messages without mention when channels.slack.requireMention is false
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m375:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mtreats control commands as mentions for group bypass
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m394:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/12]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[2m > [22mmonitorSlackProvider tool results[2m > [22mthreads replies when incoming message is in a thread
+[31m[1mError[22m: Slack message handler not registered (handlers Map is missing)[39m
+[36m [2m❯[22m getSlackHandlerOrThrow extensions/slack/src/monitor.test-setup.ts:[2m100:24[22m[39m
+    [90m 98|[39m   [35mawait[39m [34mwaitForSlackEvent[39m(name)[33m;[39m
+    [90m 99|[39m   [35mconst[39m handlers [33m=[39m [34mgetSlackHandlers[39m()[33m;[39m
+    [90m100|[39m   if (!handlers) throw new Error("Slack message handler not registered…
+    [90m   |[39m                        [31m^[39m
+    [90m101|[39m   [35mconst[39m handler [33m=[39m handlers[33m.[39m[35mget[39m(name)[33m;[39m
+    [90m102|[39m   if (!handler) throw new Error(`Slack handler for ${name} not registe…
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m122:19[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m425:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/12]⎯[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 11 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m32:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mskips tool summaries with responsePrefix[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m106:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mdoes not derive responsePrefix from routed agent identity when unset[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m139:33[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mpreserves RawBody without injecting processed room history[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m192:33[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mscopes thread history to the thread by default[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m245:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mupdates assistant thread status when replies start[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m290:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1maccepts channel messages when mentionPatterns match[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m320:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1maccepts channel messages when mentionPatterns match even if another user is mentioned[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m346:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mtreats replies to bot threads as implicit mentions[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m375:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1maccepts channel messages without mention when channels.slack.requireMention is false[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m394:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mtreats control commands as mentions for group bypass[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: DEBUG_APP: App=undefined slackBolt=function keys= default=undefined[39m
+[36m [2m❯[22m monitorSlackProvider extensions/slack/src/monitor/provider.ts:[2m194:11[22m[39m
+    [90m192|[39m
+    [90m193|[39m   [35mif[39m ([35mtypeof[39m [33mApp[39m [33m!==[39m [32m"function"[39m) {
+    [90m194|[39m     throw new Error(`DEBUG_APP: App=${typeof App} slackBolt=${typeof s…
+    [90m   |[39m           [31m^[39m
+    [90m195|[39m   }
+    [90m196|[39m
+[90m [2m❯[22m startSlackMonitor extensions/slack/src/monitor.test-setup.ts:[2m74:18[22m[39m
+[90m [2m❯[22m runSlackMessageOnce extensions/slack/src/monitor.test-setup.ts:[2m115:7[22m[39m
+[90m [2m❯[22m extensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts:[2m425:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m296:11[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1258:26[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1681:20[22m[39m
+[90m [2m❯[22m runWithCancel node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1678:10[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/@vitest+runner@4.1.0/node_modules/@vitest/runner/dist/index.js:[2m1660:20[22m[39m
+
+[31mThis error originated in "[1mextensions/slack/src/monitor.tool-result.sends-tool-summaries-responseprefix.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mthreads replies when incoming message is in a thread[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m12 failed[39m[22m[90m (12)[39m
+[2m     Errors [22m [1m[31m11 errors[39m[22m
+[2m   Start at [22m 14:32:40
+[2m   Duration [22m 5.70s[2m (transform 3.53s, setup 129ms, import 5.36s, tests 138ms, environment 0ms)[22m
+

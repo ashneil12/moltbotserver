@@ -523,52 +523,57 @@ fi
 BYTEROVER_MARKER="$CONFIG_DIR/.byterover-configured"
 
 if [ -n "$BYTEROVER_KEY" ]; then
-  # Install byterover-cli globally if not already present
-  if ! command -v brv &>/dev/null; then
-    echo "[entrypoint] ByteRover key detected — installing byterover-cli globally..."
-    if npm install -g byterover-cli 2>&1 | tail -3; then
-      echo "[entrypoint] byterover-cli installed: $(brv --version 2>&1 | head -1)"
-    else
-      echo "[entrypoint] WARNING: byterover-cli install failed (non-fatal — memory curation disabled)"
-    fi
-  else
-    echo "[entrypoint] byterover-cli already available: $(brv --version 2>&1 | head -1)"
-  fi
-
-  # Configure ByteRover with Google Gemini provider (idempotent via marker)
-  if command -v brv &>/dev/null && [ ! -f "$BYTEROVER_MARKER" ]; then
-    echo "[entrypoint] Configuring ByteRover with Google Gemini (gemini-2.0-flash-lite)..."
-
-    # brv providers connect: wires up Google Gemini as the LLM provider
-    # --format json makes it fully non-interactive
-    if brv providers connect google \
-        --api-key "$BYTEROVER_KEY" \
-        --model "gemini-2.0-flash-lite" \
-        --format json 2>&1; then
-      echo "[entrypoint] ByteRover connected to Google Gemini (gemini-2.0-flash-lite)"
-
-      # Install the OpenClaw Agent Skill connector so brv query/curate are available
-      if brv connectors install OpenClaw --format json 2>&1; then
-        echo "[entrypoint] ByteRover OpenClaw connector installed as Agent Skill"
-        touch "$BYTEROVER_MARKER"
+  # CRITICAL: brv-server inherits PORT from the env and binds to it.
+  # We must unset it here so it doesn't conflict with the OpenClaw gateway.
+  (
+    unset PORT
+    # Install byterover-cli globally if not already present
+    if ! command -v brv &>/dev/null; then
+      echo "[entrypoint] ByteRover key detected — installing byterover-cli globally..."
+      if npm install -g byterover-cli 2>&1 | tail -3; then
+        echo "[entrypoint] byterover-cli installed: $(brv --version 2>&1 | head -1)"
       else
-        echo "[entrypoint] WARNING: ByteRover OpenClaw connector install failed (non-fatal)"
+        echo "[entrypoint] WARNING: byterover-cli install failed (non-fatal — memory curation disabled)"
       fi
     else
-      echo "[entrypoint] WARNING: ByteRover provider connect failed (non-fatal)"
+      echo "[entrypoint] byterover-cli already available: $(brv --version 2>&1 | head -1)"
     fi
 
-  elif [ -f "$BYTEROVER_MARKER" ]; then
-    echo "[entrypoint] ByteRover already configured (marker exists)"
-    # Re-enforce API key on each boot in case it changed
-    if command -v brv &>/dev/null; then
-      brv providers connect google \
-        --api-key "$BYTEROVER_KEY" \
-        --model "gemini-2.0-flash-lite" \
-        --format json 2>&1 \
-        || echo "[entrypoint] WARNING: ByteRover key re-enforcement failed (non-fatal)"
+    # Configure ByteRover with Google Gemini provider (idempotent via marker)
+    if command -v brv &>/dev/null && [ ! -f "$BYTEROVER_MARKER" ]; then
+      echo "[entrypoint] Configuring ByteRover with Google Gemini (gemini-2.0-flash-lite)..."
+
+      # brv providers connect: wires up Google Gemini as the LLM provider
+      # --format json makes it fully non-interactive
+      if brv providers connect google \
+          --api-key "$BYTEROVER_KEY" \
+          --model "gemini-2.0-flash-lite" \
+          --format json 2>&1; then
+        echo "[entrypoint] ByteRover connected to Google Gemini (gemini-2.0-flash-lite)"
+
+        # Install the OpenClaw Agent Skill connector so brv query/curate are available
+        if brv connectors install OpenClaw --format json 2>&1; then
+          echo "[entrypoint] ByteRover OpenClaw connector installed as Agent Skill"
+          touch "$BYTEROVER_MARKER"
+        else
+          echo "[entrypoint] WARNING: ByteRover OpenClaw connector install failed (non-fatal)"
+        fi
+      else
+        echo "[entrypoint] WARNING: ByteRover provider connect failed (non-fatal)"
+      fi
+
+    elif [ -f "$BYTEROVER_MARKER" ]; then
+      echo "[entrypoint] ByteRover already configured (marker exists)"
+      # Re-enforce API key on each boot in case it changed
+      if command -v brv &>/dev/null; then
+        brv providers connect google \
+          --api-key "$BYTEROVER_KEY" \
+          --model "gemini-2.0-flash-lite" \
+          --format json 2>&1 \
+          || echo "[entrypoint] WARNING: ByteRover key re-enforcement failed (non-fatal)"
+      fi
     fi
-  fi
+  )
 fi
 
 

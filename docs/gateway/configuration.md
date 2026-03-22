@@ -510,7 +510,17 @@ OpenClaw reads env vars from the parent process plus:
 - `.env` from the current working directory (if present)
 - `~/.openclaw/.env` (global fallback)
 
-Neither file overrides existing env vars. You can also set inline env vars in config:
+Neither file overrides existing env vars.
+
+### Gateway Port
+
+To avoid conflicts with other tools (which often use the generic `PORT`), it is recommended to use:
+
+- `OPENCLAW_GATEWAY_PORT` (e.g. `18789`)
+
+### Common Variables
+
+You can also set inline env vars in config:
 
 ```json5
 {

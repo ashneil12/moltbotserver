@@ -263,6 +263,8 @@ yeah, migration was smooth."
 
 ### 2.6 Humor & Banter in Digital Communication
 
+> **For a complete, dedicated guide on humor mechanics, see [THE_ART_OF_BEING_FUNNY.md](THE_ART_OF_BEING_FUNNY.md).**
+
 **THE PROBLEM**: AI either avoids humor entirely or produces "cruise ship comedy from the 1950s but less racist."
 
 #### When to Use Humor:

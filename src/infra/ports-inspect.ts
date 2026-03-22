@@ -1,3 +1,4 @@
+import fsPromises from "node:fs/promises";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isErrno } from "./errors.js";
 import { buildPortHints } from "./ports-format.js";
@@ -164,6 +165,66 @@ async function readUnixListenersFromSs(
   return { listeners: [], detail: undefined, errors };
 }
 
+/**
+ * TCP state in /proc/net/tcp — column index 3 (0-based in whitespace-split).
+ * Only state 0A (LISTEN) indicates a socket actively accepting connections.
+ * Without this filter, ESTABLISHED/TIME_WAIT/CLOSE_WAIT etc. produce false positives.
+ * See: https://www.kernel.org/doc/Documentation/networking/proc_net_tcp.txt
+ */
+const TCP_LISTEN_STATE = "0A";
+
+/**
+ * Pure parsing function for /proc/net/tcp content.
+ * Exported for testability — the I/O wrapper is `readLinuxProcNetTcpListeners`.
+ *
+ * @param content Combined content from /proc/net/tcp and /proc/net/tcp6
+ * @param port Target port number to match
+ * @returns Listeners found in LISTEN state on the target port
+ */
+export function parseProcNetTcpListeners(
+  content: string,
+  port: number,
+): { listeners: PortListener[]; detail?: string } {
+  const hexPort = port.toString(16).toUpperCase().padStart(4, "0");
+  const portPattern = `:${hexPort}`;
+  const lines = content.split("\n").filter((line) => line.includes(portPattern));
+
+  const listeners: PortListener[] = [];
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/);
+    const localAddr = parts[1];
+    const state = parts[3];
+    if (localAddr?.endsWith(portPattern) && state === TCP_LISTEN_STATE) {
+      listeners.push({ address: localAddr });
+    }
+  }
+  return { listeners, detail: lines.length > 0 ? lines.join("\n") : undefined };
+}
+
+async function readLinuxProcNetTcpListeners(
+  port: number,
+): Promise<{ listeners: PortListener[]; detail?: string; errors: string[] }> {
+  const errors: string[] = [];
+  if (process.platform !== "linux") {
+    return { listeners: [], errors };
+  }
+  try {
+    const tcp = await fsPromises.readFile("/proc/net/tcp", "utf8");
+    let tcp6 = "";
+    try {
+      tcp6 = await fsPromises.readFile("/proc/net/tcp6", "utf8");
+    } catch {
+      // /proc/net/tcp6 may not exist on IPv4-only systems — not an error
+    }
+    const combined = [tcp, tcp6].filter(Boolean).join("\n");
+    const result = parseProcNetTcpListeners(combined, port);
+    return { ...result, errors };
+  } catch (err) {
+    errors.push(String(err));
+    return { listeners: [], errors };
+  }
+}
+
 async function readUnixListeners(
   port: number,
 ): Promise<{ listeners: PortListener[]; detail?: string; errors: string[] }> {
@@ -192,10 +253,15 @@ async function readUnixListeners(
     return ssFallback;
   }
 
+  const procFallback = await readLinuxProcNetTcpListeners(port);
+  if (procFallback.listeners.length > 0) {
+    return procFallback;
+  }
+
   return {
     listeners: [],
     detail: undefined,
-    errors: [...lsofErrors, ...ssFallback.errors],
+    errors: [...lsofErrors, ...ssFallback.errors, ...procFallback.errors],
   };
 }
 

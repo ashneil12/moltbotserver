@@ -9,6 +9,8 @@ import {
   resolveOAuthDir,
   resolveOAuthPath,
   resolveStateDir,
+  resolveGatewayPort,
+  DEFAULT_GATEWAY_PORT,
 } from "./paths.js";
 
 describe("oauth paths", () => {
@@ -139,5 +141,48 @@ describe("state + config path candidates", () => {
       const resolved = resolveConfigPath(env, overrideDir, () => root);
       expect(resolved).toBe(path.join(overrideDir, "openclaw.json"));
     });
+  });
+});
+
+describe("resolveGatewayPort — PORT env var fallback", () => {
+  const env = (overrides: Record<string, string | undefined> = {}) =>
+    ({ ...overrides }) as NodeJS.ProcessEnv;
+
+  it("uses PORT when OPENCLAW_GATEWAY_PORT and CLAWDBOT_GATEWAY_PORT are unset", () => {
+    expect(resolveGatewayPort(undefined, env({ PORT: "9000" }))).toBe(9000);
+  });
+
+  it("OPENCLAW_GATEWAY_PORT takes priority over PORT", () => {
+    expect(
+      resolveGatewayPort(undefined, env({ OPENCLAW_GATEWAY_PORT: "18789", PORT: "9000" })),
+    ).toBe(18789);
+  });
+
+  it("CLAWDBOT_GATEWAY_PORT takes priority over PORT", () => {
+    expect(
+      resolveGatewayPort(undefined, env({ CLAWDBOT_GATEWAY_PORT: "18789", PORT: "9000" })),
+    ).toBe(18789);
+  });
+
+  it("falls back to config when PORT is invalid (non-numeric)", () => {
+    expect(resolveGatewayPort({ gateway: { port: 19003 } }, env({ PORT: "not-a-port" }))).toBe(
+      19003,
+    );
+  });
+
+  it("falls back to config when PORT is zero", () => {
+    expect(resolveGatewayPort({ gateway: { port: 19003 } }, env({ PORT: "0" }))).toBe(19003);
+  });
+
+  it("falls back to config when PORT is negative", () => {
+    expect(resolveGatewayPort({ gateway: { port: 19003 } }, env({ PORT: "-1" }))).toBe(19003);
+  });
+
+  it("falls back to DEFAULT_GATEWAY_PORT when all sources are unset", () => {
+    expect(resolveGatewayPort(undefined, env({}))).toBe(DEFAULT_GATEWAY_PORT);
+  });
+
+  it("trims whitespace from PORT", () => {
+    expect(resolveGatewayPort(undefined, env({ PORT: "  8080  " }))).toBe(8080);
   });
 });
