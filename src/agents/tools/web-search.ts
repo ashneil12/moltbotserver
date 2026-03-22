@@ -2029,7 +2029,10 @@ async function runSearxngSearch(params: {
       timeoutSeconds: params.timeoutSeconds,
       init: {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          "X-Forwarded-For": "127.0.0.1",
+        },
       },
     },
     async (res) => {
