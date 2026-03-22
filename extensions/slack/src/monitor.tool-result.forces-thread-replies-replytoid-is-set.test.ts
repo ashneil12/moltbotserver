@@ -1,27 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
 import {
   defaultSlackTestConfig,
   getSlackClient,
-  getSlackHandlerOrThrow,
   getSlackTestState,
   resetSlackTestState,
-  runSlackMessageOnce,
   startSlackMonitor,
   stopSlackMonitor,
-} from "./monitor.test-helpers.js";
-
-const { monitorSlackProvider } = await import("./monitor.js");
+  getSlackHandlerOrThrow,
+  runSlackMessageOnce,
+  flush,
+} from "./monitor.test-setup.js";
 
 const slackTestState = getSlackTestState();
 const { sendMock, replyMock, reactMock, upsertPairingRequestMock } = slackTestState;
 
-beforeEach(() => {
-  resetInboundDedupe();
-  resetSlackTestState(defaultSlackTestConfig());
-});
-
 describe("monitorSlackProvider tool results", () => {
+  let monitorSlackProvider: any;
+
+  beforeEach(async () => {
+    const mod = await import("./monitor.js");
+    monitorSlackProvider = mod.monitorSlackProvider;
+    resetInboundDedupe();
+    resetSlackTestState(defaultSlackTestConfig());
+  });
+
   it("forces thread replies when replyToId is set", async () => {
     replyMock.mockResolvedValue({ text: "forced reply", replyToId: "555" });
     slackTestState.config = {
@@ -32,6 +35,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dmPolicy: "open",
           allowFrom: ["*"],
           dm: { enabled: true },
@@ -92,6 +96,7 @@ describe("monitorSlackProvider tool results", () => {
       channels: {
         ...slackTestState.config.channels,
         slack: {
+          enabled: true,
           ...slackTestState.config.channels?.slack,
           dm: { enabled: true, policy: "pairing", allowFrom: [] },
         },
@@ -122,6 +127,7 @@ describe("monitorSlackProvider tool results", () => {
       channels: {
         ...slackTestState.config.channels,
         slack: {
+          enabled: true,
           ...slackTestState.config.channels?.slack,
           dm: { enabled: true, policy: "pairing", allowFrom: [] },
         },

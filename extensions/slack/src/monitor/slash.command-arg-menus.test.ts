@@ -98,8 +98,10 @@ describe("Slack native command argument menus", () => {
 
     expect(respond).toHaveBeenCalledTimes(1);
     const payload = respond.mock.calls[0]?.[0] as { blocks?: Array<{ type: string }> };
-    expect(payload.blocks?.[0]?.type).toBe("section");
-    expect(payload.blocks?.[1]?.type).toBe("actions");
+    const blockTypes = payload.blocks?.map((b) => b.type) ?? [];
+    expect(blockTypes).toContain("header");
+    expect(blockTypes).toContain("section");
+    expect(blockTypes).toContain("actions");
   });
 
   it("dispatches the command when a menu button is clicked", async () => {

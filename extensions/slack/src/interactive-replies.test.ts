@@ -7,6 +7,7 @@ describe("isSlackInteractiveRepliesEnabled", () => {
     const cfg = {
       channels: {
         slack: {
+          enabled: true,
           accounts: {
             one: {
               capabilities: { interactiveReplies: true },
@@ -24,6 +25,7 @@ describe("isSlackInteractiveRepliesEnabled", () => {
     const cfg = {
       channels: {
         slack: {
+          enabled: true,
           accounts: {
             only: {
               capabilities: { interactiveReplies: true },

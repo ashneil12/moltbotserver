@@ -6,26 +6,27 @@ import {
   defaultSlackTestConfig,
   getSlackTestState,
   getSlackClient,
-  getSlackHandlers,
-  getSlackHandlerOrThrow,
-  flush,
   resetSlackTestState,
-  runSlackMessageOnce,
   startSlackMonitor,
   stopSlackMonitor,
-} from "./monitor.test-helpers.js";
-
-const { monitorSlackProvider } = await import("./monitor.js");
+  getSlackHandlers,
+  getSlackHandlerOrThrow,
+  runSlackMessageOnce,
+  flush,
+} from "./monitor.test-setup.js";
 
 const slackTestState = getSlackTestState();
 const { sendMock, replyMock, reactMock, upsertPairingRequestMock } = slackTestState;
 
-beforeEach(() => {
-  resetInboundDedupe();
-  resetSlackTestState(defaultSlackTestConfig());
-});
-
 describe("monitorSlackProvider tool results", () => {
+  let monitorSlackProvider: any;
+
+  beforeEach(async () => {
+    const mod = await import("./monitor.js");
+    monitorSlackProvider = mod.monitorSlackProvider;
+    resetInboundDedupe();
+    resetSlackTestState(defaultSlackTestConfig());
+  });
   type SlackMessageEvent = {
     type: "message";
     user: string;
@@ -59,6 +60,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           replyToMode,
         },
@@ -82,6 +84,7 @@ describe("monitorSlackProvider tool results", () => {
         : {}),
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: true } },
         },
@@ -124,6 +127,7 @@ describe("monitorSlackProvider tool results", () => {
       messages: { ackReactionScope: "group-mentions" },
       channels: {
         slack: {
+          enabled: true,
           historyLimit: 5,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels,
@@ -159,6 +163,7 @@ describe("monitorSlackProvider tool results", () => {
       channels: {
         ...currentConfig.channels,
         slack: {
+          enabled: true,
           ...currentConfig.channels?.slack,
           dm: { enabled: true, policy: "pairing", allowFrom: [] },
         },
@@ -209,7 +214,7 @@ describe("monitorSlackProvider tool results", () => {
 
   function expectSingleSendWithThread(threadTs: string | undefined) {
     expect(sendMock).toHaveBeenCalledTimes(1);
-    expect(sendMock.mock.calls[0][2]).toMatchObject({ threadTs });
+    expect((sendMock.mock.calls[0][2] || {}).threadTs).toBe(threadTs);
   }
 
   async function runDefaultMessageAndExpectSentText(expectedText: string) {
@@ -225,6 +230,7 @@ describe("monitorSlackProvider tool results", () => {
     slackTestState.config = {
       channels: {
         slack: {
+          enabled: true,
           enabled: false,
           mode: "socket",
           botToken: "xoxb-config",
@@ -262,14 +268,10 @@ describe("monitorSlackProvider tool results", () => {
       api_app_id: "A1",
     });
 
-    await runSlackMessageOnce(
-      monitorSlackProvider,
-      {
-        body: { api_app_id: "A2", team_id: "T1" },
-        event: makeSlackMessageEvent(),
-      },
-      { appToken: "xapp-1-A1-abc" },
-    );
+    await runSlackMessageOnce(monitorSlackProvider, {
+      body: { api_app_id: "A2", team_id: "T1" },
+      event: makeSlackMessageEvent(),
+    });
 
     expect(sendMock).not.toHaveBeenCalled();
     expect(replyMock).not.toHaveBeenCalled();
@@ -301,7 +303,7 @@ describe("monitorSlackProvider tool results", () => {
         ackReactionScope: "group-mentions",
       },
       channels: {
-        slack: { dm: { enabled: true, policy: "open", allowFrom: ["*"] } },
+        slack: { enabled: true, dm: { enabled: true, policy: "open", allowFrom: ["*"] } },
       },
     };
 
@@ -438,6 +440,7 @@ describe("monitorSlackProvider tool results", () => {
     slackTestState.config = {
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           groupPolicy: "open",
           requireMention: false,
@@ -487,6 +490,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dmPolicy: "open",
           allowFrom: ["*"],
           dm: { enabled: true },

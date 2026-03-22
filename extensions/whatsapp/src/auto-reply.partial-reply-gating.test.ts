@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../agents/pi-embedded.js", () => ({
+vi.mock("../../../src/agents/pi-embedded.js", () => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
@@ -13,10 +13,10 @@ vi.mock("../agents/pi-embedded.js", () => ({
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
 }));
 
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
-import { getReplyFromConfig } from "../auto-reply/reply.js";
-import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
-import type { OpenClawConfig } from "../config/config.js";
+import { runEmbeddedPiAgent } from "../../../src/agents/pi-embedded.js";
+import { getReplyFromConfig } from "../../../src/auto-reply/reply.js";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
 import { monitorWebChannel } from "./auto-reply.js";
 import { resetLoadConfigMock, setLoadConfigMock } from "./test-helpers.js";
 

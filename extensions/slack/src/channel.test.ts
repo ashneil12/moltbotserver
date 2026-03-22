@@ -6,9 +6,7 @@ const handleSlackActionMock = vi.fn();
 vi.mock("./runtime.js", () => ({
   getSlackRuntime: () => ({
     channel: {
-      slack: {
-        handleSlackAction: handleSlackActionMock,
-      },
+      slack: { enabled: true, handleSlackAction: handleSlackActionMock },
     },
   }),
 }));
@@ -63,10 +61,7 @@ describe("slackPlugin actions", () => {
 describe("slackPlugin outbound", () => {
   const cfg = {
     channels: {
-      slack: {
-        botToken: "xoxb-test",
-        appToken: "xapp-test",
-      },
+      slack: { enabled: true, botToken: "xoxb-test", appToken: "xapp-test" },
     },
   };
 
@@ -154,10 +149,7 @@ describe("slackPlugin agentPrompt", () => {
     const hints = slackPlugin.agentPrompt?.messageToolHints?.({
       cfg: {
         channels: {
-          slack: {
-            botToken: "xoxb-test",
-            appToken: "xapp-test",
-          },
+          slack: { enabled: true, botToken: "xoxb-test", appToken: "xapp-test" },
         },
       },
     });
@@ -172,6 +164,7 @@ describe("slackPlugin agentPrompt", () => {
       cfg: {
         channels: {
           slack: {
+            enabled: true,
             botToken: "xoxb-test",
             appToken: "xapp-test",
             capabilities: { interactiveReplies: true },
@@ -194,6 +187,7 @@ describe("slackPlugin config", () => {
     const cfg: OpenClawConfig = {
       channels: {
         slack: {
+          enabled: true,
           mode: "http",
           botToken: "xoxb-http",
           signingSecret: "secret-http", // pragma: allowlist secret
@@ -210,10 +204,7 @@ describe("slackPlugin config", () => {
   it("keeps socket mode requiring app token", async () => {
     const cfg: OpenClawConfig = {
       channels: {
-        slack: {
-          mode: "socket",
-          botToken: "xoxb-socket",
-        },
+        slack: { enabled: true, mode: "socket", botToken: "xoxb-socket" },
       },
     };
 

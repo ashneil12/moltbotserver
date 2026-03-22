@@ -1,24 +1,25 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
 import {
   defaultSlackTestConfig,
   getSlackClient,
   getSlackTestState,
   resetSlackTestState,
   runSlackMessageOnce,
-} from "./monitor.test-helpers.js";
-
-const { monitorSlackProvider } = await import("./monitor.js");
+} from "./monitor.test-setup.js";
 
 const slackTestState = getSlackTestState();
 const { sendMock, replyMock } = slackTestState;
 
-beforeEach(() => {
-  resetInboundDedupe();
-  resetSlackTestState(defaultSlackTestConfig());
-});
-
 describe("monitorSlackProvider tool results", () => {
+  let monitorSlackProvider: any;
+
+  beforeEach(async () => {
+    const mod = await import("./monitor.js");
+    monitorSlackProvider = mod.monitorSlackProvider;
+    resetInboundDedupe();
+    resetSlackTestState(defaultSlackTestConfig());
+  });
   it("threads top-level replies when replyToMode is all", async () => {
     replyMock.mockResolvedValue({ text: "thread reply" });
     slackTestState.config = {
@@ -29,6 +30,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           replyToMode: "all",
         },
@@ -82,6 +84,7 @@ describe("monitorSlackProvider tool results", () => {
       messages: { responsePrefix: "PFX" },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: false } },
           thread: { inheritParent: true },
@@ -129,6 +132,7 @@ describe("monitorSlackProvider tool results", () => {
       messages: { responsePrefix: "PFX" },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: false } },
         },
@@ -166,6 +170,7 @@ describe("monitorSlackProvider tool results", () => {
       messages: { responsePrefix: "PFX" },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: false } },
         },
@@ -217,6 +222,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           replyToMode: "off",
         },
@@ -248,6 +254,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           replyToMode: "first",
         },

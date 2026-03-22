@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createReplyDispatcherWithTyping } from "../auto-reply/reply/reply-dispatcher.js";
+import { createReplyDispatcherWithTyping } from "../../../src/auto-reply/reply/reply-dispatcher.js";
 
 const dispatchMock = vi.fn();
 
@@ -22,8 +22,8 @@ vi.mock("@buape/carbon", () => ({
   BaseMessageInteractiveComponent: class {},
 }));
 
-vi.mock("../auto-reply/dispatch.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../auto-reply/dispatch.js")>();
+vi.mock("../../../src/auto-reply/dispatch.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/auto-reply/dispatch.js")>();
   return {
     ...actual,
     dispatchInboundMessage: (...args: unknown[]) => dispatchMock(...args),
@@ -66,7 +66,7 @@ describe("discord native commands", () => {
       },
       session: { store: "/tmp/openclaw-sessions.json" },
       discord: { dm: { enabled: true, policy: "open" } },
-    } as ReturnType<typeof import("../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
 
     const command = createDiscordNativeCommand({
       command: {

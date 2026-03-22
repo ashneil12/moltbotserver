@@ -1,5 +1,5 @@
-import { detectMime } from "../media/mime.js";
-import { type SavedMedia, saveMediaBuffer } from "../media/store.js";
+import { detectMime } from "../../../src/media/mime.js";
+import { type SavedMedia, saveMediaBuffer } from "../../../src/media/store.js";
 
 export type TelegramFileInfo = {
   file_id: string;

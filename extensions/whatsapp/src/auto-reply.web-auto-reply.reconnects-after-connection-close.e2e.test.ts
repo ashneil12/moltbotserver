@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { escapeRegExp, formatEnvelopeTimestamp } from "../../test/helpers/envelope-timestamp.js";
-import { withEnvAsync } from "../test-utils/env.js";
+import { withEnvAsync } from "../../../src/test-utils/env.js";
+import { escapeRegExp, formatEnvelopeTimestamp } from "../../../test/helpers/envelope-timestamp.js";
 import {
   createWebListenerFactoryCapture,
   installWebAutoReplyTestHomeHooks,

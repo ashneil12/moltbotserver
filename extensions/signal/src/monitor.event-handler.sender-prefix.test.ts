@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const dispatchMock = vi.fn();
 const readAllowFromMock = vi.fn();
 
-vi.mock("../pairing/pairing-store.js", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromMock(...args),
   upsertChannelPairingRequest: vi.fn(),
 }));
@@ -19,7 +19,7 @@ describe("signal event handler sender prefix", () => {
 
   it("prefixes group bodies with sender label", async () => {
     let capturedBody = "";
-    const dispatchModule = await import("../auto-reply/dispatch.js");
+    const dispatchModule = await import("../../../src/auto-reply/dispatch.js");
     vi.spyOn(dispatchModule, "dispatchInboundMessage").mockImplementation(
       async (...args: unknown[]) => dispatchMock(...args),
     );

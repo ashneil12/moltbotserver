@@ -13,7 +13,7 @@ const { loadWebMedia } = vi.hoisted(() => ({
   loadWebMedia: vi.fn(),
 }));
 
-vi.mock("../web/media.js", () => ({
+vi.mock("../../whatsapp/src/media.js", () => ({
   loadWebMedia,
 }));
 
@@ -36,8 +36,8 @@ vi.mock("grammy", () => ({
 const { loadConfig } = vi.hoisted(() => ({
   loadConfig: vi.fn(() => ({})),
 }));
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../../../src/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
     loadConfig,

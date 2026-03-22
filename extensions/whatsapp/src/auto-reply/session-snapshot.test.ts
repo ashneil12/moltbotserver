@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { saveSessionStore } from "../../config/sessions.js";
+import { saveSessionStore } from "../../../../src/config/sessions.js";
 import { getSessionSnapshot } from "./session-snapshot.js";
 
 describe("getSessionSnapshot", () => {

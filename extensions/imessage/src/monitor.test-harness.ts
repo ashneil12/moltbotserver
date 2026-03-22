@@ -63,15 +63,15 @@ export function getConfigMock() {
   return state.config;
 }
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../../../src/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => state.config,
   };
 });
 
-vi.mock("../auto-reply/reply.js", () => ({
+vi.mock("../../../src/auto-reply/reply.js", () => ({
   getReplyFromConfig: (...args: unknown[]) => state.replyMock(...args),
 }));
 
@@ -79,12 +79,12 @@ vi.mock("./send.js", () => ({
   sendMessageIMessage: (...args: unknown[]) => state.sendMock(...args),
 }));
 
-vi.mock("../pairing/pairing-store.js", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => state.readAllowFromStoreMock(...args),
   upsertChannelPairingRequest: (...args: unknown[]) => state.upsertPairingRequestMock(...args),
 }));
 
-vi.mock("../config/sessions.js", () => ({
+vi.mock("../../../src/config/sessions.js", () => ({
   resolveStorePath: vi.fn(() => "/tmp/openclaw-sessions.json"),
   updateLastRoute: (...args: unknown[]) => state.updateLastRouteMock(...args),
   readSessionUpdatedAt: vi.fn(() => undefined),

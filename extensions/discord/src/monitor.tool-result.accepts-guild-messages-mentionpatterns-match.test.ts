@@ -18,8 +18,8 @@ vi.mock("./send.js", () => ({
     reactMock(...args);
   },
 }));
-vi.mock("../auto-reply/dispatch.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../auto-reply/dispatch.js")>();
+vi.mock("../../../src/auto-reply/dispatch.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/auto-reply/dispatch.js")>();
   return {
     ...actual,
     dispatchInboundMessage: (...args: unknown[]) => dispatchMock(...args),
@@ -27,19 +27,19 @@ vi.mock("../auto-reply/dispatch.js", async (importOriginal) => {
     dispatchInboundMessageWithBufferedDispatcher: (...args: unknown[]) => dispatchMock(...args),
   };
 });
-vi.mock("../pairing/pairing-store.js", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromStoreMock(...args),
   upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
 }));
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../../../src/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
     loadConfig: (...args: unknown[]) => loadConfigMock(...args),
   };
 });
-vi.mock("../config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/sessions.js")>();
+vi.mock("../../../src/config/sessions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/sessions.js")>();
   return {
     ...actual,
     resolveStorePath: vi.fn(() => "/tmp/openclaw-sessions.json"),
@@ -88,7 +88,7 @@ describe("discord tool result dispatch", () => {
           responsePrefix: "PFX",
           groupChat: { mentionPatterns: ["\\bopenclaw\\b"] },
         },
-      } as ReturnType<typeof import("../config/config.js").loadConfig>;
+      } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
 
       const handler = createDiscordMessageHandler({
         cfg,
@@ -172,7 +172,7 @@ describe("discord tool result dispatch", () => {
           responsePrefix: "PFX",
           groupChat: { mentionPatterns: ["\\bopenclaw\\b"] },
         },
-      } as ReturnType<typeof import("../config/config.js").loadConfig>;
+      } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
 
       const handler = createDiscordMessageHandler({
         cfg,
@@ -250,7 +250,7 @@ describe("discord tool result dispatch", () => {
           guilds: { "*": { requireMention: true } },
         },
       },
-    } as ReturnType<typeof import("../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
 
     const handler = createDiscordMessageHandler({
       cfg,
@@ -365,7 +365,7 @@ describe("discord tool result dispatch", () => {
           guilds: { "*": { requireMention: false } },
         },
       },
-    } as ReturnType<typeof import("../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
 
     const handler = createDiscordMessageHandler({
       cfg,
@@ -482,7 +482,7 @@ describe("discord tool result dispatch", () => {
           },
         },
       },
-    } as ReturnType<typeof import("../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
 
     const handler = createDiscordMessageHandler({
       cfg,
@@ -583,7 +583,7 @@ describe("discord tool result dispatch", () => {
         },
       },
       routing: { allowFrom: [] },
-    } as ReturnType<typeof import("../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
 
     const handler = createDiscordMessageHandler({
       cfg,
@@ -693,7 +693,7 @@ describe("discord tool result dispatch", () => {
         },
       },
       bindings: [{ agentId: "support", match: { channel: "discord", guildId: "g1" } }],
-    } as ReturnType<typeof import("../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../../src/config/config.js").loadConfig>;
     loadConfigMock.mockReturnValue(cfg);
 
     const handler = createDiscordMessageHandler({

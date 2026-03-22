@@ -15,14 +15,14 @@ vi.mock("./send.js", () => ({
   sendReadReceiptSignal: (...args: unknown[]) => sendReadReceiptMock(...args),
 }));
 
-vi.mock("../auto-reply/dispatch.js", () => ({
+vi.mock("../../../src/auto-reply/dispatch.js", () => ({
   dispatchInboundMessage: (...args: unknown[]) => dispatchInboundMessageMock(...args),
   dispatchInboundMessageWithDispatcher: (...args: unknown[]) => dispatchInboundMessageMock(...args),
   dispatchInboundMessageWithBufferedDispatcher: (...args: unknown[]) =>
     dispatchInboundMessageMock(...args),
 }));
 
-vi.mock("../pairing/pairing-store.js", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: vi.fn().mockResolvedValue([]),
   upsertChannelPairingRequest: vi.fn(),
 }));

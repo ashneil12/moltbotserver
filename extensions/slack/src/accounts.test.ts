@@ -7,6 +7,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
       cfg: {
         channels: {
           slack: {
+            enabled: true,
             allowFrom: ["top"],
             accounts: {
               default: {
@@ -29,6 +30,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
       cfg: {
         channels: {
           slack: {
+            enabled: true,
             allowFrom: ["top"],
             accounts: {
               work: { botToken: "xoxb-work", appToken: "xapp-work" },
@@ -47,6 +49,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
       cfg: {
         channels: {
           slack: {
+            enabled: true,
             accounts: {
               default: {
                 botToken: "xoxb-default",
@@ -69,6 +72,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
       cfg: {
         channels: {
           slack: {
+            enabled: true,
             dm: { allowFrom: ["U123"] },
             accounts: {
               work: { botToken: "xoxb-work", appToken: "xapp-work" },

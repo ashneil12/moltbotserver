@@ -25,7 +25,7 @@ describe("buildSlackThreadingToolContext", () => {
   it("uses top-level replyToMode by default", () => {
     const cfg = {
       channels: {
-        slack: { replyToMode: "first" },
+        slack: { enabled: true, replyToMode: "first" },
       },
     } as OpenClawConfig;
     const result = buildSlackThreadingToolContext({
@@ -63,9 +63,7 @@ describe("buildSlackThreadingToolContext", () => {
   it("falls back to top-level when no chat-type override is set", () => {
     const cfg = {
       channels: {
-        slack: {
-          replyToMode: "first",
-        },
+        slack: { enabled: true, replyToMode: "first" },
       },
     } as OpenClawConfig;
     const result = buildSlackThreadingToolContext({
@@ -122,10 +120,7 @@ describe("buildSlackThreadingToolContext", () => {
   it("keeps configured channel behavior when not in a thread", () => {
     const cfg = {
       channels: {
-        slack: {
-          replyToMode: "off",
-          replyToModeByChatType: { channel: "first" },
-        },
+        slack: { enabled: true, replyToMode: "off", replyToModeByChatType: { channel: "first" } },
       },
     } as OpenClawConfig;
     const result = buildSlackThreadingToolContext({

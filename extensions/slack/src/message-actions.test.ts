@@ -7,6 +7,7 @@ describe("listSlackMessageActions", () => {
     const cfg = {
       channels: {
         slack: {
+          enabled: true,
           botToken: "xoxb-test",
           actions: {
             messages: true,

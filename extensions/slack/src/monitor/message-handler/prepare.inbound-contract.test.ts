@@ -3,10 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import type { App } from "@slack/bolt";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { expectInboundContextContract } from "../../../../test/helpers/inbound-contract.js";
-import type { OpenClawConfig } from "../../../config/config.js";
-import { resolveAgentRoute } from "../../../routing/resolve-route.js";
-import { resolveThreadSessionKeys } from "../../../routing/session-key.js";
+import type { OpenClawConfig } from "../../../../../src/config/config.js";
+import { resolveAgentRoute } from "../../../../../src/routing/resolve-route.js";
+import { resolveThreadSessionKeys } from "../../../../../src/routing/session-key.js";
+import { expectInboundContextContract } from "../../../../../test/helpers/inbound-contract.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import type { SlackMessageEvent } from "../../types.js";
@@ -73,6 +73,8 @@ describe("slack prepareSlackMessage inbound contract", () => {
       },
       textLimit: 4000,
       ackReactionScope: "group-mentions",
+      allowNameMatching: false,
+      typingReaction: "",
       mediaMaxBytes: 1024,
       removeAckAfterReply: false,
     });
@@ -86,7 +88,9 @@ describe("slack prepareSlackMessage inbound contract", () => {
     enabled: true,
     botTokenSource: "config",
     appTokenSource: "config",
+    userTokenSource: "config",
     config: {},
+    replyToMode: "off",
   };
 
   async function prepareWithDefaultCtx(message: SlackMessageEvent) {
@@ -132,6 +136,8 @@ describe("slack prepareSlackMessage inbound contract", () => {
       },
       textLimit: 4000,
       ackReactionScope: "group-mentions",
+      allowNameMatching: false,
+      typingReaction: "",
       mediaMaxBytes: 1024,
       removeAckAfterReply: false,
     });
@@ -143,10 +149,12 @@ describe("slack prepareSlackMessage inbound contract", () => {
       enabled: true,
       botTokenSource: "config",
       appTokenSource: "config",
+      userTokenSource: "config",
       config: {
         replyToMode: "all",
         thread: { initialHistoryLimit: 20 },
       },
+      replyToMode: "all",
     };
   }
 
@@ -209,6 +217,8 @@ describe("slack prepareSlackMessage inbound contract", () => {
       },
       textLimit: 4000,
       ackReactionScope: "group-mentions",
+      allowNameMatching: false,
+      typingReaction: "",
       mediaMaxBytes: 1024,
       removeAckAfterReply: false,
     });
@@ -227,7 +237,9 @@ describe("slack prepareSlackMessage inbound contract", () => {
       enabled: true,
       botTokenSource: "config",
       appTokenSource: "config",
+      userTokenSource: "config",
       config: {},
+      replyToMode: "off",
     };
 
     const message: SlackMessageEvent = {
@@ -290,6 +302,8 @@ describe("slack prepareSlackMessage inbound contract", () => {
       },
       textLimit: 4000,
       ackReactionScope: "group-mentions",
+      allowNameMatching: false,
+      typingReaction: "",
       mediaMaxBytes: 1024,
       removeAckAfterReply: false,
     });
@@ -301,7 +315,9 @@ describe("slack prepareSlackMessage inbound contract", () => {
       enabled: true,
       botTokenSource: "config",
       appTokenSource: "config",
+      userTokenSource: "config",
       config: { replyToMode: "all" },
+      replyToMode: "all",
     };
 
     const message: SlackMessageEvent = {

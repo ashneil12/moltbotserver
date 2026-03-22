@@ -1,29 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HISTORY_CONTEXT_MARKER } from "../auto-reply/reply/history.js";
-import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
-import { CURRENT_MESSAGE_MARKER } from "../auto-reply/reply/mentions.js";
+import { HISTORY_CONTEXT_MARKER } from "../../../src/auto-reply/reply/history.js";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
+import { CURRENT_MESSAGE_MARKER } from "../../../src/auto-reply/reply/mentions.js";
 import {
   defaultSlackTestConfig,
   getSlackTestState,
   getSlackClient,
-  getSlackHandlerOrThrow,
   resetSlackTestState,
-  runSlackMessageOnce,
   startSlackMonitor,
   stopSlackMonitor,
-} from "./monitor.test-helpers.js";
-
-const { monitorSlackProvider } = await import("./monitor.js");
+  getSlackHandlerOrThrow,
+  runSlackMessageOnce,
+  flush,
+} from "./monitor.test-setup.js";
 
 const slackTestState = getSlackTestState();
 const { sendMock, replyMock } = slackTestState;
 
-beforeEach(() => {
-  resetInboundDedupe();
-  resetSlackTestState(defaultSlackTestConfig());
-});
-
 describe("monitorSlackProvider tool results", () => {
+  let monitorSlackProvider: any;
+
+  beforeEach(async () => {
+    const mod = await import("./monitor.js");
+    monitorSlackProvider = mod.monitorSlackProvider;
+    resetInboundDedupe();
+    resetSlackTestState(defaultSlackTestConfig());
+  });
   it("skips tool summaries with responsePrefix", async () => {
     replyMock.mockResolvedValue({ text: "final reply" });
 
@@ -53,21 +55,17 @@ describe("monitorSlackProvider tool results", () => {
       api_app_id: "A1",
     });
 
-    await runSlackMessageOnce(
-      monitorSlackProvider,
-      {
-        body: { api_app_id: "A2", team_id: "T1" },
-        event: {
-          type: "message",
-          user: "U1",
-          text: "hello",
-          ts: "123",
-          channel: "C1",
-          channel_type: "im",
-        },
+    await runSlackMessageOnce(monitorSlackProvider, {
+      body: { api_app_id: "A2", team_id: "T1" },
+      event: {
+        type: "message",
+        user: "U1",
+        text: "hello",
+        ts: "123",
+        channel: "C1",
+        channel_type: "im",
       },
-      { appToken: "xapp-1-A1-abc" },
-    );
+    });
 
     expect(sendMock).not.toHaveBeenCalled();
     expect(replyMock).not.toHaveBeenCalled();
@@ -99,7 +97,7 @@ describe("monitorSlackProvider tool results", () => {
         ackReactionScope: "group-mentions",
       },
       channels: {
-        slack: { dm: { enabled: true, policy: "open", allowFrom: ["*"] } },
+        slack: { enabled: true, dm: { enabled: true, policy: "open", allowFrom: ["*"] } },
       },
     };
 
@@ -125,6 +123,7 @@ describe("monitorSlackProvider tool results", () => {
       messages: { ackReactionScope: "group-mentions" },
       channels: {
         slack: {
+          enabled: true,
           historyLimit: 5,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { "*": { requireMention: false } },
@@ -133,7 +132,7 @@ describe("monitorSlackProvider tool results", () => {
     };
 
     let capturedCtx: { Body?: string; RawBody?: string; CommandBody?: string } = {};
-    replyMock.mockImplementation(async (ctx) => {
+    replyMock.mockImplementation(async (ctx: any) => {
       capturedCtx = ctx ?? {};
       return undefined;
     });
@@ -178,6 +177,7 @@ describe("monitorSlackProvider tool results", () => {
       messages: { ackReactionScope: "group-mentions" },
       channels: {
         slack: {
+          enabled: true,
           historyLimit: 5,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: true } },
@@ -186,7 +186,7 @@ describe("monitorSlackProvider tool results", () => {
     };
 
     const capturedCtx: Array<{ Body?: string }> = [];
-    replyMock.mockImplementation(async (ctx) => {
+    replyMock.mockImplementation(async (ctx: any) => {
       capturedCtx.push(ctx ?? {});
       return undefined;
     });
@@ -239,7 +239,7 @@ describe("monitorSlackProvider tool results", () => {
   });
 
   it("updates assistant thread status when replies start", async () => {
-    replyMock.mockImplementation(async (_ctx, opts) => {
+    replyMock.mockImplementation(async (_ctx: any, opts: any) => {
       await opts?.onReplyStart?.();
       return { text: "final reply" };
     });
@@ -282,6 +282,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: true } },
         },
@@ -312,6 +313,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: true } },
         },
@@ -338,6 +340,7 @@ describe("monitorSlackProvider tool results", () => {
     slackTestState.config = {
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           channels: { C1: { allow: true, requireMention: true } },
         },
@@ -366,6 +369,7 @@ describe("monitorSlackProvider tool results", () => {
     slackTestState.config = {
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           groupPolicy: "open",
           requireMention: false,
@@ -418,6 +422,7 @@ describe("monitorSlackProvider tool results", () => {
       },
       channels: {
         slack: {
+          enabled: true,
           dm: { enabled: true, policy: "open", allowFrom: ["*"] },
           replyToMode: "off",
         },

@@ -81,7 +81,7 @@ vi.mock("@discordjs/voice", () => ({
   joinVoiceChannel: joinVoiceChannelMock,
 }));
 
-vi.mock("../../routing/resolve-route.js", () => ({
+vi.mock("../../../../src/routing/resolve-route.js", () => ({
   resolveAgentRoute: resolveAgentRouteMock,
 }));
 

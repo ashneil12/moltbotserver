@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
 
 const useSpy = vi.fn();
 const middlewareUseSpy = vi.fn();
@@ -46,8 +46,8 @@ vi.mock("@grammyjs/transformer-throttler", () => ({
   apiThrottler: () => throttlerSpy(),
 }));
 
-vi.mock("../media/store.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../media/store.js")>();
+vi.mock("../../../src/media/store.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/media/store.js")>();
   return {
     ...actual,
     saveMediaBuffer: vi.fn(async (buffer: Buffer, contentType?: string) => ({
@@ -59,8 +59,8 @@ vi.mock("../media/store.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../../../src/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => ({
@@ -69,15 +69,15 @@ vi.mock("../config/config.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/sessions.js")>();
+vi.mock("../../../src/config/sessions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/sessions.js")>();
   return {
     ...actual,
     updateLastRoute: vi.fn(async () => undefined),
   };
 });
 
-vi.mock("../pairing/pairing-store.js", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: vi.fn(async () => [] as string[]),
   upsertChannelPairingRequest: vi.fn(async () => ({
     code: "PAIRCODE",
@@ -85,7 +85,7 @@ vi.mock("../pairing/pairing-store.js", () => ({
   })),
 }));
 
-vi.mock("../auto-reply/reply.js", () => {
+vi.mock("../../../src/auto-reply/reply.js", () => {
   const replySpy = vi.fn(async (_ctx, opts) => {
     await opts?.onReplyStart?.();
     return undefined;
@@ -99,7 +99,7 @@ describe("telegram inbound media", () => {
     "includes location text and ctx fields for pins",
     async () => {
       const { createTelegramBot } = await import("./bot.js");
-      const replyModule = await import("../auto-reply/reply.js");
+      const replyModule = await import("../../../src/auto-reply/reply.js");
       const replySpy = replyModule.__replySpy as unknown as ReturnType<typeof vi.fn>;
 
       onSpy.mockReset();
@@ -143,7 +143,7 @@ describe("telegram inbound media", () => {
     "captures venue fields for named places",
     async () => {
       const { createTelegramBot } = await import("./bot.js");
-      const replyModule = await import("../auto-reply/reply.js");
+      const replyModule = await import("../../../src/auto-reply/reply.js");
       const replySpy = replyModule.__replySpy as unknown as ReturnType<typeof vi.fn>;
 
       onSpy.mockReset();

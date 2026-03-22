@@ -1,19 +1,19 @@
 import type { ButtonInteraction, ComponentData, StringSelectMenuInteraction } from "@buape/carbon";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { OpenClawConfig } from "../../../../src/config/config.js";
 import { createAgentComponentButton, createAgentSelectMenu } from "./agent-components.js";
 
 const readAllowFromStoreMock = vi.hoisted(() => vi.fn());
 const upsertPairingRequestMock = vi.hoisted(() => vi.fn());
 const enqueueSystemEventMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../../pairing/pairing-store.js", () => ({
+vi.mock("../../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromStoreMock(...args),
   upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
 }));
 
-vi.mock("../../infra/system-events.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../infra/system-events.js")>();
+vi.mock("../../../../src/infra/system-events.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../../src/infra/system-events.js")>();
   return {
     ...actual,
     enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),

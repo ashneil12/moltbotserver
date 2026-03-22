@@ -136,11 +136,9 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
   const botToken = resolveSlackBotToken(opts.botToken ?? account.botToken);
   const appToken = resolveSlackAppToken(opts.appToken ?? account.appToken);
   if (!botToken || (slackMode !== "http" && !appToken)) {
-    const missing =
-      slackMode === "http"
-        ? `Slack bot token missing for account "${account.accountId}" (set channels.slack.accounts.${account.accountId}.botToken or SLACK_BOT_TOKEN for default).`
-        : `Slack bot + app tokens missing for account "${account.accountId}" (set channels.slack.accounts.${account.accountId}.botToken/appToken or SLACK_BOT_TOKEN/SLACK_APP_TOKEN for default).`;
-    throw new Error(missing);
+    throw new Error(
+      `DEBUG_TOKENS FULL: account=${JSON.stringify(account)} opts=${JSON.stringify(opts)}`,
+    );
   }
   if (slackMode === "http" && !signingSecret) {
     throw new Error(
@@ -193,6 +191,13 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
         })
       : null;
   const clientOptions = resolveSlackWebClientOptions();
+
+  if (typeof App !== "function") {
+    throw new Error(
+      `DEBUG_APP: App=${typeof App} slackBolt=${typeof slackBolt} keys=${Object.keys(slackBolt || {}).join(", ")} default=${typeof (slackBolt as any).default}`,
+    );
+  }
+
   const app = new App(
     slackMode === "socket"
       ? {

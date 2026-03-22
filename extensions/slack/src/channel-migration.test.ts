@@ -4,9 +4,7 @@ import { migrateSlackChannelConfig, migrateSlackChannelsInPlace } from "./channe
 function createSlackGlobalChannelConfig(channels: Record<string, Record<string, unknown>>) {
   return {
     channels: {
-      slack: {
-        channels,
-      },
+      slack: { enabled: true, channels },
     },
   };
 }
@@ -18,6 +16,7 @@ function createSlackAccountChannelConfig(
   return {
     channels: {
       slack: {
+        enabled: true,
         accounts: {
           [accountId]: {
             channels,
