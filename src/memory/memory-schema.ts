@@ -79,6 +79,34 @@ export function ensureMemoryIndexSchema(params: {
   params.db.exec(`CREATE INDEX IF NOT EXISTS idx_chunks_path ON chunks(path);`);
   params.db.exec(`CREATE INDEX IF NOT EXISTS idx_chunks_source ON chunks(source);`);
 
+  // Q-value reinforcement learning tables
+  params.db.exec(`
+    CREATE TABLE IF NOT EXISTS chunk_qvalues (
+      chunk_id TEXT PRIMARY KEY,
+      q_value REAL NOT NULL DEFAULT 1.0,
+      retrieval_count INTEGER NOT NULL DEFAULT 0,
+      reward_sum REAL NOT NULL DEFAULT 0.0,
+      last_retrieved_at INTEGER,
+      last_rewarded_at INTEGER,
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+    );
+  `);
+  params.db.exec(`
+    CREATE TABLE IF NOT EXISTS retrieval_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_key TEXT NOT NULL,
+      chunk_id TEXT NOT NULL,
+      chunk_path TEXT NOT NULL,
+      chunk_snippet TEXT NOT NULL,
+      score REAL NOT NULL,
+      query TEXT NOT NULL,
+      retrieved_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+    );
+  `);
+  params.db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_retrieval_log_session ON retrieval_log(session_key);`,
+  );
+
   return { ftsAvailable, ...(ftsError ? { ftsError } : {}) };
 }
 

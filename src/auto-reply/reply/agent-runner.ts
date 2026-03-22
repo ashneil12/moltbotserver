@@ -19,6 +19,7 @@ import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
+import { getMemorySearchManager } from "../../memory/index.js";
 import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import {
@@ -484,6 +485,28 @@ export async function runReplyAgent(params: {
 
     // Session health sentinel: successful run resets error counter
     onRunSuccess(activeSessionEntry);
+
+    // Q-value RL: compute rewards for memory chunks retrieved this turn
+    if (sessionKey && payloadArray.length > 0) {
+      try {
+        const responseText = payloadArray
+          .map((p) => (typeof p.text === "string" ? p.text : ""))
+          .filter(Boolean)
+          .join("\n");
+        if (responseText.length > 0) {
+          const agentIdForReward = resolveAgentIdFromSessionKey(sessionKey);
+          const memResult = await getMemorySearchManager({
+            cfg,
+            agentId: agentIdForReward,
+          }).catch(() => null);
+          if (memResult?.manager?.processRetrievalRewards) {
+            memResult.manager.processRetrievalRewards(sessionKey, responseText);
+          }
+        }
+      } catch {
+        // Fire-and-forget — reward computation failures must not break replies
+      }
+    }
 
     // Drain any late tool/block deliveries before deciding there's "nothing to send".
     // Otherwise, a late typing trigger (e.g. from a tool callback) can outlive the run and

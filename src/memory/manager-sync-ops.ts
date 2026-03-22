@@ -648,10 +648,20 @@ export abstract class MemoryManagerSyncOps {
       return;
     }
     const ms = minutes * 60 * 1000;
+    let lastDecayAt = 0;
+    const DECAY_INTERVAL_MS = 60 * 60 * 1000; // Max once per hour
     this.intervalTimer = setInterval(() => {
       void this.sync({ reason: "interval" }).catch((err) => {
         log.warn(`memory sync failed (interval): ${String(err)}`);
       });
+      // Q-value decay: slowly move Q-values toward 1.0
+      const now = Date.now();
+      if (now - lastDecayAt >= DECAY_INTERVAL_MS) {
+        lastDecayAt = now;
+        void import("./qvalue.js")
+          .then((mod) => mod.decayQValues(this.db))
+          .catch((err) => log.warn(`qvalue decay failed: ${String(err)}`));
+      }
     }, ms);
   }
 

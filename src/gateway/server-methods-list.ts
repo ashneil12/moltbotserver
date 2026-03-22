@@ -97,6 +97,7 @@ const BASE_METHODS = [
   "system-event",
   "system.diskHealth",
   "system.diskCleanup",
+  "system.resources",
   "send",
   "agent",
   "agent.identity.get",

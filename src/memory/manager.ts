@@ -19,10 +19,21 @@ import {
 } from "./embeddings.js";
 import { isFileMissingError, statRegularFile } from "./fs-utils.js";
 import { bm25RankToScore, buildFtsQuery, mergeHybridResults } from "./hybrid.js";
+import {
+  adjustTemporalDecayHalfLife,
+  blendIntentWeights,
+  classifyIntent,
+} from "./intent-classifier.js";
 import { isMemoryPath, normalizeExtraMemoryPaths } from "./internal.js";
 import { MemoryManagerEmbeddingOps } from "./manager-embedding-ops.js";
 import { searchKeyword, searchVector } from "./manager-search.js";
 import { extractKeywords } from "./query-expansion.js";
+import {
+  readQValues,
+  logRetrieval as logRetrievalToDb,
+  logMemoryGetAccess as logMemoryGetAccessToDb,
+  computeAndApplyRewards,
+} from "./qvalue.js";
 import type {
   MemoryEmbeddingProbeResult,
   MemoryProviderStatus,
@@ -315,6 +326,7 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
         .filter((entry) => entry.score >= minScore)
         .slice(0, maxResults);
 
+      this.logSearchRetrieval(opts?.sessionKey, merged, cleaned);
       return merged;
     }
 
@@ -331,12 +343,17 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       : [];
 
     if (!hybrid.enabled || !this.fts.enabled || !this.fts.available) {
-      return vectorResults.filter((entry) => entry.score >= minScore).slice(0, maxResults);
+      const filtered = vectorResults
+        .filter((entry) => entry.score >= minScore)
+        .slice(0, maxResults);
+      this.logSearchRetrieval(opts?.sessionKey, filtered, cleaned);
+      return filtered;
     }
 
     const merged = await this.mergeHybridResults({
       vector: vectorResults,
       keyword: keywordResults,
+      query: cleaned,
       vectorWeight: hybrid.vectorWeight,
       textWeight: hybrid.textWeight,
       mmr: hybrid.mmr,
@@ -344,7 +361,9 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     });
     const strict = merged.filter((entry) => entry.score >= minScore);
     if (strict.length > 0 || keywordResults.length === 0) {
-      return strict.slice(0, maxResults);
+      const limited = strict.slice(0, maxResults);
+      this.logSearchRetrieval(opts?.sessionKey, limited, cleaned);
+      return limited;
     }
 
     // Hybrid defaults can produce keyword-only matches with max score equal to
@@ -357,13 +376,39 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
         (entry) => `${entry.source}:${entry.path}:${entry.startLine}:${entry.endLine}`,
       ),
     );
-    return merged
+    const relaxed = merged
       .filter(
         (entry) =>
           keywordKeys.has(`${entry.source}:${entry.path}:${entry.startLine}:${entry.endLine}`) &&
           entry.score >= relaxedMinScore,
       )
       .slice(0, maxResults);
+    this.logSearchRetrieval(opts?.sessionKey, relaxed, cleaned);
+    return relaxed;
+  }
+
+  /**
+   * Log search results for Q-value reward computation.
+   * Fire-and-forget — errors are silently caught.
+   */
+  private logSearchRetrieval(
+    sessionKey: string | undefined,
+    results: Array<{ id?: string; path: string; snippet: string; score: number }>,
+    query: string,
+  ): void {
+    if (!sessionKey || results.length === 0) {
+      return;
+    }
+    try {
+      const loggable = results
+        .filter((r): r is typeof r & { id: string } => Boolean(r.id))
+        .map((r) => ({ id: r.id, path: r.path, snippet: r.snippet, score: r.score }));
+      if (loggable.length > 0) {
+        logRetrievalToDb(this.db, sessionKey, loggable, query);
+      }
+    } catch (err) {
+      log.warn(`qvalue logSearchRetrieval failed: ${String(err)}`);
+    }
   }
 
   private async searchVector(
@@ -419,11 +464,24 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
   private mergeHybridResults(params: {
     vector: Array<MemorySearchResult & { id: string }>;
     keyword: Array<MemorySearchResult & { id: string; textScore: number }>;
+    query: string;
     vectorWeight: number;
     textWeight: number;
     mmr?: { enabled: boolean; lambda: number };
     temporalDecay?: { enabled: boolean; halfLifeDays: number };
   }): Promise<MemorySearchResult[]> {
+    // Apply intent classification to dynamically adjust weights
+    const classified = classifyIntent(params.query);
+    const blended = blendIntentWeights(classified, params.vectorWeight, params.textWeight);
+
+    // Adjust temporal decay half-life based on query intent
+    const adjustedTemporalDecay = params.temporalDecay
+      ? {
+          ...params.temporalDecay,
+          halfLifeDays: adjustTemporalDecayHalfLife(classified, params.temporalDecay.halfLifeDays),
+        }
+      : params.temporalDecay;
+
     return mergeHybridResults({
       vector: params.vector.map((r) => ({
         id: r.id,
@@ -443,12 +501,72 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
         snippet: r.snippet,
         textScore: r.textScore,
       })),
-      vectorWeight: params.vectorWeight,
-      textWeight: params.textWeight,
+      query: params.query,
+      vectorWeight: blended.vectorWeight,
+      textWeight: blended.textWeight,
       mmr: params.mmr,
-      temporalDecay: params.temporalDecay,
+      temporalDecay: adjustedTemporalDecay,
       workspaceDir: this.workspaceDir,
+      qValueBoosts: this.readQValuesForResults([
+        ...params.vector.map((r) => r.id),
+        ...params.keyword.map((r) => r.id),
+      ]),
     }).then((entries) => entries.map((entry) => entry as MemorySearchResult));
+  }
+
+  /**
+   * Read Q-values for result chunk IDs from the database.
+   * Returns undefined if no Q-value records exist (avoids overhead on fresh installs).
+   */
+  private readQValuesForResults(chunkIds: string[]): ReturnType<typeof readQValues> | undefined {
+    if (chunkIds.length === 0) {
+      return undefined;
+    }
+    try {
+      const uniqueIds = [...new Set(chunkIds)];
+      const qValues = readQValues(this.db, uniqueIds);
+      return qValues.size > 0 ? qValues : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Log retrieved chunks for Q-value reward computation.
+   */
+  logRetrieval(
+    sessionKey: string,
+    results: Array<{ id: string; path: string; snippet: string; score: number }>,
+    query: string,
+  ): void {
+    try {
+      logRetrievalToDb(this.db, sessionKey, results, query);
+    } catch (err) {
+      log.warn(`qvalue logRetrieval failed: ${String(err)}`);
+    }
+  }
+
+  /**
+   * Log a memory_get file access for Q-value reward detection.
+   */
+  logMemoryGetAccess(sessionKey: string, path: string): void {
+    try {
+      logMemoryGetAccessToDb(this.db, sessionKey, path);
+    } catch (err) {
+      log.warn(`qvalue logMemoryGetAccess failed: ${String(err)}`);
+    }
+  }
+
+  /**
+   * Compute and apply Q-value rewards after an agent turn.
+   * Fire-and-forget — should not block the response.
+   */
+  processRetrievalRewards(sessionKey: string, responseText: string): void {
+    try {
+      computeAndApplyRewards(this.db, sessionKey, responseText);
+    } catch (err) {
+      log.warn(`qvalue processRetrievalRewards failed: ${String(err)}`);
+    }
   }
 
   async sync(params?: {

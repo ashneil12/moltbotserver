@@ -47,6 +47,7 @@ const SHARED_AUTH_EXEMPT_METHODS = new Set([
   "health",
   "system.diskHealth",
   "system.diskCleanup",
+  "system.resources",
   // Cron dashboard methods — dashboard backend clients authenticate via gateway
   // token but have no device identity, so their scopes are stripped.
   "cron.list",

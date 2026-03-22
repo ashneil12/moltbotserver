@@ -78,4 +78,14 @@ export interface MemorySearchManager {
   probeEmbeddingAvailability(): Promise<MemoryEmbeddingProbeResult>;
   probeVectorAvailability(): Promise<boolean>;
   close?(): Promise<void>;
+  /** Log retrieved chunks for Q-value reward computation. */
+  logRetrieval?(
+    sessionKey: string,
+    results: Array<{ id: string; path: string; snippet: string; score: number }>,
+    query: string,
+  ): void;
+  /** Log a memory_get file access for Q-value reward detection. */
+  logMemoryGetAccess?(sessionKey: string, path: string): void;
+  /** Compute and apply Q-value rewards after an agent turn. Fire-and-forget. */
+  processRetrievalRewards?(sessionKey: string, responseText: string): void;
 }

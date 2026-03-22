@@ -12,6 +12,7 @@ import { listSystemPresence, updateSystemPresence } from "../../infra/system-pre
 import { scanDiskUsage, runDiskCleanup } from "../../logging/disk-hygiene.js";
 import { ErrorCodes, errorShape } from "../protocol/index.js";
 import { broadcastPresenceSnapshot } from "../server/presence-events.js";
+import { collectSystemResources } from "../system-resources.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
 export const systemHandlers: GatewayRequestHandlers = {
@@ -199,6 +200,22 @@ export const systemHandlers: GatewayRequestHandlers = {
         errorShape(
           ErrorCodes.UNAVAILABLE,
           err instanceof Error ? err.message : "disk cleanup failed",
+        ),
+      );
+    }
+  },
+
+  "system.resources": ({ respond }) => {
+    try {
+      const resources = collectSystemResources();
+      respond(true, resources, undefined);
+    } catch (err) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.UNAVAILABLE,
+          err instanceof Error ? err.message : "resource collection failed",
         ),
       );
     }

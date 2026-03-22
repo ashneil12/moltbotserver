@@ -1,4 +1,20 @@
+import {
+  applyGravityDampening,
+  type GravityDampeningConfig,
+  DEFAULT_GRAVITY_DAMPENING_CONFIG,
+} from "./gravity-dampening.js";
+import {
+  applyHubDampening,
+  type HubDampeningConfig,
+  DEFAULT_HUB_DAMPENING_CONFIG,
+} from "./hub-dampening.js";
 import { applyMMRToHybridResults, type MMRConfig, DEFAULT_MMR_CONFIG } from "./mmr.js";
+import {
+  applyQValueBoost,
+  type QValueConfig,
+  type QValueRecord,
+  DEFAULT_QVALUE_CONFIG,
+} from "./qvalue.js";
 import { applySourceBoostToResults } from "./source-boost.js";
 import {
   applyTemporalDecayToHybridResults,
@@ -8,8 +24,11 @@ import {
 
 export type HybridSource = string;
 
+export { type GravityDampeningConfig, DEFAULT_GRAVITY_DAMPENING_CONFIG };
+export { type HubDampeningConfig, DEFAULT_HUB_DAMPENING_CONFIG };
 export { type MMRConfig, DEFAULT_MMR_CONFIG };
 export { type TemporalDecayConfig, DEFAULT_TEMPORAL_DECAY_CONFIG };
+export { type QValueConfig, type QValueRecord, DEFAULT_QVALUE_CONFIG };
 
 export type HybridVectorResult = {
   id: string;
@@ -60,11 +79,21 @@ export async function mergeHybridResults(params: {
   keyword: HybridKeywordResult[];
   vectorWeight: number;
   textWeight: number;
+  /** Original query text (used for gravity dampening term-overlap check) */
+  query?: string;
   workspaceDir?: string;
   /** MMR configuration for diversity-aware re-ranking */
   mmr?: Partial<MMRConfig>;
   /** Temporal decay configuration for recency-aware scoring */
   temporalDecay?: Partial<TemporalDecayConfig>;
+  /** Gravity dampening configuration */
+  gravityDampening?: Partial<GravityDampeningConfig>;
+  /** Hub dampening configuration */
+  hubDampening?: Partial<HubDampeningConfig>;
+  /** Q-value boosts keyed by chunk ID (from retrieval RL) */
+  qValueBoosts?: Map<string, QValueRecord>;
+  /** Q-value configuration */
+  qValueConfig?: Partial<QValueConfig>;
   /** Test seam for deterministic time-dependent behavior */
   nowMs?: number;
 }): Promise<
@@ -128,6 +157,7 @@ export async function mergeHybridResults(params: {
   const merged = Array.from(byId.values()).map((entry) => {
     const score = params.vectorWeight * entry.vectorScore + params.textWeight * entry.textScore;
     return {
+      id: entry.id,
       path: entry.path,
       startLine: entry.startLine,
       endLine: entry.endLine,
@@ -147,7 +177,27 @@ export async function mergeHybridResults(params: {
     workspaceDir: params.workspaceDir,
     nowMs: params.nowMs,
   });
-  const sorted = decayed.toSorted((a, b) => b.score - a.score);
+  // Apply gravity dampening: penalize high-similarity results with no query-term overlap
+  const gravityConfig = { ...DEFAULT_GRAVITY_DAMPENING_CONFIG, ...params.gravityDampening };
+  const gravityDampened =
+    gravityConfig.enabled && params.query
+      ? applyGravityDampening(decayed, params.query, gravityConfig)
+      : decayed;
+
+  // Apply hub dampening: penalize files that dominate the result set
+  const hubConfig = { ...DEFAULT_HUB_DAMPENING_CONFIG, ...params.hubDampening };
+  const hubDampened = hubConfig.enabled
+    ? applyHubDampening(gravityDampened, hubConfig)
+    : gravityDampened;
+
+  // Apply Q-value reinforcement learning boost
+  const qvConfig = { ...DEFAULT_QVALUE_CONFIG, ...params.qValueConfig };
+  const qBoosted =
+    qvConfig.enabled && params.qValueBoosts && params.qValueBoosts.size > 0
+      ? applyQValueBoost(hubDampened, params.qValueBoosts, qvConfig)
+      : hubDampened;
+
+  const sorted = qBoosted.toSorted((a, b) => b.score - a.score);
 
   // Apply MMR re-ranking if enabled
   const mmrConfig = { ...DEFAULT_MMR_CONFIG, ...params.mmr };

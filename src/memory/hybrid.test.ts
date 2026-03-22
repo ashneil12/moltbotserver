@@ -32,6 +32,8 @@ describe("memory hybrid helpers", () => {
     const merged = await mergeHybridResults({
       vectorWeight: 0.7,
       textWeight: 0.3,
+      gravityDampening: { enabled: false },
+      hubDampening: { enabled: false },
       vector: [
         {
           id: "a",
@@ -67,6 +69,8 @@ describe("memory hybrid helpers", () => {
     const merged = await mergeHybridResults({
       vectorWeight: 0.5,
       textWeight: 0.5,
+      gravityDampening: { enabled: false },
+      hubDampening: { enabled: false },
       vector: [
         {
           id: "a",
@@ -101,6 +105,8 @@ describe("memory hybrid helpers", () => {
       vectorWeight: 1,
       textWeight: 0,
       temporalDecay: { enabled: false },
+      gravityDampening: { enabled: false },
+      hubDampening: { enabled: false },
       vector: [
         {
           id: "knowledge",
@@ -132,5 +138,76 @@ describe("memory hybrid helpers", () => {
     expect(generic?.score).toBeCloseTo(0.75);
     expect(knowledge?.score ?? 0).toBeGreaterThan(generic?.score ?? 0);
     expect(merged[0]?.path).toBe("MEMORY.md");
+  });
+
+  it("mergeHybridResults applies Q-value boost to high-Q chunks", async () => {
+    const qValueBoosts = new Map();
+    qValueBoosts.set("high-q", { chunkId: "high-q", qValue: 1.5, retrievalCount: 10 });
+    qValueBoosts.set("low-q", { chunkId: "low-q", qValue: 0.7, retrievalCount: 10 });
+
+    const merged = await mergeHybridResults({
+      vectorWeight: 1,
+      textWeight: 0,
+      temporalDecay: { enabled: false },
+      gravityDampening: { enabled: false },
+      hubDampening: { enabled: false },
+      qValueBoosts,
+      vector: [
+        {
+          id: "high-q",
+          path: "docs/a.md",
+          startLine: 1,
+          endLine: 2,
+          source: "memory",
+          snippet: "high quality",
+          vectorScore: 0.7,
+        },
+        {
+          id: "low-q",
+          path: "docs/b.md",
+          startLine: 1,
+          endLine: 2,
+          source: "memory",
+          snippet: "low quality",
+          vectorScore: 0.8,
+        },
+      ],
+      keyword: [],
+    });
+
+    expect(merged).toHaveLength(2);
+    const highQ = merged.find((r) => r.path === "docs/a.md");
+    const lowQ = merged.find((r) => r.path === "docs/b.md");
+    // high-q: 0.7 × 1.5 = 1.05; low-q: 0.8 × 0.7 = 0.56
+    expect(highQ?.score).toBeCloseTo(0.7 * 1.5);
+    expect(lowQ?.score).toBeCloseTo(0.8 * 0.7);
+    expect(highQ?.score ?? 0).toBeGreaterThan(lowQ?.score ?? 0);
+    expect(merged[0]?.path).toBe("docs/a.md");
+  });
+
+  it("mergeHybridResults passes through unchanged without qValueBoosts", async () => {
+    const merged = await mergeHybridResults({
+      vectorWeight: 1,
+      textWeight: 0,
+      temporalDecay: { enabled: false },
+      gravityDampening: { enabled: false },
+      hubDampening: { enabled: false },
+      // No qValueBoosts param
+      vector: [
+        {
+          id: "a",
+          path: "docs/a.md",
+          startLine: 1,
+          endLine: 2,
+          source: "memory",
+          snippet: "test",
+          vectorScore: 0.9,
+        },
+      ],
+      keyword: [],
+    });
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0]?.score).toBeCloseTo(0.9);
   });
 });

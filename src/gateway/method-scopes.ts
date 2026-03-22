@@ -79,6 +79,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "gateway.identity.get",
     "system-presence",
     "system.diskHealth",
+    "system.resources",
     "last-heartbeat",
     "node.list",
     "node.describe",

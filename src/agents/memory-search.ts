@@ -80,6 +80,11 @@ export type ResolvedMemorySearchConfig = {
         enabled: boolean;
         halfLifeDays: number;
       };
+      qvalue: {
+        enabled: boolean;
+        learningRate: number;
+        decayHalfLifeDays: number;
+      };
     };
   };
   cache: {
@@ -296,6 +301,20 @@ function mergeConfig(
         defaults?.query?.hybrid?.temporalDecay?.halfLifeDays ??
         DEFAULT_TEMPORAL_DECAY_HALF_LIFE_DAYS,
     },
+    qvalue: {
+      enabled:
+        overrides?.query?.hybrid?.qvalue?.enabled ??
+        defaults?.query?.hybrid?.qvalue?.enabled ??
+        true,
+      learningRate:
+        overrides?.query?.hybrid?.qvalue?.learningRate ??
+        defaults?.query?.hybrid?.qvalue?.learningRate ??
+        0.15,
+      decayHalfLifeDays:
+        overrides?.query?.hybrid?.qvalue?.decayHalfLifeDays ??
+        defaults?.query?.hybrid?.qvalue?.decayHalfLifeDays ??
+        60,
+    },
   };
   const cache = {
     enabled: overrides?.cache?.enabled ?? defaults?.cache?.enabled ?? DEFAULT_CACHE_ENABLED,
@@ -362,6 +381,11 @@ function mergeConfig(
         temporalDecay: {
           enabled: Boolean(hybrid.temporalDecay.enabled),
           halfLifeDays: temporalDecayHalfLifeDays,
+        },
+        qvalue: {
+          enabled: Boolean(hybrid.qvalue.enabled),
+          learningRate: hybrid.qvalue.learningRate,
+          decayHalfLifeDays: hybrid.qvalue.decayHalfLifeDays,
         },
       },
     },

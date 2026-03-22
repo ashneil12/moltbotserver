@@ -5,6 +5,92 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Q-Value Reinforcement Learning on Memory Retrieval (2026-03-22)
+
+**Purpose:** Add a reinforcement learning feedback loop to `memory_search`. Tracks which retrieved chunks agents actually use (cited in responses, followed up with `memory_get`) and adjusts chunk scores over time. Useful chunks get boosted; ignored chunks get suppressed.
+
+**Architecture:** EMA (α=0.15) update clamped to [0.5, 2.0]. Exploration bonus 1.05× for cold chunks (decays over 5 retrievals). Ephemeral `retrieval_log` cleared after per-session reward computation. Decay toward 1.0 with 60-day half-life.
+
+| File                                   | Change                                                                                                                                                                                    | Sync Risk   |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/memory/qvalue.ts`                 | **NEW** — Core Q-value module: reads, boosts, logging, rewards, decay. Pure functions following `source-boost.ts` pattern. Batch-safe (500 IDs/query). Snippet cap (1000 chars). 51 tests | None — new  |
+| `src/memory/qvalue.test.ts`            | **NEW** — 51 tests: applyQValueBoost, logRetrieval, reward computation, decay, dedup, session isolation, large batch, end-to-end integration                                              | None — test |
+| `src/memory/memory-schema.ts`          | Added `chunk_qvalues` and `retrieval_log` tables                                                                                                                                          | Medium      |
+| `src/memory/hybrid.ts`                 | Q-value boost stage after hub dampening, `id` preserved through pipeline                                                                                                                  | Medium      |
+| `src/memory/hybrid.test.ts`            | +2 tests for Q-value boost in `mergeHybridResults`                                                                                                                                        | None — test |
+| `src/memory/manager.ts`                | Reads Q-values before merge, `logSearchRetrieval` at all return paths, `logRetrieval`/`logMemoryGetAccess`/`processRetrievalRewards` public methods                                       | Medium      |
+| `src/memory/types.ts`                  | `logRetrieval`, `logMemoryGetAccess`, `processRetrievalRewards` on `MemorySearchManager` interface                                                                                        | Medium      |
+| `src/memory/manager-sync-ops.ts`       | Q-value decay in periodic sync interval (max once/hour via dynamic import)                                                                                                                | Low         |
+| `src/agents/tools/memory-tool.ts`      | `memory_get` logs access for reward signal detection                                                                                                                                      | Low         |
+| `src/auto-reply/reply/agent-runner.ts` | Post-turn reward hook (fire-and-forget, extracts response text from payloads)                                                                                                             | Low         |
+| `src/config/types.tools.ts`            | `qvalue` config type under `query.hybrid`                                                                                                                                                 | Low         |
+| `src/agents/memory-search.ts`          | Config resolution with defaults (`enabled: true`, `learningRate: 0.15`, `decayHalfLifeDays: 60`)                                                                                          | Low         |
+
+> **Sync Risk:** `memory-schema.ts` — 2 new `CREATE TABLE IF NOT EXISTS` statements. `hybrid.ts` — Q-value boost is a new stage in the pipeline (after hub dampening, before sort). `manager.ts` — wires Q-value reads into `mergeHybridResults` + logging at search exit points. `types.ts` — 3 new methods on `MemorySearchManager` interface. All additive blocks.
+
+---
+
+## Memory Search Enhancements — Intent Classification, Gravity & Hub Dampening (2026-03-22)
+
+**Purpose:** Three enhancements to the memory search scoring pipeline: (1) intent-aware weight blending adjusts vector/keyword weights per query type, (2) gravity dampening penalizes high-similarity results with no query-term overlap, (3) hub dampening prevents any single file from dominating results.
+
+| File                                   | Change                                                                                                                                                       | Sync Risk   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| `src/memory/intent-classifier.ts`      | **NEW** — Query intent classification (factual, conceptual, navigational, temporal, procedural). Adjusts vector/keyword weights and temporal decay half-life | None — new  |
+| `src/memory/intent-classifier.test.ts` | **NEW** — 20 tests                                                                                                                                           | None — test |
+| `src/memory/gravity-dampening.ts`      | **NEW** — Penalizes results with high semantic score but no query-term overlap (cosine-like without embeddings)                                              | None — new  |
+| `src/memory/gravity-dampening.test.ts` | **NEW** — 14 tests                                                                                                                                           | None — test |
+| `src/memory/hub-dampening.ts`          | **NEW** — Penalizes files appearing ≥3× in results, increasing penalty per occurrence                                                                        | None — new  |
+| `src/memory/hub-dampening.test.ts`     | **NEW** — 9 tests                                                                                                                                            | None — test |
+| `src/memory/hybrid.ts`                 | Gravity & hub dampening stages integrated into `mergeHybridResults`                                                                                          | Medium      |
+| `src/memory/manager.ts`                | Intent classification wired into `mergeHybridResults` call with weight blending                                                                              | Medium      |
+
+> **Sync Risk:** `hybrid.ts` — two new pipeline stages added between temporal decay and sort. `manager.ts` — intent classification modifies the weight/decay params before calling `mergeHybridResults`. Both are additive blocks in existing functions.
+
+---
+
+## Q-Value Reinforcement Learning for Memory Search (2026-03-22)
+
+**Purpose:** Dynamically adjust memory chunk retrieval scores based on agent usage patterns. Chunks that agents cite, reference via `memory_get`, or incorporate into responses get boosted; ignored chunks get penalized. Uses Exponential Moving Average (EMA) updates with a neutral 1.0 baseline, exploration bonus for cold-start chunks, and time-decay to prevent stale signals. Inspired by [Ori-Mnemos](https://github.com/aayoawoyemi/Ori-Mnemos) Q-value retrieval concept.
+
+| File                                   | Change                                                                                                                                                                                                                                              | Sync Risk      |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `src/memory/qvalue.ts`                 | **NEW** — Core Q-value module: `readQValues`, `applyQValueBoost`, `logRetrieval`, `logMemoryGetAccess`, `computeChunkReward` (4 heuristic signals), `updateQValueEMA`, `computeAndApplyRewards`, `decayQValues`. Pure functions, immutable returns. | None — new     |
+| `src/memory/qvalue.test.ts`            | **NEW** — 30+ tests: score boosting, clamping, exploration bonus, all reward signals, EMA updates, decay, end-to-end search-cite-reward-rerank cycle                                                                                                | None — test    |
+| `src/memory/memory-schema.ts`          | Added `chunk_qvalues` and `retrieval_log` tables to `ensureMemoryIndexSchema()`                                                                                                                                                                     | Low — additive |
+| `src/memory/hybrid.ts`                 | `mergeHybridResults` accepts Q-value boosts + config; applies `applyQValueBoost` stage after gravity/hub dampening, before final sort                                                                                                               | Medium         |
+| `src/memory/hybrid.test.ts`            | +2 tests for Q-value boost integration (score adjustment + bypass when disabled)                                                                                                                                                                    | None — test    |
+| `src/memory/types.ts`                  | Added `QValueRecord`, `QValueConfig` types; extended `MemorySearchManager` with `logRetrieval`, `logMemoryGetAccess`, `processRetrievalRewards`                                                                                                     | Medium         |
+| `src/memory/manager.ts`                | `search()` reads Q-values and passes boosts to `mergeHybridResults`; logs retrievals. New methods: `logSearchRetrieval`, `readQValuesForResults`, `processRetrievalRewards`                                                                         | Medium         |
+| `src/memory/manager-sync-ops.ts`       | Added `decayQValues()` call in interval sync timer (periodic decay towards 1.0)                                                                                                                                                                     | Low — additive |
+| `src/agents/tools/memory-tool.ts`      | `memory_get` handler logs access via `logMemoryGetAccess()` for reward signal detection (optional chaining, fire-and-forget)                                                                                                                        | Low — additive |
+| `src/auto-reply/reply/agent-runner.ts` | Post-turn `processRetrievalRewards()` hook — fire-and-forget with try/catch, optional chaining on manager                                                                                                                                           | Low — additive |
+
+**Design Decisions:**
+
+- **EMA rule:** `new_q = old_q × (1 - α) + (1.0 + reward) × α` with `α = 0.15`
+- **Q-value bounds:** clamped [0.5, 2.0], default 1.0 (neutral)
+- **Exploration bonus:** 1.05× for chunks with < 5 retrievals, decays linearly
+- **Decay:** 60-day half-life towards 1.0, prevents stale signals
+- **Reward signals:** text citation (+0.3), path reference (+0.2), `memory_get` follow-up (+0.4), ignored penalty (−0.1) — all heuristic, no LLM calls
+
+> **Sync Risk:** `hybrid.ts` — Q-value boost stage is added after existing gravity/hub dampening stages. If upstream restructures the merge pipeline, re-apply. `manager.ts` — new methods and Q-value reads in `search()`. `types.ts` — interface extension with optional methods. Both are additive blocks.
+
+---
+
+## Prompt Hardening — Workspace Change Discipline, Plan Before Build & Git Discipline (2026-03-22)
+
+**Purpose:** Adapt AlphaClaw's "No YOLO" operational discipline patterns into MoltBot agent bootstrap prompts. Fills the gap between SOUL.md's "bias for action" principle (which applies to reversible work) and risky system-level modifications that need explicit approval.
+
+| File            | Change                                                                                                                                                                                                                             | Sync Risk      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `OPERATIONS.md` | Added 3 sections: **Workspace Change Discipline** (approval required for config/creds/packages/services), **Plan Before Build** (4-question impact checklist), **Git Discipline** (commit protocol with structured summary format) | Low — additive |
+| `SOUL.md`       | Added cross-reference callout in "Think Architecturally" § "Bias for Action" → OPERATIONS.md § "Workspace Change Discipline"                                                                                                       | Low — additive |
+
+> **Sync Risk:** Both changes are additive text blocks. If upstream restructures the sections they're adjacent to, re-apply.
+
+---
+
 ## Server Error Fixes: Scope Exemption, Caddy Retry & Browser Noise (2026-03-22)
 
 **Purpose:** Three production issues on Hetzner server (46.224.177.74): (1) Dashboard `system.diskHealth` calls failing with `missing scope: operator.read` because gateway strips scopes from device-less WebSocket connections. (2) Caddy 502 errors during gateway container restarts. (3) Benign Chromium shared-memory errors spamming browser container logs.

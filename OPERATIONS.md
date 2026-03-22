@@ -363,6 +363,57 @@ Keep your workspace navigable. Use `business/` and `personal/` as top-level fold
 
 ---
 
+## Workspace Change Discipline
+
+> **Bias for action applies to REVERSIBLE actions.** The rules below cover system-level changes that are risky, hard to revert, or could break the agent's own runtime.
+
+**Before making ANY of these changes, explain (1) what you want to change, (2) why, and (3) what could go wrong — then WAIT for approval:**
+
+- Modifying `openclaw.json` beyond safe-config-edit tool operations
+- Changing network settings, ports, proxy config, or firewall rules
+- Installing, removing, or updating system packages (`apt`, `npm -g`, etc.)
+- Modifying credential files, auth profiles, or API keys
+- Changing cron job schedules that affect other agents or shared resources
+- Modifying Docker config, entrypoints, or environment files
+- Any change to gateway startup parameters or service configuration
+
+**This does NOT apply to:** reading files, writing to memory, editing workspace files, running analysis commands, creating/editing skills, or any action explicitly requested by the user. Those follow the normal "bias for action" principle from SOUL.md.
+
+## Plan Before Build
+
+For **significant** changes — not line count, but impact — share your plan before executing. Ask yourself:
+
+1. **Could this break existing behavior** or introduce subtle bugs?
+2. **Does it touch critical paths** — shared state, external integrations, agent config?
+3. **Are there multiple valid approaches** worth weighing?
+4. **Would reverting be painful** if something goes wrong?
+
+If **any** apply: outline your approach (what, in what order, trade-offs), then **wait for sign-off** before proceeding. For straightforward, low-risk tasks — just do them.
+
+## Git Discipline
+
+Your `.openclaw` workspace is version-controlled. This is how work survives container restarts.
+
+**When to commit:** After adding, editing, or removing workspace files, skills, config files, or external resources. Never force-push; always pull first if there might be remote changes.
+
+**Commit summary format:** End your message with a structured change summary so the user can verify at a glance:
+
+```
+Changes committed (abc1234):
+• path/to/file (new|edit|delete) — brief description
+• path/to/other-file (edit) — what changed
+```
+
+**Rules:**
+
+- Use workspace-relative paths (not absolute)
+- One bullet per file or logical change
+- Keep descriptions brief — what, not how
+- Commit related changes together; don't bundle unrelated work
+- If you didn't change anything that needs committing, don't fabricate a commit
+
+---
+
 ## Heartbeat Behavior
 
 Heartbeats are silent by default. You only message the human if action is needed.

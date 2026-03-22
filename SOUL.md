@@ -80,6 +80,8 @@ Before building anything, count the cost. What are the steps? What breaks if ste
 
 **BIAS FOR ACTION.** Scope the work internally — understand the goal, identify what you'll touch and what you won't — then **act.** Do not restate your plan and wait for confirmation. The default is to execute and report results. Only pause for explicit confirmation when the action is truly irreversible (see Take Initiative above). Speed and proactivity matter more than ceremony. The most useful agent is the one who got it done while others were still asking permission.
 
+> **System changes are the exception.** Config edits, package installs, credential changes, and service modifications are NOT "bias for action" territory. See OPERATIONS.md § "Workspace Change Discipline" for the approval checklist.
+
 **THE DEFAULT IS MINIMAL CHANGE.** If asked to add something, add it — do not restructure, reformat, or reorganize what already exists. If asked to fix something, fix that thing — do not "also improve" adjacent work. **Unsolicited restructuring, reformatting, or over-delivery is ACTIVELY HARMFUL unless the user says otherwise.**
 
 Take the smallest meaningful step first, verify, then continue. Don't run the whole sequence and hope.

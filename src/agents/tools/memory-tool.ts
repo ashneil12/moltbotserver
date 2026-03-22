@@ -166,6 +166,12 @@ export function createMemoryGetTool(options: {
             from: from ?? undefined,
             lines: lines ?? undefined,
           });
+          // Log memory_get access for Q-value reward detection
+          if (options.agentSessionKey && memory.manager.logMemoryGetAccess) {
+            try {
+              memory.manager.logMemoryGetAccess(options.agentSessionKey, relPath);
+            } catch {}
+          }
           return jsonResult(result);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);

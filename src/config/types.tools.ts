@@ -433,6 +433,15 @@ export type MemorySearchConfig = {
         /** Half-life in days for exponential decay (default: 14). */
         halfLifeDays?: number;
       };
+      /** Q-value reinforcement learning on memory retrieval. */
+      qvalue?: {
+        /** Enable Q-value boosting (default: true). */
+        enabled?: boolean;
+        /** EMA learning rate for Q-value updates (default: 0.15). */
+        learningRate?: number;
+        /** Half-life in days for Q-value decay toward 1.0 (default: 60). */
+        decayHalfLifeDays?: number;
+      };
     };
   };
   /** Index cache behavior. */
