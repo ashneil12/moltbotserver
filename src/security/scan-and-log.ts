@@ -55,6 +55,13 @@ export interface ScanAndLogOptions {
   eventName?: string;
   /** Extra data to include in the event log entry */
   extraData?: Record<string, unknown>;
+  /**
+   * When true, suppress the generic `[security] Content QUARANTINED` logWarn.
+   * The caller is responsible for logging the quarantine event itself.
+   * Useful for first-party files (e.g. SOUL.md) that legitimately contain
+   * patterns matching scanner rules.
+   */
+  suppressQuarantineLog?: boolean;
 }
 
 export type ScanAndLogResult = Omit<ScanResult, "frontierResult">;
@@ -76,7 +83,7 @@ export function scanAndLog(content: string, options: ScanAndLogOptions): ScanAnd
       sender: options.sender,
     });
 
-    if (result.quarantined) {
+    if (result.quarantined && !options.suppressQuarantineLog) {
       logWarn(
         `[security] Content QUARANTINED (source=${options.source}, ` +
           `riskScore=${result.riskScore}, ` +

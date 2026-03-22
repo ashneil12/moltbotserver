@@ -2,13 +2,17 @@ import syncFs from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { resolveMainSessionKeyFromConfig } from "../config/sessions/main-session.js";
 import { atomicWriteFile } from "../infra/atomic-file.js";
 import { openBoundaryFile } from "../infra/boundary-file-read.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { enqueueSystemEvent } from "../infra/system-events.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { rebuildKnowledgeIndex } from "../memory/knowledge-index.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
+import { alertOperatorQuarantine } from "../security/quarantine-alert.js";
+import { notifyQuarantine } from "../security/quarantine-notify.js";
 import { scanAndLog } from "../security/scan-and-log.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveWorkspaceTemplateDir } from "./workspace-templates.js";
@@ -21,22 +25,25 @@ const workspaceSecurityLog = createSubsystemLogger("workspace-security");
  * it as untrusted. Fail-open: if the scanner crashes, content passes through unchanged.
  */
 function scanWorkspaceContent(content: string, fileName: string, filePath: string): string {
+  const isBootstrap = VALID_BOOTSTRAP_NAMES.has(fileName);
   const scanResult = scanAndLog(content, {
     source: "workspace_context",
     sender: fileName,
     eventName: "security.workspace_context_scan",
     extraData: { file: fileName, path: filePath },
+    // Bootstrap files (SOUL.md, OPERATIONS.md, etc.) legitimately contain
+    // patterns that match scanner rules (e.g. "override safety", "rm -rf").
+    // Suppress the generic QUARANTINED warning — we log at debug level below.
+    suppressQuarantineLog: isBootstrap,
   });
   if (scanResult?.quarantined) {
-    // First-party bootstrap files (SOUL.md, OPERATIONS.md, etc.) are authored
-    // by the OpenClaw project.  Their security documentation sections naturally
-    // contain text that matches scanner patterns (e.g. "override safety", "rm -rf",
-    // "act as").  Log the findings for visibility but do NOT quarantine — wrapping
-    // the agent's own identity file in EXTERNAL_UNTRUSTED_CONTENT markers degrades
-    // bootstrap context.
-    if (VALID_BOOTSTRAP_NAMES.has(fileName)) {
-      workspaceSecurityLog.info(
-        `Workspace bootstrap file scan (not quarantined — first-party): ${fileName} ` +
+    // First-party bootstrap files are authored by the OpenClaw project.
+    // Log at debug level for visibility but do NOT quarantine — wrapping
+    // the agent's own identity file in EXTERNAL_UNTRUSTED_CONTENT markers
+    // degrades bootstrap context.
+    if (isBootstrap) {
+      workspaceSecurityLog.debug(
+        `Bootstrap file scan (first-party, not quarantined): ${fileName} ` +
           `(riskScore=${scanResult.riskScore}, ` +
           `findings=${scanResult.findings.map((f) => f.description).join(", ")})`,
       );
@@ -46,6 +53,43 @@ function scanWorkspaceContent(content: string, fileName: string, filePath: strin
       `Workspace file quarantined: ${fileName} (riskScore=${scanResult.riskScore}, ` +
         `findings=${scanResult.findings.map((f) => f.description).join(", ")})`,
     );
+
+    // ── User notification ───────────────────────────────────────────────
+    // Inject a system event so the agent proactively tells the user about
+    // the quarantine. Also fire operator alert for high-severity events.
+    try {
+      const sessionKey = resolveMainSessionKeyFromConfig();
+      // Get mtime for dedup (if file is accessible)
+      let mtimeMs: number | undefined;
+      try {
+        const stat = syncFs.statSync(filePath);
+        mtimeMs = stat.mtimeMs;
+      } catch {
+        // stat failure is non-fatal for notification
+      }
+
+      notifyQuarantine({
+        fileName,
+        filePath,
+        mtimeMs,
+        riskScore: scanResult.riskScore,
+        findings: scanResult.findings,
+        enqueueSystemEvent,
+        sessionKey,
+      });
+
+      alertOperatorQuarantine({
+        fileName,
+        filePath,
+        riskScore: scanResult.riskScore,
+        findings: scanResult.findings,
+        enqueueSystemEvent,
+        sessionKey,
+      });
+    } catch {
+      // Notification must never block workspace loading
+    }
+
     return scanResult.sanitizedContent;
   }
   return content;
