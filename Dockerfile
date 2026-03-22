@@ -254,7 +254,8 @@ RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,shar
   csvkit xmlstarlet \
   zip unzip wget rsync tree \
   htop procps && \
-  pip3 install --break-system-packages yt-dlp
+  pip3 install --break-system-packages yt-dlp && \
+  npm install -g byterover-cli
 
 # Copy Bun from build stage — needed for qmd install and runtime shim.
 # Bun is installed in the build stage but not carried to the runtime image.
