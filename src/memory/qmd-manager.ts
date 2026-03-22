@@ -26,6 +26,7 @@ import type {
 } from "./types.js";
 
 type SqliteDatabase = import("node:sqlite").DatabaseSync;
+import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import type {
   ResolvedMemoryBackendConfig,
   ResolvedQmdConfig,
@@ -789,7 +790,8 @@ export class QmdMemoryManager implements MemorySearchManager {
       this.logScopeDenied(opts?.sessionKey);
       return [];
     }
-    const trimmed = query.trim();
+    const stripped = stripInboundMetadata(query);
+    const trimmed = stripped.trim();
     if (!trimmed) {
       return [];
     }
@@ -2170,10 +2172,7 @@ export class QmdMemoryManager implements MemorySearchManager {
     query: string,
     limit: number,
   ): string[] {
-    const normalizedQuery = command === "search" ? normalizeHanBm25Query(query) : query;
-    if (command === "query") {
-      return ["query", normalizedQuery, "--json", "-n", String(limit)];
-    }
-    return [command, normalizedQuery, "--json", "-n", String(limit)];
+    const finalQuery = command === "search" ? normalizeHanBm25Query(query) : query;
+    return [command, finalQuery, "--json", "-n", String(limit)];
   }
 }

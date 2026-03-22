@@ -2792,6 +2792,48 @@ describe("QmdMemoryManager", () => {
       }
     });
   });
+
+  it("strips inbound metadata from search queries before spawning qmd", async () => {
+    cfg = {
+      ...cfg,
+      memory: {
+        backend: "qmd",
+        qmd: {
+          includeDefaultMemory: false,
+          update: { interval: "0s", debounceMs: 60_000, onBoot: false },
+          paths: [{ path: workspaceDir, pattern: "**/*.md", name: "workspace" }],
+        },
+      },
+    } as OpenClawConfig;
+
+    spawnMock.mockImplementation((_cmd: string, args: string[]) => {
+      if (args[0] === "search") {
+        const child = createMockChild({ autoClose: false });
+        emitAndClose(child, "stdout", "[]");
+        return child;
+      }
+      return createMockChild();
+    });
+
+    const { manager } = await createManager();
+    const metadataLadenQuery =
+      'Sender (untrusted metadata):\n```json\n{"id":"user1"}\n```\n\nwhat is my business strategy';
+    await manager.search(metadataLadenQuery, {
+      sessionKey: "agent:main:slack:dm:u123",
+    });
+
+    const searchCall = spawnMock.mock.calls.find(
+      (call: unknown[]) => (call[1] as string[])?.[0] === "search",
+    );
+    expect(searchCall).toBeDefined();
+    const queryArg = (searchCall?.[1] as string[])?.[1] ?? "";
+    // The stripped query should NOT contain the metadata sentinel
+    expect(queryArg).not.toContain("untrusted metadata");
+    expect(queryArg).not.toContain("```json");
+    // It should contain the actual user query
+    expect(queryArg).toContain("business strategy");
+    await manager.close();
+  });
 });
 
 function createDeferred<T>() {

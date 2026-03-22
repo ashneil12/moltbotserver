@@ -5,6 +5,27 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## QMD Search Performance — BM25 Default, Metadata Stripping & Config Cleanup (2026-03-22)
+
+**Purpose:** Fix 15s+ QMD search timeouts on CPU-only servers. Root cause: `searchMode: "vsearch"` forced a 600MB CPU reranker cold start on every process spawn, and gateway-injected metadata (timestamps, code fences) prevented the `vec:` prefix from being applied, bypassing optimizations.
+
+| File                                | Change                                                                                                                                                             | Sync Risk     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `enforce-config.mjs`                | Made `searchMode` configurable via `OPENCLAW_QMD_SEARCH_MODE` env var, defaulting to `"search"` (BM25). Previously hardcoded `"vsearch"`                           | None — custom |
+| `src/memory/qmd-manager.ts`         | Added `stripInboundMetadata()` to clean queries before `qmd` spawn; simplified `buildSearchArgs()` (removed orphaned `candidateLimit`/`noExpand` logic)            | Medium        |
+| `src/memory/backend-config.ts`      | Removed `candidateLimit`/`noExpand` from `ResolvedQmdLimitsConfig` type and `resolveLimits()` parser — not recognized by deployed binary, caused validation errors | Medium        |
+| `src/config/types.memory.ts`        | Removed `candidateLimit`/`noExpand` from `MemoryQmdLimitsConfig` type                                                                                              | Medium        |
+| `src/memory/backend-config.test.ts` | +1 test: limits key guard (only recognized keys). Fixed stale `commandTimeoutMs` assertion (30s → 120s)                                                            | None — test   |
+| `src/memory/qmd-manager.test.ts`    | +1 test: verifies `search()` strips gateway-injected metadata from queries                                                                                         | None — test   |
+
+**Environment Variables:**
+
+- `OPENCLAW_QMD_SEARCH_MODE` — `"search"` (default, BM25 fast), `"vsearch"` (vector), or `"query"` (hybrid+rerank)
+
+> **Sync Risk:** `qmd-manager.ts` — `buildSearchArgs()` simplified to one-liner, `stripInboundMetadata` added to `search()`. `backend-config.ts` — `resolveLimits()` no longer parses removed keys. Both are modifications to existing code paths. `types.memory.ts` — type narrowing (fields removed).
+
+---
+
 ## Health Dashboard Panel + Doctor Fix Integration (2026-03-22)
 
 **Purpose:** Expose health sentinel data to the dashboard and extract targeted repair actions from the `openclaw doctor --fix` CLI into automated sentinel playbooks.

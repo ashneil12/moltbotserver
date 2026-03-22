@@ -323,14 +323,14 @@ function enforceMemory(configPath) {
     memory.backend = "qmd";
     const qmd = ensure(memory, "qmd");
     qmd.includeDefaultMemory = true;
-    qmd.searchMode = "vsearch"; // Vector + BM25 hybrid (embeddings via Gemini API)
+    qmd.searchMode = env("OPENCLAW_QMD_SEARCH_MODE", "search"); // search=BM25 (fast), vsearch=vector, query=hybrid+rerank
     qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
     const businessMode = isTruthy(env("OPENCLAW_BUSINESS_MODE"));
     qmd.limits = {
       maxResults: 8,
       maxSnippetChars: 700,
       maxInjectedChars: businessMode ? 10000 : 5000,
-      timeoutMs: 5000,
+      timeoutMs: Number(env("OPENCLAW_QMD_TIMEOUT_MS", "10000")),
     };
 
     // Fallback embedding provider (credits mode: gateway proxy)

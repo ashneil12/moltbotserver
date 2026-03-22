@@ -28,7 +28,7 @@ describe("resolveMemoryBackendConfig", () => {
     expect(resolved.qmd?.searchMode).toBe("search");
     expect(resolved.qmd?.update.intervalMs).toBeGreaterThan(0);
     expect(resolved.qmd?.update.waitForBootSync).toBe(false);
-    expect(resolved.qmd?.update.commandTimeoutMs).toBe(30_000);
+    expect(resolved.qmd?.update.commandTimeoutMs).toBe(120_000);
     expect(resolved.qmd?.update.updateTimeoutMs).toBe(120_000);
     expect(resolved.qmd?.update.embedTimeoutMs).toBe(120_000);
     const names = new Set((resolved.qmd?.collections ?? []).map((collection) => collection.name));
@@ -202,5 +202,32 @@ describe("resolveMemoryBackendConfig", () => {
     const devWorkspace = (devResolved.qmd?.collections ?? []).find((c) => c.kind === "workspace");
     expect(mainWorkspace?.name).toBe("workspace-main");
     expect(devWorkspace?.name).toBe("workspace-dev");
+  });
+
+  it("resolves qmd limits with only recognized keys", () => {
+    const cfg = {
+      agents: { defaults: { workspace: "/tmp/memory-test" } },
+      memory: {
+        backend: "qmd",
+        qmd: {
+          limits: {
+            maxResults: 10,
+            maxSnippetChars: 500,
+            maxInjectedChars: 3000,
+            timeoutMs: 8000,
+          },
+        },
+      },
+    } as OpenClawConfig;
+    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
+    const limits = resolved.qmd?.limits;
+    expect(limits).toBeDefined();
+    expect(limits?.maxResults).toBe(10);
+    expect(limits?.maxSnippetChars).toBe(500);
+    expect(limits?.maxInjectedChars).toBe(3000);
+    expect(limits?.timeoutMs).toBe(8000);
+    // Ensure no unrecognized keys that would cause config validation errors
+    const keys = Object.keys(limits ?? {}).toSorted();
+    expect(keys).toEqual(["maxInjectedChars", "maxResults", "maxSnippetChars", "timeoutMs"]);
   });
 });
