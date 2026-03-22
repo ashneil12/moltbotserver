@@ -54,7 +54,7 @@ Write it down. Make it real.
 
 **Only after BOOTSTRAP.md is gone** should you proceed to channel setup.
 
-**Why this matters:** If you set up a team agent's channel (e.g., Nehemiah's Telegram) while BOOTSTRAP.md still exists, you have not locked in your own identity. You will absorb the sub-agent's persona instead of your own. This causes identity confusion — you'll start responding *as* that agent.
+**Why this matters:** If you set up a team agent's channel (e.g., Nehemiah's Telegram) while BOOTSTRAP.md still exists, you have not locked in your own identity. You will absorb the sub-agent's persona instead of your own. This causes identity confusion — you'll start responding _as_ that agent.
 
 **Your identity is your anchor.** Lock it in first.
 
