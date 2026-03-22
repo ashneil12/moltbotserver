@@ -425,6 +425,9 @@ Run these after every merge from upstream. Grouped by area.
 32. **QMD Gemini embedding patch** — `grep -c 'patch-qmd-gemini' docker-entrypoint.sh` ≥ 1 and `test -f scripts/patch-qmd-gemini.sh`.
 33. **QMD vsearch mode** — `grep -c 'vsearch' enforce-config.mjs` ≥ 1. Required for hybrid vector+BM25 search with Gemini embeddings.
 34. **Flush prompt dedup** — `grep -c 'buildFlushPrompt' src/cron/flush-prompt.ts` ≥ 1 and `grep -c 'buildFlushPrompt' src/cron/pre-reset-flush.ts` ≥ 1 and `grep -c 'buildFlushPrompt' src/cron/pre-idle-flush.ts` ≥ 1.
+35. **Q-value RL tables** — `grep -c 'chunk_qvalues' src/memory/memory-schema.ts` ≥ 1 and `grep -c 'retrieval_log' src/memory/memory-schema.ts` ≥ 1.
+36. **Q-value pipeline wiring** — `grep -c 'applyQValueBoost' src/memory/hybrid.ts` ≥ 1 and `grep -c 'logSearchRetrieval' src/memory/manager.ts` ≥ 1 and `grep -c 'processRetrievalRewards' src/auto-reply/reply/agent-runner.ts` ≥ 1.
+37. **Memory search enhancements** — `test -f src/memory/intent-classifier.ts` and `test -f src/memory/gravity-dampening.ts` and `test -f src/memory/hub-dampening.ts`.
 
 ### Security
 
