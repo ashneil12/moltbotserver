@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { SessionEntry } from "./types.js";
 import { sleep } from "../../utils.js";
 import {
   clearSessionStoreCacheForTest,
@@ -12,6 +11,7 @@ import {
   updateSessionStoreEntry,
   withSessionStoreLockForTest,
 } from "../sessions.js";
+import type { SessionEntry } from "./types.js";
 
 describe("session store lock (Promise chain mutex)", () => {
   let tmpDirs: string[] = [];

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { BrowserServerState } from "./server-context.js";
 import { resolveBrowserConfig, resolveProfile } from "./config.js";
+import type { BrowserServerState } from "./server-context.js";
 import { listKnownProfileNames } from "./server-context.js";
 
 describe("browser server-context listKnownProfileNames", () => {

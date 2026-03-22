@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
-import type { MsgContext } from "../templating.js";
 import { expectInboundContextContract } from "../../../test/helpers/inbound-contract.js";
+import type { MsgContext } from "../templating.js";
 import { finalizeInboundContext } from "./inbound-context.js";
 
 describe("inbound context contract (providers + extensions)", () => {

@@ -9,8 +9,8 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { CommandHandler } from "./commands-types.js";
 import { logVerbose } from "../../globals.js";
+import type { CommandHandler } from "./commands-types.js";
 
 /**
  * Parse /fresh command.

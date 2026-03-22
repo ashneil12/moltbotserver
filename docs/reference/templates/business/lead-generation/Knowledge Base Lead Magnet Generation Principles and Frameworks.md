@@ -18,9 +18,9 @@ A lead magnet's success is contingent upon a set of foundational principles that
   - The asset must be delivered immediately upon opt-in to capitalize on the user's peak interest and satisfy the desire for instant gratification. (Source: **SeedProd**)
 - **Shows your expertise**
   - A high-quality lead magnet serves as a sample of the value the business provides, building the trust required to convert a prospect into a future customer. (Source: **SeedProd**)
-- **Shareable**  
-   * Lead magnets must be designed for easy sharing. When users organically promote valuable content, they expand its reach and generate social proof. (Source: **HubSpot**)  
-  These foundational principles define the required *attributes\* of a successful lead magnet. To activate them effectively, one must understand the underlying psychological triggers that compel a user to act, which we will deconstruct next.
+- **Shareable**
+  - Lead magnets must be designed for easy sharing. When users organically promote valuable content, they expand its reach and generate social proof. (Source: **HubSpot**)  
+    These foundational principles define the required \*attributes\* of a successful lead magnet. To activate them effectively, one must understand the underlying psychological triggers that compel a user to act, which we will deconstruct next.
 
 ## 2.0 Psychological Triggers in Lead Magnet Design
 

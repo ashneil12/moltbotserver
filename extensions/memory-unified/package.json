@@ -1,6 +1,6 @@
 {
   "name": "@openclaw/memory-unified",
-  "version": "2026.3.17",
+  "version": "2026.3.14",
   "private": true,
   "description": "Unified memory plugin with auto-recall per-turn injection",
   "type": "module",

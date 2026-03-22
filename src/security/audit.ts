@@ -688,8 +688,6 @@ function collectGatewayConfigFindings(
     });
   }
 
-
-
   return findings;
 }
 

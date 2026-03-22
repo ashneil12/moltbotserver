@@ -50,12 +50,7 @@ const QMD_BM25_HAN_KEYWORD_LIMIT = 12;
  * boundaries.  When these files live under an `agents/` subdirectory they
  * belong to a sub-agent, not the querying agent.
  */
-const SUB_AGENT_IDENTITY_BASENAMES = new Set([
-  "identity.md",
-  "soul.md",
-  "user.md",
-  "memory.md",
-]);
+const SUB_AGENT_IDENTITY_BASENAMES = new Set(["identity.md", "soul.md", "user.md", "memory.md"]);
 
 const SUB_AGENT_PATH_PREFIX_RE = /^agents[/\\]/i;
 

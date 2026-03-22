@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import fs from "node:fs";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   runHealthCheck,
   queryCronHistory,
@@ -117,8 +117,16 @@ describe("runHealthCheck", () => {
 
 describe("queryCronHistory", () => {
   it("returns cron events from the log", () => {
-    logger.log({ event: "cron.run", level: "info", data: { jobId: "daily-sync", status: "success" } });
-    logger.log({ event: "cron.run", level: "error", data: { jobId: "nightly-report", status: "failed", error: "timeout" } });
+    logger.log({
+      event: "cron.run",
+      level: "info",
+      data: { jobId: "daily-sync", status: "success" },
+    });
+    logger.log({
+      event: "cron.run",
+      level: "error",
+      data: { jobId: "nightly-report", status: "failed", error: "timeout" },
+    });
     logger.log({ event: "email.received", level: "info", data: {} }); // non-cron
 
     const history = queryCronHistory(logger);

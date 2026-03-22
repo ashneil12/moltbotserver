@@ -1,5 +1,5 @@
-import type { CronJob } from "./types.js";
 import { logWarn } from "../logger.js";
+import type { CronJob } from "./types.js";
 
 export type RunTriggerResult = {
   status: "ok" | "skipped" | "error";

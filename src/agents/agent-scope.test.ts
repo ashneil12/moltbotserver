@@ -330,10 +330,7 @@ describe("resolveDefaultAgentId", () => {
   it("returns agents[0] when no agent has default=true", () => {
     const cfg: OpenClawConfig = {
       agents: {
-        list: [
-          { id: "ocs-nehemiah" },
-          { id: "mm-ezra" },
-        ],
+        list: [{ id: "ocs-nehemiah" }, { id: "mm-ezra" }],
       },
     };
     const result = resolveDefaultAgentId(cfg);
@@ -343,11 +340,7 @@ describe("resolveDefaultAgentId", () => {
   it("returns the agent with default=true", () => {
     const cfg: OpenClawConfig = {
       agents: {
-        list: [
-          { id: "ocs-nehemiah" },
-          { id: "main-agent", default: true },
-          { id: "mm-ezra" },
-        ],
+        list: [{ id: "ocs-nehemiah" }, { id: "main-agent", default: true }, { id: "mm-ezra" }],
       },
     };
     const result = resolveDefaultAgentId(cfg);

@@ -4,13 +4,13 @@
 
 import fs from "node:fs/promises";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { HandleCommandsParams, CommandContext } from "./commands-types.js";
-import type { InlineDirectives } from "./directive-handling.js";
 import {
   handleFreshCommand,
   handleForgetCommand,
   handleRememberCommand,
 } from "./commands-context-memory.js";
+import type { HandleCommandsParams, CommandContext } from "./commands-types.js";
+import type { InlineDirectives } from "./directive-handling.js";
 
 // Mock the rotation service
 vi.mock("../../context/rotation-service.js", () => ({

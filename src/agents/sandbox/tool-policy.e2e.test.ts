@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { SandboxToolPolicy } from "./types.js";
 import { isToolAllowed } from "./tool-policy.js";
+import type { SandboxToolPolicy } from "./types.js";
 
 describe("sandbox tool policy", () => {
   it("allows all tools with * allow", () => {

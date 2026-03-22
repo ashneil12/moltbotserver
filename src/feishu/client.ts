@@ -1,5 +1,5 @@
-import * as Lark from "@larksuiteoapi/node-sdk";
 import fs from "node:fs";
+import * as Lark from "@larksuiteoapi/node-sdk";
 import { loadConfig } from "../config/config.js";
 import { getChildLogger } from "../logging.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";

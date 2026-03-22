@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
 import { compactEmbeddedPiSession } from "../../agents/pi-embedded.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import { handleCompactCommand } from "./commands-compact.js";
 import { buildCommandTestParams } from "./commands.test-harness.js";
 

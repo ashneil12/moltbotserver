@@ -1,8 +1,8 @@
 import * as Lark from "@larksuiteoapi/node-sdk";
 import type { OpenClawConfig } from "../config/config.js";
-import type { RuntimeEnv } from "../runtime.js";
 import { loadConfig } from "../config/config.js";
 import { getChildLogger } from "../logging.js";
+import type { RuntimeEnv } from "../runtime.js";
 import { resolveFeishuAccount } from "./accounts.js";
 import { resolveFeishuConfig } from "./config.js";
 import { normalizeFeishuDomain } from "./domain.js";

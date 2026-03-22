@@ -47,15 +47,12 @@ describe("noteMissingDefaultAgent", () => {
     noteMock.mockClear();
     const cfg: OpenClawConfig = {
       agents: {
-        list: [
-          { id: "ocs-nehemiah" },
-          { id: "mm-ezra" },
-        ],
+        list: [{ id: "ocs-nehemiah" }, { id: "mm-ezra" }],
       },
     };
     noteMissingDefaultAgent(cfg);
     expect(noteMock).toHaveBeenCalledWith(
-      expect.stringContaining('none has default=true'),
+      expect.stringContaining("none has default=true"),
       "Doctor warnings",
     );
     expect(noteMock).toHaveBeenCalledWith(
@@ -68,10 +65,7 @@ describe("noteMissingDefaultAgent", () => {
     noteMock.mockClear();
     const cfg: OpenClawConfig = {
       agents: {
-        list: [
-          { id: "main", default: true },
-          { id: "ocs-nehemiah" },
-        ],
+        list: [{ id: "main", default: true }, { id: "ocs-nehemiah" }],
       },
     };
     noteMissingDefaultAgent(cfg);
