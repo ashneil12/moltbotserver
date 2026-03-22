@@ -372,6 +372,29 @@ function classifySystemCheck(check: CheckResult): ClassifiedIssue | null {
     };
   }
 
+  // Config validation (from doctor config flow)
+  if (check.name.startsWith("config.")) {
+    return {
+      key,
+      classification: check.status === "fail" ? "auto-fixable" : "warning",
+      summary: `Config issue: ${check.detail}`,
+      suggestedAction:
+        "Review openclaw.json configuration. Run doctor --fix to auto-repair if possible.",
+      source: check,
+    };
+  }
+
+  // Session lock health (from doctor session locks)
+  if (check.name === "process.session_locks") {
+    return {
+      key,
+      classification: "auto-fixable",
+      summary: `Stale session locks: ${check.detail}`,
+      suggestedAction: "Remove stale lock files that may block new sessions from starting.",
+      source: check,
+    };
+  }
+
   // Unknown check type — classify based on actual status
   return {
     key,

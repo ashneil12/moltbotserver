@@ -5,6 +5,32 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Health Dashboard Panel + Doctor Fix Integration (2026-03-22)
+
+**Purpose:** Expose health sentinel data to the dashboard and extract targeted repair actions from the `openclaw doctor --fix` CLI into automated sentinel playbooks.
+
+### Part 1: Dashboard Health Panel
+
+| File                                                                       | Change                                                                                                                           | Sync Risk    |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `src/gateway/server-methods/health.ts`                                     | Added `health.sentinel` RPC handler — returns `getLastSentinelReport()`                                                          | Medium       |
+| `src/gateway/server-methods-list.ts`                                       | Registered `health.sentinel` in `BASE_METHODS`                                                                                   | Medium       |
+| `src/gateway/method-scopes.ts`                                             | Added `health.sentinel` to `READ_SCOPE`                                                                                          | Medium       |
+| `src/gateway/server-methods.ts`                                            | Added `health.sentinel` to `SHARED_AUTH_EXEMPT_METHODS`                                                                          | Medium       |
+| `src/app/api/instances/[id]/health-sentinel/route.ts` _(dashboard)_        | **NEW** — API proxy for `health.sentinel` RPC (auth + ownership check)                                                           | None — new   |
+| `src/components/dashboard/HealthStatusPanel.tsx` _(dashboard)_             | **NEW** — React component: status badge, stats row, collapsible issue list, remediation history, escalation indicator. 367 lines | None — new   |
+| `src/app/dashboard/console/components/DashboardOverview.tsx` _(dashboard)_ | Integrated `HealthStatusPanel` between ResourceMonitor and Recent Logs                                                           | None — local |
+
+### Part 2: Doctor-Derived Sentinel Playbooks
+
+| File                                         | Change                                                                                                                                                            | Sync Risk   |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/logging/health-sentinel-playbooks.ts`   | Added `doctor-config-repair` + `doctor-session-lock-cleanup` playbooks. Extended `RemediationContext` with `validateConfig`, `cleanStaleLocks`, `countStaleLocks` | Low         |
+| `src/logging/health-sentinel.ts`             | Added issue classifications for `config.*` (auto-fixable/warning) and `process.session_locks` (auto-fixable)                                                      | Low         |
+| `src/logging/health-sentinel-doctor.test.ts` | **NEW** — 26 tests: config-repair (11), session-lock (10), classification (5)                                                                                     | None — test |
+
+---
+
 ## Q-Value Reinforcement Learning on Memory Retrieval (2026-03-22)
 
 **Purpose:** Add a reinforcement learning feedback loop to `memory_search`. Tracks which retrieved chunks agents actually use (cited in responses, followed up with `memory_get`) and adjusts chunk scores over time. Useful chunks get boosted; ignored chunks get suppressed.

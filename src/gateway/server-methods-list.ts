@@ -98,6 +98,7 @@ const BASE_METHODS = [
   "system.diskHealth",
   "system.diskCleanup",
   "system.resources",
+  "health.sentinel",
   "send",
   "agent",
   "agent.identity.get",

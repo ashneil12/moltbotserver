@@ -1,4 +1,5 @@
 import { getStatusSummary } from "../../commands/status.js";
+import { getLastSentinelReport } from "../../logging/health-sentinel.js";
 import { ErrorCodes, errorShape } from "../protocol/index.js";
 import { HEALTH_REFRESH_INTERVAL_MS } from "../server-constants.js";
 import { formatError } from "../server-utils.js";
@@ -26,6 +27,10 @@ export const healthHandlers: GatewayRequestHandlers = {
     } catch (err) {
       respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));
     }
+  },
+  "health.sentinel": ({ respond }) => {
+    const report = getLastSentinelReport();
+    respond(true, { report }, undefined);
   },
   status: async ({ respond, client }) => {
     const scopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];

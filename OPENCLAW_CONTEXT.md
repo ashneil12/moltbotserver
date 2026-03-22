@@ -94,26 +94,28 @@ These files don't exist in upstream. They will never conflict but must not be de
 
 ### Health & Resilience
 
-| File                                                 | Feature                                                   |
-| ---------------------------------------------------- | --------------------------------------------------------- |
-| `src/logging/health-sentinel.ts`                     | Two-tier self-healing orchestrator. 12 tests              |
-| `src/logging/health-sentinel-types.ts`               | Shared types                                              |
-| `src/logging/health-sentinel-playbooks.ts`           | `channel-restart` + `disk-cleanup` playbooks              |
-| `src/logging/health-sentinel-history.ts`             | JSONL history with trends                                 |
-| `src/logging/health-sentinel-incidents.ts`           | Incident writer, inbox, TTL cleanup                       |
-| `src/logging/health-sentinel.test.ts`                | Tests                                                     |
-| `src/logging/health-sentinel-phase2.test.ts`         | 28 tests                                                  |
-| `src/logging/health-sentinel-phase3.test.ts`         | 19 tests                                                  |
-| `src/logging/health-sentinel-sidecars.test.ts`       | 7 tests                                                   |
-| `src/auto-reply/reply/session-health.ts`             | Session Health Sentinel — circuit breaker                 |
-| `src/auto-reply/reply/session-health-integration.ts` | Session Health integration bridge                         |
-| `src/auto-reply/reply/session-health.test.ts`        | 18 tests                                                  |
-| `src/auto-reply/reply/session-freshness.ts`          | Stale Snapshot Guard — validates workspace freshness      |
-| `src/auto-reply/reply/session-freshness.test.ts`     | 8 tests                                                   |
-| `src/infra/ephemeral-path.ts`                        | Ephemeral path detection (`/tmp`, `tmpfs`, etc). 15 tests |
-| `src/infra/ephemeral-path.test.ts`                   | Tests                                                     |
-| `src/infra/atomic-file.ts`                           | Shared crash-safe file utilities. 10 tests                |
-| `src/infra/atomic-file.test.ts`                      | Tests                                                     |
+| File                                                 | Feature                                                                                                                                            |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/logging/health-sentinel.ts`                     | Two-tier self-healing orchestrator + config/session-lock classifications. 12 tests                                                                 |
+| `src/logging/health-sentinel-types.ts`               | Shared types                                                                                                                                       |
+| `src/logging/health-sentinel-playbooks.ts`           | 6 playbooks: `channel-restart`, `disk-cleanup`, `disk-hygiene`, `browser-container-restart`, `doctor-config-repair`, `doctor-session-lock-cleanup` |
+| `src/logging/health-sentinel-history.ts`             | JSONL history with trends                                                                                                                          |
+| `src/logging/health-sentinel-incidents.ts`           | Incident writer, inbox, TTL cleanup                                                                                                                |
+| `src/logging/health-sentinel.test.ts`                | Tests                                                                                                                                              |
+| `src/logging/health-sentinel-phase2.test.ts`         | 28 tests                                                                                                                                           |
+| `src/logging/health-sentinel-phase3.test.ts`         | 19 tests                                                                                                                                           |
+| `src/logging/health-sentinel-sidecars.test.ts`       | 7 tests                                                                                                                                            |
+| `src/logging/health-sentinel-browsers.test.ts`       | 12 tests                                                                                                                                           |
+| `src/logging/health-sentinel-doctor.test.ts`         | 26 tests: config-repair, session-lock, classification                                                                                              |
+| `src/auto-reply/reply/session-health.ts`             | Session Health Sentinel — circuit breaker                                                                                                          |
+| `src/auto-reply/reply/session-health-integration.ts` | Session Health integration bridge                                                                                                                  |
+| `src/auto-reply/reply/session-health.test.ts`        | 18 tests                                                                                                                                           |
+| `src/auto-reply/reply/session-freshness.ts`          | Stale Snapshot Guard — validates workspace freshness                                                                                               |
+| `src/auto-reply/reply/session-freshness.test.ts`     | 8 tests                                                                                                                                            |
+| `src/infra/ephemeral-path.ts`                        | Ephemeral path detection (`/tmp`, `tmpfs`, etc). 15 tests                                                                                          |
+| `src/infra/ephemeral-path.test.ts`                   | Tests                                                                                                                                              |
+| `src/infra/atomic-file.ts`                           | Shared crash-safe file utilities. 10 tests                                                                                                         |
+| `src/infra/atomic-file.test.ts`                      | Tests                                                                                                                                              |
 
 ### Cron & Self-Healing
 
@@ -231,7 +233,7 @@ These exist in upstream AND have local changes. Conflicts are likely.
 
 | File                                                         | What to preserve                                                                                                                                                                                            |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/gateway/server-methods.ts`                              | `SHARED_AUTH_EXEMPT_METHODS` scope bypass for `health`, `system.diskHealth`, `system.diskCleanup` — dashboard device-less clients                                                                           |
+| `src/gateway/server-methods.ts`                              | `SHARED_AUTH_EXEMPT_METHODS` scope bypass for `health`, `health.sentinel`, `system.diskHealth`, `system.diskCleanup` — dashboard device-less clients                                                        |
 | `src/gateway/server-methods/update.ts`                       | `OPENCLAW_MANAGED_PLATFORM` guard                                                                                                                                                                           |
 | `src/cli/update-cli/update-command.ts`                       | `OPENCLAW_MANAGED_PLATFORM` guard                                                                                                                                                                           |
 | `src/infra/update-startup.ts`                                | Early return when managed platform                                                                                                                                                                          |
@@ -451,6 +453,8 @@ Run these after every merge from upstream. Grouped by area.
 48. **Backup scripts** — `grep -c 'notify_failure' scripts/backup-upload.sh` ≥ 1 and `grep -c 'restore-complete' scripts/restore-from-backup.sh` ≥ 1.
 49. **Agent CLI tooling** — `grep -c 'yt-dlp' Dockerfile` ≥ 1.
 50. **Build verification** — `npm install && npm run build`
-51. **Scope exemption** — `grep -c 'SHARED_AUTH_EXEMPT_METHODS' src/gateway/server-methods.ts` ≥ 1. Dashboard calls `system.diskHealth`/`system.diskCleanup` without device identity.
+51. **Scope exemption** — `grep -c 'SHARED_AUTH_EXEMPT_METHODS' src/gateway/server-methods.ts` ≥ 1. Dashboard calls `health.sentinel`/`system.diskHealth`/`system.diskCleanup` without device identity.
 52. **Caddy retry directives** — Dashboard Caddyfile template includes `lb_try_duration 30s` + `lb_try_interval 1s` on all `reverse_proxy openclaw-gateway` blocks.
 53. **Q-value RL** — `grep -c 'applyQValueBoost' src/memory/hybrid.ts` ≥ 1 and `test -f src/memory/qvalue.ts` and `grep -c 'chunk_qvalues' src/memory/memory-schema.ts` ≥ 1.
+54. **Health sentinel RPC** — `grep -c 'health.sentinel' src/gateway/server-methods-list.ts` ≥ 1 and `grep -c 'health.sentinel' src/gateway/method-scopes.ts` ≥ 1. Dashboard depends on this method for the HealthStatusPanel.
+55. **Doctor-derived playbooks** — `grep -c 'doctor-config-repair' src/logging/health-sentinel-playbooks.ts` ≥ 1 and `grep -c 'doctor-session-lock-cleanup' src/logging/health-sentinel-playbooks.ts` ≥ 1.

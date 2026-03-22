@@ -39,6 +39,15 @@ export interface RemediationContext {
   probeBrowserCdp?: (cdpPort: number) => Promise<boolean>;
   /** Run full disk hygiene cleanup (sessions, cache, logs, media). */
   runDiskHygiene?: () => { freedBytes: number; filesDeleted: number; errors: string[] };
+  /** Validate openclaw.json config and return issues (from doctor config flow). */
+  validateConfig?: () => Promise<{
+    valid: boolean;
+    issues: Array<{ path: string; message: string }>;
+  }>;
+  /** Clean stale session lock files. Returns count of locks removed. */
+  cleanStaleLocks?: () => Promise<{ staleCount: number; removedCount: number }>;
+  /** Re-scan for stale locks without removing them. Returns stale count. */
+  countStaleLocks?: () => Promise<number>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -378,6 +387,168 @@ export function createDiskHygienePlaybook(ctx: RemediationContext): RemediationP
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Config Repair Playbook (from doctor config flow)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function isConfigIssue(issue: ClassifiedIssue): boolean {
+  return issue.key.startsWith("system:config.");
+}
+
+export function createConfigRepairPlaybook(ctx: RemediationContext): RemediationPlaybook {
+  return {
+    id: "doctor-config-repair",
+
+    matches(issue) {
+      return (
+        isConfigIssue(issue) &&
+        issue.classification === "auto-fixable" &&
+        ctx.validateConfig !== undefined
+      );
+    },
+
+    async remediate(issue): Promise<RemediationAttempt> {
+      const start = Date.now();
+      if (!ctx.validateConfig) {
+        return {
+          issueKey: issue.key,
+          playbook: "doctor-config-repair",
+          status: "skipped",
+          error: "no config validator",
+          durationMs: Date.now() - start,
+        };
+      }
+
+      log.info?.("attempting config repair via doctor config flow");
+
+      try {
+        const result = await ctx.validateConfig();
+        if (result.valid) {
+          log.info?.("config repair: config is now valid");
+          return {
+            issueKey: issue.key,
+            playbook: "doctor-config-repair",
+            status: "success",
+            durationMs: Date.now() - start,
+          };
+        }
+        const issuesSummary = result.issues.map((i) => `${i.path}: ${i.message}`).join("; ");
+        log.warn?.(`config repair: ${result.issues.length} issue(s) remain — ${issuesSummary}`);
+        return {
+          issueKey: issue.key,
+          playbook: "doctor-config-repair",
+          status: "failed",
+          error: `${result.issues.length} validation issues remain`,
+          durationMs: Date.now() - start,
+        };
+      } catch (err) {
+        const error = String(err);
+        log.warn?.(`config repair failed: ${error}`);
+        return {
+          issueKey: issue.key,
+          playbook: "doctor-config-repair",
+          status: "failed",
+          error,
+          durationMs: Date.now() - start,
+        };
+      }
+    },
+
+    async verify(_issue): Promise<boolean> {
+      if (!ctx.validateConfig) {
+        return false;
+      }
+      try {
+        const result = await ctx.validateConfig();
+        return result.valid;
+      } catch {
+        return false;
+      }
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Session Lock Cleanup Playbook (from doctor session locks)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function isSessionLockIssue(issue: ClassifiedIssue): boolean {
+  return issue.key === "system:process.session_locks";
+}
+
+export function createSessionLockPlaybook(ctx: RemediationContext): RemediationPlaybook {
+  return {
+    id: "doctor-session-lock-cleanup",
+
+    matches(issue) {
+      return (
+        isSessionLockIssue(issue) &&
+        issue.classification === "auto-fixable" &&
+        ctx.cleanStaleLocks !== undefined
+      );
+    },
+
+    async remediate(issue): Promise<RemediationAttempt> {
+      const start = Date.now();
+      if (!ctx.cleanStaleLocks) {
+        return {
+          issueKey: issue.key,
+          playbook: "doctor-session-lock-cleanup",
+          status: "skipped",
+          error: "no lock cleanup handler",
+          durationMs: Date.now() - start,
+        };
+      }
+
+      log.info?.("attempting stale session lock cleanup");
+
+      try {
+        const result = await ctx.cleanStaleLocks();
+        if (result.removedCount === 0) {
+          log.info?.("session lock cleanup: no stale locks found");
+          return {
+            issueKey: issue.key,
+            playbook: "doctor-session-lock-cleanup",
+            status: "success",
+            durationMs: Date.now() - start,
+          };
+        }
+        log.info?.(
+          `session lock cleanup: removed ${result.removedCount} of ${result.staleCount} stale lock(s)`,
+        );
+        return {
+          issueKey: issue.key,
+          playbook: "doctor-session-lock-cleanup",
+          status: "success",
+          durationMs: Date.now() - start,
+        };
+      } catch (err) {
+        const error = String(err);
+        log.warn?.(`session lock cleanup failed: ${error}`);
+        return {
+          issueKey: issue.key,
+          playbook: "doctor-session-lock-cleanup",
+          status: "failed",
+          error,
+          durationMs: Date.now() - start,
+        };
+      }
+    },
+
+    async verify(_issue): Promise<boolean> {
+      if (!ctx.countStaleLocks) {
+        return false;
+      }
+      try {
+        const staleCount = await ctx.countStaleLocks();
+        return staleCount === 0;
+      } catch {
+        return false;
+      }
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Playbook Registry
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -388,6 +559,8 @@ export function buildPlaybooks(ctx: RemediationContext): RemediationPlaybook[] {
     createDiskCleanupPlaybook(ctx),
     createDiskHygienePlaybook(ctx),
     createBrowserRestartPlaybook(ctx),
+    createConfigRepairPlaybook(ctx),
+    createSessionLockPlaybook(ctx),
   ];
 }
 
