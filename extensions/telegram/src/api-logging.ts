@@ -1,7 +1,7 @@
-import { danger } from "openclaw/plugin-sdk";
-import { formatErrorMessage } from "openclaw/plugin-sdk";
-import { createSubsystemLogger } from "openclaw/plugin-sdk";
-import type { RuntimeEnv } from "openclaw/plugin-sdk";
+import { formatErrorMessage } from "openclaw/plugin-sdk/infra-runtime";
+import { danger } from "openclaw/plugin-sdk/runtime-env";
+import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
 
 export type TelegramApiLogger = (message: string) => void;
 

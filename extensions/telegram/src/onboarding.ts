@@ -1,4 +1,7 @@
-import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "openclaw/plugin-sdk";
+import type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../../../src/channels/plugins/onboarding-types.js";
 import {
   applySingleTokenPromptResult,
   patchChannelConfigForAccount,
@@ -9,13 +12,13 @@ import {
   setChannelDmPolicyWithAllowFrom,
   setOnboardingChannelEnabled,
   splitOnboardingEntries,
-} from "openclaw/plugin-sdk";
-import { formatCliCommand } from "openclaw/plugin-sdk";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
-import { hasConfiguredSecretInput } from "openclaw/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk";
-import { formatDocsLink } from "openclaw/plugin-sdk";
-import type { WizardPrompter } from "openclaw/plugin-sdk";
+} from "../../../src/channels/plugins/onboarding/helpers.js";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import {
   listTelegramAccountIds,

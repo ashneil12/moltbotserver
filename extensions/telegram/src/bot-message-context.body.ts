@@ -1,20 +1,31 @@
-import { findModelInCatalog, loadModelCatalog, modelSupportsVision } from "openclaw/plugin-sdk";
-import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk";
-import { hasControlCommand } from "openclaw/plugin-sdk";
-import { recordPendingHistoryEntryIfEnabled, type HistoryEntry } from "openclaw/plugin-sdk";
-import { buildMentionRegexes, matchesMentionWithExplicit } from "openclaw/plugin-sdk";
-import type { MsgContext } from "openclaw/plugin-sdk";
-import { resolveControlCommandGate } from "openclaw/plugin-sdk";
-import { formatLocationText, type NormalizedLocation } from "openclaw/plugin-sdk";
-import { logInboundDrop } from "openclaw/plugin-sdk";
-import { resolveMentionGatingWithBypass } from "openclaw/plugin-sdk";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import {
+  findModelInCatalog,
+  loadModelCatalog,
+  modelSupportsVision,
+} from "openclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
+import {
+  buildMentionRegexes,
+  formatLocationText,
+  logInboundDrop,
+  matchesMentionWithExplicit,
+  resolveMentionGatingWithBypass,
+  type NormalizedLocation,
+} from "openclaw/plugin-sdk/channel-inbound";
+import { resolveControlCommandGate } from "openclaw/plugin-sdk/command-auth";
+import { hasControlCommand } from "openclaw/plugin-sdk/command-auth";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
 import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk";
-import { logVerbose } from "openclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/config-runtime";
+import {
+  recordPendingHistoryEntryIfEnabled,
+  type HistoryEntry,
+} from "openclaw/plugin-sdk/reply-history";
+import type { MsgContext } from "openclaw/plugin-sdk/reply-runtime";
+import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
 import type { NormalizedAllowFrom } from "./bot-access.js";
 import { isSenderAllowed } from "./bot-access.js";
 import type {
@@ -172,8 +183,7 @@ export async function resolveTelegramInboundBody(params: {
 
   if (needsPreflightTranscription) {
     try {
-      const { transcribeFirstAudio } =
-        await import("../../../src/media-understanding/audio-preflight.js");
+      const { transcribeFirstAudio } = await import("./media-understanding.runtime.js");
       const tempCtx: MsgContext = {
         MediaPaths: allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,
         MediaTypes:

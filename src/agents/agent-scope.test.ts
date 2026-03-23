@@ -4,14 +4,19 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 import {
+  hasConfiguredModelFallbacks,
   resolveAgentConfig,
   resolveAgentDir,
+  resolveAgentEffectiveModelPrimary,
+  resolveAgentExplicitModelPrimary,
+  resolveFallbackAgentId,
+  resolveEffectiveModelFallbacks,
   resolveAgentModelFallbacksOverride,
   resolveAgentModelPrimary,
+  resolveRunModelFallbacksOverride,
   resolveAgentWorkspaceDir,
   resolveAgentIdByWorkspacePath,
   resolveAgentIdsByWorkspacePath,
-  resolveDefaultAgentId,
 } from "./agent-scope.js";
 
 afterEach(() => {
@@ -44,7 +49,7 @@ describe("resolveAgentConfig", () => {
             name: "Main Agent",
             workspace: "~/openclaw",
             agentDir: "~/.openclaw/agents/main",
-            model: "anthropic/claude-opus-4",
+            model: "anthropic/claude-sonnet-4-6",
           },
         ],
       },
@@ -54,7 +59,7 @@ describe("resolveAgentConfig", () => {
       name: "Main Agent",
       workspace: "~/openclaw",
       agentDir: "~/.openclaw/agents/main",
-      model: "anthropic/claude-opus-4",
+      model: "anthropic/claude-sonnet-4-6",
       identity: undefined,
       groupChat: undefined,
       subagents: undefined,
@@ -63,29 +68,68 @@ describe("resolveAgentConfig", () => {
     });
   });
 
+  it("resolves explicit and effective model primary separately", () => {
+    const cfgWithStringDefault = {
+      agents: {
+        defaults: {
+          model: "anthropic/claude-sonnet-4-6",
+        },
+        list: [{ id: "main" }],
+      },
+    } as unknown as OpenClawConfig;
+    expect(resolveAgentExplicitModelPrimary(cfgWithStringDefault, "main")).toBeUndefined();
+    expect(resolveAgentEffectiveModelPrimary(cfgWithStringDefault, "main")).toBe(
+      "anthropic/claude-sonnet-4-6",
+    );
+
+    const cfgWithObjectDefault: OpenClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            primary: "openai/gpt-5.4",
+            fallbacks: ["anthropic/claude-sonnet-4-6"],
+          },
+        },
+        list: [{ id: "main" }],
+      },
+    };
+    expect(resolveAgentExplicitModelPrimary(cfgWithObjectDefault, "main")).toBeUndefined();
+    expect(resolveAgentEffectiveModelPrimary(cfgWithObjectDefault, "main")).toBe("openai/gpt-5.4");
+
+    const cfgNoDefaults: OpenClawConfig = {
+      agents: {
+        list: [{ id: "main" }],
+      },
+    };
+    expect(resolveAgentExplicitModelPrimary(cfgNoDefaults, "main")).toBeUndefined();
+    expect(resolveAgentEffectiveModelPrimary(cfgNoDefaults, "main")).toBeUndefined();
+  });
+
   it("supports per-agent model primary+fallbacks", () => {
     const cfg: OpenClawConfig = {
       agents: {
         defaults: {
           model: {
-            primary: "anthropic/claude-sonnet-4",
-            fallbacks: ["openai/gpt-4.1"],
+            primary: "openai/gpt-5.4",
+            fallbacks: ["anthropic/claude-sonnet-4-6"],
           },
         },
         list: [
           {
             id: "linus",
             model: {
-              primary: "anthropic/claude-opus-4",
-              fallbacks: ["openai/gpt-5.2"],
+              primary: "anthropic/claude-sonnet-4-6",
+              fallbacks: ["openai/gpt-5.4"],
             },
           },
         ],
       },
     };
 
-    expect(resolveAgentModelPrimary(cfg, "linus")).toBe("anthropic/claude-opus-4");
-    expect(resolveAgentModelFallbacksOverride(cfg, "linus")).toEqual(["openai/gpt-5.2"]);
+    expect(resolveAgentModelPrimary(cfg, "linus")).toBe("anthropic/claude-sonnet-4-6");
+    expect(resolveAgentExplicitModelPrimary(cfg, "linus")).toBe("anthropic/claude-sonnet-4-6");
+    expect(resolveAgentEffectiveModelPrimary(cfg, "linus")).toBe("anthropic/claude-sonnet-4-6");
+    expect(resolveAgentModelFallbacksOverride(cfg, "linus")).toEqual(["openai/gpt-5.4"]);
 
     // If fallbacks isn't present, we don't override the global fallbacks.
     const cfgNoOverride: OpenClawConfig = {
@@ -94,7 +138,7 @@ describe("resolveAgentConfig", () => {
           {
             id: "linus",
             model: {
-              primary: "anthropic/claude-opus-4",
+              primary: "anthropic/claude-sonnet-4-6",
             },
           },
         ],
@@ -109,7 +153,7 @@ describe("resolveAgentConfig", () => {
           {
             id: "linus",
             model: {
-              primary: "anthropic/claude-opus-4",
+              primary: "anthropic/claude-sonnet-4-6",
               fallbacks: [],
             },
           },
@@ -117,6 +161,163 @@ describe("resolveAgentConfig", () => {
       },
     };
     expect(resolveAgentModelFallbacksOverride(cfgDisable, "linus")).toEqual([]);
+
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg,
+        agentId: "linus",
+        hasSessionModelOverride: false,
+      }),
+    ).toEqual(["openai/gpt-5.4"]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual(["openai/gpt-5.4"]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgNoOverride,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual([]);
+
+    const cfgInheritDefaults: OpenClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: ["openai/gpt-5.4"],
+          },
+        },
+        list: [
+          {
+            id: "linus",
+            model: {
+              primary: "anthropic/claude-sonnet-4-6",
+            },
+          },
+        ],
+      },
+    };
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgInheritDefaults,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual(["openai/gpt-5.4"]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgDisable,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual([]);
+  });
+
+  it("resolves fallback agent id from explicit agent id first", () => {
+    expect(
+      resolveFallbackAgentId({
+        agentId: "Support",
+        sessionKey: "agent:main:session",
+      }),
+    ).toBe("support");
+  });
+
+  it("resolves fallback agent id from session key when explicit id is missing", () => {
+    expect(
+      resolveFallbackAgentId({
+        sessionKey: "agent:worker:session",
+      }),
+    ).toBe("worker");
+  });
+
+  it("resolves run fallback overrides via shared helper", () => {
+    const cfg: OpenClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: ["anthropic/claude-sonnet-4-6"],
+          },
+        },
+        list: [
+          {
+            id: "support",
+            model: {
+              fallbacks: ["openai/gpt-5.4"],
+            },
+          },
+        ],
+      },
+    };
+
+    expect(
+      resolveRunModelFallbacksOverride({
+        cfg,
+        agentId: "support",
+        sessionKey: "agent:main:session",
+      }),
+    ).toEqual(["openai/gpt-5.4"]);
+    expect(
+      resolveRunModelFallbacksOverride({
+        cfg,
+        agentId: undefined,
+        sessionKey: "agent:support:session",
+      }),
+    ).toEqual(["openai/gpt-5.4"]);
+  });
+
+  it("computes whether any model fallbacks are configured via shared helper", () => {
+    const cfgDefaultsOnly: OpenClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: ["openai/gpt-5.4"],
+          },
+        },
+        list: [{ id: "main" }],
+      },
+    };
+    expect(
+      hasConfiguredModelFallbacks({
+        cfg: cfgDefaultsOnly,
+        sessionKey: "agent:main:session",
+      }),
+    ).toBe(true);
+
+    const cfgAgentOverrideOnly: OpenClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: [],
+          },
+        },
+        list: [
+          {
+            id: "support",
+            model: {
+              fallbacks: ["openai/gpt-5.4"],
+            },
+          },
+        ],
+      },
+    };
+    expect(
+      hasConfiguredModelFallbacks({
+        cfg: cfgAgentOverrideOnly,
+        agentId: "support",
+        sessionKey: "agent:support:session",
+      }),
+    ).toBe(true);
+    expect(
+      hasConfiguredModelFallbacks({
+        cfg: cfgAgentOverrideOnly,
+        agentId: "main",
+        sessionKey: "agent:main:session",
+      }),
+    ).toBe(false);
   });
 
   it("should return agent-specific sandbox config", () => {
@@ -318,42 +519,5 @@ describe("resolveAgentIdsByWorkspacePath", () => {
       "ops",
       "main",
     ]);
-  });
-});
-
-describe("resolveDefaultAgentId", () => {
-  it("returns DEFAULT_AGENT_ID when no agents are configured", () => {
-    const result = resolveDefaultAgentId({});
-    expect(result).toBe("main");
-  });
-
-  it("returns agents[0] when no agent has default=true", () => {
-    const cfg: OpenClawConfig = {
-      agents: {
-        list: [{ id: "ocs-nehemiah" }, { id: "mm-ezra" }],
-      },
-    };
-    const result = resolveDefaultAgentId(cfg);
-    expect(result).toBe("ocs-nehemiah");
-  });
-
-  it("returns the agent with default=true", () => {
-    const cfg: OpenClawConfig = {
-      agents: {
-        list: [{ id: "ocs-nehemiah" }, { id: "main-agent", default: true }, { id: "mm-ezra" }],
-      },
-    };
-    const result = resolveDefaultAgentId(cfg);
-    expect(result).toBe("main-agent");
-  });
-
-  it("returns the only agent when a single agent is configured", () => {
-    const cfg: OpenClawConfig = {
-      agents: {
-        list: [{ id: "solo" }],
-      },
-    };
-    const result = resolveDefaultAgentId(cfg);
-    expect(result).toBe("solo");
   });
 });

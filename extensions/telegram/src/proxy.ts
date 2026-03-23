@@ -1,1 +1,1 @@
-export { getProxyUrlFromFetch, makeProxyFetch } from "openclaw/plugin-sdk";
+export { getProxyUrlFromFetch, makeProxyFetch } from "openclaw/plugin-sdk/infra-runtime";

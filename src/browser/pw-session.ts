@@ -26,8 +26,7 @@ import {
   assertBrowserNavigationResultAllowed,
   withBrowserNavigationPolicy,
 } from "./navigation-guard.js";
-import { isExtensionRelayCdpEndpoint, withPageScopedCdpClient } from "./pw-session.page-cdp.js";
-import { getStealthScript } from "./stealth-scripts.js";
+import { withPageScopedCdpClient } from "./pw-session.page-cdp.js";
 
 export type BrowserConsoleMessage = {
   type: string;
@@ -117,9 +116,6 @@ const MAX_CONSOLE_MESSAGES = 500;
 const MAX_PAGE_ERRORS = 200;
 const MAX_NETWORK_REQUESTS = 500;
 
-// Per-profile connection cache keyed by normalized cdpUrl.
-// Using a Map ensures each remote profile maintains its own persistent
-// Playwright connection without evicting other profiles' connections.
 const cachedByCdpUrl = new Map<string, ConnectedBrowser>();
 const connectingByCdpUrl = new Map<string, Promise<ConnectedBrowser>>();
 
@@ -310,14 +306,11 @@ function observeContext(context: BrowserContext) {
   }
   observedContexts.add(context);
   ensureContextState(context);
-  context.addInitScript(getStealthScript()).catch(() => {
-    // Best-effort: some CDP-connected contexts may not support addInitScript
-  });
 
   for (const page of context.pages()) {
     ensurePageState(page);
   }
-  context.on("page", (page: Page) => ensurePageState(page));
+  context.on("page", (page) => ensurePageState(page));
 }
 
 export function ensureContextState(context: BrowserContext): ContextState {
@@ -461,21 +454,6 @@ async function findPageByTargetId(
   cdpUrl?: string,
 ): Promise<Page | null> {
   const pages = await getAllPages(browser);
-  const isExtensionRelay = cdpUrl
-    ? await isExtensionRelayCdpEndpoint(cdpUrl).catch(() => false)
-    : false;
-  if (cdpUrl && isExtensionRelay) {
-    try {
-      const matched = await findPageByTargetIdViaTargetList(pages, targetId, cdpUrl);
-      if (matched) {
-        return matched;
-      }
-    } catch {
-      // Ignore fetch errors and fall through to best-effort single-page fallback.
-    }
-    return pages.length === 1 ? (pages[0] ?? null) : null;
-  }
-
   let resolvedViaCdp = false;
   for (const page of pages) {
     let tid: string | null = null;
@@ -491,8 +469,6 @@ async function findPageByTargetId(
   }
   if (cdpUrl) {
     try {
-      // Use findPageByTargetIdViaTargetList which internally uses fetchJson
-      // (from cdp.helpers) so the Host header override works for Docker hostnames.
       return await findPageByTargetIdViaTargetList(pages, targetId, cdpUrl);
     } catch {
       // Ignore fetch errors and fall through to return null.
@@ -531,9 +507,7 @@ export async function getPageForTargetId(opts: {
   }
   const found = await findPageByTargetId(browser, opts.targetId, opts.cdpUrl);
   if (!found) {
-    // Extension relays can block CDP attachment APIs (e.g. Target.attachToBrowserTarget),
-    // which prevents us from resolving a page's targetId via newCDPSession(). If Playwright
-    // only exposes a single Page, use it as a best-effort fallback.
+    // If Playwright only exposes a single Page, use it as a best-effort fallback.
     if (pages.length === 1) {
       return first;
     }

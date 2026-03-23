@@ -7,19 +7,41 @@ import {
 import { loadConfig, type OpenClawConfig } from "../../config/config.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 import { withFileLock } from "../../infra/file-lock.js";
-import { refreshQwenPortalCredentials } from "../../providers/qwen-portal-oauth.js";
+import {
+  formatProviderAuthProfileApiKeyWithPlugin,
+  refreshProviderOAuthCredentialWithPlugin,
+} from "../../plugins/provider-runtime.runtime.js";
 import { resolveSecretRefString, type SecretRefResolveCache } from "../../secrets/resolve.js";
 import { refreshChutesTokens } from "../chutes-oauth.js";
-import { normalizeProviderId } from "../model-selection.js";
 import { AUTH_STORE_LOCK_OPTIONS, log } from "./constants.js";
 import { resolveTokenExpiryState } from "./credential-state.js";
 import { formatAuthDoctorHint } from "./doctor.js";
 import { ensureAuthStoreFile, resolveAuthStorePath } from "./paths.js";
 import { suggestOAuthProfileIdForLegacyDefault } from "./repair.js";
 import { ensureAuthProfileStore, saveAuthProfileStore } from "./store.js";
-import type { AuthProfileStore } from "./types.js";
+import type { AuthProfileStore, OAuthCredential } from "./types.js";
 
-const OAUTH_PROVIDER_IDS = new Set<string>(getOAuthProviders().map((provider) => provider.id));
+function listOAuthProviderIds(): string[] {
+  if (typeof getOAuthProviders !== "function") {
+    return [];
+  }
+  const providers = getOAuthProviders();
+  if (!Array.isArray(providers)) {
+    return [];
+  }
+  return providers
+    .map((provider) =>
+      provider &&
+      typeof provider === "object" &&
+      "id" in provider &&
+      typeof provider.id === "string"
+        ? provider.id
+        : undefined,
+    )
+    .filter((providerId): providerId is string => typeof providerId === "string");
+}
+
+const OAUTH_PROVIDER_IDS = new Set<string>(listOAuthProviderIds());
 
 const isOAuthProvider = (provider: string): provider is OAuthProvider =>
   OAUTH_PROVIDER_IDS.has(provider);
@@ -58,14 +80,12 @@ function isProfileConfigCompatible(params: {
   return true;
 }
 
-function buildOAuthApiKey(provider: string, credentials: OAuthCredentials): string {
-  const needsProjectId = provider === "google-gemini-cli";
-  return needsProjectId
-    ? JSON.stringify({
-        token: credentials.access,
-        projectId: credentials.projectId,
-      })
-    : credentials.access;
+async function buildOAuthApiKey(provider: string, credentials: OAuthCredential): Promise<string> {
+  const formatted = await formatProviderAuthProfileApiKeyWithPlugin({
+    provider,
+    context: credentials,
+  });
+  return typeof formatted === "string" && formatted.length > 0 ? formatted : credentials.access;
 }
 
 function buildApiKeyProfileResult(params: { apiKey: string; provider: string; email?: string }) {
@@ -76,13 +96,13 @@ function buildApiKeyProfileResult(params: { apiKey: string; provider: string; em
   };
 }
 
-function buildOAuthProfileResult(params: {
+async function buildOAuthProfileResult(params: {
   provider: string;
-  credentials: OAuthCredentials;
+  credentials: OAuthCredential;
   email?: string;
 }) {
   return buildApiKeyProfileResult({
-    apiKey: buildOAuthApiKey(params.provider, params.credentials),
+    apiKey: await buildOAuthApiKey(params.provider, params.credentials),
     provider: params.provider,
     email: params.email,
   });
@@ -90,23 +110,6 @@ function buildOAuthProfileResult(params: {
 
 function extractErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function shouldUseOpenaiCodexRefreshFallback(params: {
-  provider: string;
-  credentials: OAuthCredentials;
-  error: unknown;
-}): boolean {
-  if (normalizeProviderId(params.provider) !== "openai-codex") {
-    return false;
-  }
-  const message = extractErrorMessage(params.error);
-  if (!/extract\s+accountid\s+from\s+token/i.test(message)) {
-    return false;
-  }
-  return (
-    typeof params.credentials.access === "string" && params.credentials.access.trim().length > 0
-  );
 }
 
 type ResolveApiKeyForProfileParams = {
@@ -117,6 +120,43 @@ type ResolveApiKeyForProfileParams = {
 };
 
 type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
+
+function adoptNewerMainOAuthCredential(params: {
+  store: AuthProfileStore;
+  profileId: string;
+  agentDir?: string;
+  cred: OAuthCredentials & { type: "oauth"; provider: string; email?: string };
+}): (OAuthCredentials & { type: "oauth"; provider: string; email?: string }) | null {
+  if (!params.agentDir) {
+    return null;
+  }
+  try {
+    const mainStore = ensureAuthProfileStore(undefined);
+    const mainCred = mainStore.profiles[params.profileId];
+    if (
+      mainCred?.type === "oauth" &&
+      mainCred.provider === params.cred.provider &&
+      Number.isFinite(mainCred.expires) &&
+      (!Number.isFinite(params.cred.expires) || mainCred.expires > params.cred.expires)
+    ) {
+      params.store.profiles[params.profileId] = { ...mainCred };
+      saveAuthProfileStore(params.store, params.agentDir);
+      log.info("adopted newer OAuth credentials from main agent", {
+        profileId: params.profileId,
+        agentDir: params.agentDir,
+        expires: new Date(mainCred.expires).toISOString(),
+      });
+      return mainCred;
+    }
+  } catch (err) {
+    // Best-effort: don't crash if main agent store is missing or unreadable.
+    log.debug("adoptNewerMainOAuthCredential failed", {
+      profileId: params.profileId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+  return null;
+}
 
 async function refreshOAuthTokenWithLock(params: {
   profileId: string;
@@ -134,15 +174,23 @@ async function refreshOAuthTokenWithLock(params: {
 
     if (Date.now() < cred.expires) {
       return {
-        apiKey: buildOAuthApiKey(cred.provider, cred),
+        apiKey: await buildOAuthApiKey(cred.provider, cred),
         newCredentials: cred,
       };
     }
 
-    const oauthCreds: Record<string, OAuthCredentials> = {
-      [cred.provider]: cred,
-    };
+    const pluginRefreshed = await refreshProviderOAuthCredentialWithPlugin({
+      provider: cred.provider,
+      context: cred,
+    });
+    if (pluginRefreshed) {
+      return {
+        apiKey: await buildOAuthApiKey(cred.provider, pluginRefreshed),
+        newCredentials: pluginRefreshed,
+      };
+    }
 
+    const oauthCreds: Record<string, OAuthCredentials> = { [cred.provider]: cred };
     const result =
       String(cred.provider) === "chutes"
         ? await (async () => {
@@ -151,18 +199,16 @@ async function refreshOAuthTokenWithLock(params: {
             });
             return { apiKey: newCredentials.access, newCredentials };
           })()
-        : String(cred.provider) === "qwen-portal"
-          ? await (async () => {
-              const newCredentials = await refreshQwenPortalCredentials(cred);
-              return { apiKey: newCredentials.access, newCredentials };
-            })()
-          : await (async () => {
-              const oauthProvider = resolveOAuthProvider(cred.provider);
-              if (!oauthProvider) {
-                return null;
-              }
-              return await getOAuthApiKey(oauthProvider, oauthCreds);
-            })();
+        : await (async () => {
+            const oauthProvider = resolveOAuthProvider(cred.provider);
+            if (!oauthProvider) {
+              return null;
+            }
+            if (typeof getOAuthApiKey !== "function") {
+              return null;
+            }
+            return await getOAuthApiKey(oauthProvider, oauthCreds);
+          })();
     if (!result) {
       return null;
     }
@@ -197,7 +243,7 @@ async function tryResolveOAuthProfile(
   }
 
   if (Date.now() < cred.expires) {
-    return buildOAuthProfileResult({
+    return await buildOAuthProfileResult({
       provider: cred.provider,
       credentials: cred,
       email: cred.email,
@@ -333,14 +379,19 @@ export async function resolveApiKeyForProfile(
     return buildApiKeyProfileResult({ apiKey: token, provider: cred.provider, email: cred.email });
   }
 
-  // Per-agent isolation: use this agent's own credential only.
-  // (adoptNewerMainOAuthCredential was removed — it replaced per-agent tokens with
-  // main's whenever main was fresher, breaking per-agent OAuth isolation.)
-  if (Date.now() < cred.expires) {
-    return buildOAuthProfileResult({
-      provider: cred.provider,
-      credentials: cred,
-      email: cred.email,
+  const oauthCred =
+    adoptNewerMainOAuthCredential({
+      store,
+      profileId,
+      agentDir: params.agentDir,
+      cred,
+    }) ?? cred;
+
+  if (Date.now() < oauthCred.expires) {
+    return await buildOAuthProfileResult({
+      provider: oauthCred.provider,
+      credentials: oauthCred,
+      email: oauthCred.email,
     });
   }
 
@@ -361,7 +412,7 @@ export async function resolveApiKeyForProfile(
     const refreshedStore = ensureAuthProfileStore(params.agentDir);
     const refreshed = refreshedStore.profiles[profileId];
     if (refreshed?.type === "oauth" && Date.now() < refreshed.expires) {
-      return buildOAuthProfileResult({
+      return await buildOAuthProfileResult({
         provider: refreshed.provider,
         credentials: refreshed,
         email: refreshed.email ?? cred.email,
@@ -389,30 +440,33 @@ export async function resolveApiKeyForProfile(
       }
     }
 
-    // Per-agent isolation: do NOT fall back to main agent's credentials.
-    // Each agent must be authenticated independently. If refresh fails, surface
-    // the error clearly so the operator can re-auth the specific agent.
-
-    if (
-      shouldUseOpenaiCodexRefreshFallback({
-        provider: cred.provider,
-        credentials: cred,
-        error,
-      })
-    ) {
-      log.warn("openai-codex oauth refresh failed; using cached access token fallback", {
-        profileId,
-        provider: cred.provider,
-      });
-      return buildApiKeyProfileResult({
-        apiKey: cred.access,
-        provider: cred.provider,
-        email: cred.email,
-      });
+    // Fallback: if this is a secondary agent, try using the main agent's credentials
+    if (params.agentDir) {
+      try {
+        const mainStore = ensureAuthProfileStore(undefined); // main agent (no agentDir)
+        const mainCred = mainStore.profiles[profileId];
+        if (mainCred?.type === "oauth" && Date.now() < mainCred.expires) {
+          // Main agent has fresh credentials - copy them to this agent and use them
+          refreshedStore.profiles[profileId] = { ...mainCred };
+          saveAuthProfileStore(refreshedStore, params.agentDir);
+          log.info("inherited fresh OAuth credentials from main agent", {
+            profileId,
+            agentDir: params.agentDir,
+            expires: new Date(mainCred.expires).toISOString(),
+          });
+          return await buildOAuthProfileResult({
+            provider: mainCred.provider,
+            credentials: mainCred,
+            email: mainCred.email,
+          });
+        }
+      } catch {
+        // keep original error if main agent fallback also fails
+      }
     }
 
     const message = extractErrorMessage(error);
-    const hint = formatAuthDoctorHint({
+    const hint = await formatAuthDoctorHint({
       cfg,
       store: refreshedStore,
       provider: cred.provider,

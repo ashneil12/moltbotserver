@@ -395,6 +395,25 @@ function classifySystemCheck(check: CheckResult): ClassifiedIssue | null {
     };
   }
 
+  // Event loop liveness probe — severe degradation is auto-fixable via
+  // gateway restart (process.exit → Docker restart policy recovers).
+  // Warn = informational; fail = event loop p99 > 2s, agent is unusable.
+  if (check.name === "process.event_loop_delay") {
+    return {
+      key,
+      classification: check.status === "fail" ? "auto-fixable" : "warning",
+      summary:
+        check.status === "fail"
+          ? `Event loop severely degraded: ${check.detail}`
+          : `Event loop lag elevated: ${check.detail}`,
+      suggestedAction:
+        check.status === "fail"
+          ? "Gateway restart recommended — event loop is too degraded for agent operation."
+          : undefined,
+      source: check,
+    };
+  }
+
   // Unknown check type — classify based on actual status
   return {
     key,
@@ -750,6 +769,14 @@ export async function runSentinelCheck(deps: SentinelDeps): Promise<SentinelRepo
         systemReport.checks.push(...diskChecks);
       } catch (err) {
         log.warn?.(`doctor probe (disk hygiene) failed: ${String(err)}`);
+      }
+    }
+    if (deps.doctorProbes.checkEventLoopHealth) {
+      try {
+        const elCheck = deps.doctorProbes.checkEventLoopHealth();
+        systemReport.checks.push(elCheck);
+      } catch (err) {
+        log.warn?.(`doctor probe (event loop) failed: ${String(err)}`);
       }
     }
   }

@@ -1,6 +1,9 @@
 import { formatCliCommand } from "../../cli/command-format.js";
 import type { OpenClawConfig } from "../../config/config.js";
-import { canonicalizeMainSessionAlias, resolveAgentMainSessionKey } from "../../config/sessions.js";
+import {
+  canonicalizeMainSessionAlias,
+  resolveAgentMainSessionKey,
+} from "../../config/sessions/main-session.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
 import { expandToolGroups } from "../tool-policy.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
@@ -14,7 +17,6 @@ function shouldSandboxSession(cfg: SandboxConfig, sessionKey: string, mainSessio
   if (cfg.mode === "all") {
     return true;
   }
-  // "non-main" and "browser-only" both skip main agent sessions
   return sessionKey.trim() !== mainSessionKey.trim();
 }
 
@@ -128,7 +130,7 @@ export function formatSandboxToolPolicyBlockedMessage(params: {
   for (const fix of fixes) {
     lines.push(`- ${fix}`);
   }
-  if (runtime.mode === "non-main" || runtime.mode === "browser-only") {
+  if (runtime.mode === "non-main") {
     lines.push(`- Use main session key (direct): ${runtime.mainSessionKey}`);
   }
   lines.push(

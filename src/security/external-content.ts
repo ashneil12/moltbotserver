@@ -92,6 +92,10 @@ export type ExternalContentSource =
   | "workspace_context"
   | "unknown";
 
+// Hook-origin async runs need immutable ingress provenance because routed
+// session keys can be normalized outside the hook:* namespace.
+export type HookExternalContentSource = "gmail" | "webhook";
+
 const EXTERNAL_SOURCE_LABELS: Record<ExternalContentSource, string> = {
   email: "Email",
   webhook: "Webhook",
@@ -103,6 +107,25 @@ const EXTERNAL_SOURCE_LABELS: Record<ExternalContentSource, string> = {
   workspace_context: "Workspace Context",
   unknown: "External",
 };
+
+export function resolveHookExternalContentSource(
+  sessionKey: string,
+): HookExternalContentSource | undefined {
+  const normalized = sessionKey.trim().toLowerCase();
+  if (normalized.startsWith("hook:gmail:")) {
+    return "gmail";
+  }
+  if (normalized.startsWith("hook:webhook:") || normalized.startsWith("hook:")) {
+    return "webhook";
+  }
+  return undefined;
+}
+
+export function mapHookExternalContentSource(
+  source: HookExternalContentSource,
+): Extract<ExternalContentSource, "email" | "webhook"> {
+  return source === "gmail" ? "email" : "webhook";
+}
 
 const FULLWIDTH_ASCII_OFFSET = 0xfee0;
 
@@ -252,12 +275,13 @@ export function wrapExternalContent(content: string, options: WrapExternalConten
   const sanitized = replaceMarkers(content);
   const sourceLabel = EXTERNAL_SOURCE_LABELS[source] ?? "External";
   const metadataLines: string[] = [`Source: ${sourceLabel}`];
+  const sanitizeMetadataValue = (value: string) => replaceMarkers(value).replace(/[\r\n]+/g, " ");
 
   if (sender) {
-    metadataLines.push(`From: ${sender}`);
+    metadataLines.push(`From: ${sanitizeMetadataValue(sender)}`);
   }
   if (subject) {
-    metadataLines.push(`Subject: ${subject}`);
+    metadataLines.push(`Subject: ${sanitizeMetadataValue(subject)}`);
   }
 
   const metadata = metadataLines.join("\n");
@@ -316,29 +340,15 @@ export function buildSafeExternalPrompt(params: {
  * Checks if a session key indicates an external hook source.
  */
 export function isExternalHookSession(sessionKey: string): boolean {
-  const normalized = sessionKey.trim().toLowerCase();
-  return (
-    normalized.startsWith("hook:gmail:") ||
-    normalized.startsWith("hook:webhook:") ||
-    normalized.startsWith("hook:") // Generic hook prefix
-  );
+  return resolveHookExternalContentSource(sessionKey) !== undefined;
 }
 
 /**
  * Extracts the hook type from a session key.
  */
 export function getHookType(sessionKey: string): ExternalContentSource {
-  const normalized = sessionKey.trim().toLowerCase();
-  if (normalized.startsWith("hook:gmail:")) {
-    return "email";
-  }
-  if (normalized.startsWith("hook:webhook:")) {
-    return "webhook";
-  }
-  if (normalized.startsWith("hook:")) {
-    return "webhook";
-  }
-  return "unknown";
+  const source = resolveHookExternalContentSource(sessionKey);
+  return source ? mapHookExternalContentSource(source) : "unknown";
 }
 
 /**

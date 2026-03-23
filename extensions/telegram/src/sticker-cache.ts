@@ -1,15 +1,19 @@
-import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveApiKeyForProvider } from "openclaw/plugin-sdk";
-import type { ModelCatalogEntry } from "openclaw/plugin-sdk";
-import { findModelInCatalog, loadModelCatalog, modelSupportsVision } from "openclaw/plugin-sdk";
-import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
-import { STATE_DIR } from "openclaw/plugin-sdk";
-import { logVerbose } from "openclaw/plugin-sdk";
-import { loadJsonFile, saveJsonFile } from "openclaw/plugin-sdk";
-import { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "openclaw/plugin-sdk";
-import { resolveAutoImageModel } from "openclaw/plugin-sdk";
+import { resolveApiKeyForProvider } from "openclaw/plugin-sdk/agent-runtime";
+import type { ModelCatalogEntry } from "openclaw/plugin-sdk/agent-runtime";
+import {
+  findModelInCatalog,
+  loadModelCatalog,
+  modelSupportsVision,
+} from "openclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
+import { loadJsonFile, saveJsonFile } from "openclaw/plugin-sdk/json-store";
+import { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "openclaw/plugin-sdk/media-runtime";
+import { resolveAutoImageModel } from "openclaw/plugin-sdk/media-runtime";
+import { describeImageFileWithModel } from "openclaw/plugin-sdk/media-understanding-runtime";
+import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { STATE_DIR } from "openclaw/plugin-sdk/state-paths";
 
 const CACHE_FILE = path.join(STATE_DIR, "telegram", "sticker-cache.json");
 const CACHE_VERSION = 1;
@@ -139,14 +143,6 @@ export function getCacheStats(): { count: number; oldestAt?: string; newestAt?: 
 
 const STICKER_DESCRIPTION_PROMPT =
   "Describe this sticker image in 1-2 sentences. Focus on what the sticker depicts (character, object, action, emotion). Be concise and objective.";
-let imageRuntimePromise: Promise<
-  typeof import("../../../src/media-understanding/providers/image-runtime.js")
-> | null = null;
-
-function loadImageRuntime() {
-  imageRuntimePromise ??= import("../../../src/media-understanding/providers/image-runtime.js");
-  return imageRuntimePromise;
-}
 
 export interface DescribeStickerParams {
   imagePath: string;
@@ -240,22 +236,18 @@ export async function describeStickerImage(params: DescribeStickerParams): Promi
   logVerbose(`telegram: describing sticker with ${provider}/${model}`);
 
   try {
-    const buffer = await fs.readFile(imagePath);
-    // Lazy import to avoid circular dependency
-    const { describeImageWithModel } = await loadImageRuntime();
-    const result = await describeImageWithModel({
-      buffer,
-      fileName: "sticker.webp",
+    const result = await describeImageFileWithModel({
+      filePath: imagePath,
       mime: "image/webp",
-      prompt: STICKER_DESCRIPTION_PROMPT,
       cfg,
-      agentDir: agentDir ?? "",
+      agentDir,
       provider,
       model,
+      prompt: STICKER_DESCRIPTION_PROMPT,
       maxTokens: 150,
-      timeoutMs: 30000,
+      timeoutMs: 30_000,
     });
-    return result.text;
+    return result.text ?? null;
   } catch (err) {
     logVerbose(`telegram: failed to describe sticker: ${String(err)}`);
     return null;

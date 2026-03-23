@@ -1,6 +1,9 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
-import type { DiscordGuildChannelConfig, DiscordGuildEntry } from "openclaw/plugin-sdk";
-import { isRecord } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
+import type {
+  DiscordGuildChannelConfig,
+  DiscordGuildEntry,
+} from "openclaw/plugin-sdk/config-runtime";
+import { isRecord } from "openclaw/plugin-sdk/text-runtime";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import { fetchChannelPermissionsDiscord } from "./send.js";
 

@@ -1,20 +1,27 @@
-import { normalizeCommandBody } from "openclaw/plugin-sdk";
-import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "openclaw/plugin-sdk";
-import { buildPendingHistoryContextFromMap, type HistoryEntry } from "openclaw/plugin-sdk";
-import { finalizeInboundContext } from "openclaw/plugin-sdk";
-import { toLocationContext } from "openclaw/plugin-sdk";
-import { recordInboundSession } from "openclaw/plugin-sdk";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
-import { readSessionUpdatedAt, resolveStorePath } from "openclaw/plugin-sdk";
+import {
+  formatInboundEnvelope,
+  resolveEnvelopeFormatOptions,
+  toLocationContext,
+  type NormalizedLocation,
+} from "openclaw/plugin-sdk/channel-inbound";
+import { normalizeCommandBody } from "openclaw/plugin-sdk/command-auth";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
+import { readSessionUpdatedAt, resolveStorePath } from "openclaw/plugin-sdk/config-runtime";
 import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk";
-import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk";
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk";
-import { resolveInboundLastRouteSessionKey } from "openclaw/plugin-sdk";
-import { resolvePinnedMainDmOwnerFromAllowlist } from "openclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/config-runtime";
+import { recordInboundSession } from "openclaw/plugin-sdk/conversation-runtime";
+import {
+  buildPendingHistoryContextFromMap,
+  type HistoryEntry,
+} from "openclaw/plugin-sdk/reply-history";
+import { finalizeInboundContext } from "openclaw/plugin-sdk/reply-runtime";
+import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
+import { resolveInboundLastRouteSessionKey } from "openclaw/plugin-sdk/routing";
+import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { resolvePinnedMainDmOwnerFromAllowlist } from "openclaw/plugin-sdk/security-runtime";
 import { normalizeAllowFrom } from "./bot-access.js";
 import type {
   TelegramMediaRef,
@@ -57,7 +64,7 @@ export async function buildTelegramInboundContextPayload(params: {
   stickerCacheHit: boolean;
   effectiveWasMentioned: boolean;
   commandAuthorized: boolean;
-  locationData?: import("../../../src/channels/location.js").NormalizedLocation;
+  locationData?: NormalizedLocation;
   options?: TelegramMessageContextOptions;
   dmAllowFrom?: Array<string | number>;
 }): Promise<{

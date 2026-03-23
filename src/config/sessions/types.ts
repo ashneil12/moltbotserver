@@ -80,6 +80,8 @@ export type SessionEntry = {
   sessionFile?: string;
   /** Parent session key that spawned this session (used for sandbox session-tool scoping). */
   spawnedBy?: string;
+  /** Parent session key for subagent/spawned sessions. */
+  parentSessionKey?: string;
   /** Workspace inherited by spawned sessions and reused on later turns for the same child session. */
   spawnedWorkspaceDir?: string;
   /** True after a thread/topic session has been forked from its parent transcript once. */
@@ -90,6 +92,14 @@ export type SessionEntry = {
   subagentRole?: "orchestrator" | "leaf";
   /** Explicit control scope assigned at spawn time for subagent control decisions. */
   subagentControlScope?: "children" | "none";
+  /** Epoch ms when the subagent run started. */
+  startedAt?: number;
+  /** Epoch ms when the subagent run ended. */
+  endedAt?: number;
+  /** Total runtime in milliseconds after the subagent run ended. */
+  runtimeMs?: number;
+  /** Final persisted subagent run status, used after in-memory run archival. */
+  status?: "running" | "done" | "failed" | "killed" | "timeout";
   systemSent?: boolean;
   abortedLastRun?: boolean;
   /**
@@ -142,6 +152,8 @@ export type SessionEntry = {
   totalTokensFresh?: boolean;
   cacheRead?: number;
   cacheWrite?: number;
+  /** Estimated cost in USD for this session's API usage. */
+  estimatedCostUsd?: number;
   modelProvider?: string;
   model?: string;
   /**

@@ -544,6 +544,11 @@ function enforceCore(configPath) {
       "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store.",
   };
 
+  // Compaction safety timeout: the SDK reads this via resolveCompactionTimeoutMs()
+  // in compaction-safety-timeout.ts. Default is 900s (15 min) — too generous.
+  // 240s (4 min) is sufficient for large contexts and prevents indefinite hangs.
+  compaction.timeoutSeconds = 240;
+
   // Bootstrap: increase per-file char limit so SOUL.md (~53K) and
   // openclaw-human-v1.md (~16K) are injected in full. Total budget (150K) accommodates this.
   defaults.bootstrapMaxChars = 100_000;

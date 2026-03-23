@@ -1,20 +1,12 @@
-import { defineConfig } from "vitest/config";
-import baseConfig from "./vitest.config.ts";
+import { channelTestInclude } from "./vitest.channel-paths.mjs";
+import { createScopedVitestConfig } from "./vitest.scoped-config.ts";
 
-const base = baseConfig as unknown as Record<string, unknown>;
-const baseTest = (baseConfig as { test?: { exclude?: string[] } }).test ?? {};
+export function createChannelsVitestConfig(env?: Record<string, string | undefined>) {
+  return createScopedVitestConfig(channelTestInclude, {
+    env,
+    pool: "threads",
+    exclude: ["src/gateway/**"],
+  });
+}
 
-export default defineConfig({
-  ...base,
-  test: {
-    ...baseTest,
-    include: [
-      "extensions/telegram/**/*.test.ts",
-      "extensions/discord/**/*.test.ts",
-      "extensions/whatsapp/**/*.test.ts",
-      "src/browser/**/*.test.ts",
-      "src/line/**/*.test.ts",
-    ],
-    exclude: [...(baseTest.exclude ?? []), "src/gateway/**"],
-  },
-});
+export default createChannelsVitestConfig();

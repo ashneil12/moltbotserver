@@ -172,6 +172,8 @@ export interface DoctorProbes {
   checkCronHealth?: () => CheckResult[];
   /** Check disk hygiene (session files, browser cache, gateway logs) */
   checkDiskHygiene?: () => CheckResult[];
+  /** Check event loop health (p99 latency from perf_hooks histogram) */
+  checkEventLoopHealth?: () => CheckResult;
 }
 
 export interface WeeklyProbes {

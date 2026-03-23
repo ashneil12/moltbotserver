@@ -564,6 +564,16 @@ export function startDiagnosticHeartbeat(config?: OpenClawConfig) {
                     return false;
                   }
                 },
+                requestGatewayRestart: (reason: string) => {
+                  diag.warn(
+                    `[sentinel] gateway restart requested: ${reason}. ` +
+                      `Exiting in 500ms — Docker restart policy will recover.`,
+                  );
+                  // Delay exit slightly so sentinel can finish writing its report
+                  setTimeout(() => {
+                    process.exit(1);
+                  }, 500);
+                },
               },
               doctorProbes: {
                 checkStateDirExists: () => {
@@ -761,6 +771,18 @@ export function startDiagnosticHeartbeat(config?: OpenClawConfig) {
                   }
 
                   return checks;
+                },
+                checkEventLoopHealth: () => {
+                  try {
+                    const { checkEventLoopHealth: check } = require("../infra/event-loop-probe.js");
+                    return check();
+                  } catch {
+                    return {
+                      name: "process.event_loop_delay",
+                      status: "skip" as const,
+                      detail: "Event loop probe module not available",
+                    };
+                  }
                 },
               },
               weeklyProbes: {

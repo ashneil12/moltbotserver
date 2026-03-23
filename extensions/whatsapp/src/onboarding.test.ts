@@ -1,7 +1,7 @@
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk";
-import type { RuntimeEnv } from "openclaw/plugin-sdk";
-import type { WizardPrompter } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import type { RuntimeEnv } from "../../../src/runtime.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import { whatsappOnboardingAdapter } from "./onboarding.js";
 
 const loginWebMock = vi.hoisted(() => vi.fn(async () => {}));

@@ -48,6 +48,13 @@ export interface RemediationContext {
   cleanStaleLocks?: () => Promise<{ staleCount: number; removedCount: number }>;
   /** Re-scan for stale locks without removing them. Returns stale count. */
   countStaleLocks?: () => Promise<number>;
+  /**
+   * Request a graceful gateway restart.
+   * Called by the event loop degradation playbook when p99 > fail threshold.
+   * Implementation should call process.exit(1) — Docker's restart policy
+   * (restart: unless-stopped) recovers the container automatically.
+   */
+  requestGatewayRestart?: (reason: string) => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -549,6 +556,86 @@ export function createSessionLockPlaybook(ctx: RemediationContext): RemediationP
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Gateway Restart Playbook (event loop degradation)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function isEventLoopIssue(issue: ClassifiedIssue): boolean {
+  return issue.key === "system:process.event_loop_delay";
+}
+
+/**
+ * When the event loop is severely degraded (p99 > 2s), HTTP healthchecks
+ * still pass (10s timeout) but the agent is unusable. This playbook
+ * triggers a graceful process exit — Docker's `restart: unless-stopped`
+ * policy recovers the container, and the host watchdog cron provides a
+ * backup if Docker's restart fails.
+ *
+ * Recovery chain:
+ *   probe detects p99 > 2s → sentinel classifies as auto-fixable
+ *   → playbook calls process.exit(1) → Docker restarts container
+ *   → event loop is healthy on fresh start
+ */
+export function createGatewayRestartPlaybook(ctx: RemediationContext): RemediationPlaybook {
+  return {
+    id: "gateway-restart-event-loop",
+
+    matches(issue) {
+      return (
+        isEventLoopIssue(issue) &&
+        issue.classification === "auto-fixable" &&
+        ctx.requestGatewayRestart !== undefined
+      );
+    },
+
+    async remediate(issue): Promise<RemediationAttempt> {
+      const start = Date.now();
+      if (!ctx.requestGatewayRestart) {
+        return {
+          issueKey: issue.key,
+          playbook: "gateway-restart-event-loop",
+          status: "skipped",
+          error: "no restart handler",
+          durationMs: Date.now() - start,
+        };
+      }
+
+      log.info?.(
+        `event loop severely degraded — requesting gateway restart: ${issue.summary}`,
+      );
+
+      try {
+        ctx.requestGatewayRestart(
+          `Event loop degradation auto-fix: ${issue.summary}`,
+        );
+        // process.exit is async-ish — give it a moment
+        return {
+          issueKey: issue.key,
+          playbook: "gateway-restart-event-loop",
+          status: "success",
+          durationMs: Date.now() - start,
+        };
+      } catch (err) {
+        const error = String(err);
+        log.warn?.(`gateway restart request failed: ${error}`);
+        return {
+          issueKey: issue.key,
+          playbook: "gateway-restart-event-loop",
+          status: "failed",
+          error,
+          durationMs: Date.now() - start,
+        };
+      }
+    },
+
+    async verify(_issue): Promise<boolean> {
+      // Cannot verify — process should be restarting.
+      // If we're still running, the restart didn't happen.
+      return false;
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Playbook Registry
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -561,6 +648,7 @@ export function buildPlaybooks(ctx: RemediationContext): RemediationPlaybook[] {
     createBrowserRestartPlaybook(ctx),
     createConfigRepairPlaybook(ctx),
     createSessionLockPlaybook(ctx),
+    createGatewayRestartPlaybook(ctx),
   ];
 }
 

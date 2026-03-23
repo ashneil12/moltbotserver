@@ -1,17 +1,26 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import "./server-context.chrome-test-harness.js";
-import * as chromeModule from "./chrome.js";
-import { InvalidBrowserNavigationUrlError } from "./navigation-guard.js";
-import * as pwAiModule from "./pw-ai-module.js";
-import { PROFILE_STATUS_TAB_LIST_TIMEOUT_MS } from "./server-context.constants.js";
-import { createBrowserRouteContext } from "./server-context.js";
-import {
-  createJsonListFetchMock,
-  createRemoteRouteHarness,
-  createSequentialPageLister,
-  makeState,
-  originalFetch,
-} from "./server-context.remote-tab-ops.harness.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const originalFetch = globalThis.fetch;
+
+let chromeModule: typeof import("./chrome.js");
+let InvalidBrowserNavigationUrlError: typeof import("./navigation-guard.js").InvalidBrowserNavigationUrlError;
+let pwAiModule: typeof import("./pw-ai-module.js");
+let createBrowserRouteContext: typeof import("./server-context.js").createBrowserRouteContext;
+let createJsonListFetchMock: typeof import("./server-context.remote-tab-ops.harness.js").createJsonListFetchMock;
+let createRemoteRouteHarness: typeof import("./server-context.remote-tab-ops.harness.js").createRemoteRouteHarness;
+let createSequentialPageLister: typeof import("./server-context.remote-tab-ops.harness.js").createSequentialPageLister;
+let makeState: typeof import("./server-context.remote-tab-ops.harness.js").makeState;
+
+beforeEach(async () => {
+  vi.resetModules();
+  await import("./server-context.chrome-test-harness.js");
+  chromeModule = await import("./chrome.js");
+  ({ InvalidBrowserNavigationUrlError } = await import("./navigation-guard.js"));
+  pwAiModule = await import("./pw-ai-module.js");
+  ({ createBrowserRouteContext } = await import("./server-context.js"));
+  ({ createJsonListFetchMock, createRemoteRouteHarness, createSequentialPageLister, makeState } =
+    await import("./server-context.remote-tab-ops.harness.js"));
+});
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -210,30 +219,6 @@ describe("browser server-context remote profile tab operations", () => {
 
     await expect(remote.listTabs()).rejects.toThrow(/boom/);
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("bounds remote tab listing during profile status enumeration", async () => {
-    vi.useFakeTimers();
-    vi.mocked(chromeModule.isChromeReachable).mockResolvedValue(true);
-    vi.spyOn(pwAiModule, "getPwAiModule").mockResolvedValue({
-      listPagesViaPlaywright: vi.fn(() => new Promise(() => {})),
-    } as unknown as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
-
-    const state = makeState("remote");
-    const ctx = createBrowserRouteContext({ getState: () => state });
-
-    const promise = ctx.listProfiles();
-    await vi.advanceTimersByTimeAsync(PROFILE_STATUS_TAB_LIST_TIMEOUT_MS + 25);
-
-    await expect(promise).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: "remote",
-          running: true,
-          tabCount: 0,
-        }),
-      ]),
-    );
   });
 
   it("falls back to /json/list when Playwright is not available", async () => {

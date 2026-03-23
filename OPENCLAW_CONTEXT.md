@@ -15,7 +15,7 @@ These files don't exist in upstream. They will never conflict but must not be de
 | File / Directory                  | Feature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `docker-entrypoint.sh`            | Managed platform guards, Sansa provider, memory template seeding, `allowlist`→`groupAllowFrom` migration, `groupPolicy` validation, stock plugin fix, `root:root` re-chown, device pairing auto-approve, QMD pre-warm, **QMD Gemini embedding patch** (calls `patch-qmd-gemini.sh`), workspace-doc-converter sidecar, backup restore before enforce-config, **ByteRover PORT isolation** (subshell `unset PORT`)                                                                                                                          |
-| `enforce-config.mjs`              | Multi-agent `team/` symlinking, Model normalization, 4-tier reflection patching, cron job seeding (`MAIN_ONLY_JOBS`), tool loop detection, `tools.profile = "full"` enforcement, per-agent browser profiles/containers, `browser` in `alsoAllow`, LCM version-aware enforcement, skill-evolution cron, cron schedule redesign (interval→fixed cron), `MAIN_ONLY_JOBS` expansion, **QMD searchMode** (`OPENCLAW_QMD_SEARCH_MODE` env var, default `vsearch`/hybrid), **tavily→searxng normalization** (legacy dashboard default migration) |
+| `enforce-config.mjs`              | Multi-agent `team/` symlinking, Model normalization, 4-tier reflection patching, cron job seeding (`MAIN_ONLY_JOBS`), tool loop detection, `tools.profile = "full"` enforcement, per-agent browser profiles/containers, `browser` in `alsoAllow`, LCM version-aware enforcement, skill-evolution cron, cron schedule redesign (interval→fixed cron), `MAIN_ONLY_JOBS` expansion, **QMD searchMode** (`OPENCLAW_QMD_SEARCH_MODE` env var, default `vsearch`/hybrid), **tavily→searxng normalization** (legacy dashboard default migration), **compaction timeout tuning** (`timeoutSeconds = 240`, SDK default is 900s) |
 | `enforce-config-helpers.mjs`      | Shared utilities: `readConfig`, `writeConfig`, `ensure`, `makeId`, `env`, `isTruthy`, `repairConfig` (3-stage), `backupConfig` (3-slot rotation), `resolveReflectionIntervals`                                                                                                                                                                                                                                                                                                                                                            |
 | `enforce-config-models.mjs`       | `normalizeModelId()` + `CANONICAL_MODEL_IDS` map                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `enforce-config-helpers.test.mjs` | 34 tests for extracted helpers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -103,9 +103,9 @@ These files don't exist in upstream. They will never conflict but must not be de
 
 | File                                                 | Feature                                                                                                                                            |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/logging/health-sentinel.ts`                     | Two-tier self-healing orchestrator + config/session-lock classifications. 12 tests                                                                 |
-| `src/logging/health-sentinel-types.ts`               | Shared types                                                                                                                                       |
-| `src/logging/health-sentinel-playbooks.ts`           | 6 playbooks: `channel-restart`, `disk-cleanup`, `disk-hygiene`, `browser-container-restart`, `doctor-config-repair`, `doctor-session-lock-cleanup` |
+| `src/logging/health-sentinel.ts`                     | Two-tier self-healing orchestrator + config/session-lock/event-loop classifications. 12 tests                                                      |
+| `src/logging/health-sentinel-types.ts`               | Shared types (incl. `checkEventLoopHealth` in `DoctorProbes`)                                                                                      |
+| `src/logging/health-sentinel-playbooks.ts`           | 7 playbooks: `channel-restart`, `disk-cleanup`, `disk-hygiene`, `browser-container-restart`, `doctor-config-repair`, `doctor-session-lock-cleanup`, `gateway-restart-event-loop` |
 | `src/logging/health-sentinel-history.ts`             | JSONL history with trends                                                                                                                          |
 | `src/logging/health-sentinel-incidents.ts`           | Incident writer, inbox, TTL cleanup                                                                                                                |
 | `src/logging/health-sentinel.test.ts`                | Tests                                                                                                                                              |
@@ -113,18 +113,21 @@ These files don't exist in upstream. They will never conflict but must not be de
 | `src/logging/health-sentinel-phase3.test.ts`         | 19 tests                                                                                                                                           |
 | `src/logging/health-sentinel-sidecars.test.ts`       | 7 tests                                                                                                                                            |
 | `src/logging/health-sentinel-browsers.test.ts`       | 12 tests                                                                                                                                           |
-| `src/logging/health-sentinel-doctor.test.ts`         | 26 tests: config-repair, session-lock, classification                                                                                              |
+| `src/logging/health-sentinel-doctor.test.ts`         | 26 tests: config-repair, session-lock, classification                                                              |
+| `src/logging/health-sentinel-event-loop.test.ts`     | 13 tests: event loop classification (4) + gateway-restart playbook (9)                                             |
 | `src/auto-reply/reply/session-health.ts`             | Session Health Sentinel — circuit breaker                                                                                                          |
 | `src/auto-reply/reply/session-health-integration.ts` | Session Health integration bridge                                                                                                                  |
 | `src/auto-reply/reply/session-health.test.ts`        | 18 tests                                                                                                                                           |
 | `src/auto-reply/reply/session-freshness.ts`          | Stale Snapshot Guard — validates workspace freshness                                                                                               |
-| `src/auto-reply/reply/session-freshness.test.ts`     | 8 tests                                                                                                                                            |
-| `src/infra/ephemeral-path.ts`                        | Ephemeral path detection (`/tmp`, `tmpfs`, etc). 15 tests                                                                                          |
-| `src/infra/ephemeral-path.test.ts`                   | Tests                                                                                                                                              |
-| `src/infra/atomic-file.ts`                           | Shared crash-safe file utilities. 10 tests                                                                                                         |
-| `src/infra/atomic-file.test.ts`                      | Tests                                                                                                                                              |
-| `src/infra/ports-inspect.ts`                         | `parseProcNetTcpListeners()` — `/proc/net/tcp` LISTEN state parser + async fallback. 7 tests                                                       |
-| `src/infra/ports-inspect.test.ts`                    | Tests                                                                                                                                              |
+| `src/auto-reply/reply/session-freshness.test.ts`     | 8 tests                                                                                                |
+| `src/infra/event-loop-probe.ts`                      | Event loop p99 liveness probe via `perf_hooks.monitorEventLoopDelay()`. Thresholds: warn 500ms, fail 2000ms        |
+| `src/infra/event-loop-probe.test.ts`                 | 7 tests: skip/pass/warn/fail classification, idempotency, histogram reset                                          |
+| `src/infra/ephemeral-path.ts`                        | Ephemeral path detection (`/tmp`, `tmpfs`, etc). 15 tests                                                          |
+| `src/infra/ephemeral-path.test.ts`                   | Tests                                                                                                              |
+| `src/infra/atomic-file.ts`                           | Shared crash-safe file utilities. 10 tests                                                                         |
+| `src/infra/atomic-file.test.ts`                      | Tests                                                                                                              |
+| `src/infra/ports-inspect.ts`                         | `parseProcNetTcpListeners()` — `/proc/net/tcp` LISTEN state parser + async fallback. 7 tests                       |
+| `src/infra/ports-inspect.test.ts`                    | Tests                                                                                                              |
 
 ### Cron & Self-Healing
 
@@ -225,6 +228,24 @@ These files don't exist in upstream. They will never conflict but must not be de
 | `skills/{seo-page,seo-plan,seo-programmatic-claude,seo-schema,seo-sitemap,seo-technical}/`    | Claude SEO sub-skills (continued)                                                                                   |
 | `skills/{context-compression,context-optimization,hosted-agents}/`                            | Context engineering cherry-picks ([source](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)) |
 
+### Sentinel Pro — AI Debugging Sidecar
+
+| File / Directory | Feature |
+| --- | --- |
+| `sentinel-pro/` | Complete Node.js sidecar: CLI adapters (Claude Code + Codex), log ingester, cron scheduler, Fastify REST + WebSocket, JSONL stores, git worktree fix engine. 41 tests |
+| `sentinel-pro/README.md` | Comprehensive docs: quick start, 10 env vars, 15 API endpoints, WebSocket protocol, security, billing |
+
+### Dashboard — Sentinel Pro Integration
+
+| File / Directory | Feature |
+| --- | --- |
+| `src/app/api/instances/[id]/sentinel-pro/` | 5 API proxy routes (status, reports, analyze, fixes, chat-token) |
+| `src/components/dashboard/SentinelPro*.tsx` | 4 components: Panel, Chat, NotificationBanner, Onboarding |
+| `src/components/dashboard/FixApprovalPanel.tsx` | Diff viewer + approval workflow |
+| `src/components/settings/SentinelProSettings.tsx` | Provisioning settings tab |
+| `src/hooks/useSentinelPro.ts` | SWR hook with 30s polling |
+| `src/app/dashboard/instances/components/SentinelProModal.tsx` | 4-tab modal hub (Chat, Fixes, Reports, Status) |
+
 ### Control UI
 
 | File                               | Feature                                               |
@@ -252,7 +273,7 @@ These exist in upstream AND have local changes. Conflicts are likely.
 | `src/agents/sandbox/config.ts`                               | Auto-enable browser for `browser-only` mode                                                                                                                                                                 |
 | `src/agents/sandbox/browser.ts`                              | `docker network connect` + named volume                                                                                                                                                                     |
 | `src/agents/sandbox/docker.ts`                               | `readDockerImageId()` + `readDockerContainerImageId()` for browser sweep                                                                                                                                    |
-| `src/gateway/server-startup.ts`                              | Fire-and-forget `sweepStaleBrowserContainers()`                                                                                                                                                             |
+| `src/gateway/server-startup.ts`                              | Fire-and-forget `sweepStaleBrowserContainers()` + `startEventLoopMonitor()` early call                                                                                                                      |
 | `src/config/types.agent-defaults.ts`                         | `"browser-only"` in mode type; heartbeat `1h`                                                                                                                                                               |
 | `src/config/types.agents.ts`                                 | `"browser-only"` in mode type                                                                                                                                                                               |
 | `src/config/zod-schema.agent-runtime.ts`                     | `"browser-only"` + `searxng` provider + `scrapling` config block                                                                                                                                            |
@@ -284,7 +305,7 @@ These exist in upstream AND have local changes. Conflicts are likely.
 | `src/cron/isolated-agent/run.ts`                             | Content scanning + cron outcome event logging                                                                                                                                                               |
 | `src/agents/tools/web-fetch.ts`                              | Scrapling stealth fallback + content scanning                                                                                                                                                               |
 | `src/agents/tools/browser-tool.ts`                           | Content scanning via `scanAndLog()`                                                                                                                                                                         |
-| `src/logging/diagnostic.ts`                                  | Periodic health check + Health Sentinel integration                                                                                                                                                         |
+| `src/logging/diagnostic.ts`                                  | Periodic health check + Health Sentinel integration + event loop probe in `doctorProbes` + `requestGatewayRestart` in `remediationContext`                                                                  |
 | `src/browser/chrome.ts`                                      | Proxy support + CDP Host header fix in `fetchChromeVersion`                                                                                                                                                 |
 | `src/browser/cdp.helpers.ts`                                 | **⚠️ CDP Host header fix**: `httpRequestWithHostOverride()` — Node.js `fetch()` silently ignores Host header                                                                                                |
 | `src/browser/server-context.ts`                              | `Promise.all` parallel profile listing                                                                                                                                                                      |
@@ -474,3 +495,7 @@ Run these after every merge from upstream. Grouped by area.
 60. **LISTEN state filter** — `grep -c 'TCP_LISTEN_STATE' src/infra/ports-inspect.ts` ≥ 1. `/proc/net/tcp` parser filters for state `0A` (LISTEN) only.
 61. **QMD entrypoint embed** — `grep -c 'qmd embed' docker-entrypoint.sh` ≥ 1. Ensures embeddings are created on first boot during prewarm phase.
 62. **Quarantine log suppression** — `grep -c 'suppressQuarantineLog' src/security/scan-and-log.ts` ≥ 1. First-party bootstrap files use this to avoid noisy quarantine warnings.
+63. **Compaction timeout** — `grep -c 'timeoutSeconds' enforce-config.mjs` ≥ 1. SDK reads `compaction.timeoutSeconds` (not `timeoutMs`). Set to 240s (4 min), down from 900s default.
+64. **Event loop probe** — `test -f src/infra/event-loop-probe.ts` and `grep -c 'startEventLoopMonitor' src/gateway/server-startup.ts` ≥ 1.
+65. **Gateway restart playbook** — `grep -c 'gateway-restart-event-loop' src/logging/health-sentinel-playbooks.ts` ≥ 1 and `grep -c 'requestGatewayRestart' src/logging/diagnostic.ts` ≥ 1.
+66. **Sentinel Pro fix-engine security** — `grep -c 'FIX_ID_PATTERN' sentinel-pro/src/api.ts` ≥ 1 and `grep -c 'sanitize' sentinel-pro/src/fix-engine.ts` ≥ 1. Shell injection prevention on branch names, commit messages, and gateway URL.

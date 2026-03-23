@@ -1,18 +1,18 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
-import { GatewayClient } from "openclaw/plugin-sdk";
-import { createOperatorApprovalsGatewayClient } from "openclaw/plugin-sdk";
-import type { EventFrame } from "openclaw/plugin-sdk";
-import { resolveExecApprovalCommandDisplay } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
+import { GatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import { createOperatorApprovalsGatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import type { EventFrame } from "openclaw/plugin-sdk/gateway-runtime";
+import { resolveExecApprovalCommandDisplay } from "openclaw/plugin-sdk/infra-runtime";
 import {
   buildExecApprovalPendingReplyPayload,
   type ExecApprovalPendingReplyParams,
-} from "openclaw/plugin-sdk";
-import { resolveExecApprovalSessionTarget } from "openclaw/plugin-sdk";
-import type { ExecApprovalRequest, ExecApprovalResolved } from "openclaw/plugin-sdk";
-import { createSubsystemLogger } from "openclaw/plugin-sdk";
-import { normalizeAccountId, parseAgentSessionKey } from "openclaw/plugin-sdk";
-import type { RuntimeEnv } from "openclaw/plugin-sdk";
-import { compileSafeRegex, testRegexWithBoundedInput } from "openclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/infra-runtime";
+import { resolveExecApprovalSessionTarget } from "openclaw/plugin-sdk/infra-runtime";
+import type { ExecApprovalRequest, ExecApprovalResolved } from "openclaw/plugin-sdk/infra-runtime";
+import { normalizeAccountId, parseAgentSessionKey } from "openclaw/plugin-sdk/routing";
+import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import { compileSafeRegex, testRegexWithBoundedInput } from "openclaw/plugin-sdk/security-runtime";
 import { buildTelegramExecApprovalButtons } from "./approval-buttons.js";
 import {
   getTelegramExecApprovalApprovers,

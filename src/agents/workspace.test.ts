@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeTempWorkspace, writeWorkspaceFile } from "../test-helpers/workspace.js";
 import {
   DEFAULT_AGENTS_FILENAME,
@@ -14,6 +14,7 @@ import {
   ensureAgentWorkspace,
   filterBootstrapFilesForSession,
   loadWorkspaceBootstrapFiles,
+  resolveBusinessModeEnabled,
   resolveDefaultAgentWorkspaceDir,
   type WorkspaceBootstrapFile,
 } from "./workspace.js";
@@ -31,23 +32,32 @@ describe("resolveDefaultAgentWorkspaceDir", () => {
 
 const WORKSPACE_STATE_PATH_SEGMENTS = [".openclaw", "workspace-state.json"] as const;
 
-async function readOnboardingState(dir: string): Promise<{
+async function readWorkspaceState(dir: string): Promise<{
   version: number;
   bootstrapSeededAt?: string;
-  onboardingCompletedAt?: string;
+  setupCompletedAt?: string;
 }> {
   const raw = await fs.readFile(path.join(dir, ...WORKSPACE_STATE_PATH_SEGMENTS), "utf-8");
   return JSON.parse(raw) as {
     version: number;
     bootstrapSeededAt?: string;
-    onboardingCompletedAt?: string;
+    setupCompletedAt?: string;
   };
 }
 
 async function expectBootstrapSeeded(dir: string) {
   await expect(fs.access(path.join(dir, DEFAULT_BOOTSTRAP_FILENAME))).resolves.toBeUndefined();
-  const state = await readOnboardingState(dir);
+  const state = await readWorkspaceState(dir);
   expect(state.bootstrapSeededAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
+}
+
+async function expectCompletedWithoutBootstrap(dir: string) {
+  await expect(fs.access(path.join(dir, DEFAULT_IDENTITY_FILENAME))).resolves.toBeUndefined();
+  await expect(fs.access(path.join(dir, DEFAULT_BOOTSTRAP_FILENAME))).rejects.toMatchObject({
+    code: "ENOENT",
+  });
+  const state = await readWorkspaceState(dir);
+  expect(state.setupCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
 }
 
 function expectSubagentAllowedBootstrapNames(files: WorkspaceBootstrapFile[]) {
@@ -69,12 +79,11 @@ describe("ensureAgentWorkspace", () => {
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
 
     await expectBootstrapSeeded(tempDir);
-    expect((await readOnboardingState(tempDir)).onboardingCompletedAt).toBeUndefined();
+    expect((await readWorkspaceState(tempDir)).setupCompletedAt).toBeUndefined();
   });
 
-  it("recovers partial initialization by creating BOOTSTRAP.md when no state file exists", async () => {
+  it("recovers partial initialization by creating BOOTSTRAP.md when marker is missing", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
-    // Pre-create a template file (simulates crash mid-initialization)
     await writeWorkspaceFile({ dir: tempDir, name: DEFAULT_AGENTS_FILENAME, content: "existing" });
 
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
@@ -96,8 +105,8 @@ describe("ensureAgentWorkspace", () => {
       code: "ENOENT",
     });
     await expect(fs.access(path.join(tempDir, DEFAULT_TOOLS_FILENAME))).resolves.toBeUndefined();
-    const state = await readOnboardingState(tempDir);
-    expect(state.onboardingCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
+    const state = await readWorkspaceState(tempDir);
+    expect(state.setupCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 
   it("does not re-seed BOOTSTRAP.md for legacy completed workspaces without state marker", async () => {
@@ -110,108 +119,59 @@ describe("ensureAgentWorkspace", () => {
     await expect(fs.access(path.join(tempDir, DEFAULT_BOOTSTRAP_FILENAME))).rejects.toMatchObject({
       code: "ENOENT",
     });
-    const state = await readOnboardingState(tempDir);
+    const state = await readWorkspaceState(tempDir);
     expect(state.bootstrapSeededAt).toBeUndefined();
-    expect(state.onboardingCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
+    expect(state.setupCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("creates BOOTSTRAP.md when entrypoint pre-seeds workspace files (SaaS fresh-deploy)", async () => {
+  it("treats memory-backed workspaces as existing even when template files are missing", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
-    // Simulate docker-entrypoint.sh: it copies SOUL.md, HEARTBEAT.md and creates
-    // memory/ with template files BEFORE the gateway starts.
-    // NOTE: IDENTITY.md and USER.md are NOT pre-written here because the real
-    // entrypoint no longer deploys them (they're seeded by ensureAgentWorkspace).
-    await writeWorkspaceFile({ dir: tempDir, name: "SOUL.md", content: "soul content" });
-    await writeWorkspaceFile({ dir: tempDir, name: "HEARTBEAT.md", content: "heartbeat" });
-    await fs.mkdir(path.join(tempDir, "memory"), { recursive: true });
-    await fs.writeFile(path.join(tempDir, "memory", "self-review.md"), "# Self Review\nTemplate");
-
-    // First call to ensureAgentWorkspace — BOOTSTRAP.md must be created
-    // despite the entrypoint having already seeded several files.
-    await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
-
-    await expectBootstrapSeeded(tempDir);
-    expect((await readOnboardingState(tempDir)).onboardingCompletedAt).toBeUndefined();
-  });
-
-  it("creates BOOTSTRAP.md even with pre-existing memory and git dirs on first run", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
-    // memory/ and .git/ can be created by the entrypoint or other tooling;
-    // they should NOT prevent BOOTSTRAP.md from being seeded on first run.
     await fs.mkdir(path.join(tempDir, "memory"), { recursive: true });
     await fs.writeFile(path.join(tempDir, "memory", "2026-02-25.md"), "# Daily log\nSome notes");
     await fs.writeFile(path.join(tempDir, "MEMORY.md"), "# Long-term memory\nImportant stuff");
+
+    await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
+
+    await expect(fs.access(path.join(tempDir, DEFAULT_IDENTITY_FILENAME))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(tempDir, DEFAULT_BOOTSTRAP_FILENAME))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    const state = await readWorkspaceState(tempDir);
+    expect(state.setupCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
+    const memoryContent = await fs.readFile(path.join(tempDir, "MEMORY.md"), "utf-8");
+    expect(memoryContent).toBe("# Long-term memory\nImportant stuff");
+  });
+
+  it("treats git-backed workspaces as existing even when template files are missing", async () => {
+    const tempDir = await makeTempWorkspace("openclaw-workspace-");
     await fs.mkdir(path.join(tempDir, ".git"), { recursive: true });
     await fs.writeFile(path.join(tempDir, ".git", "HEAD"), "ref: refs/heads/main\n");
 
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
 
-    await expectBootstrapSeeded(tempDir);
-    // Ensure user's MEMORY.md content was preserved (not overwritten by template)
-    const memoryContent = await fs.readFile(path.join(tempDir, "MEMORY.md"), "utf-8");
-    expect(memoryContent).toBe("# Long-term memory\nImportant stuff");
+    await expectCompletedWithoutBootstrap(tempDir);
   });
 
-  it("creates .agents/skills/ directory for agent procedural skills", async () => {
+  it("migrates legacy onboardingCompletedAt markers to setupCompletedAt", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    await fs.mkdir(path.join(tempDir, ".openclaw"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, ...WORKSPACE_STATE_PATH_SEGMENTS),
+      JSON.stringify({
+        version: 1,
+        onboardingCompletedAt: "2026-03-15T02:30:00.000Z",
+      }),
+    );
 
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
 
-    const stat = await fs.stat(path.join(tempDir, ".agents", "skills"));
-    expect(stat.isDirectory()).toBe(true);
-  });
-
-  it("preserves BOOTSTRAP.md across successive calls (SaaS fresh-deploy regression)", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
-
-    // First call: simulates auto-onboard seeding the workspace.
-    await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
-    await expectBootstrapSeeded(tempDir);
-    expect((await readOnboardingState(tempDir)).onboardingCompletedAt).toBeUndefined();
-
-    // Second call: simulates gateway restart — BOOTSTRAP.md must survive.
-    // Before the fix, the legacy migration saw memory/ (created by the first call)
-    // and marked onboarding complete, hiding BOOTSTRAP.md forever.
-    await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
-    await expectBootstrapSeeded(tempDir);
-    expect((await readOnboardingState(tempDir)).onboardingCompletedAt).toBeUndefined();
-  });
-
-  // ── Business-mode skip guard ──────────────────────────────────────
-
-  it("does not overwrite SOUL.md when soulOverride is already 'business'", async () => {
-    const savedEnv = process.env.OPENCLAW_BUSINESS_MODE;
-    try {
-      process.env.OPENCLAW_BUSINESS_MODE = "1";
-
-      const tempDir = await makeTempWorkspace("openclaw-workspace-");
-
-      // Pre-seed SOUL.md with known "already overwritten" content
-      const customSoulContent = "# Already-Overwritten Business SOUL\nCustom business content.";
-      await writeWorkspaceFile({ dir: tempDir, name: "SOUL.md", content: customSoulContent });
-
-      // Pre-seed workspace state with soulOverride = "business"
-      const stateDir = path.join(tempDir, ".openclaw");
-      await fs.mkdir(stateDir, { recursive: true });
-      await fs.writeFile(
-        path.join(stateDir, "workspace-state.json"),
-        JSON.stringify({ version: 1, soulOverride: "business" }),
-        "utf-8",
-      );
-
-      await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
-
-      // SOUL.md must NOT have been overwritten — guard should have skipped
-      const soulContent = await fs.readFile(path.join(tempDir, "SOUL.md"), "utf-8");
-      expect(soulContent).toBe(customSoulContent);
-    } finally {
-      // Restore env
-      if (savedEnv === undefined) {
-        delete process.env.OPENCLAW_BUSINESS_MODE;
-      } else {
-        process.env.OPENCLAW_BUSINESS_MODE = savedEnv;
-      }
-    }
+    const state = await readWorkspaceState(tempDir);
+    expect(state.setupCompletedAt).toBe("2026-03-15T02:30:00.000Z");
+    const persisted = await fs.readFile(
+      path.join(tempDir, ...WORKSPACE_STATE_PATH_SEGMENTS),
+      "utf-8",
+    );
+    expect(persisted).toContain('"setupCompletedAt": "2026-03-15T02:30:00.000Z"');
   });
 });
 
@@ -221,7 +181,7 @@ describe("loadWorkspaceBootstrapFiles", () => {
       [DEFAULT_MEMORY_FILENAME, DEFAULT_MEMORY_ALT_FILENAME].includes(file.name),
     );
 
-  const _expectSingleMemoryEntry = (
+  const expectSingleMemoryEntry = (
     files: Awaited<ReturnType<typeof loadWorkspaceBootstrapFiles>>,
     content: string,
   ) => {
@@ -230,23 +190,21 @@ describe("loadWorkspaceBootstrapFiles", () => {
     expect(memoryEntries[0]?.missing).toBe(false);
     expect(memoryEntries[0]?.content).toBe(content);
   };
-  // NOTE: MEMORY.md / memory.md are intentionally NOT loaded into bootstrap context.
-  // They can grow very large and should be accessed via memory_search (QMD).
 
-  it("does not load MEMORY.md into bootstrap context (too large for prompt injection)", async () => {
+  it("includes MEMORY.md when present", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
     await writeWorkspaceFile({ dir: tempDir, name: "MEMORY.md", content: "memory" });
 
     const files = await loadWorkspaceBootstrapFiles(tempDir);
-    expect(getMemoryEntries(files)).toHaveLength(0);
+    expectSingleMemoryEntry(files, "memory");
   });
 
-  it("does not load memory.md into bootstrap context", async () => {
+  it("includes memory.md when MEMORY.md is absent", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
     await writeWorkspaceFile({ dir: tempDir, name: "memory.md", content: "alt" });
 
     const files = await loadWorkspaceBootstrapFiles(tempDir);
-    expect(getMemoryEntries(files)).toHaveLength(0);
+    expectSingleMemoryEntry(files, "alt");
   });
 
   it("omits memory entries when no memory files exist", async () => {
@@ -318,5 +276,42 @@ describe("filterBootstrapFilesForSession", () => {
   it("filters to allowlist for cron sessions", () => {
     const result = filterBootstrapFilesForSession(mockFiles, "agent:default:cron:daily-check");
     expectSubagentAllowedBootstrapNames(result);
+  });
+});
+
+describe("resolveBusinessModeEnabled", () => {
+  afterEach(() => {
+    delete process.env.OPENCLAW_BUSINESS_MODE;
+    delete process.env.OPENCLAW_BUSINESS_MODE_ENABLED;
+  });
+
+  it("returns false by default (no env vars set)", () => {
+    delete process.env.OPENCLAW_BUSINESS_MODE;
+    delete process.env.OPENCLAW_BUSINESS_MODE_ENABLED;
+    expect(resolveBusinessModeEnabled()).toBe(false);
+  });
+
+  it("returns true when OPENCLAW_BUSINESS_MODE=1", () => {
+    process.env.OPENCLAW_BUSINESS_MODE = "1";
+    expect(resolveBusinessModeEnabled()).toBe(true);
+  });
+
+  it("returns true when OPENCLAW_BUSINESS_MODE_ENABLED=true", () => {
+    process.env.OPENCLAW_BUSINESS_MODE_ENABLED = "true";
+    expect(resolveBusinessModeEnabled()).toBe(true);
+  });
+
+  it("returns true when OPENCLAW_BUSINESS_MODE_ENABLED=1", () => {
+    process.env.OPENCLAW_BUSINESS_MODE_ENABLED = "1";
+    expect(resolveBusinessModeEnabled()).toBe(true);
+  });
+
+  it("returns false for non-truthy values", () => {
+    process.env.OPENCLAW_BUSINESS_MODE = "0";
+    expect(resolveBusinessModeEnabled()).toBe(false);
+    process.env.OPENCLAW_BUSINESS_MODE = "false";
+    expect(resolveBusinessModeEnabled()).toBe(false);
+    process.env.OPENCLAW_BUSINESS_MODE = "  ";
+    expect(resolveBusinessModeEnabled()).toBe(false);
   });
 });

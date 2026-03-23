@@ -69,7 +69,7 @@ After BOOTSTRAP.md is deleted, ask how the user wants to reach you:
 
 Guide them through whichever they pick.
 
-## When You're Done
+## When you are done
 
 You already deleted this file in the step above. Good. You're you now.
 

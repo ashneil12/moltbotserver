@@ -32,7 +32,10 @@ export function readHealthState(entry?: SessionEntry | null): SessionHealthState
  * Write the health state into a session entry (mutates in place).
  * Returns the updated entry for convenience.
  */
-export function writeHealthState(entry: SessionEntry, state: SessionHealthState): SessionEntry {
+export function writeHealthState(
+  entry: SessionEntry,
+  state: SessionHealthState,
+): SessionEntry {
   entry.healthState = state;
   return entry;
 }

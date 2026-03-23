@@ -32,6 +32,10 @@ describe("whatsappPlugin outbound sendPoll", () => {
     });
 
     expectWhatsAppPollSent(hoisted.sendPollWhatsApp, { cfg, poll, to, accountId });
-    expect(result).toEqual({ messageId: "wa-poll-1", toJid: "1555@s.whatsapp.net" });
+    expect(result).toEqual({
+      channel: "whatsapp",
+      messageId: "wa-poll-1",
+      toJid: "1555@s.whatsapp.net",
+    });
   });
 });

@@ -5,6 +5,126 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Upstream Sync & Cleanup (2026-03-23)
+
+**Purpose:** Synchronized OpenClaw with 2,503 upstream commits while preserving all MoltBot customizations. Resolved extensive TypeScript build errors, added missing upstream type properties to custom definitions, and audited/tested the codebase.
+
+### Core Synchronizations & Fixes
+
+| File | Change | Sync Risk |
+| --- | --- | --- |
+| `src/agents/system-prompt.ts` | Re-integrated memory recall, human voice, and autonomous persona | High — core identity |
+| `src/agents/openclaw-tools.ts` | Converted dynamic imports to static. Re-registered all custom tools (`sql_query`, `session_search`, etc.) | High — tooling |
+| `src/auto-reply/reply/agent-runner.ts` | Fixed broken import path (`agent-runner-usage-line.js`) and resolved upstream type change (`autoCompactionCompleted` -> `autoCompactionCount`) | High — runner loop |
+| `src/auto-reply/reply/session-health-integration.ts` | Refactored locally added health integration to use the upstream `SessionEntry` directly since `healthState` was added during the merge. Wrote 10 new tests. | Medium |
+| `src/browser/cdp.helpers.ts` | Custom Host header fix preserved. Added upstream `redactCdpUrl` requirement and wrote 6 new tests. | Medium |
+| `src/browser/extension-relay-auth.ts` | Restored missing extension relay authentication code from git history `HEAD~1`. | High — auth |
+| `src/agents/workspace.ts` | Re-added custom `resolveBusinessModeEnabled` and `isWorkspaceOnboardingCompleted` logic. Wrote new tests. | Low |
+| `src/config/sessions/types.ts` | Manually ported 6 new upstream fields (`parentSessionKey`, `startedAt`, `endedAt`, `runtimeMs`, `status`, `estimatedCostUsd`) to the custom types definition. | Low |
+
+## Sentinel Pro — AI Debugging Sidecar + Dashboard Integration (2026-03-23)
+
+**Purpose:** Complete AI debugging sidecar that monitors logs and fixes issues independently of the gateway, using the user's own Claude Code or Codex CLI subscription. Built in 5 phases.
+
+### Sidecar (`sentinel-pro/`)
+
+| File | Change | Sync Risk |
+| --- | --- | --- |
+| `src/server.ts` | Entry point with graceful shutdown | None — new project |
+| `src/config.ts` | Environment config loader (10 env vars) | None — new |
+| `src/logger.ts` | Pino structured logging | None — new |
+| `src/api.ts` | Fastify REST (15 endpoints) + WebSocket chat. Input validation (fix ID pattern, status allowlist), pagination bounds clamping | None — new |
+| `src/cron.ts` | Scheduled analysis cycle with consecutive failure tracking | None — new |
+| `src/log-ingester.ts` | Log file reader with configurable line limit | None — new |
+| `src/report-store.ts` | JSONL report persistence with pagination | None — new |
+| `src/fix-engine.ts` | Git worktree fix isolation. Shell injection prevention (sanitized branch names, commit messages). URL-validated `restartGateway()`. Lifecycle: pending→approved→applying→applied→rolled_back | None — new |
+| `src/prompts/index.ts` | 4 system prompts (quick-analysis, deep-analysis, log-only, interactive) | None — new |
+| `src/adapters/claude-code.ts` | Claude Code CLI adapter (spawn, parse, stream) | None — new |
+| `src/adapters/codex.ts` | Codex CLI adapter | None — new |
+| `src/adapters/parse-output.ts` | Finding/fix extraction from CLI output | None — new |
+| `src/adapters/types.ts` | CLI adapter interface | None — new |
+| `src/adapters/index.ts` | Adapter factory (auto-detect or config) | None — new |
+| `*.test.ts` (4 files) | 41 tests: parse-output (12), log-ingester (9), report-store (6), fix-engine (14 — incl. URL validation, empty store, persistence) | None — tests |
+
+### Dashboard (`moltbot-dashboard/`)
+
+| File | Change | Sync Risk |
+| --- | --- | --- |
+| `api/.../sentinel-pro/status/route.ts` | Status proxy (auth + ownership + sidecar forward) | None — new |
+| `api/.../sentinel-pro/reports/route.ts` | Reports proxy with pagination | None — new |
+| `api/.../sentinel-pro/analyze/route.ts` | Manual analysis trigger proxy | None — new |
+| `api/.../sentinel-pro/fixes/route.ts` | Fix management proxy. Fix ID validation (`/^[a-zA-Z0-9_-]+$/`), separate fixId/action validation, pagination clamping (1-100) | None — new |
+| `api/.../sentinel-pro/chat-token/route.ts` | WebSocket credential endpoint | None — new |
+| `components/dashboard/SentinelProPanel.tsx` | Glass-panel status display | None — new |
+| `components/dashboard/SentinelProChat.tsx` | WebSocket streaming chat with markdown rendering | None — new |
+| `components/dashboard/FixApprovalPanel.tsx` | Diff viewer with line numbers, approve/reject/rollback | None — new |
+| `components/dashboard/SentinelProNotificationBanner.tsx` | Self-polling critical alert banner (60s interval) | None — new |
+| `components/dashboard/SentinelProOnboarding.tsx` | 3-step setup guide card | None — new |
+| `components/settings/SentinelProSettings.tsx` | Provisioning tab (enable/disable, CLI picker, schedule presets, auto-fix toggle) | None — new |
+| `hooks/useSentinelPro.ts` | SWR hook with 30s polling + triggerAnalysis | None — new |
+| `instances/components/SentinelProModal.tsx` | 4-tab modal hub (Chat, Fixes, Reports, Status) | None — new |
+| `instances/components/InstanceDetailClient.tsx` | Brain icon button in control bar | Custom — existing |
+
+### Security Hardening (Post-Audit)
+
+| Area | Fix |
+| --- | --- |
+| Shell injection (commit messages) | `fix.title` stripped of `"'``$\;|&(){}\n\r`, capped at 100 chars |
+| Shell injection (branch names) | Fix IDs sanitized to `[a-zA-Z0-9_-]` only |
+| Command injection (gateway restart) | `new URL()` validation, protocol allowlist (`http:`, `https:`) |
+| Path traversal (fix IDs) | `FIX_ID_PATTERN` validation on all 4 fix API endpoints + dashboard proxy |
+| Unbounded queries | Pagination clamped: limit 1-100, offset ≥ 0 |
+| Type safety | `as never` cast → proper `Set`-based status validation |
+| Dead code | Removed unused `exec` import from `child_process` |
+
+> **Sync Risk:** Zero — all Sentinel Pro files are new (separate `sentinel-pro/` project + new dashboard files under `sentinel-pro/` API routes). The only modification to an existing file is `InstanceDetailClient.tsx` (added Brain icon button).
+
+---
+
+## Set-and-Forget Stability: Self-Healing Gateway (2026-03-23)
+
+**Purpose:** Close resilience gaps to achieve hands-off operation. Adds container-level recovery, compaction timeout tuning, event loop degradation auto-fix, and host log rotation.
+
+### 1. Gateway Docker Healthcheck + Host Watchdog
+
+The upstream Dockerfile already includes a `HEALTHCHECK` (3min interval). Our docker-compose template also declares one for explicit control over intervals. The **genuine new addition** is the host-level watchdog cron: Docker's `restart: unless-stopped` only handles process exits — if the container is marked **unhealthy**, Docker does NOT auto-restart it. The watchdog cron checks `docker inspect` every 3 min and runs `docker compose restart` when unhealthy.
+
+| File | Change | Sync Risk |
+| --- | --- | --- |
+| `moltbot-dashboard/.../hetzner-instance-service.ts` | Docker-compose healthcheck + `gateway-watchdog.sh` host cron | None — custom |
+
+### 2. Compaction Timeout Tuning
+
+The SDK already has a full compaction safety system. It reads `agents.defaults.compaction.timeoutSeconds` — default is **900s (15 min)**, which is too generous. Tuned to **240s (4 min)**.
+
+| File | Change | Sync Risk |
+| --- | --- | --- |
+| `enforce-config.mjs` | Set `compaction.timeoutSeconds = 240` (correct SDK config key) | Low — additive |
+
+### 3. Event Loop Degradation → Auto-Restart
+
+HTTP healthchecks pass even when the event loop is severely degraded (2-5s delays pass the 10s timeout but render the agent unusable). Full self-healing chain:
+
+**probe detects p99 > 2s → sentinel classifies as `auto-fixable` → playbook calls `process.exit(1)` → Docker restart policy recovers → event loop healthy on fresh start**
+
+| File | Change | Sync Risk |
+| --- | --- | --- |
+| `src/infra/event-loop-probe.ts` | [NEW] p99 latency monitoring (warn: 500ms, fail: 2000ms) | None — custom |
+| `src/logging/health-sentinel.ts` | Probe wired into execution + explicit `auto-fixable` classification | Low — additive |
+| `src/logging/health-sentinel-playbooks.ts` | [NEW] `gateway-restart-event-loop` playbook + `requestGatewayRestart` context | None — custom |
+| `src/logging/diagnostic.ts` | Probe in `doctorProbes` + restart handler in `remediationContext` | Low — additive |
+| `src/gateway/server-startup.ts` | `startEventLoopMonitor()` called early | Low — additive |
+
+### 4. Host Log Rotation
+
+Host-level cron logs had no rotation. Added logrotate config (daily, 7-day retention, compress).
+
+| File | Change | Sync Risk |
+| --- | --- | --- |
+| `moltbot-dashboard/.../hetzner-instance-service.ts` | Logrotate config in cloud-init | None — custom |
+
+---
+
 ## Search Provider Default Fix, README Updates & Test Coverage (2026-03-23)
 
 **Purpose:** Four changes: (1) Fix search provider default from legacy "tavily" to "searxng" across the dashboard, (2) Add tavily→searxng normalization in enforce-config.mjs for existing deployments, (3) Comprehensive README updates for both server source and dashboard, (4) New test file for search provider enforcement.

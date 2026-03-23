@@ -1,5 +1,5 @@
-import type { TelegramGroupConfig } from "openclaw/plugin-sdk";
-import type { TelegramNetworkConfig } from "openclaw/plugin-sdk";
+import type { TelegramGroupConfig } from "openclaw/plugin-sdk/config-runtime";
+import type { TelegramNetworkConfig } from "openclaw/plugin-sdk/config-runtime";
 
 export type TelegramGroupMembershipAuditEntry = {
   chatId: string;
@@ -66,6 +66,7 @@ export type AuditTelegramGroupMembershipParams = {
   groupIds: string[];
   proxyUrl?: string;
   network?: TelegramNetworkConfig;
+  apiRoot?: string;
   timeoutMs: number;
 };
 

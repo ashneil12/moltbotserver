@@ -1,4 +1,4 @@
-import type { SlackAccountConfig } from "openclaw/plugin-sdk";
+import type { SlackAccountConfig } from "openclaw/plugin-sdk/config-runtime";
 
 export type SlackAccountSurfaceFields = {
   groupPolicy?: SlackAccountConfig["groupPolicy"];

@@ -1,4 +1,6 @@
 import type { OpenClawConfig } from "../../config/config.js";
+import type { SandboxSshSettings } from "../../config/types.sandbox.js";
+import { normalizeSecretInputString } from "../../config/types.secrets.js";
 import { resolveAgentConfig } from "../agent-scope.js";
 import {
   DEFAULT_SANDBOX_BROWSER_AUTOSTART_TIMEOUT_MS,
@@ -22,6 +24,7 @@ import type {
   SandboxDockerConfig,
   SandboxPruneConfig,
   SandboxScope,
+  SandboxSshConfig,
 } from "./types.js";
 
 export const DANGEROUS_SANDBOX_DOCKER_BOOLEAN_KEYS = [
@@ -29,6 +32,9 @@ export const DANGEROUS_SANDBOX_DOCKER_BOOLEAN_KEYS = [
   "dangerouslyAllowExternalBindSources",
   "dangerouslyAllowContainerNamespaceJoin",
 ] as const;
+
+const DEFAULT_SANDBOX_SSH_COMMAND = "ssh";
+const DEFAULT_SANDBOX_SSH_WORKSPACE_ROOT = "/tmp/openclaw-sandboxes";
 
 type DangerousSandboxDockerBooleanKey = (typeof DANGEROUS_SANDBOX_DOCKER_BOOLEAN_KEYS)[number];
 type DangerousSandboxDockerBooleans = Pick<SandboxDockerConfig, DangerousSandboxDockerBooleanKey>;
@@ -167,6 +173,54 @@ export function resolveSandboxPruneConfig(params: {
   };
 }
 
+function normalizeOptionalString(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function normalizeRemoteRoot(value: string | undefined, fallback: string): string {
+  const normalized = normalizeOptionalString(value) ?? fallback;
+  const posix = normalized.replaceAll("\\", "/");
+  if (!posix.startsWith("/")) {
+    throw new Error(`Sandbox SSH workspaceRoot must be an absolute POSIX path: ${normalized}`);
+  }
+  return posix.replace(/\/+$/g, "") || "/";
+}
+
+export function resolveSandboxSshConfig(params: {
+  scope: SandboxScope;
+  globalSsh?: Partial<SandboxSshSettings>;
+  agentSsh?: Partial<SandboxSshSettings>;
+}): SandboxSshConfig {
+  const agentSsh = params.scope === "shared" ? undefined : params.agentSsh;
+  const globalSsh = params.globalSsh;
+  return {
+    target: normalizeOptionalString(agentSsh?.target ?? globalSsh?.target),
+    command:
+      normalizeOptionalString(agentSsh?.command ?? globalSsh?.command) ??
+      DEFAULT_SANDBOX_SSH_COMMAND,
+    workspaceRoot: normalizeRemoteRoot(
+      agentSsh?.workspaceRoot ?? globalSsh?.workspaceRoot,
+      DEFAULT_SANDBOX_SSH_WORKSPACE_ROOT,
+    ),
+    strictHostKeyChecking:
+      agentSsh?.strictHostKeyChecking ?? globalSsh?.strictHostKeyChecking ?? true,
+    updateHostKeys: agentSsh?.updateHostKeys ?? globalSsh?.updateHostKeys ?? true,
+    identityFile: normalizeOptionalString(agentSsh?.identityFile ?? globalSsh?.identityFile),
+    certificateFile: normalizeOptionalString(
+      agentSsh?.certificateFile ?? globalSsh?.certificateFile,
+    ),
+    knownHostsFile: normalizeOptionalString(agentSsh?.knownHostsFile ?? globalSsh?.knownHostsFile),
+    identityData: normalizeSecretInputString(agentSsh?.identityData ?? globalSsh?.identityData),
+    certificateData: normalizeSecretInputString(
+      agentSsh?.certificateData ?? globalSsh?.certificateData,
+    ),
+    knownHostsData: normalizeSecretInputString(
+      agentSsh?.knownHostsData ?? globalSsh?.knownHostsData,
+    ),
+  };
+}
+
 export function resolveSandboxConfigForAgent(
   cfg?: OpenClawConfig,
   agentId?: string,
@@ -187,21 +241,9 @@ export function resolveSandboxConfigForAgent(
 
   const toolPolicy = resolveSandboxToolPolicyForAgent(cfg, agentId);
 
-  const mode = (agentSandbox?.mode ?? agent?.mode ?? "off") as SandboxConfig["mode"];
-
-  const browser = resolveSandboxBrowserConfig({
-    scope,
-    globalBrowser: agent?.browser,
-    agentBrowser: agentSandbox?.browser,
-  });
-
-  // "browser-only" mode is meaningless without browser enabled — auto-enable it.
-  if (mode === "browser-only") {
-    browser.enabled = true;
-  }
-
   return {
-    mode,
+    mode: agentSandbox?.mode ?? agent?.mode ?? "off",
+    backend: agentSandbox?.backend?.trim() || agent?.backend?.trim() || "docker",
     scope,
     workspaceAccess: agentSandbox?.workspaceAccess ?? agent?.workspaceAccess ?? "none",
     workspaceRoot:
@@ -211,7 +253,16 @@ export function resolveSandboxConfigForAgent(
       globalDocker: agent?.docker,
       agentDocker: agentSandbox?.docker,
     }),
-    browser,
+    ssh: resolveSandboxSshConfig({
+      scope,
+      globalSsh: agent?.ssh,
+      agentSsh: agentSandbox?.ssh,
+    }),
+    browser: resolveSandboxBrowserConfig({
+      scope,
+      globalBrowser: agent?.browser,
+      agentBrowser: agentSandbox?.browser,
+    }),
     tools: {
       allow: toolPolicy.allow,
       deny: toolPolicy.deny,

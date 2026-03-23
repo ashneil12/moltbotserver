@@ -3,35 +3,7 @@ import { installSendPayloadContractSuite, primeSendMock } from "openclaw/plugin-
 import { describe, expect, it, vi } from "vitest";
 import { whatsappOutbound } from "./outbound-adapter.js";
 
-function createHarness(params: {
-  payload: ReplyPayload;
-  sendResults?: Array<{ messageId: string }>;
-}) {
-  const sendWhatsApp = vi.fn();
-  primeSendMock(sendWhatsApp, { messageId: "wa-1" }, params.sendResults);
-  const ctx = {
-    cfg: {},
-    to: "5511999999999@c.us",
-    text: "",
-    payload: params.payload,
-    deps: {
-      sendWhatsApp,
-    },
-  };
-  return {
-    run: async () => await whatsappOutbound.sendPayload!(ctx),
-    sendMock: sendWhatsApp,
-    to: ctx.to,
-  };
-}
-
 describe("whatsappOutbound sendPayload", () => {
-  installSendPayloadContractSuite({
-    channel: "whatsapp",
-    chunking: { mode: "split", longTextLength: 5000, maxChunkLength: 4000 },
-    createHarness,
-  });
-
   it("trims leading whitespace for direct text sends", async () => {
     const sendWhatsApp = vi.fn(async () => ({ messageId: "wa-1", toJid: "jid" }));
 

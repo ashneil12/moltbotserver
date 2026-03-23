@@ -1,6 +1,6 @@
 import { ChannelType, type Guild } from "@buape/carbon";
-import { typedCases } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { typedCases } from "../../../test/helpers/extensions/typed-cases.js";
 import {
   allowListMatches,
   buildDiscordMediaPayload,
@@ -891,6 +891,22 @@ const { enqueueSystemEventSpy, resolveAgentRouteMock } = vi.hoisted(() => ({
     ...(typeof params === "object" && params !== null ? { _params: params } : {}),
   })),
 }));
+
+vi.mock("openclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/infra-runtime")>();
+  return {
+    ...actual,
+    enqueueSystemEvent: enqueueSystemEventSpy,
+  };
+});
+
+vi.mock("openclaw/plugin-sdk/routing", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/routing")>();
+  return {
+    ...actual,
+    resolveAgentRoute: resolveAgentRouteMock,
+  };
+});
 
 vi.mock("../../../src/infra/system-events.js", () => ({
   enqueueSystemEvent: enqueueSystemEventSpy,

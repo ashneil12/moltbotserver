@@ -24,6 +24,27 @@ export function isWebSocketUrl(url: string): boolean {
   }
 }
 
+/**
+ * Redact sensitive parts of a CDP URL (credentials, tokens) for safe logging.
+ */
+export function redactCdpUrl(cdpUrl: string | null | undefined): string | null | undefined {
+  if (typeof cdpUrl !== "string") {
+    return cdpUrl;
+  }
+  const trimmed = cdpUrl.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    parsed.username = "";
+    parsed.password = "";
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return trimmed;
+  }
+}
+
 type CdpResponse = {
   id: number;
   result?: unknown;

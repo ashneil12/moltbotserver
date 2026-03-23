@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import http from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { appendCdpPath, fetchCdpChecked, getHeadersWithAuth } from "./cdp.helpers.js";
+import { appendCdpPath, fetchCdpChecked, getHeadersWithAuth, redactCdpUrl } from "./cdp.helpers.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -60,5 +60,36 @@ describe("cdp.helpers", () => {
     expect(options).toMatchObject({
       headers: expect.objectContaining({ Host: "localhost" }),
     });
+  });
+});
+
+describe("redactCdpUrl", () => {
+  it("passes null and undefined through", () => {
+    expect(redactCdpUrl(null)).toBeNull();
+    expect(redactCdpUrl(undefined)).toBeUndefined();
+  });
+
+  it("passes empty string through", () => {
+    expect(redactCdpUrl("")).toBe("");
+    expect(redactCdpUrl("   ")).toBe("");
+  });
+
+  it("strips credentials from a CDP URL", () => {
+    const result = redactCdpUrl("http://user:pass@browser.test:9222/json");
+    expect(result).toBe("http://browser.test:9222/json");
+    expect(result).not.toContain("user");
+    expect(result).not.toContain("pass");
+  });
+
+  it("preserves URLs without credentials", () => {
+    expect(redactCdpUrl("http://localhost:9222")).toBe("http://localhost:9222");
+  });
+
+  it("handles invalid URLs gracefully", () => {
+    expect(redactCdpUrl("not-a-url")).toBe("not-a-url");
+  });
+
+  it("removes trailing slashes", () => {
+    expect(redactCdpUrl("http://localhost:9222/")).toBe("http://localhost:9222");
   });
 });

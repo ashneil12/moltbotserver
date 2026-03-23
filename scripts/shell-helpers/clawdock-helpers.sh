@@ -4,7 +4,7 @@
 # https://til.simonwillison.net/llms/openclaw-docker
 #
 # Installation:
-#   mkdir -p ~/.clawdock && curl -sL https://raw.githubusercontent.com/ashneil12/optimized-claw/main/scripts/shell-helpers/clawdock-helpers.sh -o ~/.clawdock/clawdock-helpers.sh
+#   mkdir -p ~/.clawdock && curl -sL https://raw.githubusercontent.com/openclaw/openclaw/main/scripts/shell-helpers/clawdock-helpers.sh -o ~/.clawdock/clawdock-helpers.sh
 #   echo 'source ~/.clawdock/clawdock-helpers.sh' >> ~/.zshrc
 #
 # Usage:
@@ -113,8 +113,8 @@ _clawdock_ensure_dir() {
     echo ""
     echo "Clone it first:"
     echo ""
-    echo "  git clone https://github.com/ashneil12/optimized-claw.git ~/openclaw"
-    echo "  cd ~/openclaw && ./docker-setup.sh"
+    echo "  git clone https://github.com/openclaw/openclaw.git ~/openclaw"
+    echo "  cd ~/openclaw && ./scripts/docker/setup.sh"
     echo ""
     echo "Or set CLAWDOCK_DIR if it's elsewhere:"
     echo ""

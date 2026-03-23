@@ -1,8 +1,8 @@
-import { resolveTextChunkLimit } from "openclaw/plugin-sdk";
-import { getChannelDock } from "openclaw/plugin-sdk";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
-import { resolveAccountEntry } from "openclaw/plugin-sdk";
-import { normalizeAccountId } from "openclaw/plugin-sdk";
+import { type OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
+import { resolveTextChunkLimit } from "openclaw/plugin-sdk/reply-runtime";
+import { resolveAccountEntry } from "openclaw/plugin-sdk/routing";
+import { normalizeAccountId } from "openclaw/plugin-sdk/routing";
+import { DISCORD_TEXT_CHUNK_LIMIT } from "./outbound-adapter.js";
 
 const DEFAULT_DISCORD_DRAFT_STREAM_MIN = 200;
 const DEFAULT_DISCORD_DRAFT_STREAM_MAX = 800;
@@ -15,9 +15,8 @@ export function resolveDiscordDraftStreamingChunking(
   maxChars: number;
   breakPreference: "paragraph" | "newline" | "sentence";
 } {
-  const providerChunkLimit = getChannelDock("discord")?.outbound?.textChunkLimit;
   const textLimit = resolveTextChunkLimit(cfg, "discord", accountId, {
-    fallbackLimit: providerChunkLimit,
+    fallbackLimit: DISCORD_TEXT_CHUNK_LIMIT,
   });
   const normalizedAccountId = normalizeAccountId(accountId);
   const accountCfg = resolveAccountEntry(cfg?.channels?.discord?.accounts, normalizedAccountId);

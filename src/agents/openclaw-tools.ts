@@ -1,7 +1,15 @@
+import { completeSimple } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../config/config.js";
 import { resolvePluginTools } from "../plugins/tools.js";
 import { getActiveRuntimeWebToolsMetadata } from "../secrets/runtime.js";
 import type { GatewayMessageChannel } from "../utils/message-channel.js";
+import { getApiKeyForModel, requireApiKey } from "./model-auth.js";
+import {
+  resolveDefaultModelForAgent,
+  buildModelAliasIndex,
+  resolveModelRefFromString,
+} from "./model-selection.js";
+import { resolveModel } from "./pi-embedded-runner/model.js";
 import { resolveSessionAgentId } from "./agent-scope.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import type { SpawnedToolContext } from "./spawned-context.js";
@@ -262,12 +270,7 @@ export function createOpenClawTools(
     const cfg = options.config;
     sessionSummarize = async (params) => {
       try {
-        // Lazy import to avoid circular deps and loading cost when unused
-        const { completeSimple } = await import("@mariozechner/pi-ai");
-        const { resolveModel } = await import("./pi-embedded-runner/model.js");
-        const { getApiKeyForModel, requireApiKey } = await import("./model-auth.js");
-        const { resolveDefaultModelForAgent, buildModelAliasIndex, resolveModelRefFromString } =
-          await import("./model-selection.js");
+        // Static imports at top of file (previously lazy to avoid circular deps)
 
         // Resolve the session search model (from config or default)
         const defaultRef = resolveDefaultModelForAgent({ cfg });

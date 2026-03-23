@@ -1,0 +1,1 @@
+{"timestamp":"2026-03-22T19:55:42.521Z","event":"custom.scan_event","level":"info","data":{"riskScore":67,"safe":true,"quarantined":false,"findingsCount":1,"confidence":55},"subsystem":"security"}
