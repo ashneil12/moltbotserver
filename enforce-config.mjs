@@ -454,10 +454,15 @@ function enforceCore(configPath) {
   slots.contextEngine = slots.contextEngine || "lossless-claw";
   slots.memory = "memory-unified"; // Unified memory with per-turn auto-recall
   const entries = ensure(plugins, "entries");
-  entries["lossless-claw"] = {
-    enabled: true,
-    databasePath: "/home/node/data/lcm.db",
-  };
+  // NOTE: databasePath was moved to LCM_DATABASE_PATH env var because
+  // OpenClaw's core validator rejects custom extension config properties
+  // as "unrecognized keys", causing a startup crash loop (same issue as
+  // memory-unified — see comment below). The lossless-claw extension reads
+  // LCM_DATABASE_PATH at runtime.
+  const lcmEntry = entries["lossless-claw"] || { enabled: true };
+  lcmEntry.enabled = true;
+  delete lcmEntry.databasePath; // Clean up legacy key from existing deployments
+  entries["lossless-claw"] = lcmEntry;
   // Memory-unified: enable the plugin. Alignment scoring settings are read
   // from environment variables by the extension at runtime rather than config
   // keys, because OpenClaw's core validator does not recognise custom extension
