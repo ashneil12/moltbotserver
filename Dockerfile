@@ -97,7 +97,10 @@ RUN pnpm ui:build
 # runtime assets into the final image.
 FROM build AS runtime-assets
 RUN CI=true pnpm prune --prod && \
-  find dist -type f \( -name '*.d.ts' -o -name '*.d.mts' -o -name '*.d.cts' -o -name '*.map' \) -delete
+  find dist -type f \( -name '*.d.ts' -o -name '*.d.mts' -o -name '*.d.cts' -o -name '*.map' \) -delete && \
+  mkdir -p node_modules/vitest && \
+  cp scripts/vitest-prod-shim.mjs node_modules/vitest/index.mjs && \
+  printf '{"name":"vitest","version":"0.0.0-prod-shim","type":"module","exports":{".":{"import":"./index.mjs"}}}\n' > node_modules/vitest/package.json
 
 # ── Runtime base images ─────────────────────────────────────────
 FROM ${OPENCLAW_NODE_BOOKWORM_IMAGE} AS base-default

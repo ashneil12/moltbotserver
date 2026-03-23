@@ -1074,7 +1074,7 @@ export {
   collectIssuesForEnabledAccounts,
   resolveEnabledConfiguredAccountId,
 } from "../channels/plugins/status-issues/shared.js";
-export { DEFAULT_EMOJIS } from "../channels/status-reactions.test.js";
+export { DEFAULT_EMOJIS } from "../channels/status-reactions.js";
 export {
   StatusReactionController,
   StatusReactionEmojis,
