@@ -1138,7 +1138,7 @@ export {
   logWebhookReceived,
   startDiagnosticHeartbeat,
 } from "../logging/diagnostic.js";
-export { MarkdownStyle } from "../markdown/ir.js";
+export type { MarkdownStyle } from "../markdown/ir.js";
 export { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "../media-understanding/defaults.js";
 export { parseFfprobeCodecAndSampleRate, runFfmpeg, runFfprobe } from "../media/ffmpeg-exec.js";
 export {
