@@ -35,8 +35,14 @@ function nodeBuildConfig(config: Record<string, unknown>) {
     ...config,
     env,
     fixedExtension: false,
-    platform: "node",
+    platform: "node" as const,
     inputOptions: buildInputOptions,
+    // Exclude test-only packages from the production bundle.
+    // @vitest/runner has top-level side effects that access
+    // globalThis.__vitest_worker__.config — crashes outside a test runner.
+    // tsdown bundles node_modules by default (unlike esbuild), so vitest
+    // packages get pulled in through transitive dependency resolution.
+    external: ["vitest", /^@vitest\//],
   };
 }
 
