@@ -669,7 +669,5 @@ export function resolveBusinessModeEnabled(): boolean {
  */
 export async function isWorkspaceOnboardingCompleted(dir: string): Promise<boolean> {
   const state = await readWorkspaceSetupStateForDir(dir);
-  return (
-    typeof state.setupCompletedAt === "string" && state.setupCompletedAt.trim().length > 0
-  );
+  return typeof state.setupCompletedAt === "string" && state.setupCompletedAt.trim().length > 0;
 }

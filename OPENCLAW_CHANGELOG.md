@@ -5,22 +5,79 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
-## Upstream Sync & Cleanup (2026-03-23)
+## Test Infrastructure Hardening — `vi.spyOn` Migration & QMD Collection Collision Fix (2026-03-23)
+
+**Purpose:** Fix 80 failing tests across 4 test files introduced by the upstream sync. Three root causes addressed:
+(1) `vi.hoisted`/`vi.mock` ESM interception failures in pnpm `node-linker: hoisted` workspaces,
+(2) QMD default workspace collection name collision producing unexpected `workspace-main-2` collections,
+(3) Incorrect assumptions about search/query retry call ordering in QMD manager tests.
+
+### 1. `vi.mock` → `vi.spyOn` Migration (3 test files, 68 tests fixed)
+
+**Root cause:** `vi.hoisted()` + `vi.mock()` silently fails to intercept ESM named imports in this pnpm monorepo.
+The mocks are registered but the module cache returns the original implementations.
+`vi.spyOn()` on already-imported modules works correctly because it patches the live binding.
+
+Additionally, `browser-tool.ts` caches its dependencies in a `browserToolDeps` object at module import time.
+The upstream `__testing.setDepsForTest()` escape hatch must be used to inject mocks into this cache.
+
+| File                                                  | Change                                                                                                                                                                            | Sync Risk   |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/security/scan-and-log.test.ts`                   | Replaced `vi.hoisted` + `vi.mock("../logger.js")` with `vi.spyOn(loggerMod, "logWarn")`                                                                                           | None — test |
+| `src/browser/control-service.test.ts`                 | Replaced 7 `vi.hoisted` + `vi.mock()` blocks with `vi.spyOn()` on actual imports                                                                                                  | None — test |
+| `src/agents/tools/browser-tool.agent-routing.test.ts` | Replaced all `vi.hoisted` + `vi.mock()` with `vi.spyOn()`. Added `browserToolTesting.setDepsForTest()` injection. Added `resolveProfile` mock reset and chrome-relay profile mock | None — test |
+
+**Post-sync check for future merges:** If tests that used `vi.mock()` suddenly start calling
+the real implementation, the fix is `vi.spyOn(module, "exportedFn").mockImplementation(...)`.
+
+### 2. QMD Default Workspace Collection Collision Fix (12 tests fixed)
+
+**Root cause:** `backend-config.ts:resolveDefaultWorkspaceCollection()` (lines 307–321) **always** adds a
+`workspace-{agentId}` collection. Tests that also configure `paths: [{ name: "workspace" }]` cause a
+name collision — the configured path gets `workspace-main` and the default gets `workspace-main-2`.
+
+**Three categories of failures:**
+
+| Category                    | Impact                                                    | Fix Applied                                                                                                                                         |
+| --------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search/query tests          | "stdout empty" from `workspace-main-2` — no mock provided | Updated default `spawnMock` in `beforeEach` to return `[]` for all search/query commands                                                            |
+| Collection management tests | `addCalls`/`removeCalls` counts wrong                     | Updated expectations to include the extra `workspace-main` from the default resolver                                                                |
+| Retry ordering tests        | Wrong call sequence expected                              | Fixed: retry flag is **per-run, not per-collection** — first failure sets the flag, subsequent collections skip `search` and go directly to `query` |
+
+| File                             | Change                                                                                                                                                                                      | Sync Risk   |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/memory/qmd-manager.test.ts` | Default `spawnMock` returns `[]` for search/query; search-aware fallbacks in 3 tests; corrected per-collection retry call order in 2 tests; updated collection add/remove counts in 3 tests | None — test |
+
+**Documented in test file:** Added a file-level JSDoc block on `qmd-manager.test.ts` explaining the
+collision mechanics and consequences, so future maintainers don't re-investigate the same issue.
+
+### 3. Test Polish
+
+| File                                | Change                                                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `src/security/scan-and-log.test.ts` | Extracted `waitForLogger()` helper to replace 3 ad-hoc `await new Promise(r => setTimeout(r, 10))` calls     |
+| `src/memory/qmd-manager.test.ts`    | Added file-level JSDoc explaining `workspace-main-2` collision, retry flag behavior, and expectations impact |
+
+> **Sync Risk:** All changes are in test files only. No production source code was modified. The test patterns
+> documented here (`vi.spyOn` over `vi.mock`, `setDepsForTest`, QMD collection naming) are applicable to any
+> new test files written after an upstream sync.
+
+---
 
 **Purpose:** Synchronized OpenClaw with 2,503 upstream commits while preserving all MoltBot customizations. Resolved extensive TypeScript build errors, added missing upstream type properties to custom definitions, and audited/tested the codebase.
 
 ### Core Synchronizations & Fixes
 
-| File | Change | Sync Risk |
-| --- | --- | --- |
-| `src/agents/system-prompt.ts` | Re-integrated memory recall, human voice, and autonomous persona | High — core identity |
-| `src/agents/openclaw-tools.ts` | Converted dynamic imports to static. Re-registered all custom tools (`sql_query`, `session_search`, etc.) | High — tooling |
-| `src/auto-reply/reply/agent-runner.ts` | Fixed broken import path (`agent-runner-usage-line.js`) and resolved upstream type change (`autoCompactionCompleted` -> `autoCompactionCount`) | High — runner loop |
-| `src/auto-reply/reply/session-health-integration.ts` | Refactored locally added health integration to use the upstream `SessionEntry` directly since `healthState` was added during the merge. Wrote 10 new tests. | Medium |
-| `src/browser/cdp.helpers.ts` | Custom Host header fix preserved. Added upstream `redactCdpUrl` requirement and wrote 6 new tests. | Medium |
-| `src/browser/extension-relay-auth.ts` | Restored missing extension relay authentication code from git history `HEAD~1`. | High — auth |
-| `src/agents/workspace.ts` | Re-added custom `resolveBusinessModeEnabled` and `isWorkspaceOnboardingCompleted` logic. Wrote new tests. | Low |
-| `src/config/sessions/types.ts` | Manually ported 6 new upstream fields (`parentSessionKey`, `startedAt`, `endedAt`, `runtimeMs`, `status`, `estimatedCostUsd`) to the custom types definition. | Low |
+| File                                                 | Change                                                                                                                                                        | Sync Risk            |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `src/agents/system-prompt.ts`                        | Re-integrated memory recall, human voice, and autonomous persona                                                                                              | High — core identity |
+| `src/agents/openclaw-tools.ts`                       | Converted dynamic imports to static. Re-registered all custom tools (`sql_query`, `session_search`, etc.)                                                     | High — tooling       |
+| `src/auto-reply/reply/agent-runner.ts`               | Fixed broken import path (`agent-runner-usage-line.js`) and resolved upstream type change (`autoCompactionCompleted` -> `autoCompactionCount`)                | High — runner loop   |
+| `src/auto-reply/reply/session-health-integration.ts` | Refactored locally added health integration to use the upstream `SessionEntry` directly since `healthState` was added during the merge. Wrote 10 new tests.   | Medium               |
+| `src/browser/cdp.helpers.ts`                         | Custom Host header fix preserved. Added upstream `redactCdpUrl` requirement and wrote 6 new tests.                                                            | Medium               |
+| `src/browser/extension-relay-auth.ts`                | Restored missing extension relay authentication code from git history `HEAD~1`.                                                                               | High — auth          |
+| `src/agents/workspace.ts`                            | Re-added custom `resolveBusinessModeEnabled` and `isWorkspaceOnboardingCompleted` logic. Wrote new tests.                                                     | Low                  |
+| `src/config/sessions/types.ts`                       | Manually ported 6 new upstream fields (`parentSessionKey`, `startedAt`, `endedAt`, `runtimeMs`, `status`, `estimatedCostUsd`) to the custom types definition. | Low                  |
 
 ## Sentinel Pro — AI Debugging Sidecar + Dashboard Integration (2026-03-23)
 
@@ -28,54 +85,54 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ### Sidecar (`sentinel-pro/`)
 
-| File | Change | Sync Risk |
-| --- | --- | --- |
-| `src/server.ts` | Entry point with graceful shutdown | None — new project |
-| `src/config.ts` | Environment config loader (10 env vars) | None — new |
-| `src/logger.ts` | Pino structured logging | None — new |
-| `src/api.ts` | Fastify REST (15 endpoints) + WebSocket chat. Input validation (fix ID pattern, status allowlist), pagination bounds clamping | None — new |
-| `src/cron.ts` | Scheduled analysis cycle with consecutive failure tracking | None — new |
-| `src/log-ingester.ts` | Log file reader with configurable line limit | None — new |
-| `src/report-store.ts` | JSONL report persistence with pagination | None — new |
-| `src/fix-engine.ts` | Git worktree fix isolation. Shell injection prevention (sanitized branch names, commit messages). URL-validated `restartGateway()`. Lifecycle: pending→approved→applying→applied→rolled_back | None — new |
-| `src/prompts/index.ts` | 4 system prompts (quick-analysis, deep-analysis, log-only, interactive) | None — new |
-| `src/adapters/claude-code.ts` | Claude Code CLI adapter (spawn, parse, stream) | None — new |
-| `src/adapters/codex.ts` | Codex CLI adapter | None — new |
-| `src/adapters/parse-output.ts` | Finding/fix extraction from CLI output | None — new |
-| `src/adapters/types.ts` | CLI adapter interface | None — new |
-| `src/adapters/index.ts` | Adapter factory (auto-detect or config) | None — new |
-| `*.test.ts` (4 files) | 41 tests: parse-output (12), log-ingester (9), report-store (6), fix-engine (14 — incl. URL validation, empty store, persistence) | None — tests |
+| File                           | Change                                                                                                                                                                                       | Sync Risk          |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `src/server.ts`                | Entry point with graceful shutdown                                                                                                                                                           | None — new project |
+| `src/config.ts`                | Environment config loader (10 env vars)                                                                                                                                                      | None — new         |
+| `src/logger.ts`                | Pino structured logging                                                                                                                                                                      | None — new         |
+| `src/api.ts`                   | Fastify REST (15 endpoints) + WebSocket chat. Input validation (fix ID pattern, status allowlist), pagination bounds clamping                                                                | None — new         |
+| `src/cron.ts`                  | Scheduled analysis cycle with consecutive failure tracking                                                                                                                                   | None — new         |
+| `src/log-ingester.ts`          | Log file reader with configurable line limit                                                                                                                                                 | None — new         |
+| `src/report-store.ts`          | JSONL report persistence with pagination                                                                                                                                                     | None — new         |
+| `src/fix-engine.ts`            | Git worktree fix isolation. Shell injection prevention (sanitized branch names, commit messages). URL-validated `restartGateway()`. Lifecycle: pending→approved→applying→applied→rolled_back | None — new         |
+| `src/prompts/index.ts`         | 4 system prompts (quick-analysis, deep-analysis, log-only, interactive)                                                                                                                      | None — new         |
+| `src/adapters/claude-code.ts`  | Claude Code CLI adapter (spawn, parse, stream)                                                                                                                                               | None — new         |
+| `src/adapters/codex.ts`        | Codex CLI adapter                                                                                                                                                                            | None — new         |
+| `src/adapters/parse-output.ts` | Finding/fix extraction from CLI output                                                                                                                                                       | None — new         |
+| `src/adapters/types.ts`        | CLI adapter interface                                                                                                                                                                        | None — new         |
+| `src/adapters/index.ts`        | Adapter factory (auto-detect or config)                                                                                                                                                      | None — new         |
+| `*.test.ts` (4 files)          | 41 tests: parse-output (12), log-ingester (9), report-store (6), fix-engine (14 — incl. URL validation, empty store, persistence)                                                            | None — tests       |
 
 ### Dashboard (`moltbot-dashboard/`)
 
-| File | Change | Sync Risk |
-| --- | --- | --- |
-| `api/.../sentinel-pro/status/route.ts` | Status proxy (auth + ownership + sidecar forward) | None — new |
-| `api/.../sentinel-pro/reports/route.ts` | Reports proxy with pagination | None — new |
-| `api/.../sentinel-pro/analyze/route.ts` | Manual analysis trigger proxy | None — new |
-| `api/.../sentinel-pro/fixes/route.ts` | Fix management proxy. Fix ID validation (`/^[a-zA-Z0-9_-]+$/`), separate fixId/action validation, pagination clamping (1-100) | None — new |
-| `api/.../sentinel-pro/chat-token/route.ts` | WebSocket credential endpoint | None — new |
-| `components/dashboard/SentinelProPanel.tsx` | Glass-panel status display | None — new |
-| `components/dashboard/SentinelProChat.tsx` | WebSocket streaming chat with markdown rendering | None — new |
-| `components/dashboard/FixApprovalPanel.tsx` | Diff viewer with line numbers, approve/reject/rollback | None — new |
-| `components/dashboard/SentinelProNotificationBanner.tsx` | Self-polling critical alert banner (60s interval) | None — new |
-| `components/dashboard/SentinelProOnboarding.tsx` | 3-step setup guide card | None — new |
-| `components/settings/SentinelProSettings.tsx` | Provisioning tab (enable/disable, CLI picker, schedule presets, auto-fix toggle) | None — new |
-| `hooks/useSentinelPro.ts` | SWR hook with 30s polling + triggerAnalysis | None — new |
-| `instances/components/SentinelProModal.tsx` | 4-tab modal hub (Chat, Fixes, Reports, Status) | None — new |
-| `instances/components/InstanceDetailClient.tsx` | Brain icon button in control bar | Custom — existing |
+| File                                                     | Change                                                                                                                        | Sync Risk         |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `api/.../sentinel-pro/status/route.ts`                   | Status proxy (auth + ownership + sidecar forward)                                                                             | None — new        |
+| `api/.../sentinel-pro/reports/route.ts`                  | Reports proxy with pagination                                                                                                 | None — new        |
+| `api/.../sentinel-pro/analyze/route.ts`                  | Manual analysis trigger proxy                                                                                                 | None — new        |
+| `api/.../sentinel-pro/fixes/route.ts`                    | Fix management proxy. Fix ID validation (`/^[a-zA-Z0-9_-]+$/`), separate fixId/action validation, pagination clamping (1-100) | None — new        |
+| `api/.../sentinel-pro/chat-token/route.ts`               | WebSocket credential endpoint                                                                                                 | None — new        |
+| `components/dashboard/SentinelProPanel.tsx`              | Glass-panel status display                                                                                                    | None — new        |
+| `components/dashboard/SentinelProChat.tsx`               | WebSocket streaming chat with markdown rendering                                                                              | None — new        |
+| `components/dashboard/FixApprovalPanel.tsx`              | Diff viewer with line numbers, approve/reject/rollback                                                                        | None — new        |
+| `components/dashboard/SentinelProNotificationBanner.tsx` | Self-polling critical alert banner (60s interval)                                                                             | None — new        |
+| `components/dashboard/SentinelProOnboarding.tsx`         | 3-step setup guide card                                                                                                       | None — new        |
+| `components/settings/SentinelProSettings.tsx`            | Provisioning tab (enable/disable, CLI picker, schedule presets, auto-fix toggle)                                              | None — new        |
+| `hooks/useSentinelPro.ts`                                | SWR hook with 30s polling + triggerAnalysis                                                                                   | None — new        |
+| `instances/components/SentinelProModal.tsx`              | 4-tab modal hub (Chat, Fixes, Reports, Status)                                                                                | None — new        |
+| `instances/components/InstanceDetailClient.tsx`          | Brain icon button in control bar                                                                                              | Custom — existing |
 
 ### Security Hardening (Post-Audit)
 
-| Area | Fix |
-| --- | --- |
-| Shell injection (commit messages) | `fix.title` stripped of `"'``$\;|&(){}\n\r`, capped at 100 chars |
-| Shell injection (branch names) | Fix IDs sanitized to `[a-zA-Z0-9_-]` only |
-| Command injection (gateway restart) | `new URL()` validation, protocol allowlist (`http:`, `https:`) |
-| Path traversal (fix IDs) | `FIX_ID_PATTERN` validation on all 4 fix API endpoints + dashboard proxy |
-| Unbounded queries | Pagination clamped: limit 1-100, offset ≥ 0 |
-| Type safety | `as never` cast → proper `Set`-based status validation |
-| Dead code | Removed unused `exec` import from `child_process` |
+| Area                                | Fix                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------ | ------------------------------- |
+| Shell injection (commit messages)   | `fix.title` stripped of `"'``$\;                                         | &(){}\n\r`, capped at 100 chars |
+| Shell injection (branch names)      | Fix IDs sanitized to `[a-zA-Z0-9_-]` only                                |
+| Command injection (gateway restart) | `new URL()` validation, protocol allowlist (`http:`, `https:`)           |
+| Path traversal (fix IDs)            | `FIX_ID_PATTERN` validation on all 4 fix API endpoints + dashboard proxy |
+| Unbounded queries                   | Pagination clamped: limit 1-100, offset ≥ 0                              |
+| Type safety                         | `as never` cast → proper `Set`-based status validation                   |
+| Dead code                           | Removed unused `exec` import from `child_process`                        |
 
 > **Sync Risk:** Zero — all Sentinel Pro files are new (separate `sentinel-pro/` project + new dashboard files under `sentinel-pro/` API routes). The only modification to an existing file is `InstanceDetailClient.tsx` (added Brain icon button).
 
@@ -89,16 +146,16 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 The upstream Dockerfile already includes a `HEALTHCHECK` (3min interval). Our docker-compose template also declares one for explicit control over intervals. The **genuine new addition** is the host-level watchdog cron: Docker's `restart: unless-stopped` only handles process exits — if the container is marked **unhealthy**, Docker does NOT auto-restart it. The watchdog cron checks `docker inspect` every 3 min and runs `docker compose restart` when unhealthy.
 
-| File | Change | Sync Risk |
-| --- | --- | --- |
+| File                                                | Change                                                       | Sync Risk     |
+| --------------------------------------------------- | ------------------------------------------------------------ | ------------- |
 | `moltbot-dashboard/.../hetzner-instance-service.ts` | Docker-compose healthcheck + `gateway-watchdog.sh` host cron | None — custom |
 
 ### 2. Compaction Timeout Tuning
 
 The SDK already has a full compaction safety system. It reads `agents.defaults.compaction.timeoutSeconds` — default is **900s (15 min)**, which is too generous. Tuned to **240s (4 min)**.
 
-| File | Change | Sync Risk |
-| --- | --- | --- |
+| File                 | Change                                                         | Sync Risk      |
+| -------------------- | -------------------------------------------------------------- | -------------- |
 | `enforce-config.mjs` | Set `compaction.timeoutSeconds = 240` (correct SDK config key) | Low — additive |
 
 ### 3. Event Loop Degradation → Auto-Restart
@@ -107,20 +164,20 @@ HTTP healthchecks pass even when the event loop is severely degraded (2-5s delay
 
 **probe detects p99 > 2s → sentinel classifies as `auto-fixable` → playbook calls `process.exit(1)` → Docker restart policy recovers → event loop healthy on fresh start**
 
-| File | Change | Sync Risk |
-| --- | --- | --- |
-| `src/infra/event-loop-probe.ts` | [NEW] p99 latency monitoring (warn: 500ms, fail: 2000ms) | None — custom |
-| `src/logging/health-sentinel.ts` | Probe wired into execution + explicit `auto-fixable` classification | Low — additive |
-| `src/logging/health-sentinel-playbooks.ts` | [NEW] `gateway-restart-event-loop` playbook + `requestGatewayRestart` context | None — custom |
-| `src/logging/diagnostic.ts` | Probe in `doctorProbes` + restart handler in `remediationContext` | Low — additive |
-| `src/gateway/server-startup.ts` | `startEventLoopMonitor()` called early | Low — additive |
+| File                                       | Change                                                                        | Sync Risk      |
+| ------------------------------------------ | ----------------------------------------------------------------------------- | -------------- |
+| `src/infra/event-loop-probe.ts`            | [NEW] p99 latency monitoring (warn: 500ms, fail: 2000ms)                      | None — custom  |
+| `src/logging/health-sentinel.ts`           | Probe wired into execution + explicit `auto-fixable` classification           | Low — additive |
+| `src/logging/health-sentinel-playbooks.ts` | [NEW] `gateway-restart-event-loop` playbook + `requestGatewayRestart` context | None — custom  |
+| `src/logging/diagnostic.ts`                | Probe in `doctorProbes` + restart handler in `remediationContext`             | Low — additive |
+| `src/gateway/server-startup.ts`            | `startEventLoopMonitor()` called early                                        | Low — additive |
 
 ### 4. Host Log Rotation
 
 Host-level cron logs had no rotation. Added logrotate config (daily, 7-day retention, compress).
 
-| File | Change | Sync Risk |
-| --- | --- | --- |
+| File                                                | Change                         | Sync Risk     |
+| --------------------------------------------------- | ------------------------------ | ------------- |
 | `moltbot-dashboard/.../hetzner-instance-service.ts` | Logrotate config in cloud-init | None — custom |
 
 ---

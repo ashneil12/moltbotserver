@@ -599,14 +599,10 @@ export function createGatewayRestartPlaybook(ctx: RemediationContext): Remediati
         };
       }
 
-      log.info?.(
-        `event loop severely degraded — requesting gateway restart: ${issue.summary}`,
-      );
+      log.info?.(`event loop severely degraded — requesting gateway restart: ${issue.summary}`);
 
       try {
-        ctx.requestGatewayRestart(
-          `Event loop degradation auto-fix: ${issue.summary}`,
-        );
+        ctx.requestGatewayRestart(`Event loop degradation auto-fix: ${issue.summary}`);
         // process.exit is async-ish — give it a moment
         return {
           issueKey: issue.key,

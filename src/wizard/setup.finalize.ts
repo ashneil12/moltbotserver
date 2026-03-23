@@ -486,22 +486,16 @@ export async function finalizeSetupWizard(
   const webSearchEnabled = nextConfig.tools?.web?.search?.enabled;
   const configuredSearchProviders = listConfiguredWebSearchProviders({ config: nextConfig });
   if (webSearchProvider) {
-    const { resolveExistingKey, hasExistingKey, hasKeyInEnv } =
+    const { resolveExistingKey, hasExistingKey, hasKeyInEnv, SEARCH_PROVIDER_OPTIONS } =
       await import("../commands/onboard-search.js");
-    const entry = configuredSearchProviders.find((e) => e.id === webSearchProvider);
-    const label = entry?.label ?? webSearchProvider;
-    const storedKey = entry ? resolveExistingKey(nextConfig, webSearchProvider) : undefined;
-    const keyConfigured = entry ? hasExistingKey(nextConfig, webSearchProvider) : false;
-    const envAvailable = entry ? hasKeyInEnv(entry) : false;
-    const hasKey = keyConfigured || envAvailable;
-    const keySource = storedKey
-      ? "API key: stored in config."
-      : keyConfigured
-        ? "API key: configured via secret reference."
-        : envAvailable
-          ? `API key: provided via ${entry?.envVars.join(" / ")} env var.`
-          : undefined;
-    if (!entry) {
+    // pluginEntry: is this provider available under the current plugin policy?
+    const pluginEntry = configuredSearchProviders.find((e) => e.id === webSearchProvider);
+    // builtinEntry: static SearchProviderEntry for built-in providers (brave, gemini, etc.)
+    // Used for hasKeyInEnv() which expects the local SearchProviderEntry type, not PluginWebSearchProviderEntry.
+    const builtinEntry = SEARCH_PROVIDER_OPTIONS.find((e) => e.value === webSearchProvider);
+    const label = builtinEntry?.label ?? pluginEntry?.label ?? webSearchProvider;
+
+    if (!pluginEntry) {
       await prompter.note(
         [
           `Web search provider ${label} is selected but unavailable under the current plugin policy.`,
@@ -512,46 +506,74 @@ export async function finalizeSetupWizard(
         ].join("\n"),
         "Web search",
       );
-    } else if (webSearchEnabled !== false && hasKey) {
-      await prompter.note(
-        [
-          "Web search is enabled, so your agent can look things up online when needed.",
-          "",
-          `Provider: ${label}`,
-          ...(keySource ? [keySource] : []),
-          "Docs: https://docs.openclaw.ai/tools/web",
-        ].join("\n"),
-        "Web search",
-      );
-    } else if (!hasKey) {
-      await prompter.note(
-        [
-          `Provider ${label} is selected but no API key was found.`,
-          "web_search will not work until a key is added.",
-          `  ${formatCliCommand("openclaw configure --section web")}`,
-          "",
-          `Get your key at: ${entry?.signupUrl ?? "https://docs.openclaw.ai/tools/web"}`,
-          "Docs: https://docs.openclaw.ai/tools/web",
-        ].join("\n"),
-        "Web search",
-      );
     } else {
-      await prompter.note(
-        [
-          `Web search (${label}) is configured but disabled.`,
-          `Re-enable: ${formatCliCommand("openclaw configure --section web")}`,
-          "",
-          "Docs: https://docs.openclaw.ai/tools/web",
-        ].join("\n"),
-        "Web search",
-      );
+      // Key detection: only compute when provider is available under the plugin policy.
+      // Use type-safe built-in helpers for built-in providers; inline env check for plugin providers.
+      const storedKey = builtinEntry
+        ? resolveExistingKey(nextConfig, webSearchProvider)
+        : undefined;
+      const keyConfigured = hasExistingKey(nextConfig, webSearchProvider);
+      const envAvailable = builtinEntry
+        ? hasKeyInEnv(builtinEntry)
+        : // For plugin providers, check their declared envVars directly
+          (pluginEntry.envVars ?? []).some((k) => Boolean(process.env[k]?.trim()));
+      const hasKey = keyConfigured || envAvailable;
+
+      const keySource = storedKey
+        ? "API key: stored in config."
+        : keyConfigured
+          ? "API key: configured via secret reference."
+          : envAvailable
+            ? `API key: provided via ${(builtinEntry?.envKeys ?? pluginEntry.envVars ?? []).join(" / ")} env var.`
+            : undefined;
+
+      if (webSearchEnabled !== false && hasKey) {
+        await prompter.note(
+          [
+            "Web search is enabled, so your agent can look things up online when needed.",
+            "",
+            `Provider: ${label}`,
+            ...(keySource ? [keySource] : []),
+            "Docs: https://docs.openclaw.ai/tools/web",
+          ].join("\n"),
+          "Web search",
+        );
+      } else if (!hasKey) {
+        await prompter.note(
+          [
+            `Provider ${label} is selected but no API key was found.`,
+            "web_search will not work until a key is added.",
+            `  ${formatCliCommand("openclaw configure --section web")}`,
+            "",
+            `Get your key at: ${builtinEntry?.signupUrl ?? pluginEntry.signupUrl ?? "https://docs.openclaw.ai/tools/web"}`,
+            "Docs: https://docs.openclaw.ai/tools/web",
+          ].join("\n"),
+          "Web search",
+        );
+      } else {
+        await prompter.note(
+          [
+            `Web search (${label}) is configured but disabled.`,
+            `Re-enable: ${formatCliCommand("openclaw configure --section web")}`,
+            "",
+            "Docs: https://docs.openclaw.ai/tools/web",
+          ].join("\n"),
+          "Web search",
+        );
+      }
     }
   } else {
     // Legacy configs may have a working key (e.g. apiKey or BRAVE_API_KEY) without
     // an explicit provider. Runtime auto-detects these, so avoid saying "skipped".
-    const { hasExistingKey, hasKeyInEnv } = await import("../commands/onboard-search.js");
+    const { hasExistingKey } = await import("../commands/onboard-search.js");
+    // configuredSearchProviders includes both built-in and plugin-registered providers.
+    // hasExistingKey takes a string id (compatible with e.id). hasKeyInEnv expects the
+    // local SearchProviderEntry type so we inline the env check using envVars instead.
     const legacyDetected = configuredSearchProviders.find(
-      (e) => hasExistingKey(nextConfig, e.id) || hasKeyInEnv(e),
+      (e) =>
+        // oxlint-disable-next-line typescript/no-explicit-any -- plugin provider id is a string; hasExistingKey gracefully handles unknown values via switch default
+        hasExistingKey(nextConfig, e.id as any) ||
+        e.envVars.some((k) => Boolean(process.env[k]?.trim())),
     );
     if (legacyDetected) {
       await prompter.note(

@@ -2701,6 +2701,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
               heartbeat: {
                 type: "object",
                 properties: {
+                  enabled: {
+                    type: "boolean",
+                  },
                   every: {
                     type: "string",
                   },
@@ -2761,9 +2764,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     type: "boolean",
                   },
                   lightContext: {
-                    type: "boolean",
-                  },
-                  isolatedSession: {
                     type: "boolean",
                   },
                 },
@@ -2856,11 +2856,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         type: "string",
                         const: "all",
                       },
+                      {
+                        type: "string",
+                        const: "browser-only",
+                      },
                     ],
-                  },
-                  backend: {
-                    type: "string",
-                    minLength: 1,
                   },
                   workspaceAccess: {
                     anyOf: [
@@ -3052,240 +3052,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     additionalProperties: false,
                   },
-                  ssh: {
-                    type: "object",
-                    properties: {
-                      target: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      command: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      workspaceRoot: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      strictHostKeyChecking: {
-                        type: "boolean",
-                      },
-                      updateHostKeys: {
-                        type: "boolean",
-                      },
-                      identityFile: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      certificateFile: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      knownHostsFile: {
-                        type: "string",
-                        minLength: 1,
-                      },
-                      identityData: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      certificateData: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      knownHostsData: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                    },
-                    additionalProperties: false,
-                  },
                   browser: {
                     type: "object",
                     properties: {
@@ -3408,17 +3174,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                       additionalProperties: false,
                     },
                   ],
-                },
-                thinkingDefault: {
-                  type: "string",
-                  enum: ["off", "minimal", "low", "medium", "high", "xhigh", "adaptive"],
-                },
-                reasoningDefault: {
-                  type: "string",
-                  enum: ["on", "off", "stream"],
-                },
-                fastModeDefault: {
-                  type: "boolean",
                 },
                 skills: {
                   type: "array",
@@ -3891,6 +3646,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 heartbeat: {
                   type: "object",
                   properties: {
+                    enabled: {
+                      type: "boolean",
+                    },
                     every: {
                       type: "string",
                     },
@@ -3951,9 +3709,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                       type: "boolean",
                     },
                     lightContext: {
-                      type: "boolean",
-                    },
-                    isolatedSession: {
                       type: "boolean",
                     },
                   },
@@ -4048,11 +3803,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           type: "string",
                           const: "all",
                         },
+                        {
+                          type: "string",
+                          const: "browser-only",
+                        },
                       ],
-                    },
-                    backend: {
-                      type: "string",
-                      minLength: 1,
                     },
                     workspaceAccess: {
                       anyOf: [
@@ -4240,240 +3995,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         },
                         dangerouslyAllowContainerNamespaceJoin: {
                           type: "boolean",
-                        },
-                      },
-                      additionalProperties: false,
-                    },
-                    ssh: {
-                      type: "object",
-                      properties: {
-                        target: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        command: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        workspaceRoot: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        strictHostKeyChecking: {
-                          type: "boolean",
-                        },
-                        updateHostKeys: {
-                          type: "boolean",
-                        },
-                        identityFile: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        certificateFile: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        knownHostsFile: {
-                          type: "string",
-                          minLength: 1,
-                        },
-                        identityData: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              oneOf: [
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "env",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "file",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "exec",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                        certificateData: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              oneOf: [
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "env",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "file",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "exec",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                        knownHostsData: {
-                          anyOf: [
-                            {
-                              type: "string",
-                            },
-                            {
-                              oneOf: [
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "env",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                      pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "file",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                                {
-                                  type: "object",
-                                  properties: {
-                                    source: {
-                                      type: "string",
-                                      const: "exec",
-                                    },
-                                    provider: {
-                                      type: "string",
-                                      pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                    },
-                                    id: {
-                                      type: "string",
-                                    },
-                                  },
-                                  required: ["source", "provider", "id"],
-                                  additionalProperties: false,
-                                },
-                              ],
-                            },
-                          ],
                         },
                       },
                       additionalProperties: false,
@@ -4711,9 +4232,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           items: {
                             type: "string",
                           },
-                        },
-                        strictInlineEval: {
-                          type: "boolean",
                         },
                         safeBinTrustedDirs: {
                           type: "array",
@@ -5042,21 +4560,36 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     type: "boolean",
                   },
                   provider: {
-                    type: "string",
-                  },
-                  maxResults: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  timeoutSeconds: {
-                    type: "integer",
-                    exclusiveMinimum: 0,
-                    maximum: 9007199254740991,
-                  },
-                  cacheTtlMinutes: {
-                    type: "number",
-                    minimum: 0,
+                    anyOf: [
+                      {
+                        type: "string",
+                        const: "tavily",
+                      },
+                      {
+                        type: "string",
+                        const: "brave",
+                      },
+                      {
+                        type: "string",
+                        const: "perplexity",
+                      },
+                      {
+                        type: "string",
+                        const: "grok",
+                      },
+                      {
+                        type: "string",
+                        const: "gemini",
+                      },
+                      {
+                        type: "string",
+                        const: "kimi",
+                      },
+                      {
+                        type: "string",
+                        const: "searxng",
+                      },
+                    ],
                   },
                   apiKey: {
                     anyOf: [
@@ -5124,88 +4657,21 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                       },
                     ],
                   },
-                  brave: {
-                    type: "object",
-                    properties: {
-                      apiKey: {
-                        anyOf: [
-                          {
-                            type: "string",
-                          },
-                          {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      baseUrl: {
-                        type: "string",
-                      },
-                      model: {
-                        type: "string",
-                      },
-                      mode: {
-                        type: "string",
-                      },
-                    },
-                    additionalProperties: false,
+                  maxResults: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
                   },
-                  firecrawl: {
+                  timeoutSeconds: {
+                    type: "integer",
+                    exclusiveMinimum: 0,
+                    maximum: 9007199254740991,
+                  },
+                  cacheTtlMinutes: {
+                    type: "number",
+                    minimum: 0,
+                  },
+                  perplexity: {
                     type: "object",
                     properties: {
                       apiKey: {
@@ -5283,7 +4749,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     additionalProperties: false,
                   },
-                  gemini: {
+                  tavily: {
                     type: "object",
                     properties: {
                       apiKey: {
@@ -5352,11 +4818,20 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           },
                         ],
                       },
-                      baseUrl: {
-                        type: "string",
+                      searchDepth: {
+                        anyOf: [
+                          {
+                            type: "string",
+                            const: "basic",
+                          },
+                          {
+                            type: "string",
+                            const: "advanced",
+                          },
+                        ],
                       },
-                      model: {
-                        type: "string",
+                      includeAnswer: {
+                        type: "boolean",
                       },
                     },
                     additionalProperties: false,
@@ -5430,14 +4905,86 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                           },
                         ],
                       },
-                      baseUrl: {
-                        type: "string",
-                      },
                       model: {
                         type: "string",
                       },
                       inlineCitations: {
                         type: "boolean",
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  gemini: {
+                    type: "object",
+                    properties: {
+                      apiKey: {
+                        anyOf: [
+                          {
+                            type: "string",
+                          },
+                          {
+                            oneOf: [
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "env",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "file",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                              {
+                                type: "object",
+                                properties: {
+                                  source: {
+                                    type: "string",
+                                    const: "exec",
+                                  },
+                                  provider: {
+                                    type: "string",
+                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                                  },
+                                  id: {
+                                    type: "string",
+                                  },
+                                },
+                                required: ["source", "provider", "id"],
+                                additionalProperties: false,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      model: {
+                        type: "string",
                       },
                     },
                     additionalProperties: false,
@@ -5520,80 +5067,35 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     },
                     additionalProperties: false,
                   },
-                  perplexity: {
+                  brave: {
                     type: "object",
                     properties: {
-                      apiKey: {
+                      mode: {
                         anyOf: [
                           {
                             type: "string",
+                            const: "web",
                           },
                           {
-                            oneOf: [
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "env",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                    pattern: "^[A-Z][A-Z0-9_]{0,127}$",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "file",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                              {
-                                type: "object",
-                                properties: {
-                                  source: {
-                                    type: "string",
-                                    const: "exec",
-                                  },
-                                  provider: {
-                                    type: "string",
-                                    pattern: "^[a-z][a-z0-9_-]{0,63}$",
-                                  },
-                                  id: {
-                                    type: "string",
-                                  },
-                                },
-                                required: ["source", "provider", "id"],
-                                additionalProperties: false,
-                              },
-                            ],
+                            type: "string",
+                            const: "llm-context",
                           },
                         ],
                       },
+                    },
+                    additionalProperties: false,
+                  },
+                  searxng: {
+                    type: "object",
+                    properties: {
                       baseUrl: {
                         type: "string",
                       },
-                      model: {
-                        type: "string",
+                      engines: {
+                        type: "array",
+                        items: {
+                          type: "string",
+                        },
                       },
                     },
                     additionalProperties: false,
@@ -5724,6 +5226,26 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                         type: "integer",
                         exclusiveMinimum: 0,
                         maximum: 9007199254740991,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                  scrapling: {
+                    type: "object",
+                    properties: {
+                      enabled: {
+                        type: "boolean",
+                      },
+                      baseUrl: {
+                        type: "string",
+                      },
+                      timeoutSeconds: {
+                        type: "integer",
+                        exclusiveMinimum: 0,
+                        maximum: 9007199254740991,
+                      },
+                      stealth: {
+                        type: "boolean",
                       },
                     },
                     additionalProperties: false,
@@ -7193,9 +6715,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 items: {
                   type: "string",
                 },
-              },
-              strictInlineEval: {
-                type: "boolean",
               },
               safeBinTrustedDirs: {
                 type: "array",
@@ -11637,7 +11156,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Setup Wizard State",
       group: "Wizard",
       order: 20,
-      help: "Setup wizard state tracking fields that record the most recent guided setup run details. Keep these fields for observability and troubleshooting of setup flows across upgrades.",
+      help: "Setup wizard state tracking fields that record the most recent guided onboarding run details. Keep these fields for observability and troubleshooting of setup flows across upgrades.",
       tags: ["advanced"],
     },
     update: {
@@ -11854,27 +11373,27 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "wizard.lastRunAt": {
       label: "Wizard Last Run Timestamp",
-      help: "ISO timestamp for when the setup wizard most recently completed on this host. Use this to confirm setup recency during support and operational audits.",
+      help: "ISO timestamp for when the setup wizard most recently completed on this host. Use this to confirm onboarding recency during support and operational audits.",
       tags: ["advanced"],
     },
     "wizard.lastRunVersion": {
       label: "Wizard Last Run Version",
-      help: "OpenClaw version recorded at the time of the most recent wizard run on this config. Use this when diagnosing behavior differences across version-to-version setup changes.",
+      help: "OpenClaw version recorded at the time of the most recent wizard run on this config. Use this when diagnosing behavior differences across version-to-version onboarding changes.",
       tags: ["advanced"],
     },
     "wizard.lastRunCommit": {
       label: "Wizard Last Run Commit",
-      help: "Source commit identifier recorded for the last wizard execution in development builds. Use this to correlate setup behavior with exact source state during debugging.",
+      help: "Source commit identifier recorded for the last wizard execution in development builds. Use this to correlate onboarding behavior with exact source state during debugging.",
       tags: ["advanced"],
     },
     "wizard.lastRunCommand": {
       label: "Wizard Last Run Command",
-      help: "Command invocation recorded for the latest wizard run to preserve execution context. Use this to reproduce setup steps when verifying setup regressions.",
+      help: "Command invocation recorded for the latest wizard run to preserve execution context. Use this to reproduce onboarding steps when verifying setup regressions.",
       tags: ["advanced"],
     },
     "wizard.lastRunMode": {
       label: "Wizard Last Run Mode",
-      help: 'Wizard execution mode recorded as "local" or "remote" for the most recent setup flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.',
+      help: 'Wizard execution mode recorded as "local" or "remote" for the most recent onboarding flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.',
       tags: ["advanced"],
     },
     "diagnostics.otel": {
@@ -12092,21 +11611,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Optional default working directory for this agent's ACP sessions.",
       tags: ["advanced"],
     },
-    "agents.list[].thinkingDefault": {
-      label: "Agent Thinking Default",
-      help: "Optional per-agent default thinking level. Overrides agents.defaults.thinkingDefault for this agent when no per-message or session override is set.",
-      tags: ["advanced"],
-    },
-    "agents.list[].reasoningDefault": {
-      label: "Agent Reasoning Default",
-      help: "Optional per-agent default reasoning visibility (on|off|stream). Applies when no per-message or session reasoning override is set.",
-      tags: ["advanced"],
-    },
-    "agents.list[].fastModeDefault": {
-      label: "Agent Fast Mode Default",
-      help: "Optional per-agent default for fast mode. Applies when no per-message or session fast-mode override is set.",
-      tags: ["advanced"],
-    },
     "agents.defaults": {
       label: "Agent Defaults",
       help: "Shared default settings inherited by agents unless overridden per entry in agents.list. Use defaults to enforce consistent baseline behavior and reduce duplicated per-agent configuration.",
@@ -12201,16 +11705,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Gateway Channel Health Check Interval (min)",
       help: "Interval in minutes for automatic channel health probing and status updates. Use lower intervals for faster detection, or higher intervals to reduce periodic probe noise.",
       tags: ["network", "reliability"],
-    },
-    "gateway.channelStaleEventThresholdMinutes": {
-      label: "Gateway Channel Stale Event Threshold (min)",
-      help: "How many minutes a connected channel can go without receiving any event before the health monitor treats it as a stale socket and triggers a restart. Default: 30.",
-      tags: ["network"],
-    },
-    "gateway.channelMaxRestartsPerHour": {
-      label: "Gateway Channel Max Restarts Per Hour",
-      help: "Maximum number of health-monitor-initiated channel restarts allowed within a rolling one-hour window. Once hit, further restarts are skipped until the window expires. Default: 10.",
-      tags: ["network", "performance"],
     },
     "gateway.tailscale": {
       label: "Gateway Tailscale",
@@ -12384,6 +11878,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Default browser profile name selected when callers do not explicitly choose a profile. Use a stable low-privilege profile as the default to reduce accidental cross-context state use.",
       tags: ["storage"],
     },
+    "browser.relayBindHost": {
+      label: "Browser Relay Bind Address",
+      help: "Bind IP address for the Chrome extension relay listener. Leave unset for loopback-only access, or set an explicit non-loopback IP such as 0.0.0.0 only when the relay must be reachable across network namespaces (for example WSL2) and the surrounding network is already trusted.",
+      tags: ["advanced"],
+    },
     "browser.profiles": {
       label: "Browser Profiles",
       help: "Named browser profile connection map used for explicit routing to CDP ports or URLs with optional metadata. Keep profile names consistent and avoid overlapping endpoint definitions.",
@@ -12399,14 +11898,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Per-profile CDP websocket URL used for explicit remote browser routing by profile name. Use this when profile connections terminate on remote hosts or tunnels.",
       tags: ["storage"],
     },
-    "browser.profiles.*.userDataDir": {
-      label: "Browser Profile User Data Dir",
-      help: "Per-profile Chromium user data directory for existing-session attachment through Chrome DevTools MCP. Use this for host-local Brave, Edge, Chromium, or non-default Chrome profiles when the built-in auto-connect path would pick the wrong browser data directory.",
-      tags: ["storage"],
-    },
     "browser.profiles.*.driver": {
       label: "Browser Profile Driver",
-      help: 'Per-profile browser driver mode. Use "openclaw" (or legacy "clawd") for CDP-based profiles, or use "existing-session" for host-local Chrome DevTools MCP attachment.',
+      help: 'Per-profile browser driver mode: "openclaw" (or legacy "clawd") or "extension" depending on connection/runtime strategy. Use the driver that matches your browser control stack to avoid protocol mismatches.',
       tags: ["storage"],
     },
     "browser.profiles.*.attachOnly": {
@@ -12799,11 +12293,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Allow stdin-only safe binaries to run without explicit allowlist entries.",
       tags: ["tools"],
     },
-    "tools.exec.strictInlineEval": {
-      label: "Require Inline-Eval Approval",
-      help: "Require explicit approval for interpreter inline-eval forms such as `python -c`, `node -e`, `ruby -e`, or `osascript -e`. Prevents silent allowlist reuse and downgrades allow-always to ask-each-time for those forms.",
-      tags: ["tools"],
-    },
     "tools.exec.safeBinTrustedDirs": {
       label: "Exec Safe Bin Trusted Dirs",
       help: "Additional explicit directories trusted for safe-bin path checks (PATH entries are never auto-trusted).",
@@ -12906,13 +12395,19 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "tools.web.search.enabled": {
       label: "Enable Web Search Tool",
-      help: "Enable the web_search tool (requires a provider API key).",
+      help: "Enable the web_search tool (requires a provider API key or SearXNG instance).",
       tags: ["tools"],
     },
     "tools.web.search.provider": {
       label: "Web Search Provider",
-      help: "Search provider id. Auto-detected from available API keys if omitted.",
+      help: 'Search provider ("brave", "gemini", "grok", "kimi", "perplexity", or "searxng"). Auto-detected from available API keys or SearXNG base URL if omitted.',
       tags: ["tools"],
+    },
+    "tools.web.search.apiKey": {
+      label: "Brave Search API Key",
+      help: "Brave Search API key (fallback: BRAVE_API_KEY env var).",
+      tags: ["security", "auth", "tools"],
+      sensitive: true,
     },
     "tools.web.search.maxResults": {
       label: "Web Search Max Results",
@@ -12928,6 +12423,70 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Web Search Cache TTL (min)",
       help: "Cache TTL in minutes for web_search results.",
       tags: ["performance", "storage", "tools"],
+    },
+    "tools.web.search.brave.mode": {
+      label: "Brave Search Mode",
+      help: 'Brave Search mode: "web" (URL results) or "llm-context" (pre-extracted page content for LLM grounding).',
+      tags: ["tools"],
+    },
+    "tools.web.search.gemini.apiKey": {
+      label: "Gemini Search API Key",
+      help: "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
+      tags: ["security", "auth", "tools"],
+      sensitive: true,
+    },
+    "tools.web.search.gemini.model": {
+      label: "Gemini Search Model",
+      help: 'Gemini model override (default: "gemini-2.5-flash").',
+      tags: ["models", "tools"],
+    },
+    "tools.web.search.grok.apiKey": {
+      label: "Grok Search API Key",
+      help: "Grok (xAI) API key (fallback: XAI_API_KEY env var).",
+      tags: ["security", "auth", "tools"],
+      sensitive: true,
+    },
+    "tools.web.search.grok.model": {
+      label: "Grok Search Model",
+      help: 'Grok model override (default: "grok-4-1-fast").',
+      tags: ["models", "tools"],
+    },
+    "tools.web.search.kimi.apiKey": {
+      label: "Kimi Search API Key",
+      help: "Moonshot/Kimi API key (fallback: KIMI_API_KEY or MOONSHOT_API_KEY env var).",
+      tags: ["security", "auth", "tools"],
+      sensitive: true,
+    },
+    "tools.web.search.kimi.baseUrl": {
+      label: "Kimi Search Base URL",
+      help: 'Kimi base URL override (default: "https://api.moonshot.ai/v1").',
+      tags: ["tools"],
+    },
+    "tools.web.search.kimi.model": {
+      label: "Kimi Search Model",
+      help: 'Kimi model override (default: "moonshot-v1-128k").',
+      tags: ["models", "tools"],
+    },
+    "tools.web.search.perplexity.apiKey": {
+      label: "Perplexity API Key",
+      help: "Perplexity or OpenRouter API key (fallback: PERPLEXITY_API_KEY or OPENROUTER_API_KEY env var). Direct Perplexity keys default to the Search API; OpenRouter keys use Sonar chat completions.",
+      tags: ["security", "auth", "tools"],
+      sensitive: true,
+    },
+    "tools.web.search.perplexity.baseUrl": {
+      label: "Perplexity Base URL",
+      help: "Optional Perplexity/OpenRouter chat-completions base URL override. Setting this opts Perplexity into the legacy Sonar/OpenRouter compatibility path.",
+      tags: ["tools"],
+    },
+    "tools.web.search.perplexity.model": {
+      label: "Perplexity Model",
+      help: 'Optional Sonar/OpenRouter model override (default: "perplexity/sonar-pro"). Setting this opts Perplexity into the legacy chat-completions compatibility path.',
+      tags: ["models", "tools"],
+    },
+    "tools.web.search.searxng.baseUrl": {
+      label: "SearXNG Base URL",
+      help: "SearXNG instance base URL (fallback: SEARXNG_BASE_URL env var, default: http://searxng:8080). SearXNG is a free, self-hosted metasearch engine.",
+      tags: ["tools"],
     },
     "tools.web.fetch.enabled": {
       label: "Enable Web Fetch Tool",
@@ -13000,6 +12559,26 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Timeout in seconds for Firecrawl requests.",
       tags: ["performance", "tools"],
     },
+    "tools.web.fetch.scrapling.enabled": {
+      label: "Enable Scrapling Backend",
+      help: "Enable Scrapling stealth scraping backend (default: true when SCRAPLING_BASE_URL is set).",
+      tags: ["tools"],
+    },
+    "tools.web.fetch.scrapling.baseUrl": {
+      label: "Scrapling Base URL",
+      help: "Scrapling service base URL (fallback: SCRAPLING_BASE_URL env var, default: http://scrapling:8765). Scrapling is a self-hosted anti-bot-bypass scraping backend.",
+      tags: ["tools"],
+    },
+    "tools.web.fetch.scrapling.timeoutSeconds": {
+      label: "Scrapling Timeout (sec)",
+      help: "Timeout in seconds for Scrapling requests.",
+      tags: ["performance", "tools"],
+    },
+    "tools.web.fetch.scrapling.stealth": {
+      label: "Scrapling Stealth Mode",
+      help: "Use stealth mode (Playwright + anti-bot bypass) by default for Scrapling requests.",
+      tags: ["tools"],
+    },
     "gateway.controlUi.basePath": {
       label: "Control UI Base Path",
       help: "Optional URL prefix where the Control UI is served (e.g. /openclaw).",
@@ -13014,7 +12593,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.controlUi.allowedOrigins": {
       label: "Control UI Allowed Origins",
-      help: 'Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled. Setting ["*"] means allow any browser origin and should be avoided outside tightly controlled local testing.',
+      help: "Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled.",
       placeholder: "https://control.example.com",
       tags: ["access", "network"],
     },
@@ -13086,12 +12665,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "gateway.http.endpoints.chatCompletions.images.allowUrl": {
       label: "OpenAI Chat Completions Allow Image URLs",
-      help: "Allow server-side URL fetches for `image_url` parts (default: false; data URIs remain supported). Set this to `false` to disable URL fetching entirely.",
+      help: "Allow server-side URL fetches for `image_url` parts (default: false; data URIs remain supported).",
       tags: ["access", "network", "media"],
     },
     "gateway.http.endpoints.chatCompletions.images.urlAllowlist": {
       label: "OpenAI Chat Completions Image URL Allowlist",
-      help: "Optional hostname allowlist for `image_url` URL fetches; supports exact hosts and `*.example.com` wildcards. Empty or omitted lists mean no hostname allowlist restriction.",
+      help: "Optional hostname allowlist for `image_url` URL fetches; supports exact hosts and `*.example.com` wildcards.",
       tags: ["access", "network", "media"],
     },
     "gateway.http.endpoints.chatCompletions.images.allowedMimes": {
@@ -13122,11 +12701,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     "gateway.reload.debounceMs": {
       label: "Config Reload Debounce (ms)",
       help: "Debounce window (ms) before applying config changes.",
-      tags: ["network", "reliability", "performance"],
-    },
-    "gateway.reload.deferralTimeoutMs": {
-      label: "Restart Deferral Timeout (ms)",
-      help: "Maximum time (ms) to wait for in-flight operations to complete before forcing a SIGUSR1 restart. Default: 300000 (5 minutes). Lower values risk aborting active subagent LLM calls.",
       tags: ["network", "reliability", "performance"],
     },
     "gateway.nodes.browser.mode": {
@@ -13161,7 +12735,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "nodeHost.browserProxy.allowProfiles": {
       label: "Node Browser Proxy Allowed Profiles",
-      help: "Optional allowlist of browser profile names exposed through node proxy routing. Leave empty to preserve the default full profile surface, including profile create/delete routes. When set, OpenClaw enforces least-privilege profile access and blocks persistent profile create/delete through the proxy.",
+      help: "Optional allowlist of browser profile names exposed through node proxy routing. Leave empty to expose all configured profiles, or use a tight list to enforce least-privilege profile access.",
       tags: ["access", "network", "storage"],
     },
     media: {
@@ -13552,12 +13126,12 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled": {
       label: "Memory Search Temporal Decay",
-      help: "Applies recency decay so newer memory can outrank older memory when scores are close. Enable when timeliness matters; keep off for timeless reference knowledge.",
+      help: "Applies recency decay so newer memory can outrank older memory when scores are close (default: true). Disable for timeless reference knowledge where recency should not influence ranking.",
       tags: ["advanced"],
     },
     "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays": {
       label: "Memory Search Temporal Decay Half-life (Days)",
-      help: "Controls how fast older memory loses rank when temporal decay is enabled (half-life in days, default: 30). Lower values prioritize recent context more aggressively.",
+      help: "Controls how fast older memory loses rank when temporal decay is enabled (half-life in days, default: 14). Lower values prioritize recent context more aggressively.",
       tags: ["advanced"],
     },
     "agents.defaults.memorySearch.cache.enabled": {
@@ -13961,16 +13535,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Ordered fallback image models (provider/model).",
       tags: ["reliability", "models", "media"],
     },
-    "agents.defaults.imageGenerationModel.primary": {
-      label: "Image Generation Model",
-      help: "Optional image-generation model (provider/model) used by the shared image generation capability.",
-      tags: ["media"],
-    },
-    "agents.defaults.imageGenerationModel.fallbacks": {
-      label: "Image Generation Model Fallbacks",
-      help: "Ordered fallback image-generation models (provider/model).",
-      tags: ["reliability", "media"],
-    },
     "agents.defaults.pdfModel.primary": {
       label: "PDF Model",
       help: "Optional PDF model (provider/model) for the PDF analysis tool. Defaults to imageModel, then session model.",
@@ -14086,20 +13650,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'AGENTS.md H2/H3 section names re-injected after compaction so the agent reruns critical startup guidance. Leave unset to use "Session Startup"/"Red Lines" with legacy fallback to "Every Session"/"Safety"; set to [] to disable reinjection entirely.',
       tags: ["advanced"],
     },
-    "agents.defaults.compaction.timeoutSeconds": {
-      label: "Compaction Timeout (Seconds)",
-      help: "Maximum time in seconds allowed for a single compaction operation before it is aborted (default: 900). Increase this for very large sessions that need more time to summarize, or decrease it to fail faster on unresponsive models.",
-      tags: ["performance"],
-    },
     "agents.defaults.compaction.model": {
       label: "Compaction Model Override",
       help: "Optional provider/model override used only for compaction summarization. Set this when you want compaction to run on a different model than the session default, and leave it unset to keep using the primary agent model.",
       tags: ["models"],
-    },
-    "agents.defaults.compaction.truncateAfterCompaction": {
-      label: "Truncate After Compaction",
-      help: "When enabled, rewrites the session JSONL file after compaction to remove entries that were summarized. Prevents unbounded file growth in long-running sessions with many compaction cycles. Default: false.",
-      tags: ["advanced"],
     },
     "agents.defaults.compaction.memoryFlush": {
       label: "Compaction Memory Flush",
@@ -14201,16 +13755,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Allow /config chat command to read/write config on disk (default: false).",
       tags: ["advanced"],
     },
-    "commands.mcp": {
-      label: "Allow /mcp",
-      help: "Allow /mcp chat command to manage OpenClaw MCP server config under mcp.servers (default: false).",
-      tags: ["advanced"],
-    },
-    "commands.plugins": {
-      label: "Allow /plugins",
-      help: "Allow /plugins chat command to list discovered plugins and toggle plugin enablement in config (default: false).",
-      tags: ["advanced"],
-    },
     "commands.debug": {
       label: "Allow /debug",
       help: "Allow /debug chat command for runtime-only overrides (default: false).",
@@ -14247,19 +13791,9 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Defines elevated command allow rules by channel and sender for owner-level command surfaces. Use narrow provider-specific identities so privileged commands are not exposed to broad chat audiences.",
       tags: ["access"],
     },
-    mcp: {
-      label: "MCP",
-      help: "Global MCP server definitions managed by OpenClaw. Embedded Pi and other runtime adapters can consume these servers without storing them inside Pi-owned project settings.",
-      tags: ["advanced"],
-    },
-    "mcp.servers": {
-      label: "MCP Servers",
-      help: "Named MCP server definitions. OpenClaw stores them in its own config and runtime adapters decide which transports are supported at execution time.",
-      tags: ["advanced"],
-    },
     "ui.seamColor": {
       label: "Accent Color",
-      help: "Primary accent color used by UI surfaces for emphasis, badges, and visual identity cues. Use high-contrast values that remain readable across light/dark themes.",
+      help: "Primary accent/seam color used by UI surfaces for emphasis, badges, and visual identity cues. Use high-contrast values that remain readable across light/dark themes.",
       tags: ["advanced"],
     },
     "ui.assistant": {
@@ -14625,7 +14159,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "hooks.token": {
       label: "Hooks Auth Token",
-      help: "Shared bearer token checked by hooks ingress for request authentication before mappings run. Treat holders as full-trust callers for the hook ingress surface, not as a separate non-owner role. Use environment substitution and rotate regularly when webhook endpoints are internet-accessible.",
+      help: "Shared bearer token checked by hooks ingress for request authentication before mappings run. Use environment substitution and rotate regularly when webhook endpoints are internet-accessible.",
       tags: ["security", "auth"],
       sensitive: true,
     },
@@ -14646,7 +14180,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "hooks.allowedAgentIds": {
       label: "Hooks Allowed Agent IDs",
-      help: "Allowlist of agent IDs that hook mappings are allowed to target when selecting execution agents. Use this to constrain automation events to dedicated service agents and reduce blast radius if a hook token is exposed.",
+      help: "Allowlist of agent IDs that hook mappings are allowed to target when selecting execution agents. Use this to constrain automation events to dedicated service agents.",
       tags: ["access"],
     },
     "hooks.maxBodyBytes": {
@@ -15068,7 +14602,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
     },
     "messages.groupChat.mentionPatterns": {
       label: "Group Mention Patterns",
-      help: "Safe case-insensitive regex patterns used to detect explicit mentions/trigger phrases in group chats. Use precise patterns to reduce false positives in high-volume channels; invalid or unsafe nested-repetition patterns are ignored.",
+      help: "Regex-like patterns used to detect explicit mentions/trigger phrases in group chats. Use precise patterns to reduce false positives in high-volume channels.",
       tags: ["advanced"],
     },
     "messages.groupChat.historyLimit": {
@@ -15399,31 +14933,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       label: "Telegram API Timeout (seconds)",
       help: "Max seconds before Telegram API requests are aborted (default: 500 per grammY).",
       tags: ["network", "performance", "channels"],
-    },
-    "channels.telegram.silentErrorReplies": {
-      label: "Telegram Silent Error Replies",
-      help: "When true, Telegram bot replies marked as errors are sent silently (no notification sound). Default: false.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.apiRoot": {
-      label: "Telegram API Root URL",
-      help: "Custom Telegram Bot API root URL. Use for self-hosted Bot API servers (https://github.com/tdlib/telegram-bot-api) or reverse proxies in regions where api.telegram.org is blocked.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.autoTopicLabel": {
-      label: "Telegram Auto Topic Label",
-      help: "Auto-rename DM forum topics on first message using LLM. Default: true. Set to false to disable, or use object form { enabled: true, prompt: '...' } for custom prompt.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.autoTopicLabel.enabled": {
-      label: "Telegram Auto Topic Label Enabled",
-      help: "Whether auto topic labeling is enabled. Default: true.",
-      tags: ["network", "channels"],
-    },
-    "channels.telegram.autoTopicLabel.prompt": {
-      label: "Telegram Auto Topic Label Prompt",
-      help: "Custom prompt for LLM-based topic naming. The user message is appended after the prompt.",
-      tags: ["network", "channels"],
     },
     "channels.telegram.capabilities.inlineButtons": {
       label: "Telegram Inline Buttons",
@@ -15801,11 +15310,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: 'Allow bot-authored messages to trigger Discord replies (default: false). Set "mentions" to only accept bot messages that mention the bot.',
       tags: ["access", "network", "channels"],
     },
-    "channels.matrix.allowBots": {
-      label: "Matrix Allow Bot Messages",
-      help: 'Allow messages from other configured Matrix bot accounts to trigger replies (default: false). Set "mentions" to only accept bot messages that visibly mention this bot.',
-      tags: ["access", "network", "channels"],
-    },
     "channels.discord.token": {
       label: "Discord Bot Token",
       help: "Discord bot token used for gateway and REST API authentication for this provider account. Keep this secret out of committed config and rotate immediately after any leak.",
@@ -16007,21 +15511,6 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Controls whether this plugin may mutate prompts through typed hooks. Set false to block `before_prompt_build` and ignore prompt-mutating fields from legacy `before_agent_start`, while preserving legacy `modelOverride` and `providerOverride` behavior.",
       tags: ["access"],
     },
-    "plugins.entries.*.subagent": {
-      label: "Plugin Subagent Policy",
-      help: "Per-plugin subagent runtime controls for model override trust and allowlists. Keep this unset unless a plugin must explicitly steer subagent model selection.",
-      tags: ["advanced"],
-    },
-    "plugins.entries.*.subagent.allowModelOverride": {
-      label: "Allow Plugin Subagent Model Override",
-      help: "Explicitly allows this plugin to request provider/model overrides in background subagent runs. Keep false unless the plugin is trusted to steer model selection.",
-      tags: ["access"],
-    },
-    "plugins.entries.*.subagent.allowedModels": {
-      label: "Plugin Subagent Allowed Models",
-      help: 'Allowed override targets for trusted plugin subagent runs as canonical "provider/model" refs. Use "*" only when you intentionally allow any model.',
-      tags: ["access"],
-    },
     "plugins.entries.*.apiKey": {
       label: "Plugin API Key",
       help: "Optional API key field consumed by plugins that accept direct key configuration in entry settings. Use secret/env substitution and avoid committing real credentials into config files.",
@@ -16102,78 +15591,15 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "ISO timestamp of last install/update.",
       tags: ["advanced"],
     },
-    "plugins.installs.*.marketplaceName": {
-      label: "Plugin Marketplace Name",
-      help: "Marketplace display name recorded for marketplace-backed plugin installs (if available).",
-      tags: ["advanced"],
-    },
-    "plugins.installs.*.marketplaceSource": {
-      label: "Plugin Marketplace Source",
-      help: "Original marketplace source used to resolve the install (for example a repo path or Git URL).",
-      tags: ["advanced"],
-    },
-    "plugins.installs.*.marketplacePlugin": {
-      label: "Plugin Marketplace Plugin",
-      help: "Plugin entry name inside the source marketplace, used for later updates.",
-      tags: ["advanced"],
-    },
     "models.providers.*.headers.*": {
       sensitive: true,
       tags: ["security", "models"],
-    },
-    "agents.defaults.sandbox.ssh.identityData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.defaults.sandbox.ssh.certificateData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.defaults.sandbox.ssh.knownHostsData": {
-      sensitive: true,
-      tags: ["security", "storage"],
     },
     "agents.list[].memorySearch.remote.apiKey": {
       sensitive: true,
       tags: ["security", "auth"],
     },
-    "agents.list[].sandbox.ssh.identityData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.list[].sandbox.ssh.certificateData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "agents.list[].sandbox.ssh.knownHostsData": {
-      sensitive: true,
-      tags: ["security", "storage"],
-    },
-    "tools.web.search.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.brave.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.firecrawl.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.gemini.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.grok.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.kimi.apiKey": {
-      sensitive: true,
-      tags: ["security", "auth", "tools"],
-    },
-    "tools.web.search.perplexity.apiKey": {
+    "tools.web.search.tavily.apiKey": {
       sensitive: true,
       tags: ["security", "auth", "tools"],
     },

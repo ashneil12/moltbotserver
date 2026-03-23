@@ -1183,6 +1183,43 @@ export const GENERATED_BUNDLED_PLUGIN_METADATA = [
     },
   },
   {
+    dirName: "history-import",
+    idHint: "history-import",
+    source: {
+      source: "./index.ts",
+      built: "index.js",
+    },
+    packageName: "@openclaw/history-import",
+    packageVersion: "2026.3.14",
+    packageDescription: "Import chat histories from ChatGPT and Claude into OpenClaw",
+    packageManifest: {
+      extensions: ["./index.ts"],
+    },
+    manifest: {
+      id: "history-import",
+      configSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          maxSampleConversations: {
+            type: "number",
+            description: "Max conversations to sample for identity reasoning (default: 50)",
+          },
+        },
+      },
+      skills: ["skills/history-import"],
+      name: "History Import",
+      description:
+        "Import chat histories from ChatGPT and Claude. Makes all conversations searchable via memory_search and optionally seeds identity files.",
+      uiHints: {
+        maxSampleConversations: {
+          label: "Max Sample Conversations",
+          placeholder: "50",
+        },
+      },
+    },
+  },
+  {
     dirName: "huggingface",
     idHint: "huggingface",
     source: {
@@ -1719,6 +1756,49 @@ export const GENERATED_BUNDLED_PLUGIN_METADATA = [
           placeholder: "500",
         },
       },
+    },
+  },
+  {
+    dirName: "memory-unified",
+    idHint: "memory-unified",
+    source: {
+      source: "./index.ts",
+      built: "index.js",
+    },
+    packageName: "@openclaw/memory-unified",
+    packageVersion: "2026.3.14",
+    packageDescription: "Unified memory plugin with auto-recall per-turn injection",
+    packageManifest: {
+      extensions: ["./index.ts"],
+    },
+    manifest: {
+      id: "memory-unified",
+      configSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          autoRecall: {
+            type: "boolean",
+            description: "Inject relevant memories into context before each agent turn",
+            default: true,
+          },
+          recallMaxResults: {
+            type: "number",
+            description: "Maximum number of memory search results to inject per turn",
+            default: 5,
+            minimum: 1,
+            maximum: 20,
+          },
+          recallMinScore: {
+            type: "number",
+            description: "Minimum similarity score for auto-recall results",
+            default: 0.3,
+            minimum: 0,
+            maximum: 1,
+          },
+        },
+      },
+      kind: "memory",
     },
   },
   {

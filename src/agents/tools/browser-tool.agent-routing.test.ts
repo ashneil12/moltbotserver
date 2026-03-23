@@ -11,23 +11,32 @@
  *   - The profile override logic in browser-tool.ts is upstream but our patch depends on it
  *   - Without these, all agents silently share the main browser
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
-
-// ── Mocks (same pattern as browser-tool.e2e.test.ts) ────────────────────────
-
-const browserClientMocks = vi.hoisted(() => ({
-  browserCloseTab: vi.fn(async (..._args: unknown[]) => ({})),
-  browserFocusTab: vi.fn(async (..._args: unknown[]) => ({})),
-  browserOpenTab: vi.fn(async (..._args: unknown[]) => ({
-    targetId: "tab-1",
-    title: "New Tab",
-    url: "about:blank",
-  })),
-  browserProfiles: vi.fn(
-    async (..._args: unknown[]): Promise<Array<Record<string, unknown>>> => [],
+// oxlint-disable typescript/no-explicit-any -- vi.spyOn mock implementations
+// require `as any` casts to satisfy branded return types from the original
+// function signatures. This is test-only code with no production impact.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// ── Mocks (vi.spyOn + __testing.setDepsForTest injection) ───────────────────
+import * as browserClientMod from "../../browser/client.js";
+const browserClientMocks = {
+  browserCloseTab: vi
+    .spyOn(browserClientMod, "browserCloseTab")
+    .mockImplementation(async (..._args: unknown[]) => ({}) as any),
+  browserFocusTab: vi
+    .spyOn(browserClientMod, "browserFocusTab")
+    .mockImplementation(async (..._args: unknown[]) => ({}) as any),
+  browserOpenTab: vi.spyOn(browserClientMod, "browserOpenTab").mockImplementation(
+    async (..._args: unknown[]) =>
+      ({
+        targetId: "tab-1",
+        title: "New Tab",
+        url: "about:blank",
+      }) as any,
   ),
-  browserSnapshot: vi.fn(
-    async (..._args: unknown[]): Promise<Record<string, unknown>> => ({
+  browserProfiles: vi
+    .spyOn(browserClientMod, "browserProfiles")
+    .mockImplementation(async (..._args: unknown[]): Promise<any> => []),
+  browserSnapshot: vi.spyOn(browserClientMod, "browserSnapshot").mockImplementation(
+    async (..._args: unknown[]): Promise<any> => ({
       ok: true,
       format: "ai",
       targetId: "t1",
@@ -35,97 +44,152 @@ const browserClientMocks = vi.hoisted(() => ({
       snapshot: "ok",
     }),
   ),
-  browserStart: vi.fn(async (..._args: unknown[]) => ({})),
-  browserStatus: vi.fn(async (..._args: unknown[]) => ({
-    ok: true,
-    running: true,
-    pid: 1,
-    cdpPort: 9222,
-    cdpUrl: "http://127.0.0.1:9222",
-  })),
-  browserStop: vi.fn(async (..._args: unknown[]) => ({})),
-  browserTabs: vi.fn(async (..._args: unknown[]): Promise<Array<Record<string, unknown>>> => []),
-}));
-vi.mock("../../browser/client.js", () => browserClientMocks);
+  browserStart: vi
+    .spyOn(browserClientMod, "browserStart")
+    .mockImplementation(async (..._args: unknown[]) => ({}) as any),
+  browserStatus: vi.spyOn(browserClientMod, "browserStatus").mockImplementation(
+    async (..._args: unknown[]) =>
+      ({
+        ok: true,
+        running: true,
+        pid: 1,
+        cdpPort: 9222,
+        cdpUrl: "http://127.0.0.1:9222",
+      }) as any,
+  ),
+  browserStop: vi
+    .spyOn(browserClientMod, "browserStop")
+    .mockImplementation(async (..._args: unknown[]) => ({}) as any),
+  browserTabs: vi
+    .spyOn(browserClientMod, "browserTabs")
+    .mockImplementation(async (..._args: unknown[]): Promise<any> => []),
+};
 
-const browserActionsMocks = vi.hoisted(() => ({
-  browserAct: vi.fn(async () => ({ ok: true })),
-  browserArmDialog: vi.fn(async () => ({ ok: true })),
-  browserArmFileChooser: vi.fn(async () => ({ ok: true })),
-  browserConsoleMessages: vi.fn(async () => ({
-    ok: true,
-    targetId: "t1",
-    messages: [],
-  })),
-  browserNavigate: vi.fn(async () => ({ ok: true })),
-  browserPdfSave: vi.fn(async () => ({ ok: true, path: "/tmp/test.pdf" })),
-  browserScreenshotAction: vi.fn(async () => ({ ok: true, path: "/tmp/test.png" })),
-}));
-vi.mock("../../browser/client-actions.js", () => browserActionsMocks);
+import * as browserActionsMod from "../../browser/client-actions.js";
+const browserActionsMocks = {
+  browserAct: vi
+    .spyOn(browserActionsMod, "browserAct")
+    .mockImplementation(async () => ({ ok: true }) as any),
+  browserArmDialog: vi
+    .spyOn(browserActionsMod, "browserArmDialog")
+    .mockImplementation(async () => ({ ok: true }) as any),
+  browserArmFileChooser: vi
+    .spyOn(browserActionsMod, "browserArmFileChooser")
+    .mockImplementation(async () => ({ ok: true }) as any),
+  browserConsoleMessages: vi.spyOn(browserActionsMod, "browserConsoleMessages").mockImplementation(
+    async () =>
+      ({
+        ok: true,
+        targetId: "t1",
+        messages: [],
+      }) as any,
+  ),
+  browserNavigate: vi
+    .spyOn(browserActionsMod, "browserNavigate")
+    .mockImplementation(async () => ({ ok: true }) as any),
+  browserPdfSave: vi
+    .spyOn(browserActionsMod, "browserPdfSave")
+    .mockImplementation(async () => ({ ok: true, path: "/tmp/test.pdf" }) as any),
+  browserScreenshotAction: vi
+    .spyOn(browserActionsMod, "browserScreenshotAction")
+    .mockImplementation(async () => ({ ok: true, path: "/tmp/test.png" }) as any),
+};
 
-const browserConfigMocks = vi.hoisted(() => ({
-  resolveBrowserConfig: vi.fn(() => ({
-    enabled: true,
-    controlPort: 18791,
-    profiles: {},
-    defaultProfile: "openclaw",
-  })),
-  resolveProfile: vi.fn(() => null),
-}));
-vi.mock("../../browser/config.js", () => browserConfigMocks);
+import * as browserConfigMod from "../../browser/config.js";
+const browserConfigMocks = {
+  resolveBrowserConfig: vi
+    .spyOn(browserConfigMod, "resolveBrowserConfig")
+    .mockImplementation((() => ({
+      enabled: true,
+      controlPort: 18791,
+      profiles: {},
+      defaultProfile: "openclaw",
+    })) as any),
+  resolveProfile: vi
+    .spyOn(browserConfigMod, "resolveProfile")
+    .mockImplementation((() => null) as any),
+};
 
-const nodesUtilsMocks = vi.hoisted(() => ({
-  listNodes: vi.fn(async (..._args: unknown[]): Promise<Array<Record<string, unknown>>> => []),
-}));
-vi.mock("./nodes-utils.js", async () => {
-  const actual = await vi.importActual<typeof import("./nodes-utils.js")>("./nodes-utils.js");
-  return {
-    ...actual,
-    listNodes: nodesUtilsMocks.listNodes,
-  };
-});
+import * as nodesUtilsMod from "./nodes-utils.js";
+const nodesUtilsMocks = {
+  listNodes: vi
+    .spyOn(nodesUtilsMod, "listNodes")
+    .mockImplementation(async (..._args: unknown[]): Promise<any> => []),
+};
 
-const gatewayMocks = vi.hoisted(() => ({
-  callGatewayTool: vi.fn(async () => ({
-    ok: true,
-    payload: { result: { ok: true, running: true } },
-  })),
-}));
-vi.mock("./gateway.js", () => gatewayMocks);
+import * as gatewayMod from "./gateway.js";
+const gatewayMocks = {
+  callGatewayTool: vi.spyOn(gatewayMod, "callGatewayTool").mockImplementation(
+    async () =>
+      ({
+        ok: true,
+        payload: { result: { ok: true, running: true } },
+      }) as any,
+  ),
+};
 
-const configMocks = vi.hoisted(() => ({
-  loadConfig: vi.fn(() => ({ browser: {} })),
-}));
-vi.mock("../../config/config.js", () => configMocks);
+import * as configMod from "../../config/config.js";
+const configMocks = {
+  loadConfig: vi
+    .spyOn(configMod, "loadConfig")
+    .mockImplementation((() => ({ browser: {} })) as any),
+};
 
-const sessionTabRegistryMocks = vi.hoisted(() => ({
-  trackSessionBrowserTab: vi.fn(),
-  untrackSessionBrowserTab: vi.fn(),
-}));
-vi.mock("../../browser/session-tab-registry.js", () => sessionTabRegistryMocks);
+import * as sessionTabRegistryMod from "../../browser/session-tab-registry.js";
+const sessionTabRegistryMocks = {
+  trackSessionBrowserTab: vi
+    .spyOn(sessionTabRegistryMod, "trackSessionBrowserTab")
+    .mockImplementation(() => {}),
+  untrackSessionBrowserTab: vi
+    .spyOn(sessionTabRegistryMod, "untrackSessionBrowserTab")
+    .mockImplementation(() => {}),
+};
 
-vi.mock("./common.js", async () => {
-  const actual = await vi.importActual<typeof import("./common.js")>("./common.js");
-  return {
-    ...actual,
-    imageResultFromFile: vi.fn(),
-  };
-});
-
-import { createBrowserTool } from "./browser-tool.js";
+import { __testing as browserToolActionsTesting } from "./browser-tool.actions.js";
+import { createBrowserTool, __testing as browserToolTesting } from "./browser-tool.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function resetAllMocks() {
   vi.clearAllMocks();
-  configMocks.loadConfig.mockReturnValue({ browser: {} });
+  configMocks.loadConfig.mockReturnValue({ browser: {} } as any);
+  browserConfigMocks.resolveProfile.mockImplementation((() => null) as any);
   browserConfigMocks.resolveBrowserConfig.mockReturnValue({
     enabled: true,
     controlPort: 18791,
     profiles: {},
     defaultProfile: "openclaw",
-  });
+  } as any);
   nodesUtilsMocks.listNodes.mockResolvedValue([]);
+
+  // Inject mocks into the browser-tool deps cache
+  browserToolTesting.setDepsForTest({
+    browserAct: browserActionsMocks.browserAct as never,
+    browserArmDialog: browserActionsMocks.browserArmDialog as never,
+    browserArmFileChooser: browserActionsMocks.browserArmFileChooser as never,
+    browserCloseTab: browserClientMocks.browserCloseTab as never,
+    browserFocusTab: browserClientMocks.browserFocusTab as never,
+    browserNavigate: browserActionsMocks.browserNavigate as never,
+    browserOpenTab: browserClientMocks.browserOpenTab as never,
+    browserPdfSave: browserActionsMocks.browserPdfSave as never,
+    browserProfiles: browserClientMocks.browserProfiles as never,
+    browserScreenshotAction: browserActionsMocks.browserScreenshotAction as never,
+    browserStart: browserClientMocks.browserStart as never,
+    browserStatus: browserClientMocks.browserStatus as never,
+    browserStop: browserClientMocks.browserStop as never,
+    loadConfig: configMocks.loadConfig as never,
+    listNodes: nodesUtilsMocks.listNodes as never,
+    callGatewayTool: gatewayMocks.callGatewayTool as never,
+    trackSessionBrowserTab: sessionTabRegistryMocks.trackSessionBrowserTab as never,
+    untrackSessionBrowserTab: sessionTabRegistryMocks.untrackSessionBrowserTab as never,
+  });
+  browserToolActionsTesting.setDepsForTest({
+    browserAct: browserActionsMocks.browserAct as never,
+    browserConsoleMessages: browserActionsMocks.browserConsoleMessages as never,
+    browserSnapshot: browserClientMocks.browserSnapshot as never,
+    browserTabs: browserClientMocks.browserTabs as never,
+    loadConfig: configMocks.loadConfig as never,
+  } as any);
 }
 
 /**
@@ -181,6 +245,7 @@ function configWithMultipleAgentProfiles(agentIds: string[]) {
 // ── Per-Agent Profile Override Tests ────────────────────────────────────────
 
 describe("browser tool per-agent profile routing", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("overrides default profile to agent's profile when agentId is set and config has a profile", async () => {
@@ -281,6 +346,7 @@ describe("browser tool per-agent profile routing", () => {
 // ── Profile Override Across All Actions ─────────────────────────────────────
 
 describe("browser tool per-agent routing across all actions", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("routes agent profile for 'start' action", async () => {
@@ -396,6 +462,7 @@ describe("browser tool per-agent routing across all actions", () => {
 // ── Host-Only Profile Protection ────────────────────────────────────────────
 
 describe("browser tool host-only profile protection with agentId", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it('does NOT override profile="user" even when agent has a profile', async () => {
@@ -475,6 +542,16 @@ describe("browser tool host-only profile protection with agentId", () => {
       },
     ]);
     configWithAgentProfile("dan");
+    browserConfigMocks.resolveProfile.mockReturnValue({
+      name: "chrome-relay",
+      driver: "existing-session",
+      cdpPort: 0,
+      cdpUrl: "",
+      cdpHost: "",
+      cdpIsLoopback: true,
+      color: "#00AA00",
+      attachOnly: true,
+    });
     const tool = createBrowserTool({ agentId: "dan" });
 
     await expect(
@@ -490,6 +567,7 @@ describe("browser tool host-only profile protection with agentId", () => {
 // ── Sandbox Bridge URL Interaction ──────────────────────────────────────────
 
 describe("browser tool per-agent routing with sandbox bridge", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("applies agent profile override independently of sandbox bridge URL", async () => {
@@ -525,6 +603,7 @@ describe("browser tool per-agent routing with sandbox bridge", () => {
 // ── Tab Tracking With Agent Context ─────────────────────────────────────────
 
 describe("browser tool tab tracking with per-agent routing", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("tracks tabs under the agent's session key and profile", async () => {
@@ -575,6 +654,7 @@ describe("browser tool tab tracking with per-agent routing", () => {
 // ── Tool Creation & Description ─────────────────────────────────────────────
 
 describe("browser tool creation", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("sets target default to sandbox when sandboxBridgeUrl is provided", () => {
@@ -612,6 +692,7 @@ describe("browser tool creation", () => {
 // ── Error Handling ──────────────────────────────────────────────────────────
 
 describe("browser tool error handling", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("throws on unknown action", async () => {
@@ -662,6 +743,7 @@ describe("browser tool error handling", () => {
 // ── Agent Profile Config Edge Cases ─────────────────────────────────────────
 
 describe("browser tool agent profile edge cases", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("handles browser config with empty profiles object", async () => {
@@ -745,6 +827,7 @@ describe("browser tool agent profile edge cases", () => {
 // ── Node Proxy With Agent Profile ───────────────────────────────────────────
 
 describe("browser tool node proxy with per-agent routing", () => {
+  beforeEach(() => resetAllMocks());
   afterEach(() => resetAllMocks());
 
   it("passes agent profile through to node proxy requests", async () => {

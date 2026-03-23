@@ -400,7 +400,7 @@ describe("finalizeSetupWizard", () => {
         tools: {
           web: {
             search: {
-              provider: "firecrawl",
+              provider: "firecrawl" as unknown as "searxng",
               enabled: true,
             },
           },
@@ -509,7 +509,7 @@ describe("finalizeSetupWizard", () => {
         tools: {
           web: {
             search: {
-              provider: "firecrawl",
+              provider: "firecrawl" as unknown as "searxng",
               enabled: true,
             },
           },

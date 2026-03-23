@@ -3,6 +3,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import { resolvePluginTools } from "../plugins/tools.js";
 import { getActiveRuntimeWebToolsMetadata } from "../secrets/runtime.js";
 import type { GatewayMessageChannel } from "../utils/message-channel.js";
+import { resolveSessionAgentId } from "./agent-scope.js";
 import { getApiKeyForModel, requireApiKey } from "./model-auth.js";
 import {
   resolveDefaultModelForAgent,
@@ -10,7 +11,6 @@ import {
   resolveModelRefFromString,
 } from "./model-selection.js";
 import { resolveModel } from "./pi-embedded-runner/model.js";
-import { resolveSessionAgentId } from "./agent-scope.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import type { SpawnedToolContext } from "./spawned-context.js";
 import type { ToolFsPolicy } from "./tool-fs-policy.js";

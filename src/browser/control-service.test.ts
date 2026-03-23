@@ -11,64 +11,77 @@
  * is a custom addition that maps each agent's CDP URL to their workspace directory.
  * Without this, browser downloads from agent browsers land in the wrong workspace.
  */
+// oxlint-disable typescript/no-explicit-any -- vi.spyOn mock implementations
+// require `as any` casts to satisfy branded return types from the original
+// function signatures. This is test-only code with no production impact.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 // ── Mocks ───────────────────────────────────────────────────────────────────
+import * as agentScopeMod from "../agents/agent-scope.js";
+const agentScopeMocks = {
+  listAgentIds: vi.spyOn(agentScopeMod, "listAgentIds").mockImplementation((): string[] => []),
+  resolveAgentWorkspaceDir: vi
+    .spyOn(agentScopeMod, "resolveAgentWorkspaceDir")
+    .mockImplementation((_cfg: unknown, agentId: string) => `/home/node/data/workspace-${agentId}`),
+};
 
-const agentScopeMocks = vi.hoisted(() => ({
-  listAgentIds: vi.fn((): string[] => []),
-  resolveAgentWorkspaceDir: vi.fn((_cfg: unknown, agentId: string) => {
-    return `/home/node/data/workspace-${agentId}`;
-  }),
-}));
-vi.mock("../agents/agent-scope.js", () => agentScopeMocks);
+import * as configMod from "../config/config.js";
+const configMocks = {
+  loadConfig: vi.spyOn(configMod, "loadConfig").mockImplementation(() => ({ browser: {} }) as any),
+};
 
-const configMocks = vi.hoisted(() => ({
-  loadConfig: vi.fn(() => ({ browser: {} })),
-}));
-vi.mock("../config/config.js", () => configMocks);
-
-const browserConfigMocks = vi.hoisted(() => ({
-  resolveBrowserConfig: vi.fn(
-    (): Record<string, unknown> => ({
+import * as browserConfigMod from "./config.js";
+const browserConfigMocks = {
+  resolveBrowserConfig: vi
+    .spyOn(browserConfigMod, "resolveBrowserConfig")
+    .mockImplementation((): any => ({
       enabled: false,
       controlPort: 18791,
       profiles: {},
       defaultProfile: "openclaw",
+    })),
+};
+
+import * as controlAuthMod from "./control-auth.js";
+const controlAuthMocks = {
+  ensureBrowserControlAuth: vi
+    .spyOn(controlAuthMod, "ensureBrowserControlAuth")
+    .mockImplementation(async () => ({ generatedToken: false }) as any),
+};
+
+import * as downloadRegistryMod from "./download-workspace-registry.js";
+const downloadRegistryMocks = {
+  setDownloadWorkspaceForCdp: vi
+    .spyOn(downloadRegistryMod, "setDownloadWorkspaceForCdp")
+    .mockImplementation(() => {}),
+};
+
+import * as runtimeLifecycleMod from "./runtime-lifecycle.js";
+const runtimeMocks = {
+  createBrowserRuntimeState: vi
+    .spyOn(runtimeLifecycleMod, "createBrowserRuntimeState")
+    .mockImplementation(
+      async (params: Record<string, unknown>) =>
+        ({
+          resolved: params.resolved,
+          profiles: new Map(),
+          server: null,
+        }) as any,
+    ),
+  stopBrowserRuntime: vi
+    .spyOn(runtimeLifecycleMod, "stopBrowserRuntime")
+    .mockImplementation(async (params: Record<string, unknown>) => {
+      const clearState = params.clearState as () => void;
+      clearState();
     }),
-  ),
-}));
-vi.mock("./config.js", () => browserConfigMocks);
+};
 
-const controlAuthMocks = vi.hoisted(() => ({
-  ensureBrowserControlAuth: vi.fn(async () => ({ generatedToken: false })),
-}));
-vi.mock("./control-auth.js", () => controlAuthMocks);
-
-const downloadRegistryMocks = vi.hoisted(() => ({
-  setDownloadWorkspaceForCdp: vi.fn(),
-}));
-vi.mock("./download-workspace-registry.js", () => downloadRegistryMocks);
-
-const runtimeMocks = vi.hoisted(() => ({
-  createBrowserRuntimeState: vi.fn(async (params: Record<string, unknown>) => ({
-    resolved: params.resolved,
-    profiles: new Map(),
-    server: null,
-  })),
-  stopBrowserRuntime: vi.fn(async (params: Record<string, unknown>) => {
-    const clearState = params.clearState as () => void;
-    clearState();
-  }),
-}));
-vi.mock("./runtime-lifecycle.js", () => runtimeMocks);
-
-const serverContextMocks = vi.hoisted(() => ({
-  createBrowserRouteContext: vi.fn(() => ({})),
-}));
-vi.mock("./server-context.js", () => ({
-  ...serverContextMocks,
-}));
+import * as serverContextMod from "./server-context.js";
+// _serverContextMocks: held for vi.spyOn side effect (prevents real server-context import)
+const _serverContextMocks = {
+  createBrowserRouteContext: vi
+    .spyOn(serverContextMod, "createBrowserRouteContext")
+    .mockImplementation(() => ({}) as any),
+};
 
 // Logger mock (noop)
 vi.mock("../logging/subsystem.js", () => ({

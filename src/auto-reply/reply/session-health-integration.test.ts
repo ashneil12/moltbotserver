@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { onRunError, onRunSuccess, readHealthState, writeHealthState } from "./session-health-integration.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
+import {
+  onRunError,
+  onRunSuccess,
+  readHealthState,
+  writeHealthState,
+} from "./session-health-integration.js";
 
 function makeEntry(overrides?: Partial<SessionEntry>): SessionEntry {
   return { sessionId: "test-session", updatedAt: Date.now(), ...overrides };

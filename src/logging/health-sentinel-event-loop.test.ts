@@ -7,13 +7,13 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { classifyHealthIssues } from "./health-sentinel.js";
 import {
   createGatewayRestartPlaybook,
   type RemediationContext,
 } from "./health-sentinel-playbooks.js";
-import type { ClassifiedIssue } from "./health-sentinel-types.js";
 import { createMockHealthSummary, createMockSystemReport } from "./health-sentinel-test-helpers.js";
+import type { ClassifiedIssue } from "./health-sentinel-types.js";
+import { classifyHealthIssues } from "./health-sentinel.js";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Classification Tests
@@ -25,7 +25,8 @@ describe("event loop classification", () => {
       {
         name: "process.event_loop_delay",
         status: "fail",
-        detail: "Event loop severely degraded: p99=3000ms mean=2500ms min=10ms max=5000ms (threshold: 2000ms)",
+        detail:
+          "Event loop severely degraded: p99=3000ms mean=2500ms min=10ms max=5000ms (threshold: 2000ms)",
       },
     ]);
     const healthSummary = createMockHealthSummary();
@@ -43,7 +44,8 @@ describe("event loop classification", () => {
       {
         name: "process.event_loop_delay",
         status: "warn",
-        detail: "Event loop lag elevated: p99=700ms mean=400ms min=5ms max=900ms (threshold: 500ms)",
+        detail:
+          "Event loop lag elevated: p99=700ms mean=400ms min=5ms max=900ms (threshold: 500ms)",
       },
     ]);
     const healthSummary = createMockHealthSummary();
@@ -116,9 +118,7 @@ function makeNonEventLoopIssue(): ClassifiedIssue {
   };
 }
 
-function createMockRemediationContext(
-  overrides?: Partial<RemediationContext>,
-): RemediationContext {
+function createMockRemediationContext(overrides?: Partial<RemediationContext>): RemediationContext {
   return {
     restartChannel: vi.fn(async () => {}),
     probeChannelHealth: vi.fn(async () => true),
