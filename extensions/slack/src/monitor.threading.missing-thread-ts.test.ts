@@ -1,122 +1,115 @@
-import { resetInboundDedupe } from "openclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
 import {
-  defaultSlackTestConfig,
+  flush,
   getSlackClient,
+  getSlackHandlerOrThrow,
   getSlackTestState,
   resetSlackTestState,
   startSlackMonitor,
   stopSlackMonitor,
-  getSlackHandlerOrThrow,
-  runSlackMessageOnce,
-  flush,
-} from "./monitor.test-setup.js";
+} from "./monitor.test-helpers.js";
+
+let monitorSlackProvider: typeof import("./monitor.js").monitorSlackProvider;
 
 const slackTestState = getSlackTestState();
 
-describe("monitorSlackProvider threading", () => {
-  let monitorSlackProvider: any;
+type SlackConversationsClient = {
+  history: ReturnType<typeof vi.fn>;
+  info: ReturnType<typeof vi.fn>;
+};
 
-  beforeEach(async () => {
-    const mod = await import("./monitor.js");
-    monitorSlackProvider = mod.monitorSlackProvider;
-    resetInboundDedupe();
-    resetSlackTestState(defaultSlackTestConfig());
-  });
-  type SlackConversationsClient = {
-    history: ReturnType<typeof vi.fn>;
-    info: ReturnType<typeof vi.fn>;
+function makeThreadReplyEvent() {
+  return {
+    event: {
+      type: "message",
+      user: "U1",
+      text: "hello",
+      ts: "456",
+      parent_user_id: "U2",
+      channel: "C1",
+      channel_type: "channel",
+    },
   };
+}
 
-  function makeThreadReplyEvent() {
-    return {
-      event: {
-        type: "message",
-        user: "U1",
-        text: "hello",
-        ts: "456",
-        parent_user_id: "U2",
-        channel: "C1",
-        channel_type: "channel",
+function getConversationsClient(): SlackConversationsClient {
+  const client = getSlackClient();
+  if (!client) {
+    throw new Error("Slack client not registered");
+  }
+  return client.conversations as SlackConversationsClient;
+}
+
+async function runMissingThreadScenario(params: {
+  historyResponse?: { messages: Array<{ ts?: string; thread_ts?: string }> };
+  historyError?: Error;
+}) {
+  slackTestState.replyMock.mockResolvedValue({ text: "thread reply" });
+
+  const conversations = getConversationsClient();
+  if (params.historyError) {
+    conversations.history.mockRejectedValueOnce(params.historyError);
+  } else {
+    conversations.history.mockResolvedValueOnce(
+      params.historyResponse ?? { messages: [{ ts: "456" }] },
+    );
+  }
+
+  const { controller, run } = startSlackMonitor(monitorSlackProvider);
+  const handler = await getSlackHandlerOrThrow("message");
+  await handler(makeThreadReplyEvent());
+
+  await flush();
+  await stopSlackMonitor({ controller, run });
+
+  expect(slackTestState.sendMock).toHaveBeenCalledTimes(1);
+  return slackTestState.sendMock.mock.calls[0]?.[2];
+}
+
+beforeEach(() => {
+  resetInboundDedupe();
+});
+
+beforeEach(async () => {
+  vi.resetModules();
+  ({ monitorSlackProvider } = await import("./monitor.js"));
+  resetInboundDedupe();
+  resetSlackTestState({
+    messages: { responsePrefix: "PFX" },
+    channels: {
+      slack: {
+        dm: { enabled: true, policy: "open", allowFrom: ["*"] },
+        groupPolicy: "open",
+        channels: { C1: { allow: true, requireMention: false } },
       },
-    };
-  }
+    },
+  });
+  const conversations = getConversationsClient();
+  conversations.info.mockResolvedValue({
+    channel: { name: "general", is_channel: true },
+  });
+});
 
-  function getConversationsClient(): SlackConversationsClient {
-    const client = getSlackClient();
-    if (!client) {
-      throw new Error("Slack client not registered");
-    }
-    return client.conversations as SlackConversationsClient;
-  }
-
-  async function runMissingThreadScenario(params: {
-    historyResponse?: { messages: Array<{ ts?: string; thread_ts?: string }> };
-    historyError?: Error;
-  }) {
-    slackTestState.replyMock.mockResolvedValue({ text: "thread reply" });
-
-    const conversations = getConversationsClient();
-    if (params.historyError) {
-      conversations.history.mockRejectedValueOnce(params.historyError);
-    } else {
-      conversations.history.mockResolvedValueOnce(
-        params.historyResponse ?? { messages: [{ ts: "456" }] },
-      );
-    }
-
-    const { controller, run } = startSlackMonitor(monitorSlackProvider);
-    const handler = getSlackHandlerOrThrow("message");
-    await handler(makeThreadReplyEvent());
-
-    await flush();
-    await stopSlackMonitor({ controller, run });
-
-    expect(slackTestState.sendMock).toHaveBeenCalledTimes(1);
-    return slackTestState.sendMock.mock.calls[0]?.[2];
-  }
-
-  beforeEach(() => {
-    resetInboundDedupe();
-    resetSlackTestState({
-      messages: { responsePrefix: "PFX" },
-      channels: {
-        slack: {
-          enabled: true,
-          dm: { enabled: true, policy: "open", allowFrom: ["*"] },
-          groupPolicy: "open",
-          channels: { C1: { allow: true, requireMention: false } },
-        },
-      },
+describe("monitorSlackProvider threading", () => {
+  it("recovers missing thread_ts when parent_user_id is present", async () => {
+    const options = await runMissingThreadScenario({
+      historyResponse: { messages: [{ ts: "456", thread_ts: "111.222" }] },
     });
-    const conversations = getConversationsClient();
-    conversations.info.mockResolvedValue({
-      channel: { name: "general", is_channel: true },
-    });
+    expect(options).toMatchObject({ threadTs: "111.222" });
   });
 
-  describe("monitorSlackProvider threading", () => {
-    it("recovers missing thread_ts when parent_user_id is present", async () => {
-      const options = await runMissingThreadScenario({
-        historyResponse: { messages: [{ ts: "456", thread_ts: "111.222" }] },
-      });
-      expect(slackTestState.sendMock.mock.calls[0][1]).toHaveLength(1);
-      expect(slackTestState.sendMock.mock.calls[0][1][0].text).toBe("thread reply");
-      expect(options).toMatchObject({ threadTs: "111.222" });
+  it("continues without thread_ts when history lookup returns no thread result", async () => {
+    const options = await runMissingThreadScenario({
+      historyResponse: { messages: [{ ts: "456" }] },
     });
+    expect(options).not.toMatchObject({ threadTs: "111.222" });
+  });
 
-    it("continues without thread_ts when history lookup returns no thread result", async () => {
-      const options = await runMissingThreadScenario({
-        historyResponse: { messages: [{ ts: "456" }] },
-      });
-      expect(options).not.toMatchObject({ threadTs: "111.222" });
+  it("continues without thread_ts when history lookup throws", async () => {
+    const options = await runMissingThreadScenario({
+      historyError: new Error("history failed"),
     });
-
-    it("continues without thread_ts when history lookup throws", async () => {
-      const options = await runMissingThreadScenario({
-        historyError: new Error("history failed"),
-      });
-      expect(options).not.toMatchObject({ threadTs: "111.222" });
-    });
+    expect(options).not.toMatchObject({ threadTs: "111.222" });
   });
 });
