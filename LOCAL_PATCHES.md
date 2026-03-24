@@ -27,7 +27,7 @@ c 'Promise.all' src/browser/server-context.ts 1 "Parallel profile listing"
 c 'timeoutMs: 5000' src/browser/client.ts 1 "Profile timeout bump"
 c 'sweepStaleBrowserContainers' src/gateway/server-startup.ts 1 "Browser startup sweep"
 c 'readDockerImageId' src/agents/sandbox/docker.ts 1 "Docker image digest"
-c 'downloadWorkspaceForCdp' src/browser/control-service.ts 1 "Auto-download wiring"
+c 'setDownloadWorkspaceForCdp' src/browser/control-service.ts 1 "Auto-download wiring"
 
 echo "=== Security ==="
 c 'redactSecrets' src/auto-reply/reply/normalize-reply.ts 1 "Secret redaction in reply"
@@ -44,12 +44,12 @@ c '"workspace"' src/memory/types.ts 1 "Workspace memory source"
 c 'resolveDefaultWorkspaceCollection' src/memory/backend-config.ts 1 "Workspace collection"
 c 'addCollectionWithRetry' src/memory/qmd-manager.ts 1 "QMD retry logic"
 c 'warnIfWorkspaceCollectionsEmpty' src/memory/qmd-manager.ts 1 "QMD empty warning"
-c 'createWorkspaceSearchTool' src/agents/tool-catalog.ts 1 "workspace_search tool"
+c 'workspace documents' src/agents/tool-catalog.ts 1 "workspace_search tool"
 c 'createSqlQueryTool' src/agents/openclaw-tools.ts 1 "SQL tool registration"
 c 'applySourceBoostToResults' src/memory/hybrid.ts 1 "Source-aware boost"
 c 'runSearxngSearch' src/agents/tools/web-search.ts 1 "SearXNG provider"
 c 'resolveSearxngEngines' src/agents/tools/web-search.ts 1 "SearXNG engine resolver"
-c 'slice().sort()' src/agents/tools/web-search.ts 1 "Cache key immutability"
+c 'slice().toSorted()' src/agents/tools/web-search.ts 1 "Cache key immutability"
 c 'fetchScraplingContent' src/agents/tools/web-fetch.ts 1 "Scrapling fallback"
 
 echo "=== Sessions ==="
@@ -89,7 +89,7 @@ c 'tools.profile = "full"' enforce-config.mjs 1 "Full tool profile"
 c 'lossless-claw' Dockerfile 1 "LCM pre-bake"
 c 'contextEngine' enforce-config.mjs 1 "LCM slot assignment"
 c 'yt-dlp' Dockerfile 1 "Agent CLI tooling"
-c 'MEDIA_DOWNLOAD_TIMEOUT_MS' src/telegram/bot-handlers.ts 1 "Telegram media timeout"
+c 'TELEGRAM_DOWNLOAD_IDLE_TIMEOUT_MS' extensions/telegram/src/bot/delivery.resolve-media.ts 1 "Telegram media timeout"
 c 'qmd pre-warm' docker-entrypoint.sh 1 "QMD pre-warm"
 c 'workspace-doc-converter' docker-entrypoint.sh 1 "Doc converter sidecar"
 c 'patch-qmd-gemini' docker-entrypoint.sh 1 "QMD Gemini embedding patch"
@@ -214,7 +214,7 @@ auto-recreation, agents get stale browsers until manually restarted.
 
 **What**: Per-profile workspace registration for auto-downloads (`setDownloadWorkspaceForCdp`).
 
-**How to verify**: `grep -c 'downloadWorkspaceForCdp' src/browser/control-service.ts`
+**How to verify**: `grep -c 'setDownloadWorkspaceForCdp' src/browser/control-service.ts`
 
 ---
 
@@ -298,7 +298,7 @@ quarantined, preventing false positives when security documentation discusses in
 **Why**: Self-hosted, keyless metasearch engine.
 
 **What**: `runSearxngSearch()`, `resolveSearxngEngines()`, engine selection via `SEARXNG_ENGINES`.
-Bug fix: `slice().sort()` prevents cache key mutation.
+Bug fix: `slice().toSorted()` prevents cache key mutation.
 
 **How to verify**: `grep -c 'runSearxngSearch' src/agents/tools/web-search.ts`
 
@@ -407,9 +407,9 @@ cron schedule redesign, LCM context engine slot, `MAIN_ONLY_JOBS` filtering.
 
 **Why**: Hung media downloads block entire message groups.
 
-**What**: 15s `MEDIA_DOWNLOAD_TIMEOUT_MS` on `resolveMedia` calls.
+**What**: 30s `TELEGRAM_DOWNLOAD_IDLE_TIMEOUT_MS` idle timeout on media downloads.
 
-**How to verify**: `grep -c 'MEDIA_DOWNLOAD_TIMEOUT_MS' src/telegram/bot-handlers.ts`
+**How to verify**: `grep -c 'TELEGRAM_DOWNLOAD_IDLE_TIMEOUT_MS' extensions/telegram/src/bot/delivery.resolve-media.ts`
 
 ### 34. `src/auto-reply/heartbeat.ts` — Heartbeat Default
 

@@ -4,10 +4,41 @@ import os from "node:os";
 import path from "node:path";
 import { openBoundaryFile } from "../infra/boundary-file-read.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
+import { scanAndLog } from "../security/scan-and-log.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveWorkspaceTemplateDir } from "./workspace-templates.js";
+
+const workspaceSecurityLog = createSubsystemLogger("workspace-security");
+
+/**
+ * Scan workspace content for prompt injection before it enters the system prompt.
+ * Quarantined content gets wrapped with ACIP boundary markers so the agent treats
+ * it as untrusted. Fail-open: if the scanner crashes, content passes through unchanged.
+ */
+function scanWorkspaceContent(content: string, fileName: string, filePath: string): string {
+  try {
+    const scanResult = scanAndLog(content, {
+      source: "workspace_context",
+      sender: fileName,
+      eventName: "security.workspace_context_scan",
+      extraData: { file: fileName, path: filePath },
+    });
+    if (scanResult?.quarantined) {
+      workspaceSecurityLog.warn(
+        `Workspace file quarantined: ${fileName} (riskScore=${scanResult.riskScore}, ` +
+          `findings=${scanResult.findings.map((f) => f.description).join(", ")})`,
+      );
+      return scanResult.sanitizedContent;
+    }
+    return content;
+  } catch {
+    // Fail-open: scanner crash should not block workspace loading
+    return content;
+  }
+}
 
 export function resolveDefaultAgentWorkspaceDir(
   env: NodeJS.ProcessEnv = process.env,
@@ -533,10 +564,15 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
       workspaceDir: resolvedDir,
     });
     if (loaded.ok) {
+      // First-party bootstrap files are exempt from quarantine — if an attacker
+      // has write access to SOUL.md, the workspace is already compromised.
+      const content = VALID_BOOTSTRAP_NAMES.has(entry.name)
+        ? loaded.content
+        : scanWorkspaceContent(loaded.content, entry.name, entry.filePath);
       result.push({
         name: entry.name,
         path: entry.filePath,
-        content: loaded.content,
+        content,
         missing: false,
       });
     } else {
@@ -621,10 +657,14 @@ export async function loadExtraBootstrapFilesWithDiagnostics(
       workspaceDir: resolvedDir,
     });
     if (loaded.ok) {
+      // First-party bootstrap files are exempt from quarantine
+      const content = VALID_BOOTSTRAP_NAMES.has(baseName)
+        ? loaded.content
+        : scanWorkspaceContent(loaded.content, baseName, filePath);
       files.push({
         name: baseName as WorkspaceBootstrapFileName,
         path: filePath,
-        content: loaded.content,
+        content,
         missing: false,
       });
       continue;
