@@ -3,6 +3,7 @@ import { formatControlPlaneActor, resolveControlPlaneActor } from "./control-pla
 import { consumeControlPlaneWriteBudget } from "./control-plane-rate-limit.js";
 import { ADMIN_SCOPE, authorizeOperatorScopesForMethod } from "./method-scopes.js";
 import { ErrorCodes, errorShape } from "./protocol/index.js";
+import { isManagedPlatformAdmin } from "./server-methods/utils.js";
 import { isRoleAuthorizedForMethod, parseGatewayRole } from "./role-policy.js";
 import { agentHandlers } from "./server-methods/agent.js";
 import { agentsHandlers } from "./server-methods/agents.js";
@@ -36,7 +37,7 @@ import { webHandlers } from "./server-methods/web.js";
 import { wizardHandlers } from "./server-methods/wizard.js";
 
 /**
- * Methods exempt from operator scope enforcement.
+ * Methods exempt from operator scope enforcement for ANY authenticated client.
  *
  * Backend clients (e.g. the dashboard) authenticate with the shared gateway
  * token but have no device identity, so the gateway strips their self-declared
@@ -61,12 +62,103 @@ const SHARED_AUTH_EXEMPT_METHODS = new Set([
   "cron.run",
 ]);
 
+/**
+ * Methods callable by the MoltBot dashboard backend (`gateway-client`) and
+ * the embedded Control UI (`openclaw-control-ui`) on **managed-platform
+ * deployments only** (`OPENCLAW_MANAGED_PLATFORM=1`).
+ *
+ * These clients connect via shared token without device identity, so
+ * `clearUnboundScopes` strips their scopes. This set covers all read and
+ * write methods needed for the Control UI to function.
+ *
+ * This exemption is intentionally a no-op in self-hosted mode.
+ */
+const MANAGED_PLATFORM_CLIENT_EXEMPT_METHODS = new Set([
+  // Read scope
+  "status",
+  "doctor.memory.status",
+  "logs.tail",
+  "channels.status",
+  "usage.status",
+  "usage.cost",
+  "models.list",
+  "tools.catalog",
+  "agents.list",
+  "agent.identity.get",
+  "skills.status",
+  "voicewake.get",
+  "sessions.list",
+  "sessions.get",
+  "sessions.preview",
+  "sessions.resolve",
+  "sessions.subscribe",
+  "sessions.unsubscribe",
+  "sessions.messages.subscribe",
+  "sessions.messages.unsubscribe",
+  "sessions.usage",
+  "sessions.usage.timeseries",
+  "sessions.usage.logs",
+  "gateway.identity.get",
+  "system-presence",
+  "last-heartbeat",
+  "node.list",
+  "node.describe",
+  "chat.history",
+  "config.get",
+  "config.schema.lookup",
+  "talk.config",
+  "tts.status",
+  "tts.providers",
+  "agents.files.list",
+  "agents.files.get",
+  // Write scope
+  "send",
+  "poll",
+  "agent",
+  "agent.wait",
+  "wake",
+  "chat.send",
+  "chat.abort",
+  "talk.mode",
+  "talk.speak",
+  "tts.enable",
+  "tts.disable",
+  "tts.convert",
+  "tts.setProvider",
+  "voicewake.set",
+  "push.test",
+  "sessions.create",
+  "sessions.send",
+  "sessions.steer",
+  "sessions.abort",
+  "browser.request",
+  "node.invoke",
+  "node.pending.enqueue",
+]);
+
+/**
+ * Returns true when a method call by a known managed-platform client should
+ * bypass scope enforcement. This is a no-op for self-hosted deployments.
+ */
+function isManagedPlatformExempt(
+  method: string,
+  client: GatewayRequestOptions["client"],
+): boolean {
+  if (!MANAGED_PLATFORM_CLIENT_EXEMPT_METHODS.has(method)) {
+    return false;
+  }
+  return isManagedPlatformAdmin(client);
+}
+
 const CONTROL_PLANE_WRITE_METHODS = new Set(["config.apply", "config.patch", "update.run"]);
 function authorizeGatewayMethod(method: string, client: GatewayRequestOptions["client"]) {
   if (!client?.connect) {
     return null;
   }
   if (SHARED_AUTH_EXEMPT_METHODS.has(method)) {
+    return null;
+  }
+  if (isManagedPlatformExempt(method, client)) {
     return null;
   }
   const roleRaw = client.connect.role ?? "operator";

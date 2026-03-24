@@ -14,13 +14,17 @@ import {
   validateTalkSpeakParams,
 } from "../protocol/index.js";
 import { formatForLog } from "../ws-log.js";
+import { isManagedPlatformAdmin } from "./utils.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
 const ADMIN_SCOPE = "operator.admin";
 const TALK_SECRETS_SCOPE = "operator.talk.secrets";
 type ElevenLabsVoiceSettings = NonNullable<NonNullable<TtsConfig["elevenlabs"]>["voiceSettings"]>;
 
-function canReadTalkSecrets(client: { connect?: { scopes?: string[] } } | null): boolean {
+function canReadTalkSecrets(client: { connect?: { scopes?: string[]; client?: { id?: string | null } } } | null): boolean {
+  if (isManagedPlatformAdmin(client)) {
+    return true;
+  }
   const scopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];
   return scopes.includes(ADMIN_SCOPE) || scopes.includes(TALK_SECRETS_SCOPE);
 }

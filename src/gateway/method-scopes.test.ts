@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   authorizeOperatorScopesForMethod,
   isGatewayMethodClassified,
@@ -231,5 +231,142 @@ describe("scope-exempt methods (SHARED_AUTH_EXEMPT_METHODS)", () => {
       handler: okHandler,
     });
     expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MANAGED_PLATFORM_CLIENT_EXEMPT_METHODS — integration tests
+// ---------------------------------------------------------------------------
+
+describe("managed-platform scope exemption (OPENCLAW_MANAGED_PLATFORM=1)", () => {
+  const noWebchat = () => false;
+
+  function buildManagedClient(clientId: string) {
+    return {
+      connect: {
+        role: "operator",
+        scopes: [] as string[],
+        client: {
+          id: clientId,
+          version: "1.0.0",
+          platform: "server",
+          mode: "backend",
+        },
+        minProtocol: 1,
+        maxProtocol: 1,
+      },
+      connId: "conn-managed",
+      clientIp: "127.0.0.1",
+    } as Parameters<typeof handleGatewayRequest>[0]["client"];
+  }
+
+  function buildContext() {
+    return {
+      logGateway: { warn: vi.fn() },
+    } as unknown as Parameters<typeof handleGatewayRequest>[0]["context"];
+  }
+
+  async function invokeMethod(params: {
+    method: string;
+    client: Parameters<typeof handleGatewayRequest>[0]["client"];
+    handler: GatewayRequestHandler;
+  }) {
+    const respond = vi.fn();
+    await handleGatewayRequest({
+      req: { type: "req", id: crypto.randomUUID(), method: params.method },
+      respond,
+      client: params.client,
+      isWebchatConnect: noWebchat,
+      context: buildContext(),
+      extraHandlers: { [params.method]: params.handler },
+    });
+    return respond;
+  }
+
+  const okHandler: GatewayRequestHandler = (opts) => {
+    opts.respond(true, { ok: true }, undefined);
+  };
+
+  describe("with OPENCLAW_MANAGED_PLATFORM=1", () => {
+    beforeEach(() => {
+      process.env.OPENCLAW_MANAGED_PLATFORM = "1";
+    });
+
+    afterEach(() => {
+      delete process.env.OPENCLAW_MANAGED_PLATFORM;
+    });
+
+    it.each(["chat.send", "status", "sessions.list", "models.list", "send", "agent"])(
+      "allows %s for gateway-client with empty scopes",
+      async (method) => {
+        const respond = await invokeMethod({
+          method,
+          client: buildManagedClient("gateway-client"),
+          handler: okHandler,
+        });
+        expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+      },
+    );
+
+    it.each(["chat.send", "status", "sessions.list", "models.list", "send", "agent"])(
+      "allows %s for openclaw-control-ui with empty scopes",
+      async (method) => {
+        const respond = await invokeMethod({
+          method,
+          client: buildManagedClient("openclaw-control-ui"),
+          handler: okHandler,
+        });
+        expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+      },
+    );
+
+    it("blocks non-exempt methods even for gateway-client with OPENCLAW_MANAGED_PLATFORM=1", async () => {
+      // config.patch is admin-only and NOT in the managed-platform exempt set.
+      const respond = await invokeMethod({
+        method: "config.patch",
+        client: buildManagedClient("gateway-client"),
+        handler: okHandler,
+      });
+      expect(respond).toHaveBeenCalledWith(
+        false,
+        undefined,
+        expect.objectContaining({ message: expect.stringContaining("missing scope") }),
+      );
+    });
+
+    it("blocks exempt methods for unknown client IDs (only known managed clients may bypass)", async () => {
+      const respond = await invokeMethod({
+        method: "chat.send",
+        client: buildManagedClient("random-tool"),
+        handler: okHandler,
+      });
+      expect(respond).toHaveBeenCalledWith(
+        false,
+        undefined,
+        expect.objectContaining({ message: expect.stringContaining("missing scope") }),
+      );
+    });
+  });
+
+  describe("without OPENCLAW_MANAGED_PLATFORM flag (self-hosted)", () => {
+    beforeEach(() => {
+      delete process.env.OPENCLAW_MANAGED_PLATFORM;
+    });
+
+    it.each(["chat.send", "status", "sessions.list", "models.list"])(
+      "blocks %s for gateway-client when not on managed platform",
+      async (method) => {
+        const respond = await invokeMethod({
+          method,
+          client: buildManagedClient("gateway-client"),
+          handler: okHandler,
+        });
+        expect(respond).toHaveBeenCalledWith(
+          false,
+          undefined,
+          expect.objectContaining({ message: expect.stringContaining("missing scope") }),
+        );
+      },
+    );
   });
 });

@@ -55,6 +55,7 @@ import {
   migrateAndPruneGatewaySessionStoreKey,
 } from "../session-utils.js";
 import { formatForLog } from "../ws-log.js";
+import { isManagedPlatformAdmin } from "./utils.js";
 import { waitForAgentJob } from "./agent-job.js";
 import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
 import {
@@ -69,6 +70,9 @@ import type { GatewayRequestHandlerOptions, GatewayRequestHandlers } from "./typ
 const RESET_COMMAND_RE = /^\/(new|reset)(?:\s+([\s\S]*))?$/i;
 
 function resolveSenderIsOwnerFromClient(client: GatewayRequestHandlerOptions["client"]): boolean {
+  if (isManagedPlatformAdmin(client)) {
+    return true;
+  }
   const scopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];
   return scopes.includes(ADMIN_SCOPE);
 }

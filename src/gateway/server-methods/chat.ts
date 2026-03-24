@@ -62,6 +62,7 @@ import {
   resolveSessionModelRef,
 } from "../session-utils.js";
 import { formatForLog } from "../ws-log.js";
+import { isManagedPlatformAdmin } from "./utils.js";
 import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
 import { setGatewayDedupeEntry } from "./agent-wait-dedupe.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
@@ -906,7 +907,7 @@ function resolveChatAbortRequester(
   return {
     connId: normalizeOptionalText(client?.connId),
     deviceId: normalizeOptionalText(client?.connect?.device?.id),
-    isAdmin: scopes.includes(ADMIN_SCOPE),
+    isAdmin: isManagedPlatformAdmin(client) || scopes.includes(ADMIN_SCOPE),
   };
 }
 

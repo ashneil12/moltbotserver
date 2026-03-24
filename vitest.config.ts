@@ -42,6 +42,14 @@ export default defineConfig({
     // Same rationale as unstubEnvs: avoid cross-test pollution from shared globals.
     unstubGlobals: true,
     pool: "forks",
+    server: {
+      deps: {
+        // @aws-sdk/util-endpoints mutates @smithy/util-endpoints.customEndpointFunctions
+        // at CJS init time. Vitest's ESM namespace proxy freezes the export object,
+        // making the mutation throw. Inlining keeps native CJS semantics.
+        inline: [/@aws-sdk\/util-endpoints/, /@smithy\/util-endpoints/],
+      },
+    },
     maxWorkers: isCI ? ciWorkers : localWorkers,
     forceRerunTriggers: [
       "package.json",

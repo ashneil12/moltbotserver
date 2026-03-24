@@ -4,6 +4,7 @@ import { ErrorCodes, errorShape } from "../protocol/index.js";
 import { HEALTH_REFRESH_INTERVAL_MS } from "../server-constants.js";
 import { formatError } from "../server-utils.js";
 import { formatForLog } from "../ws-log.js";
+import { isManagedPlatformAdmin } from "./utils.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
 const ADMIN_SCOPE = "operator.admin";
@@ -35,7 +36,7 @@ export const healthHandlers: GatewayRequestHandlers = {
   status: async ({ respond, client }) => {
     const scopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];
     const status = await getStatusSummary({
-      includeSensitive: scopes.includes(ADMIN_SCOPE),
+      includeSensitive: isManagedPlatformAdmin(client) || scopes.includes(ADMIN_SCOPE),
     });
     respond(true, status, undefined);
   },
