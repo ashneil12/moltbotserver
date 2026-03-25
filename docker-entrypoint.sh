@@ -495,6 +495,54 @@ fi
 # SOUL.md and ACIP_SECURITY.md are still deployed here because they have special
 # entrypoint-only handling (read-only permissions, model placeholder rendering).
 
+# =============================================================================
+# BOOTSTRAP.md SEEDING: Deploy the onboarding ritual for fresh workspaces
+#
+# ensureAgentWorkspace() should handle this, but the SOUL.md deployment above
+# (required for security) confuses its brand-new workspace detection. Rather
+# than fighting the detection logic, seed BOOTSTRAP.md here alongside SOUL.md.
+#
+# Guard: only seed if the workspace-state.json doesn't have setupCompletedAt
+# (i.e., the identity setup ritual hasn't been completed yet).
+# =============================================================================
+WORKSPACE_STATE_FILE="$WORKSPACE_DIR/.openclaw/workspace-state.json"
+BOOTSTRAP_TEMPLATE="/app/docs/reference/templates/BOOTSTRAP.md"
+SETUP_COMPLETED="false"
+
+# Check if setup was already completed (workspace-state.json has setupCompletedAt)
+if [ -f "$WORKSPACE_STATE_FILE" ]; then
+  if command -v jq &>/dev/null; then
+    SETUP_COMPLETED_VAL=$(jq -r '.setupCompletedAt // empty' "$WORKSPACE_STATE_FILE" 2>/dev/null)
+  else
+    SETUP_COMPLETED_VAL=$(node -e "
+      try {
+        const s = require('fs').readFileSync('$WORKSPACE_STATE_FILE', 'utf8');
+        const p = JSON.parse(s);
+        if (p.setupCompletedAt) console.log(p.setupCompletedAt);
+      } catch {}
+    " 2>/dev/null)
+  fi
+  if [ -n "$SETUP_COMPLETED_VAL" ]; then
+    SETUP_COMPLETED="true"
+  fi
+fi
+
+if [ "$SETUP_COMPLETED" = "false" ] && [ ! -f "$WORKSPACE_DIR/BOOTSTRAP.md" ] && [ -f "$BOOTSTRAP_TEMPLATE" ]; then
+  mkdir -p "$WORKSPACE_DIR"
+  cp "$BOOTSTRAP_TEMPLATE" "$WORKSPACE_DIR/BOOTSTRAP.md"
+  # Strip YAML frontmatter (same as SOUL.md handling)
+  if head -1 "$WORKSPACE_DIR/BOOTSTRAP.md" | grep -q '^---$'; then
+    awk 'BEGIN{skip=0; count=0} /^---$/{count++; if(count<=2){skip=1; next}} {if(count>=2){skip=0}; if(!skip) print}' \
+      "$WORKSPACE_DIR/BOOTSTRAP.md" > "$WORKSPACE_DIR/BOOTSTRAP.md.tmp" && \
+      mv "$WORKSPACE_DIR/BOOTSTRAP.md.tmp" "$WORKSPACE_DIR/BOOTSTRAP.md"
+  fi
+  echo "[entrypoint] Deployed BOOTSTRAP.md for fresh workspace (identity setup ritual)"
+elif [ "$SETUP_COMPLETED" = "true" ]; then
+  echo "[entrypoint] Setup already completed — skipping BOOTSTRAP.md deployment"
+elif [ -f "$WORKSPACE_DIR/BOOTSTRAP.md" ]; then
+  echo "[entrypoint] BOOTSTRAP.md already exists — skipping"
+fi
+
 
 # Create subagent log directory
 SUBAGENT_LOG_DIR="$WORKSPACE_DIR/subagent-logs"

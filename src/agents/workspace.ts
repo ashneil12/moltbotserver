@@ -385,26 +385,12 @@ export async function ensureAgentWorkspace(params?: {
   const bootstrapPath = path.join(dir, DEFAULT_BOOTSTRAP_FILENAME);
   const statePath = resolveWorkspaceStatePath(dir);
 
-  const isBrandNewWorkspace = await (async () => {
-    const templatePaths = [agentsPath, soulPath, toolsPath, identityPath, userPath, heartbeatPath];
-    const userContentPaths = [
-      path.join(dir, "memory"),
-      path.join(dir, DEFAULT_MEMORY_FILENAME),
-      path.join(dir, ".git"),
-    ];
-    const paths = [...templatePaths, ...userContentPaths];
-    const existing = await Promise.all(
-      paths.map(async (p) => {
-        try {
-          await fs.access(p);
-          return true;
-        } catch {
-          return false;
-        }
-      }),
-    );
-    return existing.every((v) => !v);
-  })();
+  // Detect whether ensureAgentWorkspace has ever completed before.
+  // workspace-state.json is ONLY written by this function, so its absence
+  // is a reliable signal — unlike template/user file checks which break when
+  // docker-entrypoint.sh pre-seeds SOUL.md, IDENTITY.md, memory/ etc.
+  const stateFileExists = await fileExists(statePath);
+  const isFirstEnsureRun = !stateFileExists;
 
   const agentsTemplate = await loadTemplate(DEFAULT_AGENTS_FILENAME);
   const soulTemplate = await loadTemplate(DEFAULT_SOUL_FILENAME);
@@ -437,31 +423,35 @@ export async function ensureAgentWorkspace(params?: {
   }
 
   if (!state.bootstrapSeededAt && !state.setupCompletedAt && !bootstrapExists) {
-    // Legacy migration path: if USER/IDENTITY diverged from templates, or if user-content
-    // indicators exist, treat setup as complete and avoid recreating BOOTSTRAP for
-    // already-configured workspaces.
-    const [identityContent, userContent] = await Promise.all([
-      fs.readFile(identityPath, "utf-8"),
-      fs.readFile(userPath, "utf-8"),
-    ]);
-    const hasUserContent = await (async () => {
-      const indicators = [
-        path.join(dir, "memory"),
-        path.join(dir, DEFAULT_MEMORY_FILENAME),
-        path.join(dir, ".git"),
-      ];
-      for (const indicator of indicators) {
-        try {
-          await fs.access(indicator);
-          return true;
-        } catch {
-          // continue
-        }
+    // No state file has been written yet and BOOTSTRAP.md doesn't exist.
+    // Two possibilities:
+    //   1. First-ever run (fresh deploy) → seed BOOTSTRAP.md
+    //   2. Legacy workspace that was onboarded before workspace-state.json existed
+    //      → detect via IDENTITY.md/USER.md divergence from templates
+    //
+    // We purposely do NOT check for memory/, MEMORY.md, or .git/ as "user content"
+    // indicators — docker-entrypoint.sh creates those before the gateway starts,
+    // so they're unreliable signals of actual user activity.
+    let legacySetupCompleted = false;
+    if (!isFirstEnsureRun) {
+      // State file exists (but has no bootstrapSeededAt/setupCompletedAt).
+      // This shouldn't normally happen, but handle it defensively.
+      legacySetupCompleted = false;
+    } else {
+      // No state file at all. Check if the user customized IDENTITY.md or USER.md
+      // beyond the default templates (sign of a pre-existing onboarded workspace).
+      try {
+        const [identityContent, userContent] = await Promise.all([
+          fs.readFile(identityPath, "utf-8"),
+          fs.readFile(userPath, "utf-8"),
+        ]);
+        legacySetupCompleted =
+          identityContent !== identityTemplate || userContent !== userTemplate;
+      } catch {
+        // Files don't exist or can't be read → not a legacy workspace
+        legacySetupCompleted = false;
       }
-      return false;
-    })();
-    const legacySetupCompleted =
-      identityContent !== identityTemplate || userContent !== userTemplate || hasUserContent;
+    }
     if (legacySetupCompleted) {
       markState({ setupCompletedAt: nowIso() });
     } else {
@@ -481,7 +471,7 @@ export async function ensureAgentWorkspace(params?: {
   if (stateDirty) {
     await writeWorkspaceSetupState(statePath, state);
   }
-  await ensureGitRepo(dir, isBrandNewWorkspace);
+  await ensureGitRepo(dir, isFirstEnsureRun);
 
   return {
     dir,
