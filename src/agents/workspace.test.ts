@@ -124,32 +124,31 @@ describe("ensureAgentWorkspace", () => {
     expect(state.setupCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("treats memory-backed workspaces as existing even when template files are missing", async () => {
+  it("seeds BOOTSTRAP.md even when memory/ and MEMORY.md exist (entrypoint pre-seeds these)", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
     await fs.mkdir(path.join(tempDir, "memory"), { recursive: true });
     await fs.writeFile(path.join(tempDir, "memory", "2026-02-25.md"), "# Daily log\nSome notes");
     await fs.writeFile(path.join(tempDir, "MEMORY.md"), "# Long-term memory\nImportant stuff");
 
+    // docker-entrypoint.sh creates memory/ before gateway starts.
+    // This must NOT suppress BOOTSTRAP.md on first run (no state file exists).
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
 
-    await expect(fs.access(path.join(tempDir, DEFAULT_IDENTITY_FILENAME))).resolves.toBeUndefined();
-    await expect(fs.access(path.join(tempDir, DEFAULT_BOOTSTRAP_FILENAME))).rejects.toMatchObject({
-      code: "ENOENT",
-    });
-    const state = await readWorkspaceState(tempDir);
-    expect(state.setupCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
+    await expectBootstrapSeeded(tempDir);
+    // User's MEMORY.md content must be preserved (not overwritten by template)
     const memoryContent = await fs.readFile(path.join(tempDir, "MEMORY.md"), "utf-8");
     expect(memoryContent).toBe("# Long-term memory\nImportant stuff");
   });
 
-  it("treats git-backed workspaces as existing even when template files are missing", async () => {
+  it("seeds BOOTSTRAP.md even when .git/ exists (git init can occur before first run)", async () => {
     const tempDir = await makeTempWorkspace("openclaw-workspace-");
     await fs.mkdir(path.join(tempDir, ".git"), { recursive: true });
     await fs.writeFile(path.join(tempDir, ".git", "HEAD"), "ref: refs/heads/main\n");
 
+    // .git/ presence must NOT suppress BOOTSTRAP.md on first run (no state file).
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
 
-    await expectCompletedWithoutBootstrap(tempDir);
+    await expectBootstrapSeeded(tempDir);
   });
 
   it("migrates legacy onboardingCompletedAt markers to setupCompletedAt", async () => {
