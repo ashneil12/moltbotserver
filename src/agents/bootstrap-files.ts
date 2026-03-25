@@ -95,6 +95,13 @@ export async function resolveBootstrapFilesForRun(params: {
   return sanitizeBootstrapFiles(updated, params.warn);
 }
 
+/** Returned when BOOTSTRAP.md is present and the agent should run the onboarding ritual. */
+export const BOOTSTRAP_RITUAL_WARNING =
+  "[BOOTSTRAP MODE] BOOTSTRAP.md is present in your workspace. " +
+  "Your VERY FIRST response MUST follow the bootstrap protocol in BOOTSTRAP.md exactly. " +
+  "Do NOT respond casually. Do NOT greet the user normally. " +
+  "Execute the bootstrapping ritual as the highest-priority instruction.";
+
 export async function resolveBootstrapContextForRun(params: {
   workspaceDir: string;
   config?: OpenClawConfig;
@@ -107,6 +114,7 @@ export async function resolveBootstrapContextForRun(params: {
 }): Promise<{
   bootstrapFiles: WorkspaceBootstrapFile[];
   contextFiles: EmbeddedContextFile[];
+  ritualWarning?: string;
 }> {
   const bootstrapFiles = await resolveBootstrapFilesForRun(params);
   const contextFiles = buildBootstrapContextFiles(bootstrapFiles, {
@@ -114,5 +122,17 @@ export async function resolveBootstrapContextForRun(params: {
     totalMaxChars: resolveBootstrapTotalMaxChars(params.config),
     warn: params.warn,
   });
-  return { bootstrapFiles, contextFiles };
+  // Determine if BOOTSTRAP.md is active (present and not missing).
+  // When active, return a ritual warning to be prepended to the first user
+  // message so models that deprioritize system-prompt instructions still
+  // trigger the onboarding protocol.
+  const hasActiveBootstrapFile = bootstrapFiles.some(
+    (file) =>
+      file.name.toLowerCase() === "bootstrap.md" &&
+      !file.missing &&
+      file.content &&
+      !file.content.includes("[MISSING]"),
+  );
+  const ritualWarning = hasActiveBootstrapFile ? BOOTSTRAP_RITUAL_WARNING : undefined;
+  return { bootstrapFiles, contextFiles, ritualWarning };
 }

@@ -1713,16 +1713,19 @@ export async function runEmbeddedAttempt(
     });
 
     const sessionLabel = params.sessionKey ?? params.sessionId;
-    const { bootstrapFiles: hookAdjustedBootstrapFiles, contextFiles } =
-      await resolveBootstrapContextForRun({
-        workspaceDir: effectiveWorkspace,
-        config: params.config,
-        sessionKey: params.sessionKey,
-        sessionId: params.sessionId,
-        warn: makeBootstrapWarn({ sessionLabel, warn: (message) => log.warn(message) }),
-        contextMode: params.bootstrapContextMode,
-        runKind: params.bootstrapContextRunKind,
-      });
+    const {
+      bootstrapFiles: hookAdjustedBootstrapFiles,
+      contextFiles,
+      ritualWarning,
+    } = await resolveBootstrapContextForRun({
+      workspaceDir: effectiveWorkspace,
+      config: params.config,
+      sessionKey: params.sessionKey,
+      sessionId: params.sessionId,
+      warn: makeBootstrapWarn({ sessionLabel, warn: (message) => log.warn(message) }),
+      contextMode: params.bootstrapContextMode,
+      runKind: params.bootstrapContextRunKind,
+    });
     const bootstrapMaxChars = resolveBootstrapMaxChars(params.config);
     const bootstrapTotalMaxChars = resolveBootstrapTotalMaxChars(params.config);
     const bootstrapAnalysis = analyzeBootstrapBudget({
@@ -2718,6 +2721,14 @@ export async function runEmbeddedAttempt(
             preserveExactPrompt: heartbeatPrompt,
           },
         );
+        // Re-enforce bootstrap ritual by prepending the warning directly to the
+        // user message. Models weight in-message context more heavily than system
+        // prompt instructions, so this dramatically improves ritual compliance.
+        // Skip for heartbeat messages to avoid disrupting the heartbeat cycle.
+        if (ritualWarning && (!heartbeatPrompt || params.prompt !== heartbeatPrompt)) {
+          effectivePrompt = `${ritualWarning}\n\n${effectivePrompt}`;
+          log.debug("bootstrap: prepended ritual warning to user message");
+        }
         const hookCtx = {
           agentId: hookAgentId,
           sessionKey: params.sessionKey,
