@@ -13,7 +13,13 @@ import {
 import { resolveUserPath } from "../utils.js";
 import { normalizeSkillFilter } from "./skills/filter.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
-const log = createSubsystemLogger("agent-scope");
+
+let log: ReturnType<typeof createSubsystemLogger> | null = null;
+
+function getLog(): ReturnType<typeof createSubsystemLogger> {
+  log ??= createSubsystemLogger("agent-scope");
+  return log;
+}
 
 /** Strip null bytes from paths to prevent ENOTDIR errors. */
 function stripNullBytes(s: string): string {
@@ -77,7 +83,7 @@ export function resolveDefaultAgentId(cfg: OpenClawConfig): string {
   const defaults = agents.filter((agent) => agent?.default);
   if (defaults.length > 1 && !defaultAgentWarned) {
     defaultAgentWarned = true;
-    log.warn("Multiple agents marked default=true; using the first entry as default.");
+    getLog().warn("Multiple agents marked default=true; using the first entry as default.");
   }
   if (defaults.length === 0 && agents.length > 1 && !defaultAgentWarned) {
     defaultAgentWarned = true;

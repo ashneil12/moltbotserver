@@ -10,6 +10,10 @@ import type { ResolvedTimeFormat } from "./date-time.js";
 import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
 import type { EmbeddedSandboxInfo } from "./pi-embedded-runner/types.js";
 import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
+import {
+  MOLTBOT_DISCIPLINE_ADDITIONS,
+  MOLTBOT_AUTONOMOUS_ADDITIONS,
+} from "../moltbot-overrides/system-prompt-additions.js";
 
 /**
  * Controls which hardcoded sections are included in the system prompt.
@@ -189,7 +193,7 @@ function buildDocsSection(params: { docsPath?: string; isMinimal: boolean; readT
     "Mirror: https://docs.openclaw.ai",
     "Source: https://github.com/openclaw/openclaw",
     "Community: https://discord.com/invite/clawd",
-    "Find new skills: https://clawhub.com",
+    "Find new skills: https://clawhub.ai",
     "For OpenClaw behavior, commands, config, or architecture: consult local docs first.",
     "When diagnosing issues, run `openclaw status` yourself when possible; only ask the user if you lack access (e.g., sandboxed).",
     "",
@@ -386,9 +390,6 @@ export function buildAgentSystemPrompt(params: {
   const userTimezone = params.userTimezone?.trim();
   const skillsPrompt = params.skillsPrompt?.trim();
   const heartbeatPrompt = params.heartbeatPrompt?.trim();
-  const heartbeatPromptLine = heartbeatPrompt
-    ? `Heartbeat prompt: ${heartbeatPrompt}`
-    : "Heartbeat prompt: (configured)";
   const runtimeInfo = params.runtimeInfo;
   const runtimeChannel = runtimeInfo?.channel?.trim().toLowerCase();
   const runtimeCapabilities = (runtimeInfo?.capabilities ?? [])
@@ -517,26 +518,14 @@ export function buildAgentSystemPrompt(params: {
     "3. **Plan** — Outline the steps, identify risks, consider rollback. Even a brief plan prevents cascading mistakes.",
     "4. **Step and verify** — Take the smallest meaningful action, check the result, then continue. Don't chain blind actions.",
     "5. **Document** — Update WORKING.md mid-task. After completing complex workflows, create a skill. Write learnings to memory/knowledge/. Documentation is the final step of every action — an undocumented action is one future-you can't build on.",
+    MOLTBOT_DISCIPLINE_ADDITIONS,
     "**SCOPE RULE: THE DEFAULT IS MINIMAL CHANGE.** If asked to add something, add it — do NOT restructure, reformat, or reorganize existing content. If asked to fix something, fix that thing — do NOT 'also improve' adjacent code. Unsolicited restructuring or reformatting is ACTIVELY HARMFUL unless the user explicitly requests it.",
     "**OVER-DELIVERY IS FAILURE.** Expanding scope beyond what was asked is reckless — not X plus Y 'while you're at it.' But within the requested scope, be thorough and relentless. Exhaust every approach before reporting failure.",
     "This applies especially on cheaper models. Rushing into execution without understanding is the single most common failure mode. Resist it.",
     "",
     ...(!isMinimal
       ? [
-          "## Autonomous Problem-Solving",
-          "When a tool, command, or approach fails, do NOT immediately report the failure to the user.",
-          "Instead:",
-          "1. **Diagnose** — Read error output, check logs, inspect state. Understand WHY it failed.",
-          "2. **Exhaust alternatives** before escalating:",
-          "   - Different tool for the same goal (e.g. web_search → web_fetch → browser; exec → read; grep → find)",
-          "   - Different strategy entirely (API vs CLI vs file-based; direct vs indirect)",
-          "   - Creative workarounds — if the direct path is blocked, find another route to the same outcome",
-          "   - Search docs, memory, or the web for solutions you haven't considered",
-          "   - Search past sessions with session_search for similar problems — review what worked or almost worked before",
-          "3. **Only escalate** to the user when you have genuinely exhausted every reasonable approach.",
-          "4. **When you do escalate**, report: what you tried, why each approach failed, and your best recommendation for next steps.",
-          "Minimal scope ≠ minimal effort. Within the user's requested scope, be relentless.",
-          "The best agents are distinguished not by never hitting walls, but by finding doors.",
+          MOLTBOT_AUTONOMOUS_ADDITIONS,
           "",
         ]
       : []),
@@ -946,10 +935,10 @@ export function buildAgentSystemPrompt(params: {
   }
 
   // Skip heartbeats for subagent/none modes
-  if (!isMinimal) {
+  if (!isMinimal && heartbeatPrompt) {
     lines.push(
       "## Heartbeats",
-      heartbeatPromptLine,
+      `Heartbeat prompt: ${heartbeatPrompt}`,
       "If you receive a heartbeat poll (a user message matching the heartbeat prompt above), and there is nothing that needs attention, reply exactly:",
       "HEARTBEAT_OK",
       'OpenClaw treats a leading/trailing "HEARTBEAT_OK" as a heartbeat ack (and may discard it).',

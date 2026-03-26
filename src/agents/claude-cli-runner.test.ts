@@ -1,13 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runClaudeCliAgent } from "./claude-cli-runner.js";
 
 const mocks = vi.hoisted(() => ({
   spawn: vi.fn(),
 }));
 
+vi.mock("../process/supervisor/index.js", () => ({
+  getProcessSupervisor: () => ({
+    spawn: (...args: unknown[]) => mocks.spawn(...args),
+    cancel: vi.fn(),
+    cancelScope: vi.fn(),
+    reconcileOrphans: async () => {},
+    getRecord: vi.fn(),
+  }),
+}));
+
 function createDeferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (error: unknown) => void;
+  let resolve: (value: T) => void = () => {};
+  let reject: (error: unknown) => void = () => {};
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -16,6 +25,47 @@ function createDeferred<T>() {
     promise,
     resolve: resolve as (value: T) => void,
     reject: reject as (error: unknown) => void,
+  };
+}
+
+function createManagedRun(
+  exit: Promise<{
+    reason: "exit" | "overall-timeout" | "no-output-timeout" | "signal" | "manual-cancel";
+    exitCode: number | null;
+    exitSignal: NodeJS.Signals | null;
+    durationMs: number;
+    stdout: string;
+    stderr: string;
+    timedOut: boolean;
+    noOutputTimedOut: boolean;
+  }>,
+) {
+  return {
+    runId: "run-test",
+    pid: 12345,
+    startedAtMs: Date.now(),
+    wait: async () => await exit,
+    cancel: vi.fn(),
+  };
+}
+
+let runClaudeCliAgent: typeof import("./claude-cli-runner.js").runClaudeCliAgent;
+
+async function loadFreshClaudeCliRunnerModuleForTest() {
+  vi.resetModules();
+  ({ runClaudeCliAgent } = await import("./claude-cli-runner.js"));
+}
+
+function successExit(payload: { message: string; session_id: string }) {
+  return {
+    reason: "exit" as const,
+    exitCode: 0,
+    exitSignal: null,
+    durationMs: 1,
+    stdout: JSON.stringify(payload),
+    stderr: "",
+    timedOut: false,
+    noOutputTimedOut: false,
   };
 }
 
@@ -28,19 +78,10 @@ async function waitForCalls(mockFn: { mock: { calls: unknown[][] } }, count: num
   );
 }
 
-vi.mock("../process/supervisor/index.js", () => ({
-  getProcessSupervisor: () => ({
-    spawn: (...args: unknown[]) => mocks.spawn(...args),
-    cancel: vi.fn(),
-    cancelScope: vi.fn(),
-    reconcileOrphans: async () => {},
-    getRecord: vi.fn(),
-  }),
-}));
-
 describe("runClaudeCliAgent", () => {
-  beforeEach(() => {
-    mocks.spawn.mockReset();
+  beforeEach(async () => {
+    await loadFreshClaudeCliRunnerModuleForTest();
+    mocks.spawn.mockClear();
   });
 
   it("starts a new session with --session-id when none is provided", async () => {
@@ -86,6 +127,7 @@ describe("runClaudeCliAgent", () => {
     const spawnInput = mocks.spawn.mock.calls[0]?.[0] as { argv: string[] };
     expect(spawnInput.argv).toContain("--resume");
     expect(spawnInput.argv).toContain("c9d7b831-1c31-4d22-80b9-1e50ca207d4b");
+    expect(spawnInput.argv).not.toContain("--session-id");
     expect(spawnInput.argv).toContain("hi");
   });
 
@@ -128,37 +170,3 @@ describe("runClaudeCliAgent", () => {
     await Promise.all([firstRun, secondRun]);
   });
 });
-
-function createManagedRun(
-  exit: Promise<{
-    reason: "exit" | "overall-timeout" | "no-output-timeout" | "signal" | "manual-cancel";
-    exitCode: number | null;
-    exitSignal: NodeJS.Signals | null;
-    durationMs: number;
-    stdout: string;
-    stderr: string;
-    timedOut: boolean;
-    noOutputTimedOut: boolean;
-  }>,
-) {
-  return {
-    runId: "run-test",
-    pid: 12345,
-    startedAtMs: Date.now(),
-    wait: async () => await exit,
-    cancel: vi.fn(),
-  };
-}
-
-function successExit(payload: { message: string; session_id: string }) {
-  return {
-    reason: "exit" as const,
-    exitCode: 0,
-    exitSignal: null,
-    durationMs: 1,
-    stdout: JSON.stringify(payload),
-    stderr: "",
-    timedOut: false,
-    noOutputTimedOut: false,
-  };
-}

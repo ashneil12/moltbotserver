@@ -4,20 +4,29 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { maybeRemoveDeprecatedCliAuthProfiles } from "./doctor-auth.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
+import type { DoctorRepairMode } from "./doctor-repair-mode.js";
 
 let originalAgentDir: string | undefined;
 let originalPiAgentDir: string | undefined;
 let tempAgentDir: string | undefined;
 
 function makePrompter(confirmValue: boolean): DoctorPrompter {
-  return {
-    confirm: vi.fn().mockResolvedValue(confirmValue),
-    confirmRepair: vi.fn().mockResolvedValue(confirmValue),
-    confirmAggressive: vi.fn().mockResolvedValue(confirmValue),
-    confirmSkipInNonInteractive: vi.fn().mockResolvedValue(confirmValue),
-    select: vi.fn().mockResolvedValue(""),
+  const repairMode: DoctorRepairMode = {
     shouldRepair: confirmValue,
     shouldForce: false,
+    nonInteractive: false,
+    canPrompt: true,
+    updateInProgress: false,
+  };
+  return {
+    confirm: vi.fn().mockResolvedValue(confirmValue),
+    confirmAutoFix: vi.fn().mockResolvedValue(confirmValue),
+    confirmAggressiveAutoFix: vi.fn().mockResolvedValue(confirmValue),
+    confirmRuntimeRepair: vi.fn().mockResolvedValue(confirmValue),
+    select: vi.fn().mockResolvedValue(""),
+    shouldRepair: repairMode.shouldRepair,
+    shouldForce: repairMode.shouldForce,
+    repairMode,
   };
 }
 

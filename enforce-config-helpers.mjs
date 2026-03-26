@@ -38,6 +38,24 @@ export function ensure(obj, ...keys) {
   return current;
 }
 
+/** 
+ * Safely ensure a nested path exists. If the path cannot be navigated 
+ * because an intermediate key is not an object (e.g. upstream schema changed),
+ * it returns null instead of throwing, allowing the enforcer to degrade gracefully.
+ */
+export function safeEnsure(obj, ...keys) {
+  let current = obj;
+  for (const key of keys) {
+    if (current === null || typeof current !== "object") {
+      console.warn(`[enforce-config] ⚠ Schema drift detected: cannot navigate path "${keys.join('.')}" at key "${key}". Config enforcement for this section will be skipped.`);
+      return null;
+    }
+    current[key] = current[key] || {};
+    current = current[key];
+  }
+  return current;
+}
+
 /** Generate a 12-char alphanumeric ID for cron jobs. */
 export function makeId() {
   return Array.from({ length: 12 }, () => Math.floor(Math.random() * 36).toString(36)).join("");

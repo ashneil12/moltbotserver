@@ -7,6 +7,7 @@ import moonshotPlugin from "../extensions/moonshot/index.js";
 import perplexityPlugin from "../extensions/perplexity/index.js";
 import tavilyPlugin from "../extensions/tavily/index.js";
 import xaiPlugin from "../extensions/xai/index.js";
+import searxngPlugin from "../extensions/searxng/index.js";
 import type { OpenClawPluginApi } from "./plugins/types.js";
 
 type RegistrablePlugin = {
@@ -71,5 +72,11 @@ export const bundledWebSearchPluginRegistrations: ReadonlyArray<{
       return xaiPlugin;
     },
     credentialValue: "xai-test",
+  },
+  {
+    get plugin() {
+      return searxngPlugin;
+    },
+    credentialValue: "searxng-test",
   },
 ];

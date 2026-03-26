@@ -45,6 +45,7 @@ import {
   readConfig,
   writeConfig,
   ensure,
+  safeEnsure,
   makeId,
   env,
   isTruthy,
@@ -143,10 +144,15 @@ const BAILIAN_MODELS = [
  */
 function enforceProviders(configPath) {
   const config = readConfig(configPath);
-  const models = ensure(config, "models");
+  const models = safeEnsure(config, "models");
+  if (!models) {return;} // Upstream drift: models section missing/changed
+  
   models.mode = models.mode || "merge";
-  const providers = ensure(models, "providers");
-  const defaults = ensure(config, "agents", "defaults");
+  const providers = safeEnsure(models, "providers");
+  if (!providers) {return;}
+  
+  const defaults = safeEnsure(config, "agents", "defaults");
+  if (!defaults) {return;}
   defaults.models = defaults.models || {};
 
   // ── Bailian ───────────────────────────────────────────────────────────
@@ -184,7 +190,8 @@ function enforceProviders(configPath) {
 
 function enforceModels(configPath) {
   const config = readConfig(configPath);
-  const defaults = ensure(config, "agents", "defaults");
+  const defaults = safeEnsure(config, "agents", "defaults");
+  if (!defaults) {return;}
   defaults.model = defaults.model || {};
 
   const defaultModel = normalizeModelId(env("OPENCLAW_DEFAULT_MODEL") || env("DEFAULT_MODEL"));
@@ -273,7 +280,8 @@ function enforceGateway(configPath) {
   }
 
   const config = readConfig(configPath);
-  ensure(config, "gateway");
+  const gateway = safeEnsure(config, "gateway");
+  if (!gateway) {return;}
   config.gateway.auth = {
     mode: "token",
     token: gatewayToken,
@@ -290,7 +298,8 @@ function enforceGateway(configPath) {
 
 function enforceProxies(configPath) {
   const config = readConfig(configPath);
-  ensure(config, "gateway");
+  const gateway = safeEnsure(config, "gateway");
+  if (!gateway) {return;}
   config.gateway.trustedProxies = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"];
 
   writeConfig(configPath, config);
@@ -299,12 +308,15 @@ function enforceProxies(configPath) {
 
 function enforceMemory(configPath) {
   const config = readConfig(configPath);
-  const memory = ensure(config, "memory");
+  const memory = safeEnsure(config, "memory");
+  if (!memory) {return;}
   memory.citations = "auto";
 
   // Memory search common settings (always enforced regardless of backend)
-  const defaults = ensure(config, "agents", "defaults");
-  const memSearch = ensure(defaults, "memorySearch");
+  const defaults = safeEnsure(config, "agents", "defaults");
+  if (!defaults) {return;}
+  const memSearch = safeEnsure(defaults, "memorySearch");
+  if (!memSearch) {return;}
   memSearch.experimental = { sessionMemory: true };
   memSearch.sources = ["memory", "sessions"];
   memSearch.query = {
@@ -321,7 +333,8 @@ function enforceMemory(configPath) {
     env("OPENCLAW_QMD_ENABLED") === "false" || env("OPENCLAW_QMD_ENABLED") === "0";
   if (!qmdDisabled) {
     memory.backend = "qmd";
-    const qmd = ensure(memory, "qmd");
+    const qmd = safeEnsure(memory, "qmd");
+    if (qmd) {
     qmd.includeDefaultMemory = true;
     qmd.searchMode = env("OPENCLAW_QMD_SEARCH_MODE", "vsearch"); // search=BM25 (fast), vsearch=vector+BM25 (recommended), query=hybrid+rerank (slow on CPU)
     qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
@@ -332,6 +345,7 @@ function enforceMemory(configPath) {
       maxInjectedChars: businessMode ? 10000 : 5000,
       timeoutMs: Number(env("OPENCLAW_QMD_TIMEOUT_MS", "10000")),
     };
+    }
 
     // Fallback embedding provider (credits mode: gateway proxy)
     const aiGatewayUrl = env("AI_GATEWAY_URL");
@@ -427,8 +441,10 @@ function deriveElevatedToolUsers(config, tools) {
     if (ids.size === 0) {
       continue;
     }
-    const elevated = ensure(tools, "elevated");
-    const allowFrom = ensure(elevated, "allowFrom");
+    const elevated = safeEnsure(tools, "elevated");
+    if (!elevated) {continue;}
+    const allowFrom = safeEnsure(elevated, "allowFrom");
+    if (!allowFrom) {continue;}
     const existing = new Set((allowFrom[channelName] || []).map(String));
     for (const id of ids) {
       existing.add(id);
@@ -441,19 +457,25 @@ function enforceCore(configPath) {
   const config = readConfig(configPath);
 
   // Logging
-  ensure(config, "logging");
-  config.logging.redactSensitive = "tools";
+  const logging = safeEnsure(config, "logging");
+  if (logging) {
+    logging.redactSensitive = "tools";
+  }
 
   // Plugins — no allow list means all plugins are eligible to load (open by default).
   // An explicit allow array would restrict to only listed IDs; omitting it is intentional.
-  const plugins = ensure(config, "plugins");
+  const plugins = safeEnsure(config, "plugins");
+  if (!plugins) {return;}
 
   // LCM (Lossless Context Management) — ensure context engine slot is set and
   // the plugin is enabled. This makes LCM survive config regeneration.
-  const slots = ensure(plugins, "slots");
-  slots.contextEngine = slots.contextEngine || "lossless-claw";
-  slots.memory = "memory-unified"; // Unified memory with per-turn auto-recall
-  const entries = ensure(plugins, "entries");
+  const slots = safeEnsure(plugins, "slots");
+  if (slots) {
+    slots.contextEngine = slots.contextEngine || "lossless-claw";
+    slots.memory = "memory-unified"; // Unified memory with per-turn auto-recall
+  }
+  const entries = safeEnsure(plugins, "entries");
+  if (entries) {
   // NOTE: databasePath was moved to LCM_DATABASE_PATH env var because
   // OpenClaw's core validator rejects custom extension config properties
   // as "unrecognized keys", causing a startup crash loop (same issue as
@@ -482,6 +504,7 @@ function enforceCore(configPath) {
   delete muEntry.alignmentCheckCooldownTurns;
   delete muEntry.alignmentCheckThreshold;
   entries["memory-unified"] = muEntry;
+  }
   // Ensure lossless-claw and memory-unified are in the allow list (if one exists)
   if (Array.isArray(plugins.allow)) {
     if (!plugins.allow.includes("lossless-claw")) {
@@ -494,14 +517,19 @@ function enforceCore(configPath) {
 
   // Session — effectively disable auto-reset (3 years idle) to preserve LCM's
   // conversation DAG continuity. Agents can still manually reset sessions.
-  const session = ensure(config, "session");
-  session.dmScope = session.dmScope || "per-channel-peer";
-  const reset = ensure(session, "reset");
-  reset.mode = reset.mode || "idle";
-  reset.idleMinutes = reset.idleMinutes || 1576800; // 3 years
+  const session = safeEnsure(config, "session");
+  if (session) {
+    session.dmScope = session.dmScope || "per-channel-peer";
+    const reset = safeEnsure(session, "reset");
+    if (reset) {
+      reset.mode = reset.mode || "idle";
+      reset.idleMinutes = reset.idleMinutes || 1576800; // 3 years
+    }
+  }
 
   // Gateway UI / bind / port
-  const gateway = ensure(config, "gateway");
+  const gateway = safeEnsure(config, "gateway");
+  if (gateway) {
   gateway.port = Number(env("GATEWAY_PORT", "3000"));
   gateway.bind = env("GATEWAY_BIND", "lan");
   gateway.customBindHost = "0.0.0.0";
@@ -528,10 +556,13 @@ function enforceCore(configPath) {
     gateway.controlUi.dangerouslyDisableDeviceAuth = true;
     gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
   }
+  }
 
   // Compaction + memory flush
-  const defaults = ensure(config, "agents", "defaults");
-  const compaction = ensure(defaults, "compaction");
+  const defaults = safeEnsure(config, "agents", "defaults");
+  if (!defaults) {return;}
+  const compaction = safeEnsure(defaults, "compaction");
+  if (compaction) {
   // System prompt is ~43K tokens; reserve enough so the SDK auto-compacts
   // before the provider's context window is exceeded.
   compaction.reserveTokensFloor = 55000;
@@ -548,6 +579,7 @@ function enforceCore(configPath) {
   // in compaction-safety-timeout.ts. Default is 900s (15 min) — too generous.
   // 240s (4 min) is sufficient for large contexts and prevents indefinite hangs.
   compaction.timeoutSeconds = 240;
+  }
 
   // Bootstrap: increase per-file char limit so SOUL.md (~53K) and
   // openclaw-human-v1.md (~16K) are injected in full. Total budget (150K) accommodates this.
@@ -563,8 +595,9 @@ function enforceCore(configPath) {
   // Tool loop detection — upstream defaults to disabled; enable for MoltBot.
   // Detects generic repeats, poll-no-progress, and ping-pong patterns.
   // Respects existing user config (even explicit `false`).
-  const tools = ensure(config, "tools");
-  tools.loopDetection = tools.loopDetection || {};
+  const tools = safeEnsure(config, "tools");
+  if (tools) {
+    tools.loopDetection = tools.loopDetection || {};
   if (tools.loopDetection.enabled === undefined) {
     tools.loopDetection.enabled = true;
   }
@@ -577,6 +610,7 @@ function enforceCore(configPath) {
   tools.profile = "full";
 
   deriveElevatedToolUsers(config, tools);
+  }
 
   // Workspace
   defaults.workspace = env("OPENCLAW_WORKSPACE_DIR", "/home/node/workspace");
@@ -622,23 +656,35 @@ function enforceCore(configPath) {
   defaults.subagents.maxConcurrent = Number(env("OPENCLAW_SUBAGENT_MAX_CONCURRENT", "8"));
 
   // Messages queue
-  const messages = ensure(config, "messages");
-  messages.queue = { mode: "collect" };
+  const messages = safeEnsure(config, "messages");
+  if (messages) {
+    messages.queue = { mode: "collect" };
+  }
 
   // Video Understanding — bridge OPENCLAW_VIDEO_ENABLED to tools.media.video.enabled
   // Auto-enable when a GEMINI_API_KEY is present (since we collect one for
   // ByteRover memory curation anyway), unless user explicitly disabled it.
   const videoEnabledRaw = env("OPENCLAW_VIDEO_ENABLED");
   if (videoEnabledRaw) {
-    const mediaVideo = ensure(tools, "media", "video");
-    mediaVideo.enabled = isTruthy(videoEnabledRaw);
-    console.log(
-      `[enforce-config] ✅ Video understanding ${mediaVideo.enabled ? "enabled" : "disabled"}`,
-    );
+    const tools = safeEnsure(config, "tools");
+    if (tools) {
+      const mediaVideo = safeEnsure(tools, "media", "video");
+      if (mediaVideo) {
+        mediaVideo.enabled = isTruthy(videoEnabledRaw);
+        console.log(
+          `[enforce-config] ✅ Video understanding ${mediaVideo.enabled ? "enabled" : "disabled"}`,
+        );
+      }
+    }
   } else if (env("GEMINI_API_KEY")) {
-    const mediaVideo = ensure(tools, "media", "video");
-    mediaVideo.enabled = true;
-    console.log("[enforce-config] ✅ Video understanding auto-enabled (GEMINI_API_KEY present)");
+    const tools = safeEnsure(config, "tools");
+    if (tools) {
+      const mediaVideo = safeEnsure(tools, "media", "video");
+      if (mediaVideo) {
+        mediaVideo.enabled = true;
+        console.log("[enforce-config] ✅ Video understanding auto-enabled (GEMINI_API_KEY present)");
+      }
+    }
   }
 
   // Web Search Provider — bridge OPENCLAW_SEARCH_PROVIDER + SEARXNG_BASE_URL
@@ -654,16 +700,25 @@ function enforceCore(configPath) {
     console.log(`[enforce-config] ⚠ Normalized legacy search provider "tavily" → "searxng"`);
   }
   if (searchProvider || searxngBaseUrl) {
-    const toolsWeb = ensure(tools, "web");
-    const search = ensure(toolsWeb, "search");
-    if (searchProvider) {
-      search.provider = searchProvider;
-      console.log(`[enforce-config] ✅ Web search provider set to "${searchProvider}"`);
-    }
-    if (searxngBaseUrl) {
-      const searxng = ensure(search, "searxng");
-      if (!searxng.baseUrl) {
-        searxng.baseUrl = searxngBaseUrl;
+    const tools = safeEnsure(config, "tools");
+    if (tools) {
+      const toolsWeb = safeEnsure(tools, "web");
+      if (toolsWeb) {
+        const search = safeEnsure(toolsWeb, "search");
+        if (search) {
+          if (searchProvider) {
+            search.provider = searchProvider;
+            console.log(`[enforce-config] ✅ Web search provider set to "${searchProvider}"`);
+          }
+          if (searxngBaseUrl) {
+            const searxng = safeEnsure(search, "searxng");
+            if (searxng) {
+              if (!searxng.baseUrl) {
+                searxng.baseUrl = searxngBaseUrl;
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -703,10 +758,12 @@ function enforceCore(configPath) {
     // the tools.profile setting (e.g. "coding" profile excludes browser by
     // default). Using alsoAllow merges additively without clobbering any
     // existing allow/deny lists the user may have configured.
-    const toolsCfg = ensure(config, "tools");
-    const alsoAllow = new Set(toolsCfg.alsoAllow || []);
-    alsoAllow.add("browser");
-    toolsCfg.alsoAllow = [...alsoAllow];
+    const toolsCfg = safeEnsure(config, "tools");
+    if (toolsCfg) {
+      const alsoAllow = new Set(toolsCfg.alsoAllow || []);
+      alsoAllow.add("browser");
+      toolsCfg.alsoAllow = [...alsoAllow];
+    }
   }
 
   writeConfig(configPath, config);

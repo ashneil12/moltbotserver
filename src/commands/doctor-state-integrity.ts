@@ -22,10 +22,7 @@ import { note } from "../terminal/note.js";
 import { shortenHomePath } from "../utils.js";
 
 type DoctorPrompterLike = {
-  confirmSkipInNonInteractive: (params: {
-    message: string;
-    initialValue?: boolean;
-  }) => Promise<boolean>;
+  confirmRuntimeRepair: (params: { message: string; initialValue?: boolean }) => Promise<boolean>;
 };
 
 function countLabel(count: number, singular: string, plural = `${singular}s`): string {
@@ -552,7 +549,7 @@ export async function noteStateIntegrity(
         "- Gateway is in remote mode; run doctor on the remote host where the gateway runs.",
       );
     }
-    const create = await prompter.confirmSkipInNonInteractive({
+    const create = await prompter.confirmRuntimeRepair({
       message: `Create ${displayStateDir} now?`,
       initialValue: false,
     });
@@ -573,7 +570,7 @@ export async function noteStateIntegrity(
     if (hint) {
       warnings.push(`  ${hint}`);
     }
-    const repair = await prompter.confirmSkipInNonInteractive({
+    const repair = await prompter.confirmRuntimeRepair({
       message: `Repair permissions on ${displayStateDir}?`,
       initialValue: true,
     });
@@ -602,7 +599,7 @@ export async function noteStateIntegrity(
         warnings.push(
           `- State directory permissions are too open (${displayStateDir}). Recommend chmod 700.`,
         );
-        const tighten = await prompter.confirmSkipInNonInteractive({
+        const tighten = await prompter.confirmRuntimeRepair({
           message: `Tighten permissions on ${displayStateDir} to 700?`,
           initialValue: true,
         });
@@ -629,7 +626,7 @@ export async function noteStateIntegrity(
         warnings.push(
           `- Config file is group/world readable (${displayConfigPath ?? configPath}). Recommend chmod 600.`,
         );
-        const tighten = await prompter.confirmSkipInNonInteractive({
+        const tighten = await prompter.confirmRuntimeRepair({
           message: `Tighten permissions on ${displayConfigPath ?? configPath} to 600?`,
           initialValue: true,
         });
@@ -673,7 +670,7 @@ export async function noteStateIntegrity(
       const displayDir = displayDirFor(dir);
       if (!existsDir(dir)) {
         warnings.push(`- CRITICAL: ${label} missing (${displayDir}).`);
-        const create = await prompter.confirmSkipInNonInteractive({
+        const create = await prompter.confirmRuntimeRepair({
           message: `Create ${label} at ${displayDir}?`,
           initialValue: true,
         });
@@ -693,7 +690,7 @@ export async function noteStateIntegrity(
         if (hint) {
           warnings.push(`  ${hint}`);
         }
-        const repair = await prompter.confirmSkipInNonInteractive({
+        const repair = await prompter.confirmRuntimeRepair({
           message: `Repair permissions on ${label}?`,
           initialValue: true,
         });
@@ -815,7 +812,7 @@ export async function noteStateIntegrity(
           `  Examples: ${orphanPreview}`,
         ].join("\n"),
       );
-      const archiveOrphans = await prompter.confirmSkipInNonInteractive({
+      const archiveOrphans = await prompter.confirmRuntimeRepair({
         message: `Archive ${orphanCount} in ${displaySessionsDir}? This only renames them to *.deleted.<timestamp>.`,
         initialValue: false,
       });
