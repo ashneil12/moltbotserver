@@ -1,6 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+  MOLTBOT_LEGACY_MARKERS,
+  type MoltBotLegacyMarker,
+  isMoltBotLegacyLabel,
+} from "../moltbot-overrides/legacy-services.js";
+import {
   GATEWAY_SERVICE_KIND,
   GATEWAY_SERVICE_MARKER,
   resolveGatewayLaunchAgentLabel,
@@ -15,7 +20,7 @@ export type ExtraGatewayService = {
   label: string;
   detail: string;
   scope: "user" | "system";
-  marker?: "openclaw" | "clawdbot" | "moltbot";
+  marker?: "openclaw" | MoltBotLegacyMarker;
   legacy?: boolean;
 };
 
@@ -23,7 +28,7 @@ export type FindExtraGatewayServicesOptions = {
   deep?: boolean;
 };
 
-const EXTRA_MARKERS = ["openclaw", "clawdbot", "moltbot"] as const;
+const EXTRA_MARKERS = ["openclaw", ...MOLTBOT_LEGACY_MARKERS] as const;
 
 export function renderGatewayServiceCleanupHints(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
@@ -125,8 +130,7 @@ function isIgnoredSystemdName(name: string): boolean {
 }
 
 function isLegacyLabel(label: string): boolean {
-  const lower = label.toLowerCase();
-  return lower.includes("clawdbot") || lower.includes("moltbot");
+  return isMoltBotLegacyLabel(label);
 }
 
 async function readDirEntries(dir: string): Promise<string[]> {
@@ -201,7 +205,7 @@ async function scanLaunchdDir(params: {
         label,
         detail: `plist: ${fullPath}`,
         scope: params.scope,
-        marker: isLegacyLabel(label) ? "clawdbot" : "moltbot",
+        marker: isLegacyLabel(label) ? MOLTBOT_LEGACY_MARKERS[0] : MOLTBOT_LEGACY_MARKERS[1],
         legacy: true,
       });
       continue;

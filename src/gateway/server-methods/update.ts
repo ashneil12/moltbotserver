@@ -9,6 +9,7 @@ import {
 import { scheduleGatewaySigusr1Restart } from "../../infra/restart.js";
 import { normalizeUpdateChannel } from "../../infra/update-channels.js";
 import { runGatewayUpdate } from "../../infra/update-runner.js";
+import { MANAGED_UPDATE_ERROR } from "../../moltbot-overrides/managed-updates.js";
 import { formatControlPlaneActor, resolveControlPlaneActor } from "../control-plane-audit.js";
 import { validateUpdateRunParams } from "../protocol/index.js";
 import { parseRestartRequestParams } from "./restart-request.js";
@@ -24,8 +25,7 @@ export const updateHandlers: GatewayRequestHandlers = {
         false,
         {
           ok: false,
-          error:
-            "Updates are managed by the MoltBot platform. Use the dashboard to update your instance.",
+          error: MANAGED_UPDATE_ERROR,
         },
         undefined,
       );

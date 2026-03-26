@@ -36,6 +36,7 @@ import {
   resolveGlobalPackageRoot,
 } from "../../infra/update-global.js";
 import { runGatewayUpdate, type UpdateRunResult } from "../../infra/update-runner.js";
+import { MANAGED_UPDATE_CLI_ERROR } from "../../moltbot-overrides/managed-updates.js";
 import { syncPluginsForUpdateChannel, updateNpmInstalledPlugins } from "../../plugins/update.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -736,14 +737,8 @@ async function maybeRestartService(params: {
 }
 
 export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
-  // MoltBot managed platform: block upstream updates — updates are delivered
-  // via Docker image pull from the platform dashboard, not git/npm.
   if (process.env.OPENCLAW_MANAGED_PLATFORM === "1") {
-    defaultRuntime.error(
-      "Updates are managed by the MoltBot platform.\n" +
-        "Use the MoltBot dashboard to update your instance.\n" +
-        "Running 'openclaw update' directly is disabled to prevent conflicts.",
-    );
+    defaultRuntime.error(MANAGED_UPDATE_CLI_ERROR);
     defaultRuntime.exit(1);
     return;
   }
