@@ -113,7 +113,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/ashneil12/optimized-claw-scrapling
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-scrapling
           tags: |
             type=raw,value=latest
             type=sha,format=long

@@ -234,16 +234,17 @@ jobs:
         id: tags
         shell: bash
         env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           SOURCE_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
         run: |
           set -euo pipefail
           tags=()
           if [[ "${SOURCE_REF}" == "refs/heads/main" ]]; then
-            tags+=("ghcr.io/ashneil12/optimized-claw-scrapling:main-amd64")
+            tags+=("${IMAGE}-scrapling:main-amd64")
           fi
           if [[ "${SOURCE_REF}" == refs/tags/v* ]]; then
             version="${SOURCE_REF#refs/tags/v}"
-            tags+=("ghcr.io/ashneil12/optimized-claw-scrapling:${version}-amd64")
+            tags+=("${IMAGE}-scrapling:${version}-amd64")
           fi
           if [[ ${#tags[@]} -eq 0 ]]; then
             echo "::error::No Scrapling amd64 tags resolved for ref ${SOURCE_REF}"
@@ -376,19 +377,20 @@ jobs:
         id: tags
         shell: bash
         env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           SOURCE_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
           IS_MANUAL_BACKFILL: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           set -euo pipefail
           tags=()
           if [[ "${SOURCE_REF}" == "refs/heads/main" ]]; then
-            tags+=("ghcr.io/ashneil12/optimized-claw-scrapling:latest")
+            tags+=("${IMAGE}-scrapling:latest")
           fi
           if [[ "${SOURCE_REF}" == refs/tags/v* ]]; then
             version="${SOURCE_REF#refs/tags/v}"
-            tags+=("ghcr.io/ashneil12/optimized-claw-scrapling:${version}")
+            tags+=("${IMAGE}-scrapling:${version}")
             if [[ "${IS_MANUAL_BACKFILL}" != "1" && "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$ ]]; then
-              tags+=("ghcr.io/ashneil12/optimized-claw-scrapling:latest")
+              tags+=("${IMAGE}-scrapling:latest")
             fi
           fi
           if [[ ${#tags[@]} -eq 0 ]]; then
