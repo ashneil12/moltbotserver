@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# patch-qmd-gemini.sh — Patch QMD to use Gemini text-embedding API
+# patch-qmd-gemini.sh — Patch QMD runtime defaults
 #
 # Extends LlamaCpp with GeminiEmbedProxy that overrides embed() / embedBatch()
 # to call the Gemini REST API instead of loading a local GGUF model.
 # Rerank and query-expansion still use local llama.cpp models.
 #
-# Requires: GEMINI_API_KEY env var at runtime
-# Disable with: QMD_EMBED_PROVIDER=local
+# Defaults llama.cpp to CPU-only. Set QMD_GPU=auto (or a backend such as
+# QMD_GPU=vulkan) to opt back into GPU detection/selection.
+# Gemini embeddings still require GEMINI_API_KEY and can be disabled with
+# QMD_EMBED_PROVIDER=local.
 #
 # Idempotent — safe to run on every container boot.
 # Rollback: restore from .bak file created during patching.
@@ -201,13 +203,22 @@ old_fn = '''export function getDefaultLlamaCpp(): LlamaCpp {
 
 new_fn = '''export function getDefaultLlamaCpp(): LlamaCpp {
   if (!defaultLlamaCpp) {
-    const useGemini = process.env.GEMINI_API_KEY && process.env.QMD_EMBED_PROVIDER !== "local";
+    const gpu = process.env.QMD_GPU || "false";
+    const geminiKey = process.env.GEMINI_API_KEY || "";
+    const hasDirectGeminiApiKey = geminiKey.startsWith("AIza");
+    const useGemini = hasDirectGeminiApiKey && process.env.QMD_EMBED_PROVIDER !== "local";
+    const llamaConfig = {
+      ...(process.env.QMD_EMBED_MODEL ? { embedModel: process.env.QMD_EMBED_MODEL } : {}),
+      gpu: gpu === "false" ? false : gpu,
+    };
     if (useGemini) {
       process.stderr.write("[qmd] Using Gemini text-embedding API\\n");
-      defaultLlamaCpp = new GeminiEmbedProxy();
+      defaultLlamaCpp = new GeminiEmbedProxy(llamaConfig);
     } else {
-      const embedModel = process.env.QMD_EMBED_MODEL;
-      defaultLlamaCpp = new LlamaCpp(embedModel ? { embedModel } : {});
+      if (geminiKey && !hasDirectGeminiApiKey) {
+        process.stderr.write("[qmd] Ignoring GEMINI_API_KEY because it is not a direct Google API key\\n");
+      }
+      defaultLlamaCpp = new LlamaCpp(llamaConfig);
     }
   }
   return defaultLlamaCpp;

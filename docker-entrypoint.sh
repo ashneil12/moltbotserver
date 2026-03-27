@@ -454,13 +454,9 @@ fi
 # Must run BEFORE openclaw doctor so the skill is on disk when doctor validates.
 # =============================================================================
 BYTEROVER_KEY="${BYTEROVER_GEMINI_KEY:-}"
-# Expose the ByteRover Gemini key as GEMINI_API_KEY so the builtin memory
-# backend's Gemini embedding provider can use it without custom config.
-# Only set if not already provided (avoid overwriting an explicit key).
-if [ -n "$BYTEROVER_KEY" ] && [ -z "${GEMINI_API_KEY:-}" ]; then
-  export GEMINI_API_KEY="$BYTEROVER_KEY"
-  echo "[entrypoint] GEMINI_API_KEY derived from BYTEROVER_GEMINI_KEY (for memory embeddings)"
-fi
+# Keep the ByteRover key scoped to ByteRover itself. QMD/builtin memory should
+# only use an explicit GEMINI_API_KEY because ByteRover credentials are not
+# guaranteed to be valid for the Google embedding API.
 BYTEROVER_MARKER="$CONFIG_DIR/.byterover-configured"
 
 if [ -n "$BYTEROVER_KEY" ]; then
@@ -562,11 +558,19 @@ if [ "${OPENCLAW_QMD_ENABLED:-true}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-tr
     fi
   fi
 
-  # PRE-WARM: run 'qmd status' to trigger any first-run llama.cpp compilation
-  # BEFORE the gateway starts. This ensures the qmd binary is fully compiled
-  # so that OpenClaw's ensureCollections() calls succeed without timing out.
-  # On subsequent boots this is essentially free (sub-second).
   if command -v qmd &>/dev/null; then
+    # Patch QMD before the first status/embed call so first boot uses the same
+    # CPU/Gemini policy as steady-state runtime. The patch defaults llama.cpp to
+    # CPU-only unless QMD_GPU explicitly opts back into GPU usage.
+    PATCH_SCRIPT="/app/scripts/patch-qmd-gemini.sh"
+    if [ -f "$PATCH_SCRIPT" ]; then
+      bash "$PATCH_SCRIPT" 2>&1 || echo "[entrypoint] WARNING: QMD runtime patch failed (non-fatal)"
+    fi
+
+    # PRE-WARM: run 'qmd status' to trigger any first-run llama.cpp compilation
+    # BEFORE the gateway starts. This ensures the qmd binary is fully compiled
+    # so that OpenClaw's ensureCollections() calls succeed without timing out.
+    # On subsequent boots this is essentially free (sub-second).
     echo "[entrypoint] qmd pre-warm: triggering any first-run compilation (this may take a few minutes on first deploy)..."
     # CONFIG_DIR is already resolved at the top of the entrypoint with the correct
     # default (/home/node/.clawdbot). Use it directly rather than re-expanding
@@ -599,15 +603,6 @@ if [ "${OPENCLAW_QMD_ENABLED:-true}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-tr
         | tail -3 || true
       echo "[entrypoint] qmd embed (background) complete"
     ) &
-  fi
-
-  # Apply Gemini embedding patch (uses API instead of slow local GGUF models)
-  # Gated on GEMINI_API_KEY; disable with QMD_EMBED_PROVIDER=local
-  if [ -n "${GEMINI_API_KEY:-}" ] && [ "${QMD_EMBED_PROVIDER:-}" != "local" ]; then
-    PATCH_SCRIPT="/app/scripts/patch-qmd-gemini.sh"
-    if [ -f "$PATCH_SCRIPT" ]; then
-      bash "$PATCH_SCRIPT" 2>&1 || echo "[entrypoint] WARNING: QMD Gemini patch failed (non-fatal)"
-    fi
   fi
 fi
 
