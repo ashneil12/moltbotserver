@@ -535,4 +535,26 @@ describe("scripts/docker/setup.sh", () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
     expect(compose.match(/TZ: \$\{OPENCLAW_TZ:-UTC\}/g)).toHaveLength(2);
   });
+
+  it("keeps the Scrapling sidecar on the published-image deploy path", async () => {
+    const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
+    expect(compose).toContain(
+      "image: ${OPENCLAW_SCRAPLING_IMAGE:-ghcr.io/ashneil12/optimized-claw-scrapling:latest}",
+    );
+    expect(compose).not.toContain("scrapling:\n    build:");
+
+    const dockerBuildWorkflow = await readFile(
+      join(repoRoot, ".github", "workflows", "docker-build.yml"),
+      "utf8",
+    );
+    expect(dockerBuildWorkflow).toContain("optimized-claw-scrapling");
+    expect(dockerBuildWorkflow).toContain("Dockerfile.scrapling");
+
+    const dockerReleaseWorkflow = await readFile(
+      join(repoRoot, ".github", "workflows", "docker-release.yml"),
+      "utf8",
+    );
+    expect(dockerReleaseWorkflow).toContain("optimized-claw-scrapling");
+    expect(dockerReleaseWorkflow).toContain("Dockerfile.scrapling");
+  });
 });

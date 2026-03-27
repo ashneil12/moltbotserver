@@ -96,9 +96,7 @@ services:
       start_period: 10s
 
   scrapling:
-    build:
-      context: .
-      dockerfile: Dockerfile.scrapling
+    image: ${OPENCLAW_SCRAPLING_IMAGE:-ghcr.io/ashneil12/optimized-claw-scrapling:latest}
     container_name: scrapling
     environment:
       SCRAPLING_STEALTH_CONCURRENCY: ${SCRAPLING_STEALTH_CONCURRENCY:-5}
@@ -113,4 +111,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-
