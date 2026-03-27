@@ -144,6 +144,50 @@ describe("resolveMemoryBackendConfig", () => {
     expect(resolved.qmd?.searchMode).toBe("vsearch");
   });
 
+  it("inherits session indexing from agent memory search sources", () => {
+    const cfg = {
+      agents: {
+        defaults: {
+          workspace: "/tmp/memory-test",
+          memorySearch: {
+            sources: ["memory", "sessions"],
+            experimental: { sessionMemory: true },
+          },
+        },
+      },
+      memory: {
+        backend: "qmd",
+        qmd: {},
+      },
+    } as OpenClawConfig;
+    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
+    expect(resolved.qmd?.sessions.enabled).toBe(true);
+  });
+
+  it("respects explicit qmd session disable even when agent wants sessions", () => {
+    const cfg = {
+      agents: {
+        defaults: {
+          workspace: "/tmp/memory-test",
+          memorySearch: {
+            sources: ["memory", "sessions"],
+            experimental: { sessionMemory: true },
+          },
+        },
+      },
+      memory: {
+        backend: "qmd",
+        qmd: {
+          sessions: {
+            enabled: false,
+          },
+        },
+      },
+    } as OpenClawConfig;
+    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
+    expect(resolved.qmd?.sessions.enabled).toBe(false);
+  });
+
   it("always includes a workspace collection when qmd backend is active", () => {
     const cfg = {
       agents: { defaults: { workspace: "/tmp/memory-test" } },

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import { resolveMemorySearchConfig } from "../agents/memory-search.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { SessionSendPolicyConfig } from "../config/types.base.js";
@@ -208,8 +209,9 @@ function resolveSearchMode(raw?: MemoryQmdConfig["searchMode"]): MemoryQmdSearch
 function resolveSessionConfig(
   cfg: MemoryQmdConfig["sessions"],
   workspaceDir: string,
+  enabledByDefault: boolean,
 ): ResolvedQmdSessionConfig {
-  const enabled = Boolean(cfg?.enabled);
+  const enabled = cfg?.enabled ?? enabledByDefault;
   const exportDirRaw = cfg?.exportDir?.trim();
   const exportDir = exportDirRaw ? resolvePath(exportDirRaw, workspaceDir) : undefined;
   const retentionDays =
@@ -368,6 +370,8 @@ export function resolveMemoryBackendConfig(params: {
   }
 
   const workspaceDir = resolveAgentWorkspaceDir(params.cfg, params.agentId);
+  const resolvedMemorySearch = resolveMemorySearchConfig(params.cfg, params.agentId);
+  const wantsSessionMemory = resolvedMemorySearch?.sources.includes("sessions") ?? false;
   const qmdCfg = params.cfg.memory?.qmd;
   const includeDefaultMemory = qmdCfg?.includeDefaultMemory !== false;
   const nameSet = new Set<string>();
@@ -390,7 +394,7 @@ export function resolveMemoryBackendConfig(params: {
     searchMode: resolveSearchMode(qmdCfg?.searchMode),
     collections,
     includeDefaultMemory,
-    sessions: resolveSessionConfig(qmdCfg?.sessions, workspaceDir),
+    sessions: resolveSessionConfig(qmdCfg?.sessions, workspaceDir, wantsSessionMemory),
     update: {
       intervalMs: resolveIntervalMs(qmdCfg?.update?.interval),
       debounceMs: resolveDebounceMs(qmdCfg?.update?.debounceMs),
