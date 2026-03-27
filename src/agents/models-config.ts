@@ -8,13 +8,13 @@ import {
 } from "../config/config.js";
 import { createConfigRuntimeEnv } from "../config/env-vars.js";
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
+import {
+  MODELS_JSON_READY_CACHE,
+  MODELS_JSON_WRITE_LOCKS,
+  resetModelsJsonReadyCacheForTest,
+  resetModelsJsonStateForTest,
+} from "./models-config.state.js";
 import { planOpenClawModelsJson } from "./models-config.plan.js";
-
-const MODELS_JSON_WRITE_LOCKS = new Map<string, Promise<void>>();
-const MODELS_JSON_READY_CACHE = new Map<
-  string,
-  Promise<{ fingerprint: string; result: { agentDir: string; wrote: boolean } }>
->();
 
 async function readFileMtimeMs(pathname: string): Promise<number | null> {
   try {
@@ -197,6 +197,5 @@ export async function ensureOpenClawModelsJson(
   }
 }
 
-export function resetModelsJsonReadyCacheForTest(): void {
-  MODELS_JSON_READY_CACHE.clear();
-}
+export { resetModelsJsonReadyCacheForTest };
+export { resetModelsJsonStateForTest };

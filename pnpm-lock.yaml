@@ -565,6 +565,12 @@ importers:
 
   extensions/qianfan: {}
 
+  extensions/searxng:
+    dependencies:
+      openclaw:
+        specifier: '>=2026.3.11'
+        version: 2026.3.24(@napi-rs/canvas@0.1.97)(node-llama-cpp@3.18.1(typescript@5.9.3))
+
   extensions/sglang: {}
 
   extensions/signal: {}

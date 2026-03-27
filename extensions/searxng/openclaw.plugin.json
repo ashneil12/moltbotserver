@@ -1,0 +1,21 @@
+{
+  "id": "searxng",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "webSearch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

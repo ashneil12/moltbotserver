@@ -1,7 +1,13 @@
 # Local Fork Divergence
 
-This file tracks changes made to this fork of openclaw that are **not** present upstream.
-Update this file whenever local changes are made so upstream merges can be reviewed safely.
+This file is a lightweight note, not the authoritative source of fork policy.
+
+For the active maintenance model, use:
+
+- `FORK_STRATEGY.md`
+- `FORK_INVARIANTS.md`
+
+This file may lag behind the full branch delta.
 
 ---
 

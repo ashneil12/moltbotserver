@@ -44,7 +44,7 @@ if (process.getMaxListeners() > 0 && process.getMaxListeners() < TEST_PROCESS_MA
 }
 
 import { resetContextWindowCacheForTest } from "../src/agents/context.js";
-import { resetModelsJsonReadyCacheForTest } from "../src/agents/models-config.js";
+import { resetModelsJsonStateForTest } from "../src/agents/models-config.state.js";
 import {
   drainSessionWriteLockStateForTest,
   resetSessionWriteLockStateForTest,
@@ -325,7 +325,7 @@ beforeAll(() => {
 afterEach(async () => {
   await cleanupSessionStateForTest();
   resetContextWindowCacheForTest();
-  resetModelsJsonReadyCacheForTest();
+  resetModelsJsonStateForTest();
   resetSessionWriteLockStateForTest();
   if (globalRegistryState.registry !== DEFAULT_PLUGIN_REGISTRY) {
     installDefaultPluginRegistry();

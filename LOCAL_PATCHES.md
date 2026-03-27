@@ -1,10 +1,10 @@
 # Local Patches (Do Not Overwrite During Upstream Sync)
 
 This file documents files with **critical local modifications** that diverge from
-upstream `openclaw/openclaw`. After every `git rebase upstream/main`, you **MUST**
-verify these patches are still present.
+upstream `openclaw/openclaw`.
 
-> Run the `/verify-sync` workflow for full automated verification (Gate 2 runs all these checks).
+These notes are now reference material for selective upstream intake, not a checklist for
+routine rebases. See `FORK_STRATEGY.md` and `FORK_INVARIANTS.md` for the active fork model.
 
 ## Quick Verification Script
 

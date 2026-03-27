@@ -9,8 +9,6 @@
 import { randomUUID } from "node:crypto";
 import type * as LanceDB from "@lancedb/lancedb";
 import { Type } from "@sinclair/typebox";
-import OpenAI from "openai";
-import { ensureGlobalUndiciEnvProxyDispatcher } from "openclaw/plugin-sdk/infra-runtime";
 import { definePluginEntry, type OpenClawPluginApi } from "./api.js";
 import {
   DEFAULT_CAPTURE_MAX_CHARS,
@@ -19,7 +17,29 @@ import {
   memoryConfigSchema,
   vectorDimsForModel,
 } from "./config.js";
-import { loadLanceDbModule } from "./lancedb-runtime.js";
+
+type OpenAIConstructor = typeof import("./openai.runtime.js").default;
+type InfraRuntimeModule = typeof import("./infra-runtime.runtime.js");
+type LanceDbRuntimeModule = typeof import("./lancedb-runtime.runtime.js");
+
+let openAIConstructorPromise: Promise<OpenAIConstructor> | null = null;
+let infraRuntimePromise: Promise<InfraRuntimeModule> | null = null;
+let lanceDbRuntimePromise: Promise<LanceDbRuntimeModule> | null = null;
+
+async function getOpenAIConstructor(): Promise<OpenAIConstructor> {
+  openAIConstructorPromise ??= import("./openai.runtime.js").then((module) => module.default);
+  return await openAIConstructorPromise;
+}
+
+async function getInfraRuntime(): Promise<InfraRuntimeModule> {
+  infraRuntimePromise ??= import("./infra-runtime.runtime.js");
+  return await infraRuntimePromise;
+}
+
+async function getLanceDbRuntime(): Promise<LanceDbRuntimeModule> {
+  lanceDbRuntimePromise ??= import("./lancedb-runtime.runtime.js");
+  return await lanceDbRuntimePromise;
+}
 
 // ============================================================================
 // Types
@@ -68,6 +88,7 @@ class MemoryDB {
   }
 
   private async doInitialize(): Promise<void> {
+    const { loadLanceDbModule } = await getLanceDbRuntime();
     const lancedb = await loadLanceDbModule();
     this.db = await lancedb.connect(this.dbPath);
     const tables = await this.db.tableNames();
@@ -150,15 +171,23 @@ class MemoryDB {
 // ============================================================================
 
 class Embeddings {
-  private client: OpenAI;
+  private clientPromise: Promise<InstanceType<OpenAIConstructor>> | null = null;
 
   constructor(
-    apiKey: string,
-    private model: string,
-    baseUrl?: string,
+    private readonly apiKey: string,
+    private readonly model: string,
+    private readonly baseUrl?: string,
     private dimensions?: number,
-  ) {
-    this.client = new OpenAI({ apiKey, baseURL: baseUrl });
+  ) {}
+
+  private async getClient(): Promise<InstanceType<OpenAIConstructor>> {
+    if (!this.clientPromise) {
+      this.clientPromise = (async () => {
+        const OpenAI = await getOpenAIConstructor();
+        return new OpenAI({ apiKey: this.apiKey, baseURL: this.baseUrl });
+      })();
+    }
+    return await this.clientPromise;
   }
 
   async embed(text: string): Promise<number[]> {
@@ -169,8 +198,10 @@ class Embeddings {
     if (this.dimensions) {
       params.dimensions = this.dimensions;
     }
+    const client = await this.getClient();
+    const { ensureGlobalUndiciEnvProxyDispatcher } = await getInfraRuntime();
     ensureGlobalUndiciEnvProxyDispatcher();
-    const response = await this.client.embeddings.create(params);
+    const response = await client.embeddings.create(params);
     return response.data[0].embedding;
   }
 }

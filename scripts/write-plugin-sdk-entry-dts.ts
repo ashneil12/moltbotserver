@@ -56,17 +56,16 @@ const TYPE_SHIMS: Partial<Record<string, string>> = {
   ].join("\n"),
 };
 
-// `tsc` emits declarations under `dist/plugin-sdk/src/plugin-sdk/*` because the source lives
-// at `src/plugin-sdk/*` and `rootDir` is `.` (repo root, to support cross-src/extensions refs).
-//
-// Our package export map points subpath `types` at `dist/plugin-sdk/<entry>.d.ts`, so we
-// generate stable entry d.ts files that re-export the real declarations.
+// Keep package exports stable by generating entrypoint declaration shims that
+// point back at the shipped source tree. This avoids an extra whole-repo d.ts
+// compile pass in `build`, which is disproportionately expensive on slower
+// hosts with cold dependency trees.
 for (const entry of pluginSdkEntrypoints) {
   const typeOut = path.join(process.cwd(), `dist/plugin-sdk/${entry}.d.ts`);
   fs.mkdirSync(path.dirname(typeOut), { recursive: true });
   fs.writeFileSync(
     typeOut,
-    TYPE_SHIMS[entry] ?? `export * from "./src/plugin-sdk/${entry}.js";\n`,
+    TYPE_SHIMS[entry] ?? `export * from "../../src/plugin-sdk/${entry}.js";\n`,
     "utf8",
   );
 

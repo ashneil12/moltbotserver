@@ -159,7 +159,9 @@ export default defineConfig([
     // and bundled hooks in one graph so runtime singletons are emitted once.
     entry: buildUnifiedDistEntries(),
     deps: {
-      neverBundle: ["@lancedb/lancedb"],
+      // Keep plugin-owned heavy/native deps external so the unified build graph
+      // does not try to inline extension package dependency trees.
+      neverBundle: ["@lancedb/lancedb", "@twurple/api", "@twurple/auth", "@twurple/chat"],
     },
   }),
 ]);

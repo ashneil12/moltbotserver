@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-# =============================================================================
-# scripts/cherry-pick-upstream.sh
-# 
-# A safe utility for pulling isolated features from the upstream OpenClaw 
-# repository without triggering massive merge conflicts on our customized fork.
-# =============================================================================
+# Selective upstream intake helper for this fork.
 
-set -e
+set -euo pipefail
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -14,51 +9,66 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-if [ -z "$1" ]; then
-  echo -e "${RED}Usage: $0 <commit-hash>${NC}"
-  echo ""
-  echo -e "Examples:"
-  echo -e "  $0 abc123def456      # Cherry-pick a specific commit"
+usage() {
+  cat <<'EOF'
+Usage: scripts/cherry-pick-upstream.sh <commit-hash>
+
+Cherry-picks a specific upstream commit onto the current branch and runs a real
+post-pick verification command that exists in this repo.
+
+Environment:
+  OPENCLAW_CHERRY_PICK_VERIFY   Override verification command (default: pnpm build)
+EOF
+}
+
+if [ "${1:-}" = "" ]; then
+  echo -e "${RED}Missing commit hash.${NC}"
+  usage
   exit 1
 fi
 
-COMMIT_HASH=$1
+COMMIT_HASH="$1"
+VERIFY_CMD="${OPENCLAW_CHERRY_PICK_VERIFY:-pnpm build}"
 
-# Ensure we're in the repository root
 cd "$(dirname "$0")/.."
 
 echo -e "${BLUE}Fetching latest from upstream...${NC}"
 git fetch upstream
 
-echo -e "${BLUE}Attempting to cherry-pick commit ${COMMIT_HASH}...${NC}"
-
-# Check if working directory is clean
-if ! git diff-index --quiet HEAD --; then
-  echo -e "${RED}Error: Your working directory is not clean. Please commit or stash your changes first.${NC}"
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo -e "${RED}Error: working tree is not clean. Commit your changes before selective intake.${NC}"
   exit 1
 fi
 
-# Store the current HEAD so we can rollback if needed
-PRE_PICK_HEAD=$(git rev-parse HEAD)
+if ! git cat-file -e "${COMMIT_HASH}^{commit}" 2>/dev/null; then
+  echo -e "${RED}Error: commit ${COMMIT_HASH} does not exist locally after fetch.${NC}"
+  exit 1
+fi
 
-# Perform the cherry-pick
-if git cherry-pick "$COMMIT_HASH"; then
-  echo -e "${GREEN}✅ Cherry-pick successful!${NC}"
-  
-  # Run the verification gates automatically
-  echo -e "${BLUE}Running verification gates...${NC}"
-  if [ -f "scripts/verify-sync.sh" ]; then
-    bash scripts/verify-sync.sh
-  else
-    echo -e "${YELLOW}Warning: scripts/verify-sync.sh not found. Skipping automated tests.${NC}"
-    echo -e "Please manually verify the agent boots without configuration errors."
-  fi
-  
-  echo -e "${GREEN}Update complete. Run 'npm run dev:sandbox' to start the local environment.${NC}"
+if ! git merge-base --is-ancestor "${COMMIT_HASH}" upstream/main; then
+  echo -e "${YELLOW}Warning: ${COMMIT_HASH} is not currently reachable from upstream/main.${NC}"
+fi
+
+echo -e "${BLUE}Upstream commit summary:${NC}"
+git --no-pager show --stat --summary --format=medium "${COMMIT_HASH}" | sed -n '1,80p'
+
+echo -e "${BLUE}Cherry-picking ${COMMIT_HASH} with traceability (-x)...${NC}"
+if git cherry-pick -x "${COMMIT_HASH}"; then
+  echo -e "${GREEN}Cherry-pick successful.${NC}"
 else
-  echo -e "${RED}❌ Cherry-pick failed with conflicts.${NC}"
-  echo -e "You can:"
-  echo -e "  1. Resolve conflicts, run 'git add <files>' and 'git cherry-pick --continue'"
-  echo -e "  2. Abort this pick by running 'git cherry-pick --abort'"
+  echo -e "${RED}Cherry-pick hit conflicts.${NC}"
+  echo "Resolve conflicts, then run 'git cherry-pick --continue', or abort with 'git cherry-pick --abort'."
   exit 1
 fi
+
+echo -e "${BLUE}Running verification: ${VERIFY_CMD}${NC}"
+if bash -lc "${VERIFY_CMD}"; then
+  echo -e "${GREEN}Verification passed.${NC}"
+else
+  echo -e "${RED}Verification failed.${NC}"
+  echo "Review the failing command output, fix as needed, and rerun verification before pushing."
+  exit 1
+fi
+
+echo -e "${GREEN}Selective upstream intake complete.${NC}"
+echo "Next: review the result against FORK_INVARIANTS.md before pushing."
