@@ -101,11 +101,6 @@ function generateConfig() {
         maxConcurrent,
         bootstrapTotalMaxChars: 155000,
       },
-      messages: {
-        queue: {
-          mode: 'collect',
-        },
-      },
     },
   };
 
