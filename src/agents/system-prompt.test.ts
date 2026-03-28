@@ -546,6 +546,27 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("MINIMAL CHANGE");
   });
 
+  it("includes business mode honesty additions when business mode is enabled", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      businessModeEnabled: true,
+    });
+
+    expect(prompt).toContain("## Radical Candor / Brutally Honest Mode");
+    expect(prompt).toContain(
+      "I want you to act and take on the role of my brutally honest, high-level advisor.",
+    );
+  });
+
+  it("omits business mode honesty additions when business mode is disabled", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      businessModeEnabled: false,
+    });
+
+    expect(prompt).not.toContain("## Radical Candor / Brutally Honest Mode");
+  });
+
   it("omits project context when no context files are injected", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",

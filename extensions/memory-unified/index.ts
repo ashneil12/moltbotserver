@@ -157,8 +157,17 @@ const memoryUnifiedPlugin = {
       recallMinScore?: number;
     };
 
-    // Feature flags — defaults favour a rich "batteries-included" experience
-    const autoRecall = pluginConfig.autoRecall !== false; // default: true
+    const businessModeShort = process.env.OPENCLAW_BUSINESS_MODE?.trim();
+    const businessModeLong = process.env.OPENCLAW_BUSINESS_MODE_ENABLED?.trim();
+    const businessMode =
+      businessModeShort === "1" ||
+      businessModeShort?.toLowerCase() === "true" ||
+      businessModeLong === "1" ||
+      businessModeLong?.toLowerCase() === "true";
+
+    // Feature flags
+    // Auto-recall defaults to true ONLY when business mode is on.
+    const autoRecall = pluginConfig.autoRecall ?? businessMode; // default: businessMode
     const recallMaxResults = pluginConfig.recallMaxResults ?? 5;
     const recallMinScore = pluginConfig.recallMinScore ?? 0.3;
     const recallTimeoutMs =

@@ -66,7 +66,8 @@ function enforceMemory(configPath) {
     qmd.includeDefaultMemory = true;
     qmd.searchMode = "vsearch";
     qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
-    const businessMode = isTruthy(env("OPENCLAW_BUSINESS_MODE"));
+    const businessMode =
+      isTruthy(env("OPENCLAW_BUSINESS_MODE")) || isTruthy(env("OPENCLAW_BUSINESS_MODE_ENABLED"));
     qmd.limits = {
       maxResults: 8,
       maxSnippetChars: 700,

@@ -1,5 +1,5 @@
 import {
-  promptSecretRefForOnboarding,
+  promptSecretRefForSetup,
   resolveSecretInputModeForEnvSelection,
 } from "../commands/auth-choice.apply-helpers.js";
 import {
@@ -190,7 +190,7 @@ export async function configureGatewayForOnboarding(
           env: process.env,
         });
       } else {
-        const resolved = await promptSecretRefForOnboarding({
+        const resolved = await promptSecretRefForSetup({
           provider: "gateway-auth-token",
           config: nextConfig,
           prompter,
@@ -236,7 +236,7 @@ export async function configureGatewayForOnboarding(
         },
       });
       if (selectedMode === "ref") {
-        const resolved = await promptSecretRefForOnboarding({
+        const resolved = await promptSecretRefForSetup({
           provider: "gateway-auth-password",
           config: nextConfig,
           prompter,

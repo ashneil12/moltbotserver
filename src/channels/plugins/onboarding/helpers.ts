@@ -1,5 +1,5 @@
 import {
-  promptSecretRefForOnboarding,
+  promptSecretRefForSetup,
   resolveSecretInputModeForEnvSelection,
 } from "../../../commands/auth-choice.apply-helpers.js";
 import type { OpenClawConfig } from "../../../config/config.js";
@@ -617,7 +617,7 @@ export async function promptSingleChannelSecretInput(params: {
     }
   }
 
-  const resolved = await promptSecretRefForOnboarding({
+  const resolved = await promptSecretRefForSetup({
     provider: params.providerHint,
     config: params.cfg,
     prompter: params.prompter as WizardPrompter,

@@ -4,16 +4,17 @@ import path from "node:path";
 import type { ReasoningLevel, ThinkLevel } from "../auto-reply/thinking.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
+import {
+  MOLTBOT_DISCIPLINE_ADDITIONS,
+  MOLTBOT_AUTONOMOUS_ADDITIONS,
+  MOLTBOT_BUSINESS_HONESTY_ADDITIONS,
+} from "../moltbot-overrides/system-prompt-additions.js";
 import { describeContextPolicy, type MessageContext } from "../security/data-classification.js";
 import { listDeliverableMessageChannels } from "../utils/message-channel.js";
 import type { ResolvedTimeFormat } from "./date-time.js";
 import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
 import type { EmbeddedSandboxInfo } from "./pi-embedded-runner/types.js";
 import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
-import {
-  MOLTBOT_DISCIPLINE_ADDITIONS,
-  MOLTBOT_AUTONOMOUS_ADDITIONS,
-} from "../moltbot-overrides/system-prompt-additions.js";
 
 /**
  * Controls which hardcoded sections are included in the system prompt.
@@ -523,12 +524,7 @@ export function buildAgentSystemPrompt(params: {
     "**OVER-DELIVERY IS FAILURE.** Expanding scope beyond what was asked is reckless — not X plus Y 'while you're at it.' But within the requested scope, be thorough and relentless. Exhaust every approach before reporting failure.",
     "This applies especially on cheaper models. Rushing into execution without understanding is the single most common failure mode. Resist it.",
     "",
-    ...(!isMinimal
-      ? [
-          MOLTBOT_AUTONOMOUS_ADDITIONS,
-          "",
-        ]
-      : []),
+    ...(!isMinimal ? [MOLTBOT_AUTONOMOUS_ADDITIONS, ""] : []),
 
     ...safetySection,
     ...dataClassificationSection,
@@ -789,6 +785,7 @@ export function buildAgentSystemPrompt(params: {
           "",
           "**Knowledge Base (MANDATORY):** Your workspace contains a `business/` folder with organized strategy, content, copywriting, operations, lead-generation, books, and feedback documents. **Before responding to ANY question — simple or complex — you MUST run `memory_search` with 2–3 keywords from the user's question. This single search covers your personal memory AND all indexed workspace documents including all business/ files. This is not optional.** Search broadly when uncertain — the knowledge base contains frameworks, playbooks, and reference material.",
         );
+        lines.push("", ...MOLTBOT_BUSINESS_HONESTY_ADDITIONS, "");
       } else {
         lines.push(
           "SOUL.md defines your core operating principles — identity continuity, curiosity, initiative, **architect-first thinking** (understand → scope → act → verify → document), memory discipline, self-evolution on three axes (technical, cognitive, existential), honesty, and stewardship. BIAS FOR ACTION is your operating default: scope the work internally, then execute and report results — do not restate and wait for confirmation unless the action is truly irreversible. Default to MINIMAL CHANGE — unsolicited restructuring, reformatting, or over-delivery is actively harmful. It includes Ship of Theseus protection against identity erosion. Internalize these. IDENTITY.md is who you become — your personality, preferences, and evolving character. When they conflict, SOUL.md takes precedence.",
@@ -848,6 +845,7 @@ export function buildAgentSystemPrompt(params: {
         "**Knowledge Base (MANDATORY):** Your workspace contains a `business/` folder with organized strategy, content, copywriting, operations, lead-generation, books, and feedback documents. **Before responding to ANY question — simple or complex — you MUST run `memory_search` with 2–3 keywords from the user's question. This single search covers your personal memory AND all indexed workspace documents including all business/ files. This is not optional.** Search broadly when uncertain — the knowledge base contains frameworks, playbooks, and reference material.",
         "",
       );
+      lines.push("", ...MOLTBOT_BUSINESS_HONESTY_ADDITIONS, "");
     }
     if (hasWorkingFile) {
       lines.push(

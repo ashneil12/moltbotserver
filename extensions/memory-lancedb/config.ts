@@ -129,7 +129,19 @@ export const memoryConfigSchema = {
       },
       dbPath: typeof cfg.dbPath === "string" ? cfg.dbPath : DEFAULT_DB_PATH,
       autoCapture: cfg.autoCapture === true,
-      autoRecall: cfg.autoRecall !== false,
+      autoRecall:
+        typeof cfg.autoRecall === "boolean"
+          ? cfg.autoRecall
+          : (() => {
+              const short = process.env.OPENCLAW_BUSINESS_MODE?.trim();
+              const long = process.env.OPENCLAW_BUSINESS_MODE_ENABLED?.trim();
+              return (
+                short === "1" ||
+                short?.toLowerCase() === "true" ||
+                long === "1" ||
+                long?.toLowerCase() === "true"
+              );
+            })(),
       captureMaxChars: captureMaxChars ?? DEFAULT_CAPTURE_MAX_CHARS,
     };
   },

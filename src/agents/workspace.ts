@@ -445,8 +445,7 @@ export async function ensureAgentWorkspace(params?: {
           fs.readFile(identityPath, "utf-8"),
           fs.readFile(userPath, "utf-8"),
         ]);
-        legacySetupCompleted =
-          identityContent !== identityTemplate || userContent !== userTemplate;
+        legacySetupCompleted = identityContent !== identityTemplate || userContent !== userTemplate;
       } catch {
         // Files don't exist or can't be read → not a legacy workspace
         legacySetupCompleted = false;
@@ -683,11 +682,11 @@ export async function loadExtraBootstrapFilesWithDiagnostics(
  */
 export function resolveBusinessModeEnabled(): boolean {
   const short = process.env.OPENCLAW_BUSINESS_MODE?.trim();
-  if (short === "1") {
+  if (short === "1" || short?.toLowerCase() === "true") {
     return true;
   }
   const long = process.env.OPENCLAW_BUSINESS_MODE_ENABLED?.trim();
-  if (long === "true" || long === "1") {
+  if (long === "1" || long?.toLowerCase() === "true") {
     return true;
   }
   return false;

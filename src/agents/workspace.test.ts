@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { makeTempWorkspace, writeWorkspaceFile } from "../test-helpers/workspace.js";
 import {
   DEFAULT_AGENTS_FILENAME,
@@ -49,15 +49,6 @@ async function expectBootstrapSeeded(dir: string) {
   await expect(fs.access(path.join(dir, DEFAULT_BOOTSTRAP_FILENAME))).resolves.toBeUndefined();
   const state = await readWorkspaceState(dir);
   expect(state.bootstrapSeededAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
-}
-
-async function expectCompletedWithoutBootstrap(dir: string) {
-  await expect(fs.access(path.join(dir, DEFAULT_IDENTITY_FILENAME))).resolves.toBeUndefined();
-  await expect(fs.access(path.join(dir, DEFAULT_BOOTSTRAP_FILENAME))).rejects.toMatchObject({
-    code: "ENOENT",
-  });
-  const state = await readWorkspaceState(dir);
-  expect(state.setupCompletedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
 }
 
 function expectSubagentAllowedBootstrapNames(files: WorkspaceBootstrapFile[]) {
@@ -292,6 +283,13 @@ describe("resolveBusinessModeEnabled", () => {
 
   it("returns true when OPENCLAW_BUSINESS_MODE=1", () => {
     process.env.OPENCLAW_BUSINESS_MODE = "1";
+    expect(resolveBusinessModeEnabled()).toBe(true);
+  });
+
+  it("returns true when OPENCLAW_BUSINESS_MODE=true (case-insensitive)", () => {
+    process.env.OPENCLAW_BUSINESS_MODE = "true";
+    expect(resolveBusinessModeEnabled()).toBe(true);
+    process.env.OPENCLAW_BUSINESS_MODE = "TRUE";
     expect(resolveBusinessModeEnabled()).toBe(true);
   });
 

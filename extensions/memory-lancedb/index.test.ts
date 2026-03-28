@@ -193,11 +193,11 @@ describe("memory plugin e2e", () => {
     expect(config?.captureMaxChars).toBe(1800);
   });
 
-  test("config schema keeps autoCapture disabled by default", async () => {
+  test("config schema keeps autoCapture and autoRecall disabled by default", async () => {
     const config = await parseConfig();
 
     expect(config?.autoCapture).toBe(false);
-    expect(config?.autoRecall).toBe(true);
+    expect(config?.autoRecall).toBe(false);
   });
 
   test("passes configured dimensions to OpenAI embeddings API", async () => {

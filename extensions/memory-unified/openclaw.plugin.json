@@ -8,7 +8,7 @@
       "autoRecall": {
         "type": "boolean",
         "description": "Inject relevant memories into context before each agent turn",
-        "default": true
+        "default": false
       },
       "recallMaxResults": {
         "type": "number",

@@ -18,6 +18,19 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 > **Sync Risk:** Additive performance restrictions within `internal.ts` `listMemoryFiles` will gracefully overlay any upstream expansion.
 
+## Memory Auto-Recall Defaults & Business Mode Refactor (2026-03-28)
+
+**Purpose:** Optimize `memory-unified` and `memory-lancedb` plugins to disable `autoRecall` by default when `OPENCLAW_BUSINESS_MODE` is off, to prevent unnecessary token usage in standard deployments. Also refactored the environment variable parsing logic to case-insensitively check `OPENCLAW_BUSINESS_MODE=true` across the core system and extensions.
+
+| File                                  | Change                                                                                               | Sync Risk      |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------- |
+| `extensions/memory-unified/index.ts`  | `autoRecall` defaults to `false` when business mode is disabled. Updated dynamic env check.          | None — custom  |
+| `extensions/memory-lancedb/config.ts` | `autoRecall` defaults to `false` when business mode is disabled. Updated dynamic env check.          | None — custom  |
+| `src/agents/workspace.ts`             | Refactored `resolveBusinessModeEnabled()` to permissively process `"true"` case-insensitively.       | Low — additive |
+| `src/agents/workspace.test.ts`        | Added unit tests to verify the case-insensitive parsing of `OPENCLAW_BUSINESS_MODE=true`.            | None — test    |
+| `enforce-config-memory.test.mjs`      | Added `OPENCLAW_BUSINESS_MODE_ENABLED` check to the isolated helper reproducing testing logic.       | None — test    |
+| `*.plugin.json`                       | Reflected the updated `autoRecall: false` default in the UI schemas for unified and lancedb plugins. | Low            |
+
 ---
 
 ## Radical Candor / Brutally Honest Mode Integration (2026-03-28)
