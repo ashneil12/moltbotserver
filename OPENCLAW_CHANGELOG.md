@@ -5,6 +5,35 @@ For the upstream sync reference (what to preserve during merges), see `OPENCLAW_
 
 ---
 
+## Builtin Memory Backend Optimization & QMD Removal (2026-03-24)
+
+**Purpose:** Decommission the `qmd` memory sidecar (previously used for local + semantic search on large repos) and fully pivot to the `builtin` memory search. Optimizations applied to `walkDir` to reduce I/O loop failures on complex workspaces, alongside explicit ignore lists for system states.
+
+| File                          | Change                                                                                                 | Sync Risk      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ | -------------- |
+| `docker-entrypoint.sh`        | Removed explicit 72-line QMD installation/startup/pre-warm logic from the container entrypoint.        | None — custom  |
+| `enforce-config.mjs`          | Removed QMD block. `builtin` memory logic is now standard regardless of ENV vars.                      | None — custom  |
+| `src/memory/internal.ts`      | Implemented bounded `walkDir` recursion (max depth: 20); added ignores for `skills`, `clawflows`, etc. | Low — additive |
+| `src/memory/internal.test.ts` | +2 tests ensuring system documents/directories are excluded and bounds operate as expected.            | None — test    |
+
+> **Sync Risk:** Additive performance restrictions within `internal.ts` `listMemoryFiles` will gracefully overlay any upstream expansion.
+
+---
+
+## Radical Candor / Brutally Honest Mode Integration (2026-03-28)
+
+**Purpose:** Implement an un-erasable advisory persona ("Brutally Honest" / "Radical Candor") when the agent operates in `businessModeEnabled`. Ensures the agent acts as a direct, unfiltered strategic advisor. Added UI transparency warnings in the dashboard.
+
+| File                                                 | Change                                                                                                     | Sync Risk     |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
+| `src/moltbot-overrides/system-prompt-additions.ts`   | **NEW** — Created `MOLTBOT_BUSINESS_HONESTY_ADDITIONS` with core "Brutally Honest" instructions.           | None — custom |
+| `src/agents/system-prompt.ts`                        | Injected `MOLTBOT_BUSINESS_HONESTY_ADDITIONS` into the system prompt when `businessModeEnabled` is active. | Low           |
+| `src/agents/system-prompt.test.ts`                   | Added unit tests verifying prompt injection logic toggles correctly.                                       | None — test   |
+| `moltbot-dashboard/../deploy/BusinessModeToggle.tsx` | _(Dashboard)_ Added animated amber warning tooltip when Business Mode is enabled.                          | None — custom |
+| `moltbot-dashboard/../components/SettingsModal.tsx`  | _(Dashboard)_ Added matching warning tooltip to ensure UI consistency.                                     | None — custom |
+
+---
+
 ## Test Infrastructure Hardening — `vi.spyOn` Migration & QMD Collection Collision Fix (2026-03-23)
 
 **Purpose:** Fix 80 failing tests across 4 test files introduced by the upstream sync. Three root causes addressed:
