@@ -57,13 +57,23 @@ const IGNORED_MEMORY_WATCH_DIR_NAMES = new Set([
   ".openclaw",
   "skills",
   "clawflows",
+  // Agent workflow/skills directories — content is injected directly into the
+  // AI system prompt and therefore adds no value when re-indexed into memory.
+  ".agent",
+  ".agents",
 ]);
 
 const IGNORED_MEMORY_WATCH_FILE_NAMES = new Set([
+  // Workspace context files that are injected into the AI system prompt.
+  // Indexing them would be redundant and waste embedding budget.
   "identity.md",
   "bootstrap.md",
   "soul.md",
   "user.md",
+  "agents.md",
+  "tools.md",
+  "heartbeat.md",
+  "acip_security.md",
 ]);
 
 export function shouldIgnoreMemoryWatchPath(watchPath: string): boolean {

@@ -179,6 +179,12 @@ describe("listMemoryFiles", () => {
     await fs.writeFile(path.join(tmpDir, "USER.md"), "# User");
     await fs.writeFile(path.join(tmpDir, "IDENTITY.md"), "# Identity");
     await fs.writeFile(path.join(tmpDir, "BOOTSTRAP.md"), "# Bootstrap");
+    // AI-injected context files — added to the exclusion list so the indexer
+    // never wastes embedding budget on files the AI already sees directly.
+    await fs.writeFile(path.join(tmpDir, "AGENTS.md"), "# Agents");
+    await fs.writeFile(path.join(tmpDir, "TOOLS.md"), "# Tools");
+    await fs.writeFile(path.join(tmpDir, "HEARTBEAT.md"), "# Heartbeat");
+    await fs.writeFile(path.join(tmpDir, "ACIP_SECURITY.md"), "# ACIP Security");
     await fs.writeFile(path.join(tmpDir, "normal.md"), "# Normal");
 
     const files = await listMemoryFiles(tmpDir);
@@ -188,9 +194,26 @@ describe("listMemoryFiles", () => {
           f.includes("SOUL") ||
           f.includes("IDENTITY") ||
           f.includes("BOOTSTRAP") ||
-          f.includes("USER"),
+          f.includes("USER") ||
+          f.includes("AGENTS") ||
+          f.includes("TOOLS") ||
+          f.includes("HEARTBEAT") ||
+          f.includes("ACIP_SECURITY"),
       ),
     ).toBe(false);
+    expect(files.some((f) => f.endsWith("normal.md"))).toBe(true);
+  });
+
+  it("ignores .agent and .agents directories", async () => {
+    const tmpDir = getTmpDir();
+    await fs.mkdir(path.join(tmpDir, ".agent", "workflows"), { recursive: true });
+    await fs.mkdir(path.join(tmpDir, ".agents", "skills"), { recursive: true });
+    await fs.writeFile(path.join(tmpDir, ".agent", "workflows", "deploy.md"), "# Deploy");
+    await fs.writeFile(path.join(tmpDir, ".agents", "skills", "skill.md"), "# Skill");
+    await fs.writeFile(path.join(tmpDir, "normal.md"), "# Normal");
+
+    const files = await listMemoryFiles(tmpDir);
+    expect(files.some((f) => f.includes(".agent") || f.includes(".agents"))).toBe(false);
     expect(files.some((f) => f.endsWith("normal.md"))).toBe(true);
   });
 });
