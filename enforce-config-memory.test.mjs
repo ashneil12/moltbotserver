@@ -59,9 +59,8 @@ function enforceMemory(configPath) {
     },
   };
 
-  const qmdDisabled =
-    env("OPENCLAW_QMD_ENABLED") === "false" || env("OPENCLAW_QMD_ENABLED") === "0";
-  if (!qmdDisabled) {
+  const qmdEnabled = env("OPENCLAW_QMD_ENABLED") === "true" || env("OPENCLAW_QMD_ENABLED") === "1";
+  if (qmdEnabled) {
     memory.backend = "qmd";
     const qmd = ensure(memory, "qmd");
     qmd.includeDefaultMemory = true;
@@ -99,10 +98,11 @@ function enforceMemory(configPath) {
   writeConfig(configPath, config);
 }
 
-// ── QMD backend (default path) ─────────────────────────────────────────────
+// ── QMD backend (opt-in) ───────────────────────────────────────────────────
 
-describe("enforceMemory — QMD backend (default)", () => {
-  it("sets memory.backend to 'qmd' when QMD is not disabled", () => {
+describe("enforceMemory — QMD backend (opt-in)", () => {
+  it("sets memory.backend to 'qmd' when QMD is enabled explicitly", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
     enforceMemory(p);
@@ -111,6 +111,7 @@ describe("enforceMemory — QMD backend (default)", () => {
   });
 
   it("sets searchMode to 'vsearch' for hybrid vector+BM25 search", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
     enforceMemory(p);
@@ -119,6 +120,7 @@ describe("enforceMemory — QMD backend (default)", () => {
   });
 
   it("sets QMD update interval and boot behavior", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
     enforceMemory(p);
@@ -131,6 +133,7 @@ describe("enforceMemory — QMD backend (default)", () => {
   });
 
   it("sets QMD limits with standard maxInjectedChars (5000) by default", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
     enforceMemory(p);
@@ -144,6 +147,7 @@ describe("enforceMemory — QMD backend (default)", () => {
   });
 
   it("elevates maxInjectedChars to 10000 in business mode", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     process.env.OPENCLAW_BUSINESS_MODE = "true";
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
@@ -153,6 +157,7 @@ describe("enforceMemory — QMD backend (default)", () => {
   });
 
   it("sets includeDefaultMemory to true", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
     enforceMemory(p);
@@ -208,6 +213,7 @@ describe("enforceMemory — common memorySearch settings", () => {
 
 describe("enforceMemory — gateway embedding fallback", () => {
   it("configures OpenAI provider when AI_GATEWAY_URL and GATEWAY_TOKEN are set", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     process.env.AI_GATEWAY_URL = "https://gateway.example.com";
     process.env.GATEWAY_TOKEN = "test-token-123";
     const p = join(tmpDir, "config.json");
@@ -222,6 +228,7 @@ describe("enforceMemory — gateway embedding fallback", () => {
   });
 
   it("does not configure gateway provider when AI_GATEWAY_URL is missing", () => {
+    process.env.OPENCLAW_QMD_ENABLED = "true";
     process.env.GATEWAY_TOKEN = "test-token-123";
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
@@ -231,11 +238,10 @@ describe("enforceMemory — gateway embedding fallback", () => {
   });
 });
 
-// ── QMD disabled (builtin backend) ─────────────────────────────────────────
+// ── QMD disabled (builtin backend default) ─────────────────────────────────────────
 
-describe("enforceMemory — builtin backend (QMD disabled)", () => {
-  it("sets memory.backend to 'builtin' when QMD is disabled via false", () => {
-    process.env.OPENCLAW_QMD_ENABLED = "false";
+describe("enforceMemory — builtin backend (default)", () => {
+  it("sets memory.backend to 'builtin' by default when QMD is not explicit", () => {
     const p = join(tmpDir, "config.json");
     writeConfig(p, {});
     enforceMemory(p);

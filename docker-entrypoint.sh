@@ -532,9 +532,9 @@ fi
 # qmd is a local-first markdown search sidecar (BM25 + vectors + reranking).
 # It is NOT bundled in the base image — must be installed via bun at runtime
 # until a Dockerfile rebuild bakes it in permanently.
-# Enabled by default. Set OPENCLAW_QMD_ENABLED=false to disable.
+# Disabled by default. Set OPENCLAW_QMD_ENABLED=true to enable.
 # =============================================================================
-if [ "${OPENCLAW_QMD_ENABLED:-true}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-true}" = "1" ]; then
+if [ "${OPENCLAW_QMD_ENABLED:-false}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-false}" = "1" ]; then
   if command -v qmd &>/dev/null; then
     echo "[entrypoint] qmd already available: $(qmd --version 2>&1 | head -1)"
   else
@@ -559,13 +559,7 @@ if [ "${OPENCLAW_QMD_ENABLED:-true}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-tr
   fi
 
   if command -v qmd &>/dev/null; then
-    # Patch QMD before the first status/embed call so first boot uses the same
-    # CPU/Gemini policy as steady-state runtime. The patch defaults llama.cpp to
-    # CPU-only unless QMD_GPU explicitly opts back into GPU usage.
-    PATCH_SCRIPT="/app/scripts/patch-qmd-gemini.sh"
-    if [ -f "$PATCH_SCRIPT" ]; then
-      bash "$PATCH_SCRIPT" 2>&1 || echo "[entrypoint] WARNING: QMD runtime patch failed (non-fatal)"
-    fi
+
 
     # PRE-WARM: run 'qmd status' to trigger any first-run llama.cpp compilation
     # BEFORE the gateway starts. This ensures the qmd binary is fully compiled

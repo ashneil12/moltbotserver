@@ -115,6 +115,7 @@ const MemorySchema = z
   .object({
     backend: z.union([z.literal("builtin"), z.literal("qmd")]).optional(),
     citations: z.union([z.literal("auto"), z.literal("on"), z.literal("off")]).optional(),
+    autoRecall: z.boolean().optional(),
     qmd: MemoryQmdSchema.optional(),
   })
   .strict()

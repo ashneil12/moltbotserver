@@ -145,14 +145,20 @@ const BAILIAN_MODELS = [
 function enforceProviders(configPath) {
   const config = readConfig(configPath);
   const models = safeEnsure(config, "models");
-  if (!models) {return;} // Upstream drift: models section missing/changed
-  
+  if (!models) {
+    return;
+  } // Upstream drift: models section missing/changed
+
   models.mode = models.mode || "merge";
   const providers = safeEnsure(models, "providers");
-  if (!providers) {return;}
-  
+  if (!providers) {
+    return;
+  }
+
   const defaults = safeEnsure(config, "agents", "defaults");
-  if (!defaults) {return;}
+  if (!defaults) {
+    return;
+  }
   defaults.models = defaults.models || {};
 
   // ── Bailian ───────────────────────────────────────────────────────────
@@ -191,7 +197,9 @@ function enforceProviders(configPath) {
 function enforceModels(configPath) {
   const config = readConfig(configPath);
   const defaults = safeEnsure(config, "agents", "defaults");
-  if (!defaults) {return;}
+  if (!defaults) {
+    return;
+  }
   defaults.model = defaults.model || {};
 
   const defaultModel = normalizeModelId(env("OPENCLAW_DEFAULT_MODEL") || env("DEFAULT_MODEL"));
@@ -281,7 +289,9 @@ function enforceGateway(configPath) {
 
   const config = readConfig(configPath);
   const gateway = safeEnsure(config, "gateway");
-  if (!gateway) {return;}
+  if (!gateway) {
+    return;
+  }
   config.gateway.auth = {
     mode: "token",
     token: gatewayToken,
@@ -299,7 +309,9 @@ function enforceGateway(configPath) {
 function enforceProxies(configPath) {
   const config = readConfig(configPath);
   const gateway = safeEnsure(config, "gateway");
-  if (!gateway) {return;}
+  if (!gateway) {
+    return;
+  }
   config.gateway.trustedProxies = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8"];
 
   writeConfig(configPath, config);
@@ -309,14 +321,20 @@ function enforceProxies(configPath) {
 function enforceMemory(configPath) {
   const config = readConfig(configPath);
   const memory = safeEnsure(config, "memory");
-  if (!memory) {return;}
+  if (!memory) {
+    return;
+  }
   memory.citations = "auto";
 
   // Memory search common settings (always enforced regardless of backend)
   const defaults = safeEnsure(config, "agents", "defaults");
-  if (!defaults) {return;}
+  if (!defaults) {
+    return;
+  }
   const memSearch = safeEnsure(defaults, "memorySearch");
-  if (!memSearch) {return;}
+  if (!memSearch) {
+    return;
+  }
   memSearch.experimental = { sessionMemory: true };
   memSearch.sources = ["memory", "sessions"];
   memSearch.query = {
@@ -328,23 +346,23 @@ function enforceMemory(configPath) {
     },
   };
 
-  // ── QMD backend (always-on; opt-out via OPENCLAW_QMD_ENABLED=false) ──────
-  const qmdDisabled =
-    env("OPENCLAW_QMD_ENABLED") === "false" || env("OPENCLAW_QMD_ENABLED") === "0";
-  if (!qmdDisabled) {
+  // ── QMD backend (disabled by default; opt-in via OPENCLAW_QMD_ENABLED=true) ──────
+  const qmdEnabled = env("OPENCLAW_QMD_ENABLED") === "true" || env("OPENCLAW_QMD_ENABLED") === "1";
+  if (qmdEnabled) {
     memory.backend = "qmd";
     const qmd = safeEnsure(memory, "qmd");
     if (qmd) {
-    qmd.includeDefaultMemory = true;
-    qmd.searchMode = env("OPENCLAW_QMD_SEARCH_MODE", "vsearch"); // search=BM25 (fast), vsearch=vector+BM25 (recommended), query=hybrid+rerank (slow on CPU)
-    qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
-    const businessMode = isTruthy(env("OPENCLAW_BUSINESS_MODE"));
-    qmd.limits = {
-      maxResults: 8,
-      maxSnippetChars: 700,
-      maxInjectedChars: businessMode ? 10000 : 5000,
-      timeoutMs: Number(env("OPENCLAW_QMD_TIMEOUT_MS", "10000")),
-    };
+      qmd.includeDefaultMemory = true;
+      // search=BM25 (fast), vsearch=vector+BM25 (recommended), query=hybrid+rerank (slow on CPU)
+      qmd.searchMode = env("OPENCLAW_QMD_SEARCH_MODE", "vsearch");
+      qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
+      const businessMode = isTruthy(env("OPENCLAW_BUSINESS_MODE"));
+      qmd.limits = {
+        maxResults: 8,
+        maxSnippetChars: 700,
+        maxInjectedChars: businessMode ? 10000 : 5000,
+        timeoutMs: Number(env("OPENCLAW_QMD_TIMEOUT_MS", "30000")),
+      };
     }
 
     // Fallback embedding provider (credits mode: gateway proxy)
@@ -359,9 +377,9 @@ function enforceMemory(configPath) {
       };
     }
   } else {
-    // ── Builtin backend (remote Gemini embeddings) ────────────────────────
+    // ── Builtin backend (default) — remote Gemini embeddings ─────────────
     memory.backend = "builtin";
-    // Clean up stale QMD config to avoid confusion
+    // Remove any stale QMD config to avoid confusion
     delete memory.qmd;
 
     const geminiKey = env("GEMINI_API_KEY");
@@ -370,7 +388,7 @@ function enforceMemory(configPath) {
       memSearch.model = "gemini-embedding-2-preview";
       console.log("[enforce-config] Memory: builtin backend with Gemini embedding-2 (3072-dim)");
     } else {
-      // No Gemini key — provider stays "auto" (FTS-only fallback)
+      // No Gemini key — provider stays "auto" (FTS-only / keyword fallback)
       console.log("[enforce-config] Memory: builtin backend (no embedding key — FTS-only)");
     }
   }
@@ -442,9 +460,13 @@ function deriveElevatedToolUsers(config, tools) {
       continue;
     }
     const elevated = safeEnsure(tools, "elevated");
-    if (!elevated) {continue;}
+    if (!elevated) {
+      continue;
+    }
     const allowFrom = safeEnsure(elevated, "allowFrom");
-    if (!allowFrom) {continue;}
+    if (!allowFrom) {
+      continue;
+    }
     const existing = new Set((allowFrom[channelName] || []).map(String));
     for (const id of ids) {
       existing.add(id);
@@ -465,7 +487,9 @@ function enforceCore(configPath) {
   // Plugins — no allow list means all plugins are eligible to load (open by default).
   // An explicit allow array would restrict to only listed IDs; omitting it is intentional.
   const plugins = safeEnsure(config, "plugins");
-  if (!plugins) {return;}
+  if (!plugins) {
+    return;
+  }
 
   // LCM (Lossless Context Management) — ensure context engine slot is set and
   // the plugin is enabled. This makes LCM survive config regeneration.
@@ -476,34 +500,47 @@ function enforceCore(configPath) {
   }
   const entries = safeEnsure(plugins, "entries");
   if (entries) {
-  // NOTE: databasePath was moved to LCM_DATABASE_PATH env var because
-  // OpenClaw's core validator rejects custom extension config properties
-  // as "unrecognized keys", causing a startup crash loop (same issue as
-  // memory-unified — see comment below). The lossless-claw extension reads
-  // LCM_DATABASE_PATH at runtime.
-  const lcmEntry = entries["lossless-claw"] || { enabled: true };
-  lcmEntry.enabled = true;
-  delete lcmEntry.databasePath; // Clean up legacy key from existing deployments
-  entries["lossless-claw"] = lcmEntry;
-  // Memory-unified: enable the plugin. Alignment scoring settings are read
-  // from environment variables by the extension at runtime rather than config
-  // keys, because OpenClaw's core validator does not recognise custom extension
-  // config properties and rejects them as "unrecognized keys", causing a
-  // startup crash loop.
-  //
-  // Env vars (read by memory-unified/index.ts):
-  //   ALIGNMENT_CHECK_ENABLED=true          (default: true)
-  //   ALIGNMENT_CHECK_OBSERVE_ONLY=true     (default: false)
-  //   ALIGNMENT_CHECK_COOLDOWN_TURNS=3      (default: 3)
-  //   ALIGNMENT_CHECK_THRESHOLD=0.7         (default: 0.7)
-  const muEntry = entries["memory-unified"] || { enabled: true };
-  muEntry.enabled = true;
-  // Clean up legacy keys that cause validation failures on existing deployments
-  delete muEntry.alignmentCheck;
-  delete muEntry.alignmentCheckObserveOnly;
-  delete muEntry.alignmentCheckCooldownTurns;
-  delete muEntry.alignmentCheckThreshold;
-  entries["memory-unified"] = muEntry;
+    // NOTE: databasePath was moved to LCM_DATABASE_PATH env var because
+    // OpenClaw's core validator rejects custom extension config properties
+    // as "unrecognized keys", causing a startup crash loop (same issue as
+    // memory-unified — see comment below). The lossless-claw extension reads
+    // LCM_DATABASE_PATH at runtime.
+    const lcmEntry = entries["lossless-claw"] || { enabled: true };
+    lcmEntry.enabled = true;
+    delete lcmEntry.databasePath; // Remove legacy key still present on older deployments
+    entries["lossless-claw"] = lcmEntry;
+
+    // Memory-unified: enable the plugin. Alignment scoring settings are read
+    // from environment variables by the extension at runtime rather than config
+    // keys, because OpenClaw's core validator does not recognise custom extension
+    // config properties and rejects them as "unrecognized keys", causing a
+    // startup crash loop.
+    //
+    // Env vars (read by memory-unified/index.ts):
+    //   ALIGNMENT_CHECK_ENABLED=true          (default: true)
+    //   ALIGNMENT_CHECK_OBSERVE_ONLY=true     (default: false)
+    //   ALIGNMENT_CHECK_COOLDOWN_TURNS=3      (default: 3)
+    //   ALIGNMENT_CHECK_THRESHOLD=0.7         (default: 0.7)
+    const muEntry = entries["memory-unified"] || { enabled: true };
+    muEntry.enabled = true;
+
+    // Sync the UI-exposed memory.autoRecall setting down to the plugin config
+    // so the memory-unified extension can read it from api.pluginConfig.
+    const memoryNode = config.memory || {};
+    if (typeof memoryNode.autoRecall === "boolean") {
+      if (!muEntry.config) {
+        muEntry.config = {};
+      }
+      muEntry.config.autoRecall = memoryNode.autoRecall;
+    }
+
+    // Remove legacy top-level keys that cause schema validation failures on
+    // older deployments (these were moved to env vars — see above).
+    delete muEntry.alignmentCheck;
+    delete muEntry.alignmentCheckObserveOnly;
+    delete muEntry.alignmentCheckCooldownTurns;
+    delete muEntry.alignmentCheckThreshold;
+    entries["memory-unified"] = muEntry;
   }
   // Ensure lossless-claw and memory-unified are in the allow list (if one exists)
   if (Array.isArray(plugins.allow)) {
@@ -530,55 +567,57 @@ function enforceCore(configPath) {
   // Gateway UI / bind / port
   const gateway = safeEnsure(config, "gateway");
   if (gateway) {
-  gateway.port = Number(env("GATEWAY_PORT", "3000"));
-  gateway.bind = env("GATEWAY_BIND", "lan");
-  gateway.customBindHost = "0.0.0.0";
-  // controlUi.allowedOrigins is REQUIRED when gateway binds to non-loopback
-  // (bind=lan). Without it, the new gateway version refuses to start.
-  const iframeOrigins = env("OPENCLAW_ALLOW_IFRAME_ORIGINS");
-  const allowedOrigins = new Set(["http://localhost:3000"]);
-  if (iframeOrigins) {
-    for (const o of iframeOrigins
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)) {
-      allowedOrigins.add(o);
+    gateway.port = Number(env("GATEWAY_PORT", "3000"));
+    gateway.bind = env("GATEWAY_BIND", "lan");
+    gateway.customBindHost = "0.0.0.0";
+    // controlUi.allowedOrigins is REQUIRED when gateway binds to non-loopback
+    // (bind=lan). Without it, the new gateway version refuses to start.
+    const iframeOrigins = env("OPENCLAW_ALLOW_IFRAME_ORIGINS");
+    const allowedOrigins = new Set(["http://localhost:3000"]);
+    if (iframeOrigins) {
+      for (const o of iframeOrigins
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)) {
+        allowedOrigins.add(o);
+      }
     }
-  }
-  gateway.controlUi = {
-    enabled: true,
-    allowedOrigins: [...allowedOrigins],
-  };
+    gateway.controlUi = {
+      enabled: true,
+      allowedOrigins: [...allowedOrigins],
+    };
 
-  // Managed platform: disable device auth (dashboard handles auth via token).
-  // Community (self-hosted) deployments keep device auth for full security.
-  if (isTruthy(env("OPENCLAW_MANAGED_PLATFORM"))) {
-    gateway.controlUi.dangerouslyDisableDeviceAuth = true;
-    gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
-  }
+    // Managed platform: disable device auth (dashboard handles auth via token).
+    // Community (self-hosted) deployments keep device auth for full security.
+    if (isTruthy(env("OPENCLAW_MANAGED_PLATFORM"))) {
+      gateway.controlUi.dangerouslyDisableDeviceAuth = true;
+      gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
+    }
   }
 
   // Compaction + memory flush
   const defaults = safeEnsure(config, "agents", "defaults");
-  if (!defaults) {return;}
+  if (!defaults) {
+    return;
+  }
   const compaction = safeEnsure(defaults, "compaction");
   if (compaction) {
-  // System prompt is ~43K tokens; reserve enough so the SDK auto-compacts
-  // before the provider's context window is exceeded.
-  compaction.reserveTokensFloor = 55000;
-  compaction.memoryFlush = {
-    enabled: true,
-    softThresholdTokens: 8000,
-    systemPrompt:
-      "Session nearing compaction. Write any important context to WORKING.md and memory files now.",
-    prompt:
-      "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store.",
-  };
+    // System prompt is ~43K tokens; reserve enough so the SDK auto-compacts
+    // before the provider's context window is exceeded.
+    compaction.reserveTokensFloor = 55000;
+    compaction.memoryFlush = {
+      enabled: true,
+      softThresholdTokens: 8000,
+      systemPrompt:
+        "Session nearing compaction. Write any important context to WORKING.md and memory files now.",
+      prompt:
+        "Before context compaction, update WORKING.md with current task state and write any lasting notes to memory/YYYY-MM-DD.md. Reply with NO_REPLY if nothing to store.",
+    };
 
-  // Compaction safety timeout: the SDK reads this via resolveCompactionTimeoutMs()
-  // in compaction-safety-timeout.ts. Default is 900s (15 min) — too generous.
-  // 240s (4 min) is sufficient for large contexts and prevents indefinite hangs.
-  compaction.timeoutSeconds = 240;
+    // Compaction safety timeout: the SDK reads this via resolveCompactionTimeoutMs()
+    // in compaction-safety-timeout.ts. Default is 900s (15 min) — too generous.
+    // 240s (4 min) is sufficient for large contexts and prevents indefinite hangs.
+    compaction.timeoutSeconds = 240;
   }
 
   // Bootstrap: increase per-file char limit so SOUL.md (~53K) and
@@ -598,18 +637,18 @@ function enforceCore(configPath) {
   const tools = safeEnsure(config, "tools");
   if (tools) {
     tools.loopDetection = tools.loopDetection || {};
-  if (tools.loopDetection.enabled === undefined) {
-    tools.loopDetection.enabled = true;
-  }
+    if (tools.loopDetection.enabled === undefined) {
+      tools.loopDetection.enabled = true;
+    }
 
-  // All agents default to the "full" tool profile — no restrictions.
-  // The "coding" profile (the previous default) blocked tools like browser,
-  // canvas, nodes, and agents_list. Full profile means the agent can use
-  // everything it is otherwise authorized for via allow/deny lists.
-  // This overwrites any stale narrower profile set during initial provisioning.
-  tools.profile = "full";
+    // All agents default to the "full" tool profile — no restrictions.
+    // The "coding" profile (the previous default) blocked tools like browser,
+    // canvas, nodes, and agents_list. Full profile means the agent can use
+    // everything it is otherwise authorized for via allow/deny lists.
+    // This overwrites any stale narrower profile set during initial provisioning.
+    tools.profile = "full";
 
-  deriveElevatedToolUsers(config, tools);
+    deriveElevatedToolUsers(config, tools);
   }
 
   // Workspace
@@ -682,7 +721,9 @@ function enforceCore(configPath) {
       const mediaVideo = safeEnsure(tools, "media", "video");
       if (mediaVideo) {
         mediaVideo.enabled = true;
-        console.log("[enforce-config] ✅ Video understanding auto-enabled (GEMINI_API_KEY present)");
+        console.log(
+          "[enforce-config] ✅ Video understanding auto-enabled (GEMINI_API_KEY present)",
+        );
       }
     }
   }

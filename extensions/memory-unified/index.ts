@@ -1,16 +1,16 @@
 /**
  * OpenClaw Memory (Unified) Plugin
  *
- * Replaces memory-core with automatic per-turn memory injection.
- * Uses the existing memory search infrastructure (QMD/builtin)
- * to inject relevant memories before each agent turn via the
- * `before_agent_start` lifecycle hook.
+ * Provides automatic per-turn memory injection and alignment drift scoring.
+ * Uses the existing memory search infrastructure (builtin/QMD opt-in) to
+ * inject relevant memories before each agent turn via `before_agent_start`.
  *
  * Features:
- * - Re-exports memory_search and memory_get tools (same as memory-core)
+ * - Re-exports memory_search and memory_get tools (identical to memory-core)
  * - Auto-recall: queries memory_search per turn and injects top results
  * - Alignment drift scoring: evaluates responses against SOUL.md/IDENTITY.md
  * - Skips recall for cron/heartbeat sessions, short prompts, and slash commands
+ * - Hard 10-second timeout on recall so the agent never blocks indefinitely
  */
 
 import fs from "node:fs/promises";
@@ -32,18 +32,35 @@ import {
   type AlignmentState,
 } from "./alignment-state.js";
 
+// ── Constants ────────────────────────────────────────────────────────────────
+
 /** Triggers that should NOT get auto-recall injection. */
 const SKIP_TRIGGERS = new Set(["cron", "heartbeat", "memory"]);
 
-/** Minimum prompt length to trigger auto-recall. */
+/** Minimum prompt length (chars) to trigger auto-recall. */
 const MIN_PROMPT_LENGTH = 10;
+
+/**
+ * Hard deadline (ms) for a single auto-recall search execution.
+ * If memory retrieval exceeds this the agent continues without memories rather
+ * than hanging the entire session. Configurable via MEMORY_RECALL_TIMEOUT_MS.
+ */
+const DEFAULT_RECALL_TIMEOUT_MS = 10_000;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+type MemoryResult = { path?: string; snippet?: string; score?: number };
+
+/** Resolves after `ms` milliseconds — used as the race leg for timeouts. */
+function sleep(ms: number): Promise<never> {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`memory-unified: auto-recall timed out after ${ms}ms`)), ms),
+  );
+}
 
 /** Extract the last assistant message text from the messages array. */
 function extractLastAssistantText(messages: unknown[] | undefined): string | null {
-  if (!messages || messages.length === 0) {
-    return null;
-  }
-  // Walk backwards to find the last assistant message
+  if (!messages || messages.length === 0) return null;
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i] as { role?: string; content?: string } | undefined;
     if (msg?.role === "assistant" && typeof msg.content === "string" && msg.content.trim()) {
@@ -53,7 +70,7 @@ function extractLastAssistantText(messages: unknown[] | undefined): string | nul
   return null;
 }
 
-/** Extract CRITICAL rules section from IDENTITY.md content. */
+/** Extract the CRITICAL rules section from IDENTITY.md content. */
 function extractCriticalRules(identityContent: string): string {
   const lines = identityContent.split("\n");
   const criticalLines: string[] = [];
@@ -66,9 +83,8 @@ function extractCriticalRules(identityContent: string): string {
       continue;
     }
     if (inCritical) {
-      if (/^#+\s/.test(line) && !/CRITICAL/i.test(line)) {
-        break; // Hit next non-CRITICAL section
-      }
+      // Stop at the next heading that is NOT a CRITICAL sub-heading
+      if (/^#+\s/.test(line) && !/CRITICAL/i.test(line)) break;
       criticalLines.push(line);
     }
   }
@@ -76,7 +92,7 @@ function extractCriticalRules(identityContent: string): string {
   return criticalLines.join("\n").trim();
 }
 
-/** Read a text file or return empty string if missing. */
+/** Read a text file or return an empty string if missing or unreadable. */
 async function readTextFileOrEmpty(filePath: string): Promise<string> {
   try {
     return await fs.readFile(filePath, "utf-8");
@@ -87,7 +103,7 @@ async function readTextFileOrEmpty(filePath: string): Promise<string> {
 
 /**
  * Create an alignment LLM call using Google Generative AI (Flash Lite).
- * Returns null if no API key is available.
+ * Returns null if no API key is available or the request fails.
  */
 function createGeminiAlignmentCall(apiKey: string): AlignmentLlmCall {
   return async ({ systemPrompt, userPrompt, timeoutMs }) => {
@@ -111,9 +127,7 @@ function createGeminiAlignmentCall(apiKey: string): AlignmentLlmCall {
         }),
       });
 
-      if (!response.ok) {
-        return null;
-      }
+      if (!response.ok) return null;
 
       const data = (await response.json()) as {
         candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -126,6 +140,8 @@ function createGeminiAlignmentCall(apiKey: string): AlignmentLlmCall {
     }
   };
 }
+
+// ── Plugin Definition ─────────────────────────────────────────────────────────
 
 const memoryUnifiedPlugin = {
   id: "memory-unified",
@@ -141,9 +157,12 @@ const memoryUnifiedPlugin = {
       recallMinScore?: number;
     };
 
+    // Feature flags — defaults favour a rich "batteries-included" experience
     const autoRecall = pluginConfig.autoRecall !== false; // default: true
     const recallMaxResults = pluginConfig.recallMaxResults ?? 5;
     const recallMinScore = pluginConfig.recallMinScore ?? 0.3;
+    const recallTimeoutMs =
+      Number(process.env.MEMORY_RECALL_TIMEOUT_MS) || DEFAULT_RECALL_TIMEOUT_MS;
 
     // Alignment scoring config — read from environment variables because
     // OpenClaw's core config validator rejects custom extension keys in
@@ -171,7 +190,7 @@ const memoryUnifiedPlugin = {
     let alignmentState: AlignmentState = createAlignmentState();
 
     // ====================================================================
-    // Tool Registration (same as memory-core)
+    // Tool Registration (same contract as memory-core)
     // ====================================================================
     api.registerTool(
       (ctx) => {
@@ -183,16 +202,14 @@ const memoryUnifiedPlugin = {
           config: ctx.config,
           agentSessionKey: ctx.sessionKey,
         });
-        if (!memorySearchTool || !memoryGetTool) {
-          return null;
-        }
+        if (!memorySearchTool || !memoryGetTool) return null;
         return [memorySearchTool, memoryGetTool];
       },
       { names: ["memory_search", "memory_get"] },
     );
 
     // ====================================================================
-    // CLI Registration (same as memory-core)
+    // CLI Registration (same contract as memory-core)
     // ====================================================================
     api.registerCli(
       ({ program }) => {
@@ -208,29 +225,20 @@ const memoryUnifiedPlugin = {
       api.on("before_agent_start", async (event, ctx) => {
         const prompt = event.prompt;
 
-        // Guard: skip if prompt is too short or empty
-        if (!prompt || prompt.length < MIN_PROMPT_LENGTH) {
-          return;
-        }
+        // Guard: prompt must exist and meet minimum meaningful length
+        if (!prompt || prompt.length < MIN_PROMPT_LENGTH) return;
 
-        // Guard: skip for cron, heartbeat, and memory-extraction runs
-        if (ctx.trigger && SKIP_TRIGGERS.has(ctx.trigger)) {
-          return;
-        }
+        // Guard: skip automated / non-interactive session triggers
+        if (ctx.trigger && SKIP_TRIGGERS.has(ctx.trigger)) return;
 
         // Guard: skip slash commands (start with /)
         const trimmedPrompt = prompt.trimStart();
-        if (trimmedPrompt.startsWith("/")) {
-          return;
-        }
+        if (trimmedPrompt.startsWith("/")) return;
 
-        // Guard: skip if no session key available (shouldn't happen, but be defensive)
-        if (!ctx.sessionKey) {
-          return;
-        }
+        // Guard: session key is required to scope the memory search correctly
+        if (!ctx.sessionKey) return;
 
         try {
-          // Create a memory search tool instance for this context
           const memorySearchTool = api.runtime.tools.createMemorySearchTool({
             config: api.config,
             agentSessionKey: ctx.sessionKey,
@@ -243,37 +251,34 @@ const memoryUnifiedPlugin = {
             return;
           }
 
-          // Invoke the tool's execute handler to perform the search.
-          // Use trimmed prompt as query — strips leading/trailing whitespace for better search.
-          const result = await memorySearchTool.execute(`auto-recall-${Date.now()}`, {
-            query: trimmedPrompt,
-            maxResults: recallMaxResults,
-            minScore: recallMinScore,
-          });
+          // Race the search against a hard timeout so we never block the agent.
+          const rawResult = await Promise.race([
+            memorySearchTool.execute(`auto-recall-${Date.now()}`, {
+              query: trimmedPrompt,
+              maxResults: recallMaxResults,
+              minScore: recallMinScore,
+            }),
+            sleep(recallTimeoutMs),
+          ]);
 
-          // Parse the JSON result string
-          if (!result || typeof result !== "string") {
-            return;
-          }
+          if (!rawResult || typeof rawResult !== "string") return;
 
-          let parsed: { results?: Array<{ path?: string; snippet?: string; score?: number }> };
+          let parsed: { results?: MemoryResult[] };
           try {
-            parsed = JSON.parse(result);
+            parsed = JSON.parse(rawResult);
           } catch {
             return;
           }
 
           const results = parsed?.results;
-          if (!results || !Array.isArray(results) || results.length === 0) {
-            return;
-          }
+          if (!results || !Array.isArray(results) || results.length === 0) return;
 
-          // Format results as context block
+          // Format results as an XML-style context block for easy agent parsing
           const formattedMemories = results
             .map((r, i) => {
-              const path = r.path ? ` (${r.path})` : "";
-              const snippet = r.snippet || "";
-              return `[${i + 1}]${path}\n${snippet}`;
+              const locationHint = r.path ? ` (${r.path})` : "";
+              const snippet = r.snippet ?? "";
+              return `[${i + 1}]${locationHint}\n${snippet}`;
             })
             .join("\n\n");
 
@@ -284,13 +289,11 @@ const memoryUnifiedPlugin = {
             `${formattedMemories}\n` +
             `</auto-recalled-memories>`;
 
-          api.logger.info?.(`memory-unified: injecting ${results.length} recalled memories`);
+          api.logger.info?.(`memory-unified: injecting ${results.length} auto-recalled memories`);
 
-          return {
-            prependContext: contextBlock,
-          };
+          return { prependContext: contextBlock };
         } catch (err: unknown) {
-          // Non-fatal — agent continues without auto-recalled memories
+          // Non-fatal — log and let the agent continue without auto-recalled memories
           const message = err instanceof Error ? err.message : String(err);
           api.logger.warn?.(`memory-unified: auto-recall failed: ${message}`);
         }
@@ -301,44 +304,34 @@ const memoryUnifiedPlugin = {
     // Alignment Drift Scoring: evaluate response against SOUL/IDENTITY
     // ====================================================================
     if (alignmentEnabled) {
-      // Reset alignment state on session start
+      // Reset per-session state when a new session starts
       api.on("session_start", () => {
         alignmentState = createAlignmentState();
       });
 
       api.on("before_agent_start", async (event, ctx) => {
-        // Guard: skip for cron, heartbeat, memory-extraction runs
-        if (ctx.trigger && SKIP_TRIGGERS.has(ctx.trigger)) {
-          return;
-        }
+        // Guard: skip automated / non-interactive session triggers
+        if (ctx.trigger && SKIP_TRIGGERS.has(ctx.trigger)) return;
 
         // Guard: skip slash commands
         const trimmedPrompt = event.prompt?.trimStart();
-        if (trimmedPrompt?.startsWith("/")) {
-          return;
-        }
+        if (trimmedPrompt?.startsWith("/")) return;
 
-        // Advance turn counter
+        // Advance turn counter (always, even if we skip this check cycle)
         alignmentState = advanceTurn(alignmentState);
 
-        // Check cooldown
-        if (!shouldCheck(alignmentState, alignmentConfig)) {
-          return;
-        }
+        // Respect cooldown
+        if (!shouldCheck(alignmentState, alignmentConfig)) return;
 
-        // Guard: need messages to extract last assistant response
+        // Need the last assistant message to score against
         const lastResponse = extractLastAssistantText(event.messages);
-        if (!lastResponse) {
-          return;
-        }
+        if (!lastResponse) return;
 
-        // Guard: need workspace dir for SOUL.md / IDENTITY.md
+        // Need a workspace dir to locate SOUL.md / IDENTITY.md
         const workspaceDir = ctx.workspaceDir;
-        if (!workspaceDir) {
-          return;
-        }
+        if (!workspaceDir) return;
 
-        // Guard: need Gemini API key
+        // Need a Gemini API key to run the LLM scoring call
         const apiKey = process.env.GEMINI_API_KEY || process.env.BYTEROVER_GEMINI_KEY;
         if (!apiKey) {
           api.logger.debug?.("memory-unified: no Gemini API key, skipping alignment check");
@@ -346,15 +339,12 @@ const memoryUnifiedPlugin = {
         }
 
         try {
-          // Read identity files
           const [soulContent, identityContent] = await Promise.all([
             readTextFileOrEmpty(path.join(workspaceDir, "SOUL.md")),
             readTextFileOrEmpty(path.join(workspaceDir, "IDENTITY.md")),
           ]);
 
-          if (!soulContent && !identityContent) {
-            return;
-          }
+          if (!soulContent && !identityContent) return;
 
           const identityRules = identityContent ? extractCriticalRules(identityContent) : "";
           const llmCall = createGeminiAlignmentCall(apiKey);
@@ -367,16 +357,11 @@ const memoryUnifiedPlugin = {
             config: alignmentConfig,
           });
 
-          if (!result) {
-            // LLM call failed/timed out — skip silently
-            return;
-          }
+          if (!result) return; // LLM call failed / timed out — skip silently
 
-          // Log the check
           const correctionContext = buildCorrectionContext(result, alignmentConfig);
           const shouldInjectCorrection = correctionContext !== null && !alignmentObserveOnly;
 
-          // Record the check in state
           alignmentState = recordCheck(
             alignmentState,
             result.score,
@@ -384,12 +369,12 @@ const memoryUnifiedPlugin = {
             alignmentConfig,
           );
 
-          // Log structured entry
           const logEntry = formatAlignmentLogEntry({
             result,
             correctionInjected: shouldInjectCorrection,
             turnNumber: alignmentState.turnNumber,
           });
+
           api.logger.info?.(
             `memory-unified: alignment check — score=${result.score.toFixed(2)} ` +
               `violations=${result.violations.length} ` +
@@ -398,12 +383,11 @@ const memoryUnifiedPlugin = {
           );
           api.logger.debug?.(`memory-unified: alignment details: ${JSON.stringify(logEntry)}`);
 
-          // Inject correction if warranted and not in observe-only mode
           if (shouldInjectCorrection && correctionContext) {
             return { prependContext: correctionContext };
           }
         } catch (err: unknown) {
-          // Non-fatal — agent continues without alignment check
+          // Non-fatal — agent continues without alignment correction
           const message = err instanceof Error ? err.message : String(err);
           api.logger.warn?.(`memory-unified: alignment check failed: ${message}`);
         }
