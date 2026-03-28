@@ -534,7 +534,7 @@ fi
 # until a Dockerfile rebuild bakes it in permanently.
 # Disabled by default. Set OPENCLAW_QMD_ENABLED=true to enable.
 # =============================================================================
-if [ "${OPENCLAW_QMD_ENABLED:-false}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-false}" = "1" ]; then
+if false; then # [ "${OPENCLAW_QMD_ENABLED:-false}" = "true" ] || [ "${OPENCLAW_QMD_ENABLED:-false}" = "1" ]; then
   if command -v qmd &>/dev/null; then
     echo "[entrypoint] qmd already available: $(qmd --version 2>&1 | head -1)"
   else

@@ -347,7 +347,7 @@ function enforceMemory(configPath) {
   };
 
   // ── QMD backend (disabled by default; opt-in via OPENCLAW_QMD_ENABLED=true) ──────
-  const qmdEnabled = env("OPENCLAW_QMD_ENABLED") === "true" || env("OPENCLAW_QMD_ENABLED") === "1";
+  const qmdEnabled = false; // env("OPENCLAW_QMD_ENABLED") === "true" || env("OPENCLAW_QMD_ENABLED") === "1";
   if (qmdEnabled) {
     memory.backend = "qmd";
     const qmd = safeEnsure(memory, "qmd");
