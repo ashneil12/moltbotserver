@@ -156,6 +156,43 @@ describe("listMemoryFiles", () => {
     expect(files.some((file) => file.endsWith("note.wav"))).toBe(true);
     expect(files.some((file) => file.endsWith("ignore.bin"))).toBe(false);
   });
+
+  it("ignores explicitly ignored directories like skills and clawflows", async () => {
+    const tmpDir = getTmpDir();
+    await fs.mkdir(path.join(tmpDir, "skills"), { recursive: true });
+    await fs.mkdir(path.join(tmpDir, "clawflows", "workflows", "available"), { recursive: true });
+    await fs.writeFile(path.join(tmpDir, "skills", "test.md"), "# Skill");
+    await fs.writeFile(
+      path.join(tmpDir, "clawflows", "workflows", "available", "test.md"),
+      "# Flow",
+    );
+    await fs.writeFile(path.join(tmpDir, "normal.md"), "# Normal");
+
+    const files = await listMemoryFiles(tmpDir);
+    expect(files.some((f) => f.endsWith("test.md"))).toBe(false);
+    expect(files.some((f) => f.endsWith("normal.md"))).toBe(true);
+  });
+
+  it("ignores identity and context files automatically", async () => {
+    const tmpDir = getTmpDir();
+    await fs.writeFile(path.join(tmpDir, "SOUL.md"), "# Soul");
+    await fs.writeFile(path.join(tmpDir, "USER.md"), "# User");
+    await fs.writeFile(path.join(tmpDir, "IDENTITY.md"), "# Identity");
+    await fs.writeFile(path.join(tmpDir, "BOOTSTRAP.md"), "# Bootstrap");
+    await fs.writeFile(path.join(tmpDir, "normal.md"), "# Normal");
+
+    const files = await listMemoryFiles(tmpDir);
+    expect(
+      files.some(
+        (f) =>
+          f.includes("SOUL") ||
+          f.includes("IDENTITY") ||
+          f.includes("BOOTSTRAP") ||
+          f.includes("USER"),
+      ),
+    ).toBe(false);
+    expect(files.some((f) => f.endsWith("normal.md"))).toBe(true);
+  });
 });
 
 describe("buildFileEntry", () => {

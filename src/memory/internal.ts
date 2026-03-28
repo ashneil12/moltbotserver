@@ -120,7 +120,15 @@ function isAllowedMemoryFilePath(filePath: string, multimodal?: MemoryMultimodal
   );
 }
 
-async function walkDir(dir: string, files: string[], multimodal?: MemoryMultimodalSettings) {
+async function walkDir(
+  dir: string,
+  files: string[],
+  multimodal: MemoryMultimodalSettings | undefined,
+  currentDepth: number = 0,
+) {
+  if (currentDepth > 20) {
+    return; // max depth limit reached for safety
+  }
   const entries = await fs.readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (IGNORED_MEMORY_WATCH_DIR_NAMES.has(entry.name.toLowerCase())) {
@@ -131,7 +139,7 @@ async function walkDir(dir: string, files: string[], multimodal?: MemoryMultimod
       continue;
     }
     if (entry.isDirectory()) {
-      await walkDir(full, files, multimodal);
+      await walkDir(full, files, multimodal, currentDepth + 1);
       continue;
     }
     if (!entry.isFile()) {

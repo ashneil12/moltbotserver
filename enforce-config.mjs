@@ -346,51 +346,19 @@ function enforceMemory(configPath) {
     },
   };
 
-  // ── QMD backend (disabled by default; opt-in via OPENCLAW_QMD_ENABLED=true) ──────
-  const qmdEnabled = false; // env("OPENCLAW_QMD_ENABLED") === "true" || env("OPENCLAW_QMD_ENABLED") === "1";
-  if (qmdEnabled) {
-    memory.backend = "qmd";
-    const qmd = safeEnsure(memory, "qmd");
-    if (qmd) {
-      qmd.includeDefaultMemory = true;
-      // search=BM25 (fast), vsearch=vector+BM25 (recommended), query=hybrid+rerank (slow on CPU)
-      qmd.searchMode = env("OPENCLAW_QMD_SEARCH_MODE", "vsearch");
-      qmd.update = { interval: "5m", onBoot: true, waitForBootSync: false };
-      const businessMode = isTruthy(env("OPENCLAW_BUSINESS_MODE"));
-      qmd.limits = {
-        maxResults: 8,
-        maxSnippetChars: 700,
-        maxInjectedChars: businessMode ? 10000 : 5000,
-        timeoutMs: Number(env("OPENCLAW_QMD_TIMEOUT_MS", "30000")),
-      };
-    }
+  // ── Builtin memory backend ─────────────
+  memory.backend = "builtin";
+  // Remove any stale QMD config to avoid confusion
+  delete memory.qmd;
 
-    // Fallback embedding provider (credits mode: gateway proxy)
-    const aiGatewayUrl = env("AI_GATEWAY_URL");
-    const gatewayToken = env("GATEWAY_TOKEN");
-    if (aiGatewayUrl && gatewayToken) {
-      memSearch.provider = "openai";
-      memSearch.model = "voyage/voyage-3.5";
-      memSearch.remote = {
-        baseUrl: `${aiGatewayUrl}/api/gateway`,
-        apiKey: gatewayToken,
-      };
-    }
+  const geminiKey = env("GEMINI_API_KEY");
+  if (geminiKey) {
+    memSearch.provider = "gemini";
+    memSearch.model = "gemini-embedding-2-preview";
+    console.log("[enforce-config] Memory: builtin backend with Gemini embedding-2 (3072-dim)");
   } else {
-    // ── Builtin backend (default) — remote Gemini embeddings ─────────────
-    memory.backend = "builtin";
-    // Remove any stale QMD config to avoid confusion
-    delete memory.qmd;
-
-    const geminiKey = env("GEMINI_API_KEY");
-    if (geminiKey) {
-      memSearch.provider = "gemini";
-      memSearch.model = "gemini-embedding-2-preview";
-      console.log("[enforce-config] Memory: builtin backend with Gemini embedding-2 (3072-dim)");
-    } else {
-      // No Gemini key — provider stays "auto" (FTS-only / keyword fallback)
-      console.log("[enforce-config] Memory: builtin backend (no embedding key — FTS-only)");
-    }
+    // No Gemini key — provider stays "auto" (FTS-only / keyword fallback)
+    console.log("[enforce-config] Memory: builtin backend (no embedding key — FTS-only)");
   }
 
   writeConfig(configPath, config);
