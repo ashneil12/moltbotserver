@@ -329,9 +329,18 @@ fi
 
 # Resolve the SOUL.md source file based on mode
 BUSINESS_TEMPLATE="/app/docs/reference/templates/openclaw-business-v1.md"
+BUSINESS_DOCS_DIR="/app/docs/reference/templates/business"
+
 if [ "$IS_BUSINESS_MODE" = "true" ] && [ -f "$BUSINESS_TEMPLATE" ]; then
   SOUL_SOURCE="$BUSINESS_TEMPLATE"
   echo "[entrypoint] Business mode active — deploying business guide as SOUL.md"
+  
+  if [ -d "$BUSINESS_DOCS_DIR" ]; then
+    echo "[entrypoint] Copying business document dump to workspace..."
+    mkdir -p "$WORKSPACE_DIR/business"
+    cp -Rn "$BUSINESS_DOCS_DIR/"* "$WORKSPACE_DIR/business/" 2>/dev/null || true
+    chmod -R u+rw "$WORKSPACE_DIR/business" 2>/dev/null || true
+  fi
 elif [ -f "/app/SOUL.md" ]; then
   SOUL_SOURCE="/app/SOUL.md"
 else
