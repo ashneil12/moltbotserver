@@ -55,11 +55,23 @@ const IGNORED_MEMORY_WATCH_DIR_NAMES = new Set([
   ".tox",
   "__pycache__",
   ".openclaw",
+  "skills",
+  "clawflows",
+]);
+
+const IGNORED_MEMORY_WATCH_FILE_NAMES = new Set([
+  "identity.md",
+  "bootstrap.md",
+  "soul.md",
+  "user.md",
 ]);
 
 export function shouldIgnoreMemoryWatchPath(watchPath: string): boolean {
   const normalized = path.normalize(watchPath);
   const parts = normalized.split(path.sep).map((segment) => segment.trim().toLowerCase());
+  if (parts.length > 0 && IGNORED_MEMORY_WATCH_FILE_NAMES.has(parts[parts.length - 1])) {
+    return true;
+  }
   return parts.some((segment) => IGNORED_MEMORY_WATCH_DIR_NAMES.has(segment));
 }
 
@@ -125,6 +137,9 @@ async function walkDir(dir: string, files: string[], multimodal?: MemoryMultimod
     if (!entry.isFile()) {
       continue;
     }
+    if (IGNORED_MEMORY_WATCH_FILE_NAMES.has(entry.name.toLowerCase())) {
+      continue;
+    }
     if (!isAllowedMemoryFilePath(full, multimodal)) {
       continue;
     }
@@ -158,7 +173,11 @@ export async function listMemoryFiles(
           await walkDir(inputPath, result, multimodal);
           continue;
         }
-        if (stat.isFile() && isAllowedMemoryFilePath(inputPath, multimodal)) {
+        if (
+          stat.isFile() &&
+          isAllowedMemoryFilePath(inputPath, multimodal) &&
+          !IGNORED_MEMORY_WATCH_FILE_NAMES.has(path.basename(inputPath).toLowerCase())
+        ) {
           result.push(inputPath);
         }
       } catch {}
