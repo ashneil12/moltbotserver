@@ -37,7 +37,6 @@ vi.mock("./embeddings.js", () => ({
 type MemoryIndexModule = typeof import("./index.js");
 
 let getMemorySearchManager: MemoryIndexModule["getMemorySearchManager"];
-let closeAllMemorySearchManagers: MemoryIndexModule["closeAllMemorySearchManagers"];
 
 describe("memory watcher config", () => {
   let manager: MemoryIndexManager | null = null;
@@ -46,7 +45,7 @@ describe("memory watcher config", () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    ({ getMemorySearchManager, closeAllMemorySearchManagers } = await import("./index.js"));
+    ({ getMemorySearchManager } = await import("./index.js"));
     vi.clearAllMocks();
   });
 
@@ -56,7 +55,7 @@ describe("memory watcher config", () => {
       await manager.close();
       manager = null;
     }
-    await closeAllMemorySearchManagers();
+    // Cleaned up manager close
     if (workspaceDir) {
       await fs.rm(workspaceDir, { recursive: true, force: true });
       workspaceDir = "";
@@ -115,9 +114,7 @@ describe("memory watcher config", () => {
     ];
     expect(watchedPaths).toEqual(
       expect.arrayContaining([
-        path.join(workspaceDir, "MEMORY.md"),
-        path.join(workspaceDir, "memory.md"),
-        path.join(workspaceDir, "memory", "**", "*.md"),
+        path.join(workspaceDir, "**", "*.md"),
         path.join(extraDir, "**", "*.md"),
       ]),
     );

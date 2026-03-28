@@ -46,6 +46,23 @@ const DISABLED_MULTIMODAL_SETTINGS: MemoryMultimodalSettings = {
   maxFileBytes: 0,
 };
 
+const IGNORED_MEMORY_WATCH_DIR_NAMES = new Set([
+  ".git",
+  "node_modules",
+  ".pnpm-store",
+  ".venv",
+  "venv",
+  ".tox",
+  "__pycache__",
+  ".openclaw",
+]);
+
+export function shouldIgnoreMemoryWatchPath(watchPath: string): boolean {
+  const normalized = path.normalize(watchPath);
+  const parts = normalized.split(path.sep).map((segment) => segment.trim().toLowerCase());
+  return parts.some((segment) => IGNORED_MEMORY_WATCH_DIR_NAMES.has(segment));
+}
+
 export function ensureDir(dir: string): string {
   try {
     fsSync.mkdirSync(dir, { recursive: true });
@@ -94,6 +111,9 @@ function isAllowedMemoryFilePath(filePath: string, multimodal?: MemoryMultimodal
 async function walkDir(dir: string, files: string[], multimodal?: MemoryMultimodalSettings) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
+    if (IGNORED_MEMORY_WATCH_DIR_NAMES.has(entry.name.toLowerCase())) {
+      continue;
+    }
     const full = path.join(dir, entry.name);
     if (entry.isSymbolicLink()) {
       continue;
@@ -118,29 +138,11 @@ export async function listMemoryFiles(
   multimodal?: MemoryMultimodalSettings,
 ): Promise<string[]> {
   const result: string[] = [];
-  const memoryFile = path.join(workspaceDir, "MEMORY.md");
-  const altMemoryFile = path.join(workspaceDir, "memory.md");
-  const memoryDir = path.join(workspaceDir, "memory");
 
-  const addMarkdownFile = async (absPath: string) => {
-    try {
-      const stat = await fs.lstat(absPath);
-      if (stat.isSymbolicLink() || !stat.isFile()) {
-        return;
-      }
-      if (!absPath.endsWith(".md")) {
-        return;
-      }
-      result.push(absPath);
-    } catch {}
-  };
-
-  await addMarkdownFile(memoryFile);
-  await addMarkdownFile(altMemoryFile);
   try {
-    const dirStat = await fs.lstat(memoryDir);
-    if (!dirStat.isSymbolicLink() && dirStat.isDirectory()) {
-      await walkDir(memoryDir, result);
+    const stat = await fs.lstat(workspaceDir);
+    if (!stat.isSymbolicLink() && stat.isDirectory()) {
+      await walkDir(workspaceDir, result, multimodal);
     }
   } catch {}
 

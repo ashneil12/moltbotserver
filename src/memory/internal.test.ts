@@ -104,11 +104,12 @@ describe("listMemoryFiles", () => {
     await fs.mkdir(extraDir, { recursive: true });
     await fs.writeFile(path.join(extraDir, "note.md"), "# Note");
 
-    const targetFile = path.join(tmpDir, "target.md");
+    const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "memory-test-target-"));
+    const targetFile = path.join(outsideDir, "target.md");
     await fs.writeFile(targetFile, "# Target");
     const linkFile = path.join(extraDir, "linked.md");
 
-    const targetDir = path.join(tmpDir, "target-dir");
+    const targetDir = path.join(outsideDir, "target-dir");
     await fs.mkdir(targetDir, { recursive: true });
     await fs.writeFile(path.join(targetDir, "nested.md"), "# Nested");
     const linkDir = path.join(tmpDir, "linked-dir");
