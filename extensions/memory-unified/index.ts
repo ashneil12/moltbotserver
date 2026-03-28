@@ -51,13 +51,6 @@ const DEFAULT_RECALL_TIMEOUT_MS = 10_000;
 
 type MemoryResult = { path?: string; snippet?: string; score?: number };
 
-/** Resolves after `ms` milliseconds — used as the race leg for timeouts. */
-function sleep(ms: number): Promise<never> {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`memory-unified: auto-recall timed out after ${ms}ms`)), ms),
-  );
-}
-
 /** Extract the last assistant message text from the messages array. */
 function extractLastAssistantText(messages: unknown[] | undefined): string | null {
   if (!messages || messages.length === 0) return null;
@@ -168,7 +161,7 @@ const memoryUnifiedPlugin = {
     // Feature flags
     // Auto-recall defaults to true ONLY when business mode is on.
     const autoRecall = pluginConfig.autoRecall ?? businessMode; // default: businessMode
-    const recallMaxResults = pluginConfig.recallMaxResults ?? 5;
+    const recallMaxResults = pluginConfig.recallMaxResults ?? (businessMode ? 10 : 8);
     const recallMinScore = pluginConfig.recallMinScore ?? 0.3;
     const recallTimeoutMs =
       Number(process.env.MEMORY_RECALL_TIMEOUT_MS) || DEFAULT_RECALL_TIMEOUT_MS;
@@ -260,6 +253,17 @@ const memoryUnifiedPlugin = {
             return;
           }
 
+          let timeoutTimer: NodeJS.Timeout | undefined;
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutTimer = setTimeout(
+              () =>
+                reject(
+                  new Error(`memory-unified: auto-recall timed out after ${recallTimeoutMs}ms`),
+                ),
+              recallTimeoutMs,
+            );
+          });
+
           // Race the search against a hard timeout so we never block the agent.
           const rawResult = await Promise.race([
             memorySearchTool.execute(`auto-recall-${Date.now()}`, {
@@ -267,8 +271,10 @@ const memoryUnifiedPlugin = {
               maxResults: recallMaxResults,
               minScore: recallMinScore,
             }),
-            sleep(recallTimeoutMs),
-          ]);
+            timeoutPromise,
+          ]).finally(() => {
+            if (timeoutTimer) clearTimeout(timeoutTimer);
+          });
 
           if (!rawResult || typeof rawResult !== "string") return;
 

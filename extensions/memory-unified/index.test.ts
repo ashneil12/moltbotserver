@@ -310,6 +310,39 @@ describe("memory-unified — autoRecall enabled", () => {
     );
   });
 
+  test("defaults to 10 max results in business mode", async () => {
+    process.env.OPENCLAW_BUSINESS_MODE = "1";
+    vi.resetModules();
+    const { default: plugin } = await import("./index.js");
+    const { api, defaultExecute } = buildMockApi({
+      pluginConfig: { autoRecall: true }, // force autoRecall to skip guard if businessMode defaults change
+    });
+    plugin.register(api as never);
+
+    await api.fireHook("before_agent_start", ...makeBeforeStartArgs());
+    expect(defaultExecute).toHaveBeenCalledWith(
+      expect.stringContaining("auto-recall-"),
+      expect.objectContaining({ maxResults: 10 }),
+    );
+    delete process.env.OPENCLAW_BUSINESS_MODE;
+  });
+
+  test("defaults to 8 max results in standard mode", async () => {
+    delete process.env.OPENCLAW_BUSINESS_MODE;
+    vi.resetModules();
+    const { default: plugin } = await import("./index.js");
+    const { api, defaultExecute } = buildMockApi({
+      pluginConfig: { autoRecall: true },
+    });
+    plugin.register(api as never);
+
+    await api.fireHook("before_agent_start", ...makeBeforeStartArgs());
+    expect(defaultExecute).toHaveBeenCalledWith(
+      expect.stringContaining("auto-recall-"),
+      expect.objectContaining({ maxResults: 8 }),
+    );
+  });
+
   test("formats results with numbered location hints and snippets", async () => {
     const { default: plugin } = await import("./index.js");
     // One result with a path, one without
